@@ -2493,6 +2493,7 @@
 
     <script>
         const BYDATE_KEY = "attendance_bydate_v4";
+        const GUEST_NAME_KEY = "attendance_guest_name_v1";   // ゲストログインで選んだ自分の名前(この端末だけ)
         const EVENTS_KEY = "attendance_events_v3";
         const OTHER_PLANS_KEY = "attendance_otherplans_v1";   // 旧形式(1日1件)。読み込み時に移行する
         const PLANS_KEY = "attendance_plans_v2";
@@ -6734,14 +6735,24 @@
         let firestoreEditor = false; // 管理者(EDITOR_EMAILS)でログイン中
         let authEmail = "";          // ログイン中のGoogleアカウント(小文字)
         let myEmailHash = "";        // 上のメールのハッシュ(名簿との紐付け用)
+        let authUid = "";            // ログイン中(Google・ゲスト共通)のユーザーID。未ログインは空
+        let authIsGuest = false;     // ゲスト(匿名)ログイン中
 
         // 管理者 = 管理者アカウントでログイン中。Firebaseが使えない(ファイルを直接開いた等)ときは端末内だけなので管理者扱い
         function isAdmin() { return !firebaseAvailable || firestoreEditor; }
         // ログイン中アカウントに紐付いた名簿メンバーの名前(いなければ空)
         function myMemberName() {
-            if (!myEmailHash) return "";
-            const r = roster.find(x => x.emailHash === myEmailHash);
-            return r ? r.name : "";
+            if (myEmailHash) {
+                const r = roster.find(x => x.emailHash === myEmailHash);
+                if (r) return r.name;
+            }
+            // ゲストログイン: 名簿から自分で選んだ名前(この端末に記憶。名簿から消えていれば無効)
+            if (authIsGuest) {
+                let n = "";
+                try { n = localStorage.getItem(GUEST_NAME_KEY) || ""; } catch (e) { n = ""; }
+                return roster.some(r => r.name === n) ? n : "";
+            }
+            return "";
         }
 
         function loadDevMode() {
@@ -7294,9 +7305,11 @@
                 const mine = me ? (attendanceByDate[d] || []).find(m => m.name === me) : null;
                 const myUnanswered = !!me && (reservations[d] || []).length > 0 && d >= todayKey
                     && !(mine && (mine.status === "来る" || mine.status === "来ない"));
-                return { oks, warns: oks.map((_, i) => i === 1 && myUnanswered), pastIncomplete: false, memberShortSoon: false, myUnanswered };
+                // 自分が「来る」で、当日以降(当日を含む)も自分の精算(回収)が済んでいない場合は、精算にも⚠️(精算完了にチェック済みの日は除く)
+                const mySettleUnpaid = !!me && !!mine && mine.status === "来る" && d <= todayKey && t.amount > 0 && !t.paid[mine.id] && !t.done;
+                return { oks, warns: oks.map((_, i) => (i === 1 && myUnanswered) || (i === 3 && mySettleUnpaid)), pastIncomplete: false, memberShortSoon: false, myUnanswered, mySettleUnpaid };
             }
-            return { oks, warns, pastIncomplete, memberShortSoon, myUnanswered: false };
+            return { oks, warns, pastIncomplete, memberShortSoon, myUnanswered: false, mySettleUnpaid: false };
         }
 
         function updateTabProgress() {
@@ -7323,8 +7336,8 @@
                 const key = cell.dataset.key;
                 const viewer = !isAdmin();
                 const ts = (events[key] || (viewer && (reservations[key] || []).length > 0)) ? dayTaskState(key) : null;
-                const want = !!ts && (viewer ? ts.myUnanswered : (ts.pastIncomplete || ts.memberShortSoon));
-                const title = viewer ? "あなたの出欠が未回答です" : (ts && ts.memberShortSoon ? "1週間以内なのにメンバーが過不足です" : "未完了のタスクがあります");
+                const want = !!ts && (viewer ? (ts.myUnanswered || ts.mySettleUnpaid) : (ts.pastIncomplete || ts.memberShortSoon));
+                const title = viewer ? (ts && ts.mySettleUnpaid ? "あなたの精算が未完了です" : "あなたの出欠が未回答です") : (ts && ts.memberShortSoon ? "1週間以内なのにメンバーが過不足です" : "未完了のタスクがあります");
                 const cur = cell.querySelector(".cal-warn");
                 if (want && !cur) {
                     const s = document.createElement("span");
@@ -8402,7 +8415,7 @@
         const FIRESTORE_DOCUMENT_PATH = ["sharedApps", "volleyball-schedule"];
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定)
-        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, THEME_KEY, LOCAL_PLANS_KEY]);
+        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
         let firestoreSaveTimer = null;
@@ -8489,12 +8502,21 @@
             wrap.textContent = text;
             wrap.style.color = isError ? "var(--notcome-ink)" : "var(--ink-3)";
             if (window.firebase && firebase.auth) {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.textContent = authEmail ? "ログアウト" : "ログイン";
-                button.style.cssText = "border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:3px 8px;font-size:11px;color:var(--ink-2);";
-                button.onclick = authEmail ? signOutFromFirestore : signInForFirestore;
-                wrap.appendChild(button);
+                const mk = (label, fn) => {
+                    const b = document.createElement("button");
+                    b.type = "button";
+                    b.textContent = label;
+                    b.style.cssText = "border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:3px 8px;font-size:11px;color:var(--ink-2);";
+                    b.onclick = fn;
+                    wrap.appendChild(b);
+                };
+                if (!authUid) {
+                    mk("ログイン", signInForFirestore);
+                    mk("ゲスト", signInAsGuest);
+                } else {
+                    if (authIsGuest) mk(myMemberName() ? "👤" + myMemberName() : "名前を選ぶ", openGuestNamePicker);
+                    mk("ログアウト", signOutFromFirestore);
+                }
             }
         }
 
@@ -8507,6 +8529,57 @@
 
         function signOutFromFirestore() { firebase.auth().signOut(); }
 
+        // ゲスト(匿名)ログイン: Googleアカウントなしで、名簿から自分の名前を選んで出欠・精算を共有する(閲覧モードと同じ制限)
+        let guestJustSignedIn = false;
+        function signInAsGuest() {
+            guestJustSignedIn = true;
+            firebase.auth().signInAnonymously().catch(error => {
+                guestJustSignedIn = false;
+                console.error("ゲストログインに失敗しました。", error);
+                setFirestoreSyncStatus("ゲストログイン失敗", true);
+                alert("ゲストログインに失敗しました(" + ((error && error.code) || error) + ")。\nFirebaseのAuthenticationで「匿名」ログインを有効にしてください。");
+            });
+        }
+        function openGuestNamePicker() {
+            const old = document.getElementById("guestPickOv");
+            if (old) old.remove();
+            const ov = document.createElement("div");
+            ov.id = "guestPickOv";
+            ov.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;";
+            const box = document.createElement("div");
+            box.style.cssText = "background:var(--surface);color:var(--ink);border-radius:16px;padding:16px;max-width:420px;width:100%;max-height:80vh;overflow:auto;";
+            const h = document.createElement("div");
+            h.textContent = "自分の名前を選んでください";
+            h.style.cssText = "font-weight:800;margin-bottom:10px;";
+            box.appendChild(h);
+            const grid = document.createElement("div");
+            grid.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;";
+            const cur = myMemberName();
+            roster.map(r => r.name).forEach(name => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.textContent = name;
+                b.style.cssText = "border:1px solid var(--line-2);background:" + (name === cur ? "var(--accent-soft)" : "var(--surface-2)") + ";color:var(--ink);border-radius:999px;padding:8px 14px;font-size:14px;";
+                b.onclick = () => {
+                    try { localStorage.setItem(GUEST_NAME_KEY, name); } catch (e) { console.warn(e); }
+                    ov.remove();
+                    setFirestoreSyncStatus(firestoreEditor ? "管理者" : "閲覧中");
+                    applyRole();
+                };
+                grid.appendChild(b);
+            });
+            box.appendChild(grid);
+            const c = document.createElement("button");
+            c.type = "button";
+            c.textContent = "閉じる";
+            c.style.cssText = "margin-top:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:6px 14px;font-size:13px;";
+            c.onclick = () => ov.remove();
+            box.appendChild(c);
+            ov.appendChild(box);
+            ov.onclick = e => { if (e.target === ov) ov.remove(); };
+            document.body.appendChild(ov);
+        }
+
         function saveToFirestore() {
             if (!firestoreSyncActive || !firestoreEditor || firestoreApplyingRemote || !firestoreRef) return;
             setFirestoreSyncStatus("同期中…");
@@ -8518,7 +8591,7 @@
         // 閲覧者が自分の出欠を共有データへ反映する。共有データの最新を読み直し、自分の1件(日付+名前)だけ書き換えて保存する
         // (他の人の出欠や、管理者が同時に行った変更を上書きしないため)。Firestoreのルール側で閲覧者の更新を許可しておく必要がある
         function saveMyStatusToShared(date, name, status, stamp) {
-            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authEmail) return;
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authUid) return;
             if (!name || name !== myMemberName()) return;   // 自分以外は送らない
             setFirestoreSyncStatus("同期中…");
             firebase.firestore().runTransaction(async tx => {
@@ -8571,7 +8644,7 @@
         // 閲覧者が自分の回収チェックを共有データへ反映する(共有側の最新を読み、自分の1件だけ書き換える)
         // Firestoreのルールで、閲覧者が更新できるキーに精算データも許可しておく必要がある
         function saveMyPaidToShared(date, name, paid) {
-            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authEmail) return;
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authUid) return;
             if (!name || name !== myMemberName()) return;   // 自分以外は送らない
             setFirestoreSyncStatus("同期中…");
             firebase.firestore().runTransaction(async tx => {
@@ -8646,12 +8719,19 @@
 
             firebase.auth().onAuthStateChanged(user => {
                 authEmail = user && user.email ? user.email.toLowerCase() : "";
+                authUid = user ? user.uid : "";
+                authIsGuest = !!(user && user.isAnonymous);
                 firestoreEditor = EDITOR_EMAILS.has(authEmail);
                 if (firestoreEditor) {
                     setFirestoreSyncStatus("管理者");
                     if (!firestoreHasDocument) saveToFirestore();
-                } else setFirestoreSyncStatus("閲覧中");
-                refreshMyMember().then(applyRole);
+                } else setFirestoreSyncStatus(authIsGuest ? "ゲスト" : "閲覧中");
+                refreshMyMember().then(() => {
+                    applyRole();
+                    // ゲストログインした直後で名前が未選択なら、名前の選択を出す
+                    if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
+                    guestJustSignedIn = false;
+                });
             });
         }
 
