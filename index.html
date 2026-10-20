@@ -4589,7 +4589,7 @@
         // ------- カレンダー(タイムツリー風: 月カレンダー + 選んだ日の予定を下に一覧) -------
         var volleyFull = false;   // true: バレーのタスク画面を全体に表示(カレンダーは隠す)
         function openVolleyFull() { volleyFull = true; renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
-        function closeVolleyFull() { volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
+        function closeVolleyFull() { volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
         function buildNormalCell(cellDate, inMonth, todayKey) {
             const key = formatDateKey(cellDate);
             const cell = document.createElement("div");
@@ -4944,6 +4944,7 @@
             }
             if (calCollapsed) { calCollapsed = false; applyCalCollapsed(); }
             renderCalendar();
+            if (calListMode) applyPendingOnScreenChange();   // 予約日一覧に切り替えたとき
         }
         function applyCalListMode() {
             const on = !!calListMode;
@@ -7119,6 +7120,7 @@
             const ov = document.getElementById("surveyOv");
             ov.style.display = "block"; ov.scrollTop = 0;
             document.body.style.overflow = "hidden";
+            applyPendingOnScreenChange();   // アンケート画面に移ったとき
         }
         function closeSurvey() {
             surveyOpen = false;
@@ -8848,7 +8850,7 @@
             return true;
         }
         // 保留していた共有データの更新を反映する(再読み込み)
-        // 画面の切り替わり(タブ移動・バレー画面の開閉)のときに、保留中の更新を反映する
+        // カレンダー画面では更新しない。タスク画面へ移るとき・タスク選択時・予約日一覧に切り替えたとき・アンケートを開いたときに、保留中の更新を反映する
         function applyPendingOnScreenChange() {
             if (firestorePendingValues && remoteUpdateSafeToApply()) setTimeout(flushPendingRemote, 0);
         }
@@ -8863,10 +8865,6 @@
             if (currentView === "teams" && lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) return false;
             return true;
         }
-        // アプリに戻ってきた(画面が見えた)タイミングで、保留中の更新を反映する
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible" && firestorePendingValues && remoteUpdateSafeToApply()) flushPendingRemote();
-        });
         // 管理者が保存するとき、反映していない閲覧者の回答を上書きしないよう、新しい方の出欠を取り込む
         function stampNum(t) { const m = String(t || "").match(/(\d+)\/(\d+) (\d+):(\d+)/); return m ? ((+m[1] * 31 + +m[2]) * 24 + +m[3]) * 60 + +m[4] : -1; }
         function mergePendingAttendance(values) {
@@ -9073,7 +9071,7 @@
         function saveUiStateForReload() {
             try {
                 sessionStorage.setItem(UI_RESTORE_KEY, JSON.stringify({
-                    selectedDate, currentView, volleyFull: !!volleyFull,
+                    selectedDate, currentView, volleyFull: !!volleyFull, survey: !!surveyOpen,
                     month: [viewMonth.getFullYear(), viewMonth.getMonth()],
                     week: formatDateKey(viewWeekStart),
                     scrollY: window.scrollY || 0
@@ -9210,6 +9208,7 @@
             requestAnimationFrame(() => window.scrollTo(0, restoredUi.scrollY || 0));
         }
         if (restoredUi && restoredUi.volleyFull && events[selectedDate]) { volleyFull = true; renderOtherPlanBox(); renderNvPanel(); }
+        if (restoredUi && restoredUi.survey) openSurvey();
         startFirestoreSync();
     </script>
 </body>
