@@ -256,11 +256,23 @@
         /* バレーのスイッチの丸は🏐 */
         #eventToggle::after { content: "🏐"; display: flex; align-items: center; justify-content: center; background: transparent; box-shadow: none; font-size: 15px; line-height: 1; }
         /* 他予定の入力画面(必要最小限・2行) */
-        .op-box { margin: 0 0 6px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: none; }
-        .op-box input { box-sizing: border-box; height: 28px; min-width: 0; padding: 0 4px; font-size: 12px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); color: var(--ink); font-family: inherit; }
-        .op-row { display: flex; gap: 3px; align-items: center; }
-        .op-row + .op-row { margin-top: 3px; }
-        .op-title { flex: 0 0 56px; width: 56px; }
+        .op-box { margin: 0 0 8px; padding: 8px; background: var(--surface); border: 1px solid var(--ink-fill); border-radius: 12px; display: none; }
+        .op-box.attached { margin-top: -6px; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+        .op-box input { box-sizing: border-box; height: 36px; min-width: 0; padding: 0 6px; font-size: 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); color: var(--ink); font-family: inherit; }
+        .op-row { display: flex; gap: 4px; align-items: center; }
+        .op-row + .op-row { margin-top: 6px; }
+        .op-box.allday .op-t { display: none; }
+        .op-opts { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+        .op-opts .op-colors { margin: 0 0 0 auto; padding: 0; gap: 12px; }
+        .op-opts .op-sc { padding: 6px 14px; font-size: 13px; }
+        .op-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .op-grow { flex: 1; }
+        .op-delbtn { display: none; border: none; background: none; color: var(--notcome-ink); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 6px; cursor: pointer; }
+        .op-cancel { border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 600; height: 36px; padding: 0 14px; border-radius: 8px; cursor: pointer; }
+        .nv-row.editing { border-color: var(--ink-fill); }
+        .nv-row.editing.has-form { border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
+        .nv-row[data-pid] { cursor: pointer; }
+        .op-title { flex: 0 0 96px; width: 96px; }
         .op-memo-in { flex: 1 1 0; }
         .op-row input[type="date"] { flex: 1.5 1 0; width: 0; }
         /* 日付入力: 週の始まり(日/月)に連動する独自カレンダー */
@@ -287,7 +299,7 @@
         .dp-foot button:active { background: var(--bg); }
         .op-row input[type="time"] { flex: 1 1 0; width: 0; }
         .op-sep { flex: none; font-size: 11px; color: var(--ink-3); }
-        .op-add { flex: none; height: 28px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--ink-fill); background: var(--ink-fill); color: #fff; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+        .op-add { flex: none; height: 36px; padding: 0 20px; border-radius: 8px; border: 1px solid var(--ink-fill); background: var(--ink-fill); color: #fff; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
         #opList:not(:empty) { margin-bottom: 6px; }
         .cal-day .plan-ttl { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.1; }
         .cal-day .plan-n { position: absolute; bottom: 3px; left: 4px; font-size: 8px; font-weight: 800; line-height: 1; opacity: .8; pointer-events: none; }
@@ -331,6 +343,14 @@
         .cal-grid.nv .cal-day.today .nv-d { background: var(--ink-fill); color: #fff; }
         .nv-chip { display: block; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.4; padding: 0 3px; border-radius: 3px; background: var(--plan-gray, var(--pcbg0)); color: var(--plan-ink, var(--ink-2)); }
         .nv-chip.cont { opacity: .7; }
+        /* 時間指定のある予定は、塗りではなく枠に色をつける(終日は従来どおり塗り) */
+        .nv-chip.timed { background: transparent; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)); }
+        :root { --pr0: #7b818b; --pr1: #3a608f; --pr2: #5a40a8; --pr3: #965828; }
+        body.dark { --pr0: #a2a8b3; --pr1: #a9c3e6; --pr2: #d6caf8; --pr3: #f0c4a0; }
+        .cal-day.p-ring::after { content: ""; position: absolute; inset: 0; box-sizing: border-box; border: 2px solid var(--ring, var(--plan-ink)); border-radius: inherit; pointer-events: none; }
+        .cal-day.p-ring.cont-l::after { border-left: none; }
+        .cal-day.p-ring.cont-r::after { border-right: none; }
+        .cal-day.plan-ringonly { color: var(--plan-ink); }
         .nv-more { font-size: 9px; color: var(--ink-3); padding-left: 3px; }
         /* 日またぎの予定: 週ごとに1本のバーでつなげる(タイムツリー風) */
         .nv-lane { height: 12.6px; flex: none; }
@@ -1482,7 +1502,7 @@
         .confirm-name-chip.me { box-shadow: 0 0 0 2px var(--accent) !important; font-weight: 800; }
         .confirm-name-chip.me::before { content: "★ "; color: var(--accent); }
         /* ---- 他予定: 保存先(共有 / この端末のみ) ---- */
-        .op-scope { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+        .op-scope { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
         .op-sc { border: 1px solid var(--line-2); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--ink-2); }
         .op-sc.on { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
         .op-share { display: none; align-items: flex-start; gap: 6px; margin-top: 6px; }
@@ -2450,20 +2470,27 @@
     </div>
 
     <div class="op-box" id="otherPlanBox">
-        <div id="opList"></div>
         <div class="op-row">
-            <input type="text" id="opTitle" class="op-title" maxlength="4" placeholder="題名" aria-label="タイトル">
+            <input type="text" id="opTitle" class="op-title" maxlength="12" placeholder="題名" aria-label="タイトル">
             <input type="text" id="opMemo" class="op-memo-in" placeholder="メモ" aria-label="メモ">
-            <button type="button" class="op-add" id="opAddBtn" onclick="addOtherPlan()">追加</button>
         </div>
         <div class="op-row">
             <input type="date" id="opStartDate" aria-label="開始日">
-            <input type="time" id="opStart" aria-label="開始時間">
+            <input type="time" id="opStart" class="op-t" aria-label="開始時間">
             <span class="op-sep">〜</span>
             <input type="date" id="opEndDate" aria-label="終了日">
-            <input type="time" id="opEnd" aria-label="終了時間">
+            <input type="time" id="opEnd" class="op-t" aria-label="終了時間">
         </div>
-        <div class="op-scope" id="opScope" role="radiogroup" aria-label="保存先">
+        <div class="op-opts">
+            <button type="button" class="op-sc on" id="opAllDay" aria-pressed="true" onclick="togglePlanAllDay()">終日</button>
+            <div class="op-colors" id="opColors" role="radiogroup" aria-label="色">
+                <button type="button" class="op-dot on" data-c="0" role="radio" aria-label="グレー" onclick="setPlanColor(0)"></button>
+                <button type="button" class="op-dot" data-c="1" role="radio" aria-label="青" onclick="setPlanColor(1)"></button>
+                <button type="button" class="op-dot" data-c="2" role="radio" aria-label="紫" onclick="setPlanColor(2)"></button>
+                <button type="button" class="op-dot" data-c="3" role="radio" aria-label="オレンジ" onclick="setPlanColor(3)"></button>
+            </div>
+        </div>
+        <div class="op-scope admin-only" id="opScope" role="radiogroup" aria-label="保存先">
             <span class="op-colors-lbl">保存</span>
             <button type="button" class="op-sc on admin-only" data-s="shared" role="radio" onclick="setPlanScope('shared')">共有</button>
             <button type="button" class="op-sc" data-s="local" role="radio" onclick="setPlanScope('local')">この端末のみ📱</button>
@@ -2472,12 +2499,11 @@
             <span class="op-colors-lbl">共有先</span>
             <div id="opShareChips"></div>
         </div>
-        <div class="op-colors" id="opColors" role="radiogroup" aria-label="色">
-            <span class="op-colors-lbl">色</span>
-            <button type="button" class="op-dot on" data-c="0" role="radio" aria-label="グレー" onclick="setPlanColor(0)"></button>
-            <button type="button" class="op-dot" data-c="1" role="radio" aria-label="青" onclick="setPlanColor(1)"></button>
-            <button type="button" class="op-dot" data-c="2" role="radio" aria-label="紫" onclick="setPlanColor(2)"></button>
-            <button type="button" class="op-dot" data-c="3" role="radio" aria-label="オレンジ" onclick="setPlanColor(3)"></button>
+        <div class="op-actions">
+            <button type="button" class="op-delbtn" id="opDelBtn" onclick="deleteOtherPlan(planEditId)">削除</button>
+            <span class="op-grow"></span>
+            <button type="button" class="op-cancel" onclick="closePlanPanel()">閉じる</button>
+            <button type="button" class="op-add" id="opAddBtn" onclick="addOtherPlan()">追加</button>
         </div>
     </div>
 
@@ -4665,7 +4691,7 @@
         }
         function buildNvSeg(g, row) {
             const el = document.createElement("div");
-            el.className = "nv-chip nv-seg" + pcCls(g.p);
+            el.className = "nv-chip nv-seg" + pcCls(g.p) + (planTimed(g.p) ? " timed" : "");
             el.textContent = g.p.title || "予定";
             el.style.gridColumn = (g.s + 1) + " / " + (g.e + 2);
             el.style.gridRow = String(row);
@@ -4684,7 +4710,7 @@
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
             const chips = [];
             if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">🏐${n}名</span>`); }
-            plansOn(key).forEach(({ p, first, last }) => { if (first && last) chips.push(`<span class="nv-chip${pcCls(p)}">${escapeHtml(p.title || "予定")}</span>`); });
+            plansOn(key).forEach(({ p, first, last }) => { if (first && last) chips.push(`<span class="nv-chip${pcCls(p)}${planTimed(p) ? " timed" : ""}">${escapeHtml(p.title || "予定")}</span>`); });
             // 日またぎの予定はバーで上に出すので、その分の行を空けて、残りに1日だけの予定を並べる
             const nl = lay ? lay.lanes : 0, hid = lay ? lay.hidden : 0;
             const slots = 3 - nl, total = chips.length + hid;
@@ -4740,7 +4766,7 @@
             const names = p.to.map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
             return names.length > 3 ? names.slice(0, 3).join("・") + ` 他${names.length - 3}人` : names.join("・");
         }
-        function nvEdit(id) { planPanel = { date: selectedDate, open: true }; renderOtherPlanBox(); editOtherPlan(id); }
+        function nvEdit(id) { editOtherPlan(id); }
         function renderNvPanel() {
             const el = document.getElementById("nvDayPanel");
             if (!el) return;
@@ -4756,11 +4782,24 @@
                 const s = first ? parseHM(p.start) : null;
                 const t1 = first ? (p.start || "終日") : "続き", t2 = last && p.end ? p.end : "";
                 const editable = isAdmin() || !!p.local;
-                rows.push({ s: s == null ? -1 : s, html: `<div class="nv-row${pcCls(p)}"${editable ? ` onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">👥 ${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+                const editing = planPanelIsOpen() && planEditId === p.id;
+                rows.push({ s: s == null ? -1 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">👥 ${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
             });
             rows.sort((a, b) => a.s - b.s);
-            el.innerHTML = `<div class="nv-head"><button type="button" class="today-btn" onclick="togglePlanPanel(!planPanelIsOpen())">${planPanelIsOpen() ? "閉じる" : "＋ 予定を追加"}</button></div>` +
-                (rows.length ? rows.map(r => r.html).join("") : `<div class="nv-empty">予定はありません</div>`);
+            const box = document.getElementById("otherPlanBox");
+            if (box && el.contains(box)) el.parentNode.insertBefore(box, el);   // 一覧を作り直す前に入力欄を退避
+            const isOpen = planPanelIsOpen(), isNew = isOpen && planEditId == null;
+            el.innerHTML = `<div class="nv-head"><button type="button" class="today-btn" onclick="${isNew ? "closePlanPanel()" : "openNewPlan()"}">${isNew ? "閉じる" : "＋ 予定を追加"}</button></div>` +
+                (rows.length ? rows.map(r => r.html).join("") : (isOpen ? "" : `<div class="nv-empty">予定はありません</div>`));
+            // 入力欄は、押した予定の真下(新規は一覧の先頭)に差し込む
+            if (box) {
+                if (isOpen) {
+                    const anchor = planEditId != null ? el.querySelector(`.nv-row[data-pid="${planEditId}"]`) : null;
+                    (anchor || el.querySelector(".nv-head")).after(box);
+                    box.classList.toggle("attached", !!anchor);
+                    box.style.display = "block";
+                } else box.style.display = "none";
+            }
         }
         // ------- 時間表示(週: 縦軸=時間 / 予約日モード: 月単位で各日に時間軸) -------
         const CAL_TIME_KEY = "attendance_cal_time_v1";
@@ -4837,6 +4876,8 @@
                 .sort((x, y) => (x.startDate < y.startDate ? -1 : x.startDate > y.startDate ? 1 : x.id - y.id))
                 .map(p => ({ p, origin: p.startDate, first: p.startDate === key, last: !p.endDate || p.endDate === key }));
         }
+        // 時間指定のある予定(終日にしていなくて、開始か終了の時間がある)
+        function planTimed(p) { return !!(p && !p.allDay && (p.start || p.end)); }
         function pcCls(p) { const c = +(p && p.color) || 0; return c >= 1 && c <= 3 ? " pc" + c : ""; }
         function planInfo(key) { const l = plansOn(key); return l.length ? l[0] : null; }
         function parseHM(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; }
@@ -5203,14 +5244,16 @@
             // 収支マイナスの日は右下に💰(開発モードのときだけ表示。他の表示とは重ならない位置)
             const minusMark = isDayBalanceMinus(cellKey) ? `<span class="minus-mark dev-only" title="収支マイナス">💰</span>` : "";
             const pinfos = calTimeMode ? [] : plansOn(cellKey);   // 時間表示のときは時間軸のブロックで表す
-            const plan = pinfos.length ? pinfos[0].p : null;
+            const fillInfos = pinfos.filter(x => !planTimed(x.p)), ringInfos = pinfos.filter(x => planTimed(x.p));   // 終日=塗り / 時間指定=枠
+            const plan = fillInfos.length ? fillInfos[0].p : null;
+            if (ringInfos.length) { cell.classList.add("p-ring"); cell.style.setProperty("--ring", "var(--pr" + (+ringInfos[0].p.color || 0) + ")"); }
             if (pinfos.length) cell.dataset.plan = pinfos.map(x => x.p.id).join(",");
             const planTip = pinfos.map(x => `${x.p.title || "予定"}${x.p.memo ? "(" + x.p.memo + ")" : ""}`).join("\n");
             // 色の帯: バレー(あれば)+他の予定の色(重複は1つ)を対角線で並べる
             const segs = [];
             const lvVar = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
             if (events[cellKey]) segs.push("var(" + lvVar[getStatusLevel(countComing(cellKey))] + ")");
-            pinfos.forEach(x => { const v = "var(--pcbg" + (+x.p.color || 0) + ")"; if (!segs.includes(v)) segs.push(v); });
+            fillInfos.forEach(x => { const v = "var(--pcbg" + (+x.p.color || 0) + ")"; if (!segs.includes(v)) segs.push(v); });
             const applySegs = () => {
                 if (segs.length < 2) return;
                 const n = segs.length;
@@ -5220,12 +5263,12 @@
                 const count = countComing(cellKey);
                 cell.classList.add("event-" + getStatusLevel(count));
                 if (plan) { cell.classList.add("has-plan"); const c = pcCls(plan).trim(); if (c) cell.classList.add(c); }
-                if (plan) cell.title = planTip;
+                if (pinfos.length) cell.title = planTip;
                 const pn = pinfos.length ? `<span class="plan-n">他${pinfos.length}</span>` : "";
                 cell.innerHTML = `<span>${dayHtml}</span><span class="cnt">${count}名</span>${pn}${vidMark}${minusMark}`;
-            } else if (plan) {
-                cell.classList.add("plan-only");
-                { const c = pcCls(plan).trim(); if (c) cell.classList.add(c); }
+            } else if (pinfos.length) {
+                cell.classList.add(plan ? "plan-only" : "plan-ringonly");
+                { const c = pcCls(plan || ringInfos[0].p).trim(); if (c) cell.classList.add(c); }
                 cell.title = planTip;
                 const tl = pinfos.map(x => x.p.title || "予定");
                 const lines = tl.length <= 2 ? tl : [tl[0], `他${tl.length - 1}`];   // 3件以上は「他N」でまとめる
@@ -5548,10 +5591,41 @@
             });
         }
         function planPanelIsOpen() { return planPanel.date === selectedDate ? planPanel.open : false; }
-        function togglePlanPanel(checked) {
-            planPanel = { date: selectedDate, open: !!checked };
+        function openNewPlan() {
+            planPanel = { date: selectedDate, open: true };
+            planEditId = null; planFormDate = "";   // 開くたびに新規の入力欄
+            renderOtherPlanBox();
+            scrollToPlanEditor();
+        }
+        function closePlanPanel() {
+            planPanel = { date: selectedDate, open: false };
+            planEditId = null; planFormDate = "";
             renderOtherPlanBox();
         }
+        function togglePlanPanel(checked) { if (checked) openNewPlan(); else closePlanPanel(); }
+        // 入力欄(と、押した予定)が画面に収まるようにスクロール
+        function scrollToPlanEditor() {
+            setTimeout(() => {
+                const box = document.getElementById("otherPlanBox");
+                if (!box || !box.offsetHeight) return;
+                const hdr = document.querySelector(".app-header"), hh = hdr ? hdr.offsetHeight : 0;
+                const prev = box.previousElementSibling;
+                const anchor = (prev && box.classList.contains("attached")) ? prev : box;
+                const need = box.getBoundingClientRect().bottom - anchor.getBoundingClientRect().top;
+                const ref = need <= window.innerHeight - hh - 90 ? anchor : box;
+                window.scrollBy({ top: ref.getBoundingClientRect().top - hh - 8, behavior: "smooth" });
+            }, 60);
+        }
+        let planAllDay = true;
+        function setPlanAllDay(on) {
+            planAllDay = !!on;
+            const b = document.getElementById("opAllDay");
+            if (b) { b.classList.toggle("on", planAllDay); b.setAttribute("aria-pressed", String(planAllDay)); }
+            const box = document.getElementById("otherPlanBox");
+            if (box) box.classList.toggle("allday", planAllDay);
+            if (planAllDay) { const a = document.getElementById("opStart"), z = document.getElementById("opEnd"); if (a) a.value = ""; if (z) z.value = ""; }
+        }
+        function togglePlanAllDay() { setPlanAllDay(!planAllDay); }
         const $op = (id) => document.getElementById(id);
         function resetPlanForm() {
             planEditId = null; planFormDate = selectedDate; setPlanColor(0); planShare = []; setPlanScope(defaultPlanScope());
@@ -5559,61 +5633,55 @@
             $op("opStartDate").value = selectedDate; $op("opStart").value = "";
             $op("opEndDate").value = ""; $op("opEnd").value = "";
             $op("opEndDate").min = selectedDate;
+            setPlanAllDay(true);
             $op("opAddBtn").textContent = "追加";
-            renderPlanList();
+            $op("opDelBtn").style.display = "none";
         }
         function planRangeText(p) {
             const md = (d) => { const [, m, dd] = d.split("-").map(Number); return `${m}/${dd}`; };
             if (!p.endDate) return (p.start || p.end) ? `${p.start || ""}〜${p.end || ""}` : "";
             return `${md(p.startDate)} ${p.start || ""}〜${md(p.endDate)} ${p.end || ""}`.replace(/\s+〜/, "〜").replace(/\s+$/, "");
         }
-        function renderPlanList() {
-            const el = $op("opList");
-            if (!el) return;
-            el.innerHTML = plansOn(selectedDate).map(({ p }) => {
-                const editable = isAdmin() || !!p.local;   // 閲覧者は共有予定を変更できない
-                return `<div class="op-item${pcCls(p)}${p.id === planEditId ? " editing" : ""}"${editable ? ` onclick="editOtherPlan(${p.id})"` : ""}>` +
-                `<span class="op-ttl">${p.local ? "📱" : ""}${shareText(p) ? "👥" : ""}${escapeHtml(p.title || "予定")}</span><span class="op-rng">${escapeHtml(planRangeText(p))}</span>` +
-                `<span class="op-mm">${escapeHtml(p.memo || "")}</span>` +
-                (editable ? `<button type="button" class="op-del" aria-label="削除" onclick="event.stopPropagation();deleteOtherPlan(${p.id})">×</button>` : "") + `</div>`;
-            }).join("");
-        }
         function renderOtherPlanBox() {
             const box = $op("otherPlanBox");
             if (!box) return;
             { const ti = document.getElementById("opTitle"); if (ti) ti.maxLength = 12; }
-            renderNvPanel();
             const open = planPanelIsOpen();
+            if (open && planFormDate !== selectedDate) resetPlanForm();
             const tg = $op("planToggle");
             if (tg) tg.checked = open;
-            box.style.display = open ? "block" : "none";
+            renderNvPanel();   // 入力欄は一覧の中(押した予定の下)に差し込まれる
             const ec = document.getElementById("eventContent");
             if (ec) ec.style.display = (volleyFull && events[selectedDate]) ? "block" : "none";   // 他予定オンの間はバレー画面を隠す
-            if (!open) return;
-            if (planFormDate !== selectedDate) resetPlanForm(); else renderPlanList();
         }
         function editOtherPlan(id) {
             const p = planList.find(x => x.id === id);
             if (!p) return;
             if (!isAdmin() && !p.local) return;
-            if (planEditId === id) { resetPlanForm(); return; }   // 編集中の項目をもう一度押すと編集をやめる
-            planEditId = id; setPlanColor(+p.color || 0); planShare = Array.isArray(p.to) ? p.to.slice() : []; setPlanScope(p.local ? "local" : "shared");
+            if (planPanelIsOpen() && planEditId === id) { closePlanPanel(); return; }   // 開いている予定をもう一度押すと閉じる
+            planPanel = { date: selectedDate, open: true };
+            planEditId = id; planFormDate = selectedDate;
+            setPlanColor(+p.color || 0); planShare = Array.isArray(p.to) ? p.to.slice() : []; setPlanScope(p.local ? "local" : "shared");
             $op("opTitle").value = p.title || ""; $op("opMemo").value = p.memo || "";
             $op("opStartDate").value = p.startDate; $op("opStart").value = p.start || "";
             $op("opEndDate").value = p.endDate || ""; $op("opEnd").value = p.end || "";
             $op("opEndDate").min = p.startDate;
+            setPlanAllDay(!planTimed(p));
             $op("opAddBtn").textContent = "更新";
-            renderPlanList();
+            $op("opDelBtn").style.display = "inline-block";
+            renderOtherPlanBox();
+            scrollToPlanEditor();
         }
         function addOtherPlan() {
             const title = Array.from($op("opTitle").value.trim()).slice(0, 12).join("");
             const memo = $op("opMemo").value.trim();
-            const start = $op("opStart").value || "", end = $op("opEnd").value || "";
+            const start = planAllDay ? "" : ($op("opStart").value || ""), end = planAllDay ? "" : ($op("opEnd").value || "");
             const sd = $op("opStartDate").value || selectedDate;
             let ed = $op("opEndDate").value || "";
             if (ed && ed <= sd) ed = "";   // 開始日より後の日だけ有効
             if (!(title || memo || start || end || ed)) { $op("opTitle").focus(); return; }
             const p = { title, start, end, memo, startDate: sd };
+            if (planAllDay) p.allDay = true;
             if (ed) p.endDate = ed;
             if (planColor) p.color = planColor;
             const toLocal = isAdmin() ? planScope === "local" : true;
@@ -5626,10 +5694,11 @@
                 p.id = toLocal ? nextLocalPlanId-- : nextPlanId++;
                 planList.push(p);
             }
-            planPanel = { date: selectedDate, open: true };
+            planPanel = { date: selectedDate, open: false };   // 保存したら入力欄は閉じる
+            planEditId = null; planFormDate = "";
             saveData();
-            resetPlanForm();
             renderCalendar();
+            renderOtherPlanBox();
         }
         function deleteOtherPlan(id) {
             const target = planList.find(x => x.id === id);
@@ -5637,8 +5706,9 @@
             if (!confirm("この予定を消しますか？")) return;
             planList = planList.filter(x => x.id !== id);
             saveData();
-            if (planEditId === id) resetPlanForm(); else renderPlanList();
+            if (planEditId === id) { planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = ""; }
             renderCalendar();
+            renderOtherPlanBox();
         }
         function toggleEventDay(checked) {
             if (checked) {
