@@ -1444,7 +1444,8 @@
         .cal-day .cal-warn { position: absolute; top: 3px; left: 4px; font-size: 8px; line-height: 1; pointer-events: none; }
 
         /* ---- 閲覧モード(管理者以外): 管理者専用の表示を隠す ---- */
-        body.viewer-mode .admin-only, body.viewer-mode #devToggleBtn { display: none !important; }
+        body.viewer-mode .admin-only { display: none !important; }
+        body:not(.real-admin) .real-admin-only { display: none !important; }
         /* ---- メンバー欄で自分を目立たせる ---- */
         body.viewer-mode .st-chip.locked { pointer-events: none; opacity: .7; }
         body.viewer-mode .confirm-name-chip.locked { pointer-events: none; opacity: .7; }
@@ -2032,6 +2033,21 @@
         .sv-btn.sel.come { background: var(--come-soft); color: var(--come-ink); }
         .sv-btn.sel.notcome { background: var(--notcome-soft); color: var(--notcome-ink); }
         .sv-btn.sel.pending { background: var(--pending-soft); color: var(--pending-ink); }
+
+        /* =========================================================
+           v47: ヘッダーの📝(回答)とモード選択
+           ========================================================= */
+        .settings-btn.survey-btn { position: relative; font-size: 16px; line-height: 1; padding: 0 8px; }
+        .settings-btn.survey-btn .sv-badge { display: none; position: absolute; top: -2px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
+            border-radius: 999px; background: #e5484d; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; }
+        .settings-btn.survey-btn.alert { background: var(--unconf-soft); border-radius: 999px; animation: svPulse 1.8s ease-in-out infinite; }
+        .settings-btn.survey-btn.alert .sv-badge { display: block; }
+        @keyframes svPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .5); } 50% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); } }
+        @media (prefers-reduced-motion: reduce) { .settings-btn.survey-btn.alert { animation: none; box-shadow: 0 0 0 2px #e5484d; } }
+        .settings-btn.mode-select { -webkit-appearance: none; appearance: none; font: inherit; font-size: 13px; color: var(--ink-3); background-color: transparent; border: none;
+            padding: 0 16px 0 6px; min-height: 38px; cursor: pointer;
+            background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+            background-position: calc(100% - 9px) 55%, calc(100% - 5px) 55%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
     </style>
 </head>
 <body>
@@ -2042,8 +2058,13 @@
             <button class="settings-btn admin-only" data-panel="rosterPanel" onclick="onRosterBtnClick()">名簿</button>
             <button class="settings-btn admin-only" data-panel="settingsPanel" onclick="toggleSettings()">設定</button>
             <button class="settings-btn refresh-btn" id="refreshBtn" onclick="refreshApp()" title="最新の状態に更新" aria-label="更新">↻</button>
+            <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答">📝<span class="sv-badge" id="surveyBadge"></span></button>
             <button class="settings-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="ライト/ダーク切替(開発モード中は逆)" aria-label="テーマ切替">☀️</button>
-            <button class="settings-btn dev-toggle" id="devToggleBtn" onclick="onDevToggleClick()" title="パラメータの表示・編集">開発</button>
+            <select class="settings-btn mode-select real-admin-only" id="modeSelect" onchange="setViewMode(this.value)" title="モード(管理者・開発・閲覧)" aria-label="モード">
+                <option value="admin">管理者</option>
+                <option value="dev">開発</option>
+                <option value="view">閲覧</option>
+            </select>
         </nav>
     </header>
 
@@ -2332,7 +2353,7 @@
             <button class="cal-nav-btn" id="calNextBtn" onclick="changeMonth(1)" aria-label="次の月">›</button>
             <div class="cal-hbtns">
                 <button class="today-btn" onclick="jumpToToday()">今日</button>
-                <button class="today-btn" id="calTimeBtn" onclick="onCalTimeBtnClick()" aria-pressed="false" aria-label="時間表示" title="時間表示">🕐</button>
+                <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示">🕐</button>
                 <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日">🏐</button>
             </div>
         </div>
@@ -4872,7 +4893,6 @@
             cell.appendChild(ax);
         }
         let calListNeedScroll = false;   // 予約日モードに入った直後だけ今月へ移動する
-        function onCalTimeBtnClick() { if (calListMode) openSurvey(); else toggleCalTimeMode(); }
         function toggleReserveDateList() {
             calListMode = !calListMode;
             if (calListMode) {
@@ -4903,14 +4923,7 @@
             g("calNextBtn").setAttribute("aria-label", weekNav ? "次の週" : "次の月");
             syncCalAxisUi();
             const tb = g("calTimeBtn");
-            if (tb) {
-                // 予約日一覧のあいだは、時間表示ボタンが📝(出欠の回答画面)になる
-                tb.textContent = on ? "📝" : "🕐";
-                tb.title = on ? "出欠を回答" : "時間表示";
-                tb.setAttribute("aria-label", on ? "出欠を回答" : "時間表示");
-                const t = !on && !!calTimeMode;
-                tb.classList.toggle("on", t); tb.setAttribute("aria-pressed", String(t));
-            }
+            if (tb) { tb.classList.toggle("on", !!calTimeMode); tb.setAttribute("aria-pressed", String(!!calTimeMode)); }
             const b = g("rvListBtn");
             b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
             // ラベルは🏐アイコンで固定(ONの間は色で示す)
@@ -6925,6 +6938,9 @@
         //      チーム分けの計算自体は内部の値でそのまま動く。
         const DEV_MODE_KEY = "attendance_dev_mode_v1";
         const DEV_MODE_PASS = "248";
+        const VIEW_PREVIEW_KEY = "attendance_view_preview_v1";   // 管理者が「閲覧」モードで見ているか(端末ごと。共有しない)
+        let viewPreview = false;
+        try { viewPreview = localStorage.getItem(VIEW_PREVIEW_KEY) === "1"; } catch (e) { viewPreview = false; }
         let devMode = false;
         let devModePref = false;     // 管理者が選んだ開発モード(閲覧者は常にOFF)
         let firebaseAvailable = false;
@@ -6935,7 +6951,9 @@
         let authIsGuest = false;     // ゲスト(匿名)ログイン中
 
         // 管理者 = 管理者アカウントでログイン中。Firebaseが使えない(ファイルを直接開いた等)ときは端末内だけなので管理者扱い
-        function isAdmin() { return !firebaseAvailable || firestoreEditor; }
+        function realAdmin() { return !firebaseAvailable || firestoreEditor; }
+        // 管理者でも「閲覧」モードを選んでいる間は、閲覧者と同じ画面・操作になる
+        function isAdmin() { return realAdmin() && !viewPreview; }
         // ログイン中アカウントに紐付いた名簿メンバーの名前(いなければ空)
         function myMemberName() {
             if (myEmailHash) {
@@ -6957,6 +6975,7 @@
         }
         function saveDevMode() {
             if (isAdmin()) devModePref = devMode;
+            else if (realAdmin() && !viewPreview) devModePref = devMode;
             try { localStorage.setItem(DEV_MODE_KEY, String(devModePref)); }
             catch (e) { console.warn("開発モードの保存に失敗しました。", e); }
         }
@@ -6994,8 +7013,10 @@
             document.body.classList.toggle("viewer-mode", !isAdmin());
             document.body.classList.toggle("dev-on", devMode);
             applyTheme();
-            const btn = document.getElementById("devToggleBtn");
-            if (btn) { btn.classList.toggle("on", devMode); btn.textContent = "開発"; }
+            document.body.classList.toggle("real-admin", realAdmin());
+            const ms = document.getElementById("modeSelect");
+            if (ms) ms.value = viewPreview ? "view" : (devMode ? "dev" : "admin");
+            try { refreshSurveyBtn(); } catch (e) { /* ignore */ }
             if (document.getElementById("rosterPanel").classList.contains("open")) renderRosterPanel();
             if (document.getElementById("settingsPanel").classList.contains("open")) renderTeamSettingsPanel();
             renderKeyMarkLegend();
@@ -7004,13 +7025,18 @@
         }
 
         // 管理者だけが開発モードをON/OFFできる(閲覧者はボタン自体を隠す)
-        function onDevToggleClick() {
-            if (!isAdmin()) return;
-            devMode = !devMode;
+        // モードのプルダウン(管理者アカウントだけ): 管理者 / 開発 / 閲覧
+        function setViewMode(v) {
+            if (!realAdmin()) return;
+            viewPreview = v === "view";
+            try { localStorage.setItem(VIEW_PREVIEW_KEY, viewPreview ? "1" : "0"); } catch (e) { /* ignore */ }
+            if (!viewPreview) devMode = v === "dev";
             saveDevMode();
             closeDevPanel();
-            applyDevMode();
+            if (closeSurveyIfOpen) closeSurveyIfOpen();
+            applyRole();
         }
+        function closeSurveyIfOpen() { if (typeof surveyOpen !== "undefined" && surveyOpen) closeSurvey(); }
         // ログイン状態(管理者/閲覧者)が変わったときに画面へ反映する
         // 閲覧モード: 今日から1週間以内(当日含む)のバレー日で、自分の出欠が未回答なら、警告を出してその日のメンバー画面へ移動する
         // 開いたときに1回、その後は回答するまで30分ごとに出す(アプリを開いている間)
@@ -7060,6 +7086,23 @@
             document.getElementById("surveyOv").style.display = "none";
             document.body.style.overflow = "";
         }
+        // 未回答の日の数(ヘッダーの📝を強調するために使う)
+        function surveyUnansweredCount() {
+            const name = surveyWho();
+            if (!name) return 0;
+            return surveyDates().filter(d => {
+                const mem = (attendanceByDate[d] || []).find(m => m.name === name);
+                return !!mem && !(mem.status === "来る" || mem.status === "来ない");
+            }).length;
+        }
+        function refreshSurveyBtn() {
+            const b = document.getElementById("surveyBtn"), bd = document.getElementById("surveyBadge");
+            if (!b || !bd) return;
+            const n = surveyUnansweredCount();
+            b.classList.toggle("alert", n > 0);
+            bd.textContent = n > 0 ? String(n) : "";
+            b.title = n > 0 ? `出欠の回答(未回答${n}件)` : "出欠の回答";
+        }
         function surveySetWho(name) { surveyAdminName = name; renderSurvey(); }
         function surveySet(date, status) {
             const name = surveyWho();
@@ -7074,6 +7117,7 @@
             renderCalendar();
             updateTabProgress();
             renderSurvey();
+            refreshSurveyBtn();
         }
         function renderSurvey() {
             const box = document.getElementById("surveyBody");
@@ -7096,7 +7140,7 @@
             const cards = dates.map(d => {
                 const mem = (attendanceByDate[d] || []).find(m => m.name === name);
                 const st = mem ? mem.status : "";
-                if (!(st === "来る" || st === "来ない")) unanswered++;
+                if (mem && !(st === "来る" || st === "来ない")) unanswered++;
                 const [y, m, dd] = d.split("-").map(Number);
                 const wd = WEEKDAYS[new Date(y, m - 1, dd).getDay()];
                 const info = (reservations[d] || []).map(r => `<div>${escapeHtml([r.time, r.place + (r.court || "")].filter(Boolean).join(" "))}</div>`).join("");
@@ -7642,6 +7686,7 @@
         }
 
         function updateTabProgress() {
+            try { refreshSurveyBtn(); } catch (e) { /* ignore */ }
             const st = dayTaskState(selectedDate);
             let chain = true;
             TASK_TAB_IDS.forEach((id, i) => {
@@ -8753,7 +8798,7 @@
         const FIRESTORE_DOCUMENT_PATH = ["sharedApps", "volleyball-schedule"];
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定)
-        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY]);
+        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
         let firestoreSaveTimer = null;
