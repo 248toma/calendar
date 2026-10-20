@@ -2124,7 +2124,6 @@
             </div>
         </details>
 
-        <div class="panel-group-label">データ</div>
         <details class="acc" id="teamSettingsAcc">
             <summary>ロジック</summary>
             <div class="acc-body">
@@ -2137,20 +2136,6 @@
                     <input type="text" id="inputRolesText" placeholder="例: セッター, リベロ, スパイカー, 初心者">
                 </div>
                 <div class="settings-note">カンマ区切りで編集できます(右上の「保存」で反映)。チーム分けはこのポジションごとに均等に分けます。</div>
-            </div>
-        </details>
-
-        <details class="acc">
-            <summary>データの共有・引き継ぎ(ローカルデータごと)</summary>
-            <div class="acc-body">
-                <div class="settings-note" style="margin-top:0;">名簿・予約・出欠・精算・動画・各種設定など、このアプリがこの端末に保存しているデータをまとめて1つのファイルにして共有できます。受け取った側は「読み込む」で反映します(読み込むと相手側の既存データは置き換わります)。</div>
-                <div class="share-btns">
-                    <button type="button" class="primary" onclick="shareAppData()">共有する</button>
-                    <button type="button" onclick="downloadAppData()">ファイルに保存</button>
-                    <button type="button" onclick="document.getElementById('importDataFile').click()">読み込む</button>
-                </div>
-                <input type="file" id="importDataFile" accept=".json,application/json,text/plain" style="display:none" onchange="importAppData(this)">
-                <div class="settings-note" id="shareDataMsg"></div>
             </div>
         </details>
 
@@ -6979,8 +6964,10 @@
             applyDevMode();
         }
         // ログイン状態(管理者/閲覧者)が変わったときに画面へ反映する
-        // 閲覧モード: 今日から1週間以内(当日含む)のバレー日で、自分の出欠が未回答なら、警告を出してその日のメンバー画面へ移動する(開くたびに1回)
+        // 閲覧モード: 今日から1週間以内(当日含む)のバレー日で、自分の出欠が未回答なら、警告を出してその日のメンバー画面へ移動する
+        // 開いたときに1回、その後は回答するまで30分ごとに出す(アプリを開いている間)
         const MEMBER_ALERT_KEY = "attendance_member_alert_v1";
+        const MEMBER_ALERT_INTERVAL_MS = 30 * 60 * 1000;
         function checkMemberTaskAlert() {
             if (isAdmin() || !myMemberName()) return;
             const now = new Date(), todayKey = formatDateKey(now);
@@ -6990,8 +6977,13 @@
                 try { if (events[k] && dayTaskState(k).myUnanswered) target = k; } catch (e) { /* ignore */ }
             }
             if (!target) return;
-            const flag = todayKey + "|" + target;   // 共有データの受信で再読み込みされても、同じ日の分は繰り返さない
-            try { if (sessionStorage.getItem(MEMBER_ALERT_KEY) === flag) return; sessionStorage.setItem(MEMBER_ALERT_KEY, flag); } catch (e) { /* ignore */ }
+            // 最後に出した時刻を覚えておき、30分たつまでは出さない(共有データの受信で再読み込みされても、続けて出ない)
+            const nowMs = Date.now();
+            try {
+                const last = Number(sessionStorage.getItem(MEMBER_ALERT_KEY)) || 0;
+                if (last && nowMs - last < MEMBER_ALERT_INTERVAL_MS) return;
+                sessionStorage.setItem(MEMBER_ALERT_KEY, String(nowMs));
+            } catch (e) { /* ignore */ }
             const [y, m, d] = target.split("-").map(Number);
             alert(`⚠️ ${m}/${d}のバレーの出欠が未回答です。\nメンバー画面で回答してください。`);
             calCollapsed = false; applyCalCollapsed();
@@ -7000,6 +6992,9 @@
             openVolleyFull();
             switchView("member");
         }
+        // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
+        setInterval(() => { if (!document.hidden) checkMemberTaskAlert(); }, 60000);
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) checkMemberTaskAlert(); });
         function applyRole() {
             devMode = isAdmin() && devModePref;
             applyDevMode();
