@@ -2067,6 +2067,8 @@
         .header-btns { min-width: 0; flex-wrap: nowrap; overflow: hidden; }
         .header-btns .settings-btn { flex: 0 1 auto; min-width: 0; padding-left: 8px; padding-right: 8px; }
         .header-btns .settings-btn.mode-select { padding-right: 16px; }
+        .settings-btn.refresh-btn { position: relative; }
+        .settings-btn.refresh-btn.has-update::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: #e5484d; }
     </style>
 </head>
 <body>
@@ -3981,7 +3983,7 @@
             if (view === "reserve") renderReserveView();
             if (view === "settle") renderSettleView();
             if (userTap) scrollBelowHeader(document.getElementById("eventContent"));
-            if (view !== "teams") flushPendingRemote();   // チーム分けの表示を離れたら、保留していた更新を反映
+            applyPendingOnScreenChange();   // 画面(タブ)の切り替わり時に、保留していた更新を反映
         }
 
         // ------- コピー元選択パネル -------
@@ -4586,8 +4588,8 @@
         let calListMode = false;
         // ------- カレンダー(タイムツリー風: 月カレンダー + 選んだ日の予定を下に一覧) -------
         var volleyFull = false;   // true: バレーのタスク画面を全体に表示(カレンダーは隠す)
-        function openVolleyFull() { volleyFull = true; renderOtherPlanBox(); window.scrollTo(0, 0); }
-        function closeVolleyFull() { volleyFull = false; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
+        function openVolleyFull() { volleyFull = true; renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
+        function closeVolleyFull() { volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
         function buildNormalCell(cellDate, inMonth, todayKey) {
             const key = formatDateKey(cellDate);
             const cell = document.createElement("div");
@@ -4942,7 +4944,6 @@
             }
             if (calCollapsed) { calCollapsed = false; applyCalCollapsed(); }
             renderCalendar();
-            if (calListMode && !isAdmin()) openSurvey();   // 閲覧モードは、予約日一覧にしたらそのまま回答画面へ
         }
         function applyCalListMode() {
             const on = !!calListMode;
@@ -5124,6 +5125,7 @@
 
         // 予約日一覧: 今日の月の見出しが先頭に来るようにスクロール(今月の予約日がなければ、次にある月)
         function fitListToTwoMonths(grid) {
+            if (!grid.offsetParent) return;   // 非表示の間は高さを測れない(バレー画面中など)ので、今の高さのまま
             const heads = [...grid.querySelectorAll(".cal-month-head[data-ym]")];
             if (heads.length === 0) { grid.style.maxHeight = ""; return; }
             const now = new Date();
@@ -8807,7 +8809,9 @@
                     if (firebaseAvailable && firestoreEditor && firestoreRef) {
                         // 読み込んだデータを共有データにも保存してから再読み込みする(保存前に再読み込みすると、古い共有データで上書きされる)
                         shareMsg("共有データに保存中…");
-                        firestoreRef.set({ values: getShareableLocalValues(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+                        const vals = getShareableLocalValues();
+            mergePendingAttendance(vals);
+            firestoreRef.set({ values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
                             .then(() => { alert("読み込んで共有しました。画面を再読み込みします。"); location.reload(); })
                             .catch(err => { console.error(err); shareMsg("共有データへの保存に失敗しました(" + ((err && err.code) || err) + ")。もう一度読み込んでください。", true); });
                         return;
@@ -8844,6 +8848,41 @@
             return true;
         }
         // 保留していた共有データの更新を反映する(再読み込み)
+        // 画面の切り替わり(タブ移動・バレー画面の開閉)のときに、保留中の更新を反映する
+        function applyPendingOnScreenChange() {
+            if (firestorePendingValues && remoteUpdateSafeToApply()) setTimeout(flushPendingRemote, 0);
+        }
+        function markRemoteUpdate() {
+            setFirestoreSyncStatus("更新あり(↻で反映)");
+            const b = document.getElementById("refreshBtn");
+            if (b) b.classList.add("has-update");
+        }
+        function remoteUpdateSafeToApply() {
+            const a = document.activeElement;
+            if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;
+            if (currentView === "teams" && lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) return false;
+            return true;
+        }
+        // アプリに戻ってきた(画面が見えた)タイミングで、保留中の更新を反映する
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible" && firestorePendingValues && remoteUpdateSafeToApply()) flushPendingRemote();
+        });
+        // 管理者が保存するとき、反映していない閲覧者の回答を上書きしないよう、新しい方の出欠を取り込む
+        function stampNum(t) { const m = String(t || "").match(/(\d+)\/(\d+) (\d+):(\d+)/); return m ? ((+m[1] * 31 + +m[2]) * 24 + +m[3]) * 60 + +m[4] : -1; }
+        function mergePendingAttendance(values) {
+            if (!firestorePendingValues || !firestorePendingValues[BYDATE_KEY] || !values[BYDATE_KEY]) return;
+            try {
+                const loc = JSON.parse(values[BYDATE_KEY]), rem = JSON.parse(firestorePendingValues[BYDATE_KEY]);
+                Object.keys(rem).forEach(date => {
+                    if (!loc[date]) return;   // 管理者側で消した日は戻さない
+                    (rem[date] || []).forEach(rm => {
+                        const lm = loc[date].find(m => m.name === rm.name);
+                        if (lm && stampNum(rm.updated) > stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; }
+                    });
+                });
+                values[BYDATE_KEY] = JSON.stringify(loc);
+            } catch (e) { /* 取り込めなければ従来どおり */ }
+        }
         function flushPendingRemote() {
             if (!firestorePendingValues) return;
             const rv = firestorePendingValues;
@@ -8997,7 +9036,7 @@
             if (!firestoreSyncActive || !firestoreEditor || firestoreApplyingRemote || !firestoreRef) return;
             setFirestoreSyncStatus("同期中…");
             firestoreRef.set({ values: getShareableLocalValues(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
-                .then(() => setFirestoreSyncStatus("共有中"))
+                .then(() => { if (firestorePendingValues) markRemoteUpdate(); else setFirestoreSyncStatus("共有中"); })
                 .catch(error => { console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true); });
         }
 
@@ -9034,7 +9073,7 @@
         function saveUiStateForReload() {
             try {
                 sessionStorage.setItem(UI_RESTORE_KEY, JSON.stringify({
-                    selectedDate, currentView,
+                    selectedDate, currentView, volleyFull: !!volleyFull,
                     month: [viewMonth.getFullYear(), viewMonth.getMonth()],
                     week: formatDateKey(viewWeekStart),
                     scrollY: window.scrollY || 0
@@ -9124,18 +9163,9 @@
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     return;
                 }
-                // 閲覧者がチーム分けの結果を表示中は、結果が消えないよう反映を保留する(タブを離れる/リセット/日付を変えると反映)
-                if (!firestoreEditor && currentView === "teams" && lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) {
-                    firestorePendingValues = remoteValues;
-                    setFirestoreSyncStatus("更新あり(チーム分けを閉じると反映)");
-                    return;
-                }
-                firestoreApplyingRemote = true;
-                Object.entries(remoteValues).forEach(([key, value]) => { if (isSharedKey(key)) nativeSetItem.call(localStorage, key, value); });
-                firestoreApplyingRemote = false;
-                setFirestoreSyncStatus("更新を受信しました");
-                saveUiStateForReload();
-                window.location.reload();
+                // 他の人の更新では画面を勝手に切り替えない。保留して、↻を押す/アプリに戻ってきたときに反映する
+                firestorePendingValues = remoteValues;
+                markRemoteUpdate();
             }, error => { console.error("Firestoreの読み込みに失敗しました。", error); setFirestoreSyncStatus("共有エラー", true); });
 
             firebase.auth().onAuthStateChanged(user => {
@@ -9179,6 +9209,7 @@
             if (views.indexOf(restoredUi.currentView) >= 0) switchView(restoredUi.currentView);
             requestAnimationFrame(() => window.scrollTo(0, restoredUi.scrollY || 0));
         }
+        if (restoredUi && restoredUi.volleyFull && events[selectedDate]) { volleyFull = true; renderOtherPlanBox(); renderNvPanel(); }
         startFirestoreSync();
     </script>
 </body>
