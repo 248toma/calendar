@@ -2048,6 +2048,15 @@
             padding: 0 16px 0 6px; min-height: 38px; cursor: pointer;
             background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
             background-position: calc(100% - 9px) 55%, calc(100% - 5px) 55%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
+
+        /* ---- ヘッダー: タイトル行(収支・同期状態・ログアウト)とボタン行を重ねず2段に ---- */
+        .app-header .app-title, .app-header .app-title { position: static !important; transform: none !important; left: auto; top: auto; margin: 0 0 4px !important; min-height: 0; font-size: 13px; gap: 8px; flex-wrap: wrap; }
+        .app-title::before { display: none; }
+        #firestoreSyncStatus { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+        /* ---- 名簿(設定の中) ---- */
+        #rosterPanel { display: block; padding: 0; margin: 0; background: transparent; border: none; box-shadow: none; border-radius: 0; }
+        #rosterPanel .panel-sticky { position: static; margin: 0 0 8px; padding: 0 0 8px; border-radius: 0; border-bottom: none; background: transparent; }
+        #rosterPanel .panel-head { justify-content: flex-end; }
     </style>
 </head>
 <body>
@@ -2055,7 +2064,6 @@
     <header class="app-header">
         <h1 class="app-title"><span class="total-balance dev-only" id="totalBalance" title="精算で回収済みの金額 − コート代の合計(薄字は従来の予測収支)"></span></h1>
         <nav class="header-btns">
-            <button class="settings-btn admin-only" data-panel="rosterPanel" onclick="onRosterBtnClick()">名簿</button>
             <button class="settings-btn admin-only" data-panel="settingsPanel" onclick="toggleSettings()">設定</button>
             <button class="settings-btn refresh-btn" id="refreshBtn" onclick="refreshApp()" title="最新の状態に更新" aria-label="更新">↻</button>
             <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答">📝<span class="sv-badge" id="surveyBadge"></span></button>
@@ -2118,6 +2126,56 @@
                 </div>
             </div>
         </div>
+        <div class="panel-group-label">メンバー</div>
+        <details class="acc" id="rosterAcc">
+            <summary>名簿</summary>
+            <div class="acc-body">
+    <div class="roster-panel open" id="rosterPanel">
+        <div class="panel-sticky">
+            <div class="panel-head">
+                <span class="panel-auto">メンバー名簿</span>
+                <div class="panel-actions">
+                    <span class="panel-auto">変更は自動保存</span>
+                </div>
+            </div>
+            <div class="roster-search-row">
+                <input type="text" id="rosterSearchInput" placeholder="名前・LINE名・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
+                <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
+            </div>
+            <div class="roster-sort-row">
+                <span class="rs-label">並び順</span>
+                <div class="rs-seg" id="rosterSortSeg"></div>
+            </div>
+            <div class="roster-sort-row" id="rosterSortParamRow" style="display:none;">
+                <span class="rs-label">項目</span>
+                <div class="rs-seg" id="rosterSortParamSeg"></div>
+            </div>
+            <div class="roster-sort-note" id="rosterSortNote"></div>
+        </div>
+        <div class="roster-meta">
+            <span class="roster-search-count" id="rosterSearchCount"></span>
+            <button type="button" class="link-btn" id="rosterToggleAllBtn" onclick="toggleAllRosterCards()">すべて開く</button>
+        </div>
+        <div class="roster-add-row">
+            <input type="text" id="newRosterName" maxlength="4" placeholder="新しいメンバー名(4文字まで)" onkeydown="if(event.key==='Enter') addRosterMember()">
+            <button class="add-btn" onclick="addRosterMember()">追加</button>
+        </div>
+        <div id="rosterList"></div>
+        <details class="note-details">
+            <summary>名簿の使い方</summary>
+            <div class="settings-note">
+                チーム分け用に、名前・性別・希望ポジション・パラメータを登録します。
+                名前は出欠入力と同じにしてください。
+                LINEの表示名が違う人は「LINE名」も登録しておくと、投票スクショから自動で照合できます。
+                スクショ取込は、「来れる」などの参加者一覧のスクショを貼ると、名簿の名前・LINE名と照合して選択中の日に追加します(複数枚OK)。
+                並び順を「五十音順」にしたとき、漢字の名前は末尾に並びます。名簿カードの「よみ」を入れると五十音順に入ります。
+                名簿にいる人は、すべての日のメンバーに自動で入り、五十音順に並びます。メンバーから外したいときは名簿から削除してください(今日以降の日程から外れます。過去の記録は残ります)。
+            </div>
+        </details>
+    </div>
+            </div>
+        </details>
+        <div class="panel-group-label">カレンダー・連絡</div>
         <details class="acc">
             <summary>色分けのしきい値</summary>
             <div class="acc-body">
@@ -2164,6 +2222,7 @@
             </div>
         </details>
 
+        <div class="panel-group-label">予約</div>
         <details class="acc">
             <summary>予約情報プリセット</summary>
             <div class="acc-body">
@@ -2183,6 +2242,7 @@
             </div>
         </details>
 
+        <div class="panel-group-label">チーム分け</div>
         <details class="acc" id="teamSettingsAcc">
             <summary>ロジック</summary>
             <div class="acc-body">
@@ -2299,51 +2359,6 @@
 
     </div>
 
-    <!-- ===== 名簿パネル ===== -->
-    <div class="roster-panel admin-only" id="rosterPanel">
-        <div class="panel-sticky">
-            <div class="panel-head">
-                <h3>メンバー名簿</h3>
-                <div class="panel-actions">
-                    <span class="panel-auto">変更は自動保存</span>
-                    <button type="button" class="panel-x" onclick="toggleRoster()">閉じる</button>
-                </div>
-            </div>
-            <div class="roster-search-row">
-                <input type="text" id="rosterSearchInput" placeholder="名前・LINE名・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
-                <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
-            </div>
-            <div class="roster-sort-row">
-                <span class="rs-label">並び順</span>
-                <div class="rs-seg" id="rosterSortSeg"></div>
-            </div>
-            <div class="roster-sort-row" id="rosterSortParamRow" style="display:none;">
-                <span class="rs-label">項目</span>
-                <div class="rs-seg" id="rosterSortParamSeg"></div>
-            </div>
-            <div class="roster-sort-note" id="rosterSortNote"></div>
-        </div>
-        <div class="roster-meta">
-            <span class="roster-search-count" id="rosterSearchCount"></span>
-            <button type="button" class="link-btn" id="rosterToggleAllBtn" onclick="toggleAllRosterCards()">すべて開く</button>
-        </div>
-        <div class="roster-add-row">
-            <input type="text" id="newRosterName" maxlength="4" placeholder="新しいメンバー名(4文字まで)" onkeydown="if(event.key==='Enter') addRosterMember()">
-            <button class="add-btn" onclick="addRosterMember()">追加</button>
-        </div>
-        <div id="rosterList"></div>
-        <details class="note-details">
-            <summary>名簿の使い方</summary>
-            <div class="settings-note">
-                チーム分け用に、名前・性別・希望ポジション・パラメータを登録します。
-                名前は出欠入力と同じにしてください。
-                LINEの表示名が違う人は「LINE名」も登録しておくと、投票スクショから自動で照合できます。
-                スクショ取込は、「来れる」などの参加者一覧のスクショを貼ると、名簿の名前・LINE名と照合して選択中の日に追加します(複数枚OK)。
-                並び順を「五十音順」にしたとき、漢字の名前は末尾に並びます。名簿カードの「よみ」を入れると五十音順に入ります。
-                名簿にいる人は、すべての日のメンバーに自動で入り、五十音順に並びます。メンバーから外したいときは名簿から削除してください(今日以降の日程から外れます。過去の記録は残ります)。
-            </div>
-        </details>
-    </div>
 
     <section class="card cal-card" id="calCard">
         <div class="cal-header">
@@ -3259,7 +3274,7 @@
 
         // ------- 設定パネル -------
         // 名簿・ロジック・設定・開発は、どれか1つを開くと他は閉じる
-        const HEADER_PANEL_IDS = ["devPanel", "settingsPanel", "rosterPanel"];
+        const HEADER_PANEL_IDS = ["devPanel", "settingsPanel"];
         function closeOtherPanels(keepId) {
             let closed = false;
             HEADER_PANEL_IDS.forEach(id => {
@@ -3302,6 +3317,7 @@
                 document.getElementById("inputRoundUnit").value = rvRoundUnit;
                 renderRvPresetEditor();
                 renderTeamSettingsPanel();
+                if (document.getElementById("rosterAcc").open) renderRosterPanel();
             }
         }
 
@@ -3340,13 +3356,24 @@
         }
 
         // ------- 名簿パネル -------
-        function toggleRoster() {
-            const panel = document.getElementById("rosterPanel");
-            const opening = !panel.classList.contains("open");
-            if (opening) closeOtherPanels("rosterPanel");
-            panel.classList.toggle("open");
-            if (opening) renderRosterPanel();
+        function rosterIsOpen() {
+            const a = document.getElementById("rosterAcc");
+            return !!(a && a.open && document.getElementById("settingsPanel").classList.contains("open"));
         }
+        // 名簿は設定パネルの中(アコーディオン)。設定を開いて名簿の項目まで移動する
+        function toggleRoster() {
+            const panel = document.getElementById("settingsPanel");
+            if (!panel.classList.contains("open")) toggleSettings();
+            const acc = document.getElementById("rosterAcc");
+            if (acc) { acc.open = true; renderRosterPanel(); acc.scrollIntoView({ behavior: "smooth", block: "start" }); }
+        }
+        document.addEventListener("DOMContentLoaded", () => {
+            const acc = document.getElementById("rosterAcc");
+            if (acc) acc.addEventListener("toggle", () => {
+                if (!acc.open) return;
+                askDevModeIfVolleyDay(() => renderRosterPanel());
+            });
+        });
 
         // ロジックは設定パネルの中(アコーディオン)。renderTeamSettingsPanel は設定を開くときに呼ぶ
         function renderTeamSettingsPanel() {
@@ -7016,7 +7043,7 @@
             const ms = document.getElementById("modeSelect");
             if (ms) ms.value = viewPreview ? "view" : "admin";
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }
-            if (document.getElementById("rosterPanel").classList.contains("open")) renderRosterPanel();
+            if (rosterIsOpen()) renderRosterPanel();
             if (document.getElementById("settingsPanel").classList.contains("open")) renderTeamSettingsPanel();
             renderKeyMarkLegend();
             if (lastTeamSplitResult) renderTeamResults();
@@ -7218,8 +7245,7 @@
             renderRosterPanel();
         }
         function refreshRosterPanelIfOpen() {
-            const p = document.getElementById("rosterPanel");
-            if (p && p.classList.contains("open")) renderRosterPanel();
+            if (rosterIsOpen()) renderRosterPanel();
         }
 
         // パラメータはdev専用の項目なので、開発モードOFFの間は登録順に戻して見せる
@@ -8681,11 +8707,7 @@
             }
             cb();
         }
-        function onRosterBtnClick() {
-            const open = document.getElementById("rosterPanel").classList.contains("open");
-            if (open) { toggleRoster(); return; }
-            askDevModeIfVolleyDay(toggleRoster);
-        }
+        function onRosterBtnClick() { toggleRoster(); }
         function onTeamsTabClick() {
             if (currentView === "teams") { switchView("teams", true); return; }
             askDevModeIfVolleyDay(() => switchView("teams", true));
