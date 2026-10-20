@@ -1412,6 +1412,7 @@
         /* ---- 閲覧モード(管理者以外): 管理者専用の表示を隠す ---- */
         body.viewer-mode .admin-only, body.viewer-mode #devToggleBtn { display: none !important; }
         /* ---- メンバー欄で自分を目立たせる ---- */
+        body.viewer-mode .st-chip.locked { pointer-events: none; opacity: .7; }
         body.viewer-mode .confirm-name-chip.locked { pointer-events: none; opacity: .7; }
         .confirm-name-chip.me { box-shadow: 0 0 0 2px var(--accent) !important; font-weight: 800; }
         .confirm-name-chip.me::before { content: "★ "; color: var(--accent); }
@@ -3847,6 +3848,7 @@
             if (view === "reserve") renderReserveView();
             if (view === "settle") renderSettleView();
             if (userTap) scrollBelowHeader(document.getElementById("eventContent"));
+            if (view !== "teams") flushPendingRemote();   // チーム分けの表示を離れたら、保留していた更新を反映
         }
 
         // ------- コピー元選択パネル -------
@@ -4422,6 +4424,7 @@
             renderRoster();
             openFirstIncompleteTab();
             scrollBelowHeader(document.getElementById("eventContent"));   // タスクの中身が全部見えるようにスクロール
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey !== dateKey) flushPendingRemote();   // 別の日の結果は表示しないので、保留していた更新を反映
         }
         // 開発モードOFFのときは、日付を触ったら一番左の未完タスクのタブを開く(前の日に触っていたタブを引き継がない)
         function openFirstIncompleteTab() {
@@ -6363,6 +6366,7 @@
             lastTeamSplitResult = null;
             swapSel = null; swapNotice = "";
             renderTeamSplitTab(); // 結果・警告・予測・ボタンの表示を初期状態に戻す
+            flushPendingRemote();
         }
 
         function runTeamSplit() {
@@ -6807,6 +6811,7 @@
             renderRoster();
             renderCalendar();
             updateTabProgress();
+            if (currentView === "settle") renderSettleView();
         }
         function closeDevPanel() {
             document.getElementById("devPanel").classList.remove("open");
@@ -7330,6 +7335,7 @@
             });
         }
         function setSettleAmount(val) {
+            if (!isAdmin()) { renderSettleView(); return; }
             const str = String(val).normalize("NFKC").replace(/[,，円\s]/g, "");
             const st = settlements[selectedDate] || (settlements[selectedDate] = { paid: {} });
             if (str === "") { delete st.amount; }
@@ -7343,6 +7349,7 @@
             renderSettleView();
         }
         function toggleSettleDone(on) {
+            if (!isAdmin()) return;
             const st = settlements[selectedDate] || (settlements[selectedDate] = { paid: {} });
             if (on) st.done = true; else delete st.done;
             cleanSettle(selectedDate);
@@ -7350,15 +7357,30 @@
             renderSettleView();
         }
         function resetSettleAmount() { setSettleAmount(""); }
+        // 閲覧モード(管理者以外): 精算は名簿に紐付いた「自分」の回収チェックだけ押せる
+        function canTogglePaid(id) {
+            if (isAdmin()) return true;
+            const me = myMemberName();
+            if (!me) return false;
+            const mem = (attendanceByDate[selectedDate] || []).find(m => m.id === id);
+            return !!mem && mem.name === me;
+        }
         function toggleSettlePaid(id) {
+            if (!canTogglePaid(id)) return;
             const st = settlements[selectedDate] || (settlements[selectedDate] = { paid: {} });
             if (!st.paid) st.paid = {};
             if (st.paid[id]) delete st.paid[id]; else st.paid[id] = true;
+            const nowPaid = !!st.paid[id];
             cleanSettle(selectedDate);
             saveSettlements();
             renderSettleView();
+            if (!isAdmin()) {
+                const mem = (attendanceByDate[selectedDate] || []).find(m => m.id === id);
+                if (mem) saveMyPaidToShared(selectedDate, mem.name, nowPaid);
+            }
         }
         function settleBulk(paid) {
+            if (!isAdmin()) return;
             const t = settleDayStats(selectedDate);
             if (!paid && t.paidCount > 0 && !confirm(`回収済みの${t.paidCount}名を未回収に戻します。よろしいですか?`)) return;
             const st = settlements[selectedDate] || (settlements[selectedDate] = { paid: {} });
@@ -7376,11 +7398,12 @@
             const box = document.getElementById("settleView");
             if (!box) return;
             const t = settleDayStats(selectedDate);
+            const ro = !isAdmin();   // 閲覧モード: 金額・一括・精算完了は触れない
             if (t.n === 0) {
                 // 当日を過ぎた「バレーあり」の日は、メンバーがいなくても「精算完了」で⚠️を消せる
                 const showDone0 = !!events[selectedDate] && selectedDate < formatDateKey(new Date());
                 box.innerHTML = `<div class="rv-empty">この日の「来る」メンバーがいません</div>`
-                    + (showDone0 ? `<label class="st-done-row"><input type="checkbox" id="stDone" ${t.done ? "checked" : ""}>精算完了(⚠️を消す)</label>` : "");
+                    + (showDone0 ? `<label class="st-done-row"><input type="checkbox" id="stDone" ${t.done ? "checked" : ""} ${ro ? "disabled" : ""}>精算完了(⚠️を消す)</label>` : "");
                 const dn0 = document.getElementById("stDone");
                 if (dn0) dn0.onchange = () => toggleSettleDone(dn0.checked);
                 return;
@@ -7396,17 +7419,17 @@
             const showDone = selectedDate < formatDateKey(new Date()) && (t.paidCount < t.n || t.done);
             const chips = t.comers.map(m => {
                 const on = !!t.paid[m.id];
-                return `<button type="button" class="st-chip${on ? " paid" : ""}" data-id="${m.id}" aria-pressed="${on}">${escapeHtml(m.name)}<span class="st-ck">✓</span></button>`;
+                return `<button type="button" class="st-chip${on ? " paid" : ""}${canTogglePaid(m.id) ? "" : " locked"}" data-id="${m.id}" aria-pressed="${on}">${escapeHtml(m.name)}<span class="st-ck">✓</span></button>`;
             }).join("");
             box.innerHTML = `
                 <div class="st-card">
                     <div class="st-row dev-only"><span class="st-k">コート代</span><b class="st-v">${yen(t.cost)}</b><span class="st-sub">${costNote}</span></div>
                     <div class="st-row">
                         <span class="st-k">1人あたり</span>
-                        <input type="text" id="stAmount" class="st-input" inputmode="numeric" value="${t.custom ? t.amount : ""}" placeholder="${t.auto}" aria-label="1人あたりの金額(円)">
+                        <input type="text" id="stAmount" class="st-input" inputmode="numeric" value="${t.custom ? t.amount : ""}" placeholder="${t.auto}" aria-label="1人あたりの金額(円)" ${ro ? "disabled" : ""}>
                         <span class="st-unit">円</span>
                         ${t.rs.length > 0 ? `<span class="st-exact dev-only" title="コート代 ÷ 来る人数(切り上げ前)">本来 ${yen(Math.round(t.cost / t.n))}</span>` : ""}
-                        ${t.custom ? `<button type="button" class="st-reset" id="stReset">自動に戻す</button>` : ""}
+                        ${t.custom && !ro ? `<button type="button" class="st-reset" id="stReset">自動に戻す</button>` : ""}
                     </div>
                     ${t.custom ? `<div class="st-sub">自動 ${yen(t.auto)}</div>` : ""}
                 </div>
@@ -7415,8 +7438,8 @@
                         <span class="gt-label"><i class="dot"></i>回収</span>
                         <span class="st-bulk">
                             <span>${t.paidCount}/${t.n}名</span>
-                            <button type="button" id="stAll" ${t.paidCount === t.n ? "disabled" : ""}>全員回収</button>
-                            <button type="button" id="stNone" ${t.paidCount === 0 ? "disabled" : ""}>全解除</button>
+                            <button type="button" id="stAll" ${(t.paidCount === t.n || ro) ? "disabled" : ""}>全員回収</button>
+                            <button type="button" id="stNone" ${(t.paidCount === 0 || ro) ? "disabled" : ""}>全解除</button>
                         </span>
                     </div>
                     <div class="st-list">${chips}</div>
@@ -7425,7 +7448,7 @@
                     <span class="st-got">回収済み <b>${yen(t.collected)}</b><span class="dev-only"> / ${yen(target)}</span><span class="dev-only st-bal-inl">収支 <span class="rv-bal ${bal > 0 ? "plus" : bal < 0 ? "minus" : ""}">${signedYen(bal)}</span><span class="rv-pred">　予測 ${signedYen(predBal)}</span></span></span>
                     <span class="st-remain${remain === 0 ? " done" : ""}">${remain === 0 ? "回収完了" : `残り ${yen(remain)}`}</span>
                 </div>
-                ${showDone ? `<label class="st-done-row"><input type="checkbox" id="stDone" ${t.done ? "checked" : ""}>精算完了(⚠️を消す)</label>` : ""}`;
+                ${showDone ? `<label class="st-done-row"><input type="checkbox" id="stDone" ${t.done ? "checked" : ""} ${ro ? "disabled" : ""}>精算完了(⚠️を消す)</label>` : ""}`;
             const inp = document.getElementById("stAmount");
             inp.onchange = () => setSettleAmount(inp.value);
             inp.onkeydown = e => { if (e.key === "Enter") inp.blur(); };
@@ -8386,7 +8409,25 @@
         let firestoreRef = null;
         let firestoreHasDocument = false;
 
-        function isSharedKey(key) { return !!key && String(key).startsWith("attendance_") && !LOCAL_ONLY_KEYS.has(key); }
+        // チーム分けタブの設定(パラメータ無視・メンバー一覧の開閉)は、閲覧者はこの端末だけで扱う(共有データで上書き・再読み込みされない)
+        const VIEWER_LOCAL_KEYS = new Set([IGNORE_PARAMS_KEY, TEAM_MEMBER_OPEN_KEY]);
+        let firestorePendingValues = null;   // チーム分けの結果を表示中に届いた共有データの更新(あとで反映する)
+        function isSharedKey(key) {
+            if (!key || !String(key).startsWith("attendance_") || LOCAL_ONLY_KEYS.has(key)) return false;
+            if (VIEWER_LOCAL_KEYS.has(key) && firebaseAvailable && !firestoreEditor) return false;
+            return true;
+        }
+        // 保留していた共有データの更新を反映する(再読み込み)
+        function flushPendingRemote() {
+            if (!firestorePendingValues) return;
+            const rv = firestorePendingValues;
+            firestorePendingValues = null;
+            firestoreApplyingRemote = true;
+            try { Object.entries(rv).forEach(([k, v]) => { if (isSharedKey(k)) localStorage.setItem(k, v); }); }
+            finally { firestoreApplyingRemote = false; }
+            saveUiStateForReload();
+            window.location.reload();
+        }
 
         function detectFirebase() {
             // 初期化されていなければ、もう一度初期化する
@@ -8527,6 +8568,37 @@
             return st;
         }
 
+        // 閲覧者が自分の回収チェックを共有データへ反映する(共有側の最新を読み、自分の1件だけ書き換える)
+        // Firestoreのルールで、閲覧者が更新できるキーに精算データも許可しておく必要がある
+        function saveMyPaidToShared(date, name, paid) {
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authEmail) return;
+            if (!name || name !== myMemberName()) return;   // 自分以外は送らない
+            setFirestoreSyncStatus("同期中…");
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const byDate = JSON.parse(values[BYDATE_KEY] || "{}");
+                const mem = (byDate[date] || []).find(m => m.name === name);
+                if (!mem) throw new Error("no-member");
+                const all = JSON.parse(values[SETTLE_KEY] || "{}");
+                const st = all[date] || (all[date] = { paid: {} });
+                if (!st.paid) st.paid = {};
+                if (paid) st.paid[mem.id] = true; else delete st.paid[mem.id];
+                if (!st.done && !Number.isFinite(st.amount) && Object.keys(st.paid).length === 0) delete all[date];
+                tx.update(firestoreRef, {
+                    ["values." + SETTLE_KEY]: JSON.stringify(all),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }).then(() => setFirestoreSyncStatus("閲覧中"))
+              .catch(err => {
+                  console.error("精算の共有に失敗しました。", err);
+                  setFirestoreSyncStatus("閲覧中");
+                  const code = (err && (err.code || err.message)) || "";
+                  alert("精算を共有データに反映できませんでした(" + code + ")。\nこの端末の表示は、次の更新で共有データの内容に戻ります。");
+              });
+        }
+
         function startFirestoreSync() {
             if (!firebaseAvailable) {
                 const why = firebaseUnavailableReason();
@@ -8556,6 +8628,12 @@
                 firestoreSyncActive = true;
                 if (remoteCoveredByLocal(remoteValues, localValues)) {
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
+                    return;
+                }
+                // 閲覧者がチーム分けの結果を表示中は、結果が消えないよう反映を保留する(タブを離れる/リセット/日付を変えると反映)
+                if (!firestoreEditor && currentView === "teams" && lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) {
+                    firestorePendingValues = remoteValues;
+                    setFirestoreSyncStatus("更新あり(チーム分けを閉じると反映)");
                     return;
                 }
                 firestoreApplyingRemote = true;
