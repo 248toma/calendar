@@ -1412,6 +1412,7 @@
         /* ---- 閲覧モード(管理者以外): 管理者専用の表示を隠す ---- */
         body.viewer-mode .admin-only, body.viewer-mode #devToggleBtn { display: none !important; }
         /* ---- メンバー欄で自分を目立たせる ---- */
+        body.viewer-mode .confirm-name-chip.locked { pointer-events: none; opacity: .7; }
         .confirm-name-chip.me { box-shadow: 0 0 0 2px var(--accent) !important; font-weight: 800; }
         .confirm-name-chip.me::before { content: "★ "; color: var(--accent); }
         /* ---- 他予定: 保存先(共有 / この端末のみ) ---- */
@@ -2320,13 +2321,13 @@
 
         <!-- ===== メンバー(入力+確認 統合) ===== -->
         <div id="memberView">
-            <div class="add-row">
+            <div class="add-row admin-only">
                 <input type="text" id="newName" maxlength="4" placeholder="新メンバー" onkeydown="if(event.key==='Enter') addMember()">
                 <button class="add-btn" onclick="addMember()">追加</button>
                 <button class="qa-btn" onclick="toggleShotPanel()">スクショ取込</button>
             </div>
 
-            <div class="copy-panel" id="shotPanel">
+            <div class="copy-panel admin-only" id="shotPanel">
                 <h3>LINEの投票スクショから追加</h3>
                 <div class="shot-actions">
                     <button type="button" onclick="pasteShotFromClipboard()">貼り付け</button>
@@ -2349,8 +2350,8 @@
             <div class="input-toolbar">
                 <span class="status-badge" id="statusBadgeConfirm"></span>
                 <div class="bulk-action-row">
-                    <button type="button" onclick="selectAllBulk(true)">全選択</button>
-                    <button type="button" onclick="selectAllBulk(false)">全解除</button>
+                    <button type="button" class="admin-only" onclick="selectAllBulk(true)">全選択</button>
+                    <button type="button" class="admin-only" onclick="selectAllBulk(false)">全解除</button>
                     <button type="button" class="mv-act follow" id="followBtn" onclick="copyFollowText()">フォロー文</button>
                     <button type="button" class="mv-act line" onclick="copyForLine()">LINE用コピー</button>
                 </div>
@@ -5047,6 +5048,7 @@
                         const linked = !!findRosterByName(m.name);
                         const cls = ["confirm-name-chip", "mv-chip"];
                         if (myMemberName() && m.name === myMemberName()) cls.push("me");
+                        if (!canMoveMember(m.id)) cls.push("locked");
                         if (!linked) cls.push("chip-unlinked");
                         if (bulkSelectedIds.has(m.id)) cls.push("sel");
                         return `<button type="button" class="${cls.join(" ")}" onclick="onMemberChipClick(${m.id}, this)">${escapeHtml(m.name)}</button>`;
@@ -5066,7 +5068,16 @@
         }
 
         // 名前タップ: 選択のON・OFF(常に一括選択)。選んだあと、移動先の見出し(来る/来ない/未定/未確認)をタップ
+        // 閲覧モード(管理者以外)では、名簿に紐付いた「自分」だけ移動できる(紐付いていない人は誰も移動できない)
+        function canMoveMember(memberId) {
+            if (isAdmin()) return true;
+            const me = myMemberName();
+            if (!me) return false;
+            const mem = (attendanceByDate[selectedDate] || []).find(m => m.id === memberId);
+            return !!mem && mem.name === me;
+        }
         function onMemberChipClick(memberId, el) {
+            if (!canMoveMember(memberId)) return;
             if (bulkSelectedIds.has(memberId)) bulkSelectedIds.delete(memberId); else bulkSelectedIds.add(memberId);
             el.classList.toggle("sel", bulkSelectedIds.has(memberId));
             updateBulkUi();
@@ -5257,6 +5268,7 @@
         }
 
         function updateStatus(memberId, newStatus) {
+            if (!canMoveMember(memberId)) return;
             const list = attendanceByDate[selectedDate] || [];
             const mem = list.find(m => m.id === memberId);
             if (!mem) return;
@@ -5296,6 +5308,7 @@
 
         // ------- 来る/来ないなどの一括選択 -------
         function selectAllBulk(selectState) {
+            if (!isAdmin()) return;
             const dayMembers = attendanceByDate[selectedDate] || [];
             if (selectState) dayMembers.forEach(m => bulkSelectedIds.add(m.id));
             else bulkSelectedIds.clear();
@@ -5309,14 +5322,18 @@
                 return;
             }
             const list = attendanceByDate[selectedDate] || [];
+            const moved = [];
             list.forEach(m => {
-                if (bulkSelectedIds.has(m.id)) {
+                if (bulkSelectedIds.has(m.id) && canMoveMember(m.id)) {
                     m.status = status;
                     m.updated = nowStamp();
+                    moved.push(m);
                 }
             });
             bulkSelectedIds.clear();
             saveData();
+            // 閲覧者は共有データへ自分の1件だけ反映する
+            if (!isAdmin()) moved.forEach(m => saveMyStatusToShared(selectedDate, m.name, m.status, m.updated));
             renderRoster();
             renderCalendar();
         }
@@ -8451,6 +8468,34 @@
             firestoreRef.set({ values: getShareableLocalValues(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
                 .then(() => setFirestoreSyncStatus("共有中"))
                 .catch(error => { console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true); });
+        }
+
+        // 閲覧者が自分の出欠を共有データへ反映する。共有データの最新を読み直し、自分の1件(日付+名前)だけ書き換えて保存する
+        // (他の人の出欠や、管理者が同時に行った変更を上書きしないため)。Firestoreのルール側で閲覧者の更新を許可しておく必要がある
+        function saveMyStatusToShared(date, name, status, stamp) {
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authEmail) return;
+            if (!name || name !== myMemberName()) return;   // 自分以外は送らない
+            setFirestoreSyncStatus("同期中…");
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                const mem = (data[date] || []).find(m => m.name === name);
+                if (!mem) throw new Error("no-member");
+                mem.status = status;
+                mem.updated = stamp;
+                tx.update(firestoreRef, {
+                    ["values." + BYDATE_KEY]: JSON.stringify(data),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }).then(() => setFirestoreSyncStatus("閲覧中"))
+              .catch(err => {
+                  console.error("出欠の共有に失敗しました。", err);
+                  setFirestoreSyncStatus("閲覧中");
+                  const code = (err && (err.code || err.message)) || "";
+                  alert("出欠を共有データに反映できませんでした(" + code + ")。\nこの端末の表示は、次の更新で共有データの内容に戻ります。");
+              });
         }
 
         function startFirestoreSync() {
