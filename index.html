@@ -3983,7 +3983,7 @@
             if (view === "reserve") renderReserveView();
             if (view === "settle") renderSettleView();
             if (userTap) scrollBelowHeader(document.getElementById("eventContent"));
-            applyPendingOnScreenChange();   // 画面(タブ)の切り替わり時に、保留していた更新を反映
+            if (userTap) applyPendingOnScreenChange();   // タスクを自分で選んだときだけ、保留していた更新を反映(日付選択による自動切替では更新しない)
         }
 
         // ------- コピー元選択パネル -------
@@ -4559,7 +4559,6 @@
             renderCalendar();
             renderRoster();
             openFirstIncompleteTab();
-            if (lastTeamSplitResult && lastTeamSplitResult.dateKey !== dateKey) flushPendingRemote();   // 別の日の結果は表示しないので、保留していた更新を反映
         }
         // 開発モードOFFのときは、日付を触ったら一番左の未完タスクのタブを開く(前の日に触っていたタブを引き継がない)
         function openFirstIncompleteTab() {
@@ -7003,7 +7002,7 @@
             if (authIsGuest) {
                 let n = "";
                 try { n = localStorage.getItem(GUEST_NAME_KEY) || ""; } catch (e) { n = ""; }
-                return roster.some(r => r.name === n) ? n : "";
+                return roster.some(r => r.name === n && !r.emailHash) ? n : "";   // Googleアカウントが紐づいている人はゲストでは名乗れない
             }
             return "";
         }
@@ -7195,8 +7194,7 @@
         }
 
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
-        setInterval(() => { if (!document.hidden) checkMemberTaskAlert(); }, 60000);
-        document.addEventListener("visibilitychange", () => { if (!document.hidden) checkMemberTaskAlert(); });
+        // 自動でアンケート画面へ移る処理はやめた(30分ごと・起動/更新時)
         function applyRole() {
             devMode = isAdmin();
             applyDevMode();
@@ -8855,7 +8853,6 @@
             if (firestorePendingValues && remoteUpdateSafeToApply()) setTimeout(flushPendingRemote, 0);
         }
         function markRemoteUpdate() {
-            setFirestoreSyncStatus("更新あり(↻で反映)");
             const b = document.getElementById("refreshBtn");
             if (b) b.classList.add("has-update");
         }
@@ -9005,7 +9002,7 @@
             const grid = document.createElement("div");
             grid.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;";
             const cur = myMemberName();
-            roster.map(r => r.name).forEach(name => {
+            roster.filter(r => !r.emailHash).map(r => r.name).forEach(name => {   // Googleアカウント紐づき済みの人は選べない
                 const b = document.createElement("button");
                 b.type = "button";
                 b.textContent = name;
@@ -9018,6 +9015,12 @@
                 };
                 grid.appendChild(b);
             });
+            if (!grid.children.length) {
+                const none = document.createElement("div");
+                none.textContent = "選べる名前がありません";
+                none.style.cssText = "font-size:13px;color:var(--ink-3);";
+                grid.appendChild(none);
+            }
             box.appendChild(grid);
             const c = document.createElement("button");
             c.type = "button";
@@ -9177,7 +9180,6 @@
                 } else setFirestoreSyncStatus(authIsGuest ? "ゲスト" : "閲覧中");
                 refreshMyMember().then(() => {
                     applyRole();
-                    setTimeout(checkMemberTaskAlert, 1200);   // 共有データの受信が落ち着いてから確認する
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
                     guestJustSignedIn = false;
