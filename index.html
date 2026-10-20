@@ -269,7 +269,6 @@
         .op-dot[data-c="6"] { --dot: #e26ca0; }
         .op-dot[data-c="7"] { --dot: #30aab4; }
         .op-dot[data-c="8"] { --dot: #d6aa28; }
-        .legend .swatch.plan { background: var(--plan-gray); }
         .day-toggles { display: flex; align-items: center; gap: 14px; flex: none; }
         /* バレーのスイッチの丸は🏐 */
         #eventToggle::after { content: "🏐"; display: flex; align-items: center; justify-content: center; background: transparent; box-shadow: none; font-size: 15px; line-height: 1; }
@@ -433,11 +432,6 @@
 
         .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); margin: 12px 2px 0; }
         .legend span { display: inline-flex; align-items: center; gap: 5px; }
-        .legend .swatch { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
-        .legend .swatch.ok { background: var(--come-soft); box-shadow: inset 0 0 0 1px rgba(10, 143, 106, .35); }
-        .legend .swatch.warn { background: #fff3cc; box-shadow: inset 0 0 0 1px rgba(224, 138, 0, .4); }
-        .legend .swatch.bad { background: var(--notcome-soft); box-shadow: inset 0 0 0 1px rgba(229, 72, 77, .4); }
-        .legend .swatch.none { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
 
         .selected-date-label { margin: 22px 2px 10px; display: flex; align-items: baseline; gap: 10px; }
         .selected-date-label .sd-main { font-size: 26px; font-weight: 800; letter-spacing: .01em; line-height: 1.2; }
@@ -1018,7 +1012,6 @@
         .cal-day { aspect-ratio: auto; height: 38px; min-height: 38px; font-size: 14px; border-radius: 9px; }
         .cal-day .cnt { font-size: 9.5px; margin-top: 0; line-height: 1; }
         .legend { margin: 8px 2px 0; gap: 4px 12px; font-size: 10.5px; }
-        .legend .swatch { width: 10px; height: 10px; border-radius: 3px; }
 
         /* ---- 日付バー(日付 + バレーあり) ---- */
         .day-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 2px 8px; }
@@ -1290,7 +1283,6 @@
         .predict-box, .history-box, .video-card, .unregistered-box { border-color: transparent; box-shadow: none; }
         .cal-card { padding: 8px 6px 6px; }
         .legend { font-size: 10px; color: var(--ink-3); margin: 6px 2px 0; }
-        .legend .swatch { width: 9px; height: 9px; }
         .view-tabs { background: #e9ebef; }
 
         /* ---- アコーディオン(設定): 線で区切るだけ ---- */
@@ -1567,7 +1559,6 @@
         }
         body.dark { background: var(--bg); }
         body.dark .cal-day.event-warning, body.dark .status-badge.warning, body.dark .dup-warn { background: #78581f; color: #ffd27d; }
-        body.dark .legend .swatch.warn { background: #78581f; }
         body.dark .rs-seg { background: #485066; }
         body.dark .view-tabs-wrap { background: rgba(49, 55, 70, .92); }
         body.dark .view-tabs-wrap .view-tabs { background: transparent; }
@@ -1752,8 +1743,6 @@
         /* ---- 区切り線は最小限 ---- */
         .acc, .team-member-row, .vc-links, .vc-linkrow, .confirm-group-title { border-color: var(--line); }
         .member-card, #rosterList .roster-card { border-bottom-color: var(--line); }
-        .legend .swatch { box-shadow: var(--raise-sm); }
-        .legend .swatch.ok, .legend .swatch.warn, .legend .swatch.bad, .legend .swatch.none { box-shadow: var(--raise-sm); }
 
         /* =========================================================
            v19: メンバー画面(入力+確認を統合)
@@ -1948,9 +1937,6 @@
         .cal-day.event-sufficient { background: var(--m-come-cal); color: var(--m-come-t); }
         .cal-day.event-warning, body.dark .cal-day.event-warning { background: var(--m-pend-cal); color: var(--m-pend-t); }
         .cal-day.event-danger { background: var(--m-no-cal); color: var(--m-no-t); }
-        .legend .swatch.ok { background: var(--m-come-cal); }
-        .legend .swatch.warn, body.dark .legend .swatch.warn { background: var(--m-pend-cal); }
-        .legend .swatch.bad { background: var(--m-no-cal); }
 
         /* 状態の帯 */
         #memberView .confirm-group { border-radius: 14px; background: var(--m-unc-bg); box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .12); }
@@ -3021,13 +3007,6 @@
             }
         }
 
-        function saveShowTeamParams() {
-            try {
-                localStorage.setItem(SHOW_TEAM_PARAMS_KEY, String(showTeamParams));
-            } catch (e) {
-                console.warn("パラメータ表示設定の保存に失敗しました。", e);
-            }
-        }
 
         // キーパラメータ(上位者の分散)と平均値パラメータ(平均の均等化)は重複して選べる
         function isKeyParam(paramKey) { return paramRoles.key.includes(paramKey); }
@@ -3130,7 +3109,6 @@
         let selectedDate = formatDateKey(new Date());
         let currentView = "member"; // "reserve" | "member" | "teams" | "settle" | "videos"
         let openMemberId = null; // メンバー画面で操作メニューを開いている人
-        let bulkSelectMode = true;   // メンバーは常に一括選択(名前をタップ=選択/解除)
         let bulkSelectedIds = new Set();
 
         function formatDateKey(d) {
@@ -3482,13 +3460,6 @@
             const a = document.getElementById("rosterAcc");
             return !!(a && a.open && document.getElementById("settingsPanel").classList.contains("open"));
         }
-        // 名簿は設定パネルの中(アコーディオン)。設定を開いて名簿の項目まで移動する
-        function toggleRoster() {
-            const panel = document.getElementById("settingsPanel");
-            if (!panel.classList.contains("open")) toggleSettings();
-            const acc = document.getElementById("rosterAcc");
-            if (acc) { acc.open = true; renderRosterPanel(); acc.scrollIntoView({ behavior: "smooth", block: "start" }); }
-        }
         document.addEventListener("DOMContentLoaded", () => {
             const acc = document.getElementById("rosterAcc");
             if (acc) acc.addEventListener("toggle", () => {
@@ -3506,13 +3477,6 @@
             renderRoleSlotSettings();
         }
 
-        // チーム分けタブからロジックを開く(設定パネルを開き、ロジックの項目まで移動)
-        function openTeamSettings() {
-            const panel = document.getElementById("settingsPanel");
-            if (!panel.classList.contains("open")) toggleSettings();
-            const acc = document.getElementById("teamSettingsAcc");
-            if (acc) { acc.open = true; acc.scrollIntoView({ behavior: "smooth", block: "start" }); }
-        }
 
         function paramCheckboxesHtml(group, selectedList) {
             return ROLE_PARAM_DEFS.map(d => `
@@ -4096,71 +4060,9 @@
             if (userTap) applyPendingOnScreenChange();   // タスクを自分で選んだときだけ、保留していた更新を反映(日付選択による自動切替では更新しない)
         }
 
-        // ------- コピー元選択パネル -------
-        function toggleCopyPanel() {
-            const panel = document.getElementById("copyPanel");
-            const opening = !panel.classList.contains("open");
-            panel.classList.toggle("open");
-            if (opening) renderCopySelect();
-        }
 
-        function renderCopySelect() {
-            const select = document.getElementById("copySourceSelect");
-            const execBtn = document.getElementById("copyExecBtn");
-            select.innerHTML = "";
 
-            const comeCount = k => attendanceByDate[k].filter(m => m.status === "来る").length;
-            const candidates = Object.keys(attendanceByDate)
-                .filter(k => k !== selectedDate && events[k] && comeCount(k) > 0)
-                .sort((a, b) => b.localeCompare(a))
-                .slice(0, 100);
 
-            if (candidates.length === 0) {
-                const opt = document.createElement("option");
-                opt.textContent = "コピーできる過去のメンバーリストがありません";
-                select.appendChild(opt);
-                select.disabled = true;
-                execBtn.disabled = true;
-                return;
-            }
-
-            select.disabled = false;
-            execBtn.disabled = false;
-            candidates.forEach(dateKey => {
-                const [y, m, d] = dateKey.split("-").map(Number);
-                const n = comeCount(dateKey);
-                const opt = document.createElement("option");
-                opt.value = dateKey;
-                opt.textContent = `${y}年${m}月${d}日 (${n}名)`;
-                select.appendChild(opt);
-            });
-        }
-
-        function executeCopy() {
-            const select = document.getElementById("copySourceSelect");
-            const sourceDateKey = select.value;
-            if (!sourceDateKey) return;
-            copyFromDate(sourceDateKey);
-        }
-
-        function copyFromDate(sourceDateKey) {
-            const source = attendanceByDate[sourceDateKey] || [];
-            if (source.length === 0) return;
-            const current = attendanceByDate[selectedDate] || [];
-            if (current.some(m => m.status !== DEFAULT_NEW_STATUS)) {
-                const ok = confirm("現在のメンバーリストを上書きします。よろしいですか？");
-                if (!ok) return;
-            }
-            attendanceByDate[selectedDate] = source.map(m => ({
-                id: nextId++, name: m.name, status: DEFAULT_NEW_STATUS, updated: "-"
-            }));
-            events[selectedDate] = true;
-            syncRosterToDay(selectedDate);   // 名簿の全員を入れて五十音順に
-            saveData();
-            toggleCopyPanel();
-            renderRoster();
-            renderCalendar();
-        }
 
         // ------- LINE投票スクショ取り込み(OCR → 名簿照合) -------
         const TESS_SRC = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
@@ -4723,7 +4625,6 @@
         function selectDate(dateKey) {
             selectedDate = dateKey;
             volleyFull = false;
-            { const cp = document.getElementById("copyPanel"); if (cp) cp.classList.remove("open"); }
             bulkSelectedIds.clear();
             openMemberId = null;
             renderCalendar();
@@ -5003,7 +4904,6 @@
         // 時間指定のある予定(終日にしていなくて、開始か終了の時間がある)
         function planTimed(p) { return !!(p && !p.allDay && (p.start || p.end)); }
         function pcCls(p) { const c = +(p && p.color) || 0; return c >= 1 && c <= 8 ? " pc" + c : ""; }
-        function planInfo(key) { const l = plansOn(key); return l.length ? l[0] : null; }
         function parseHM(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; }
         // 予定の時間(開始・終了がそろって終了が後のときだけ)
         function planTimeMin(p) {
@@ -5531,13 +5431,6 @@
             if (currentView === "settle") renderSettleView();
         }
 
-        // ------- メンバー画面(入力+確認 統合) -------
-        function refreshMemberView() {
-            const dayMembers = attendanceByDate[selectedDate] || [];
-            const counts = emptyCounts();
-            dayMembers.forEach(m => { if (counts[m.status] === undefined) counts[m.status] = 0; counts[m.status]++; });
-            renderMemberView(dayMembers, counts);
-        }
 
         function renderMemberView(dayMembers, counts) {
             document.getElementById("confirmCountGrid").innerHTML = STATUS_LIST.map(s => `
@@ -5856,29 +5749,7 @@
             renderCalendar();
         }
 
-        function updateStatus(memberId, newStatus) {
-            if (!canMoveMember(memberId)) return;
-            const list = attendanceByDate[selectedDate] || [];
-            const mem = list.find(m => m.id === memberId);
-            if (!mem) return;
-            mem.status = newStatus;
-            mem.updated = nowStamp();
-            openMemberId = null;
-            saveData();
-            renderRoster();
-            renderCalendar();
-        }
 
-        function updateName(memberId, newName) {
-            const list = attendanceByDate[selectedDate] || [];
-            const mem = list.find(m => m.id === memberId);
-            if (!mem) return;
-            const trimmed = newName.trim();
-            if (!trimmed || trimmed === mem.name) { renderRoster(); return; }
-            mem.name = trimmed;
-            saveData();
-            renderRoster();
-        }
 
         // 追加 = 名簿に登録。登録した人は今日以降の全日程に入る
         function addMember() {
@@ -6440,10 +6311,6 @@
             }
         }
 
-        function slotLabelOf(no) {
-            const c = COURT_LAYOUT.find(x => x.no === no);
-            return c ? c.label : String(no);
-        }
 
         function renderRoleSlotSettings() {
             const el = document.getElementById("roleSlotList");
@@ -6659,13 +6526,6 @@
             return { slots, bench };
         }
 
-        function lineupSummaryText(lineup) {
-            const { slots, bench } = lineup;
-            const nm = no => `${no}:${slots[no] ? slots[no].name : "空き"}`;
-            let t = `[配置] 前衛 ${[4, 3, 2].map(nm).join(" ")} / 後衛 ${[5, 6, 1].map(nm).join(" ")}`;
-            if (bench.length) t += ` / 控え ${bench.map(p => p.name).join("・")}`;
-            return t;
-        }
 
         function memberKeyBadgesHtml(p) {
             if (!devMode) return "";
@@ -6690,8 +6550,6 @@
             if (!lineup) return "";
             const slotMap = lineup.slots;
             const bench = lineup.bench;
-            const spreadDefs = ROTATION_SPREAD_PARAMS.map(k => PARAM_DEFS.find(d => d.key === k)).filter(Boolean);
-            const short = d => d.label.charAt(0);
             const teamArr = res.teams[teamIdx] || [];
             const key = ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" role="button" tabindex="0"`;
             // 入れ替え用: タップで選べる(選択中・入れ替え先の候補の見た目も付ける)
@@ -6752,19 +6610,7 @@
             } catch (e) { teamMemberOpen = []; }
         }
 
-        function memberListOpen(teamIdx) {
-            return teamMemberOpen[teamIdx] === true; // 初期は閉じる(コート図に全員出ているため)
-        }
 
-        function setMemberListOpen(teamIdx, isOpen) {
-            for (let k = 0; k < teamIdx; k++) if (teamMemberOpen[k] === undefined) teamMemberOpen[k] = false;
-            teamMemberOpen[teamIdx] = isOpen;
-            try {
-                localStorage.setItem(TEAM_MEMBER_OPEN_KEY, JSON.stringify(teamMemberOpen));
-            } catch (e) {
-                console.warn("メンバー一覧の開閉状態の保存に失敗しました。", e);
-            }
-        }
 
         // ------- 分け方の履歴(同じメンバー構成での再実行) -------
         // チーム1・2などの番号の違いや、ローテ配置は関係なく、「誰と誰が同じチームか」の組み合わせで比べる。
@@ -7062,9 +6908,6 @@
         let swapSel = null;    // { teamIdx, mi }
         let swapNotice = "";   // 直前の操作の結果メッセージ(HTML)
 
-        function onMemberListToggle(teamIdx, isOpen) {
-            setMemberListOpen(teamIdx, isOpen);
-        }
 
         // ペア設定(同じチーム)を満たさなくなった組を返す
         function pairViolationsOf(teams) {
@@ -7280,29 +7123,6 @@
             });
         }
 
-        function copyTeamResultText() {
-            if (!lastTeamSplitResult) return;
-            const { teams } = lastTeamSplitResult;
-            const [y, m, d] = selectedDate.split("-").map(Number);
-
-            let text = `【${m}/${d} チーム分け結果】\n\n`;
-            teams.forEach((team, i) => {
-                text += `■ チーム${i + 1} (${team.length}名)\n`;
-                text += team.length
-                    ? team.map(p => `・${p.name}${p.position ? `(${p.position})` : ""}`).join("\n") + "\n"
-                    : "なし\n";
-                const lu = lastTeamSplitResult.lineups && lastTeamSplitResult.lineups[i];
-                if (lu) text += lineupSummaryText(lu) + "\n";
-                text += "\n";
-            });
-            text = text.trim();
-
-            navigator.clipboard.writeText(text).then(() => {
-                alert("チーム分け結果をコピーしました！");
-            }).catch(() => {
-                alert("コピーに失敗しました。ブラウザの権限を確認してください。");
-            });
-        }
 
 
         // ------- 開発モード(パラメータの表示・編集をまとめてON/OFF) -------
@@ -7410,34 +7230,6 @@
             applyRole();
         }
         function closeSurveyIfOpen() { if (typeof surveyOpen !== "undefined" && surveyOpen) closeSurvey(); }
-        // ログイン状態(管理者/閲覧者)が変わったときに画面へ反映する
-        // 閲覧モード: 今日から1週間以内(当日含む)のバレー日で、自分の出欠が未回答なら、警告を出してその日のメンバー画面へ移動する
-        // 開いたときに1回、その後は回答するまで30分ごとに出す(アプリを開いている間)
-        const MEMBER_ALERT_KEY = "attendance_member_alert_v1";
-        const MEMBER_ALERT_INTERVAL_MS = 30 * 60 * 1000;
-        function checkMemberTaskAlert() {
-            if (isAdmin() || !myMemberName() || surveyOpen) return;
-            const now = new Date();
-            let target = "";
-            for (let i = 0; i <= 7 && !target; i++) {
-                const k = formatDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i));
-                try { if (events[k] && dayTaskState(k).myUnanswered) target = k; } catch (e) { /* ignore */ }
-            }
-            if (!target) return;
-            // 最後に出した時刻を覚えておき、30分たつまでは出さない(共有データの受信で再読み込みされても、続けて出ない)
-            const nowMs = Date.now();
-            let first = false;
-            try {
-                const last = Number(sessionStorage.getItem(MEMBER_ALERT_KEY)) || 0;
-                if (last && nowMs - last < MEMBER_ALERT_INTERVAL_MS) return;
-                first = !last;
-                sessionStorage.setItem(MEMBER_ALERT_KEY, String(nowMs));
-            } catch (e) { /* ignore */ }
-            const [y, m, d] = target.split("-").map(Number);
-            // 起動直後はそのまま回答画面を開く。30分ごとの再通知は、警告を出してから回答画面へ移動する
-            if (!first) alert(`⚠️ ${m}/${d}のバレーの出欠が未回答です。\n回答画面で答えてください。`);
-            openSurvey();
-        }
 
         // ------- 回答画面(来る○ / 来ない✖ / 未定△ だけ答える) -------
         let surveyOpen = false;
@@ -7925,7 +7717,6 @@
         const RESERVATIONS_KEY = "attendance_reservations_v1";
         let reservations = {};          // { "YYYY-MM-DD": [{ id, place, time, price }] }
         let rvPlaceIdx = -1;
-        let rvTime = "";
         let rvSlotIdx = -1;
         let rvCourt = "";
         const RV_ROUND_KEY = "attendance_reserve_round_v1";
@@ -8362,22 +8153,6 @@
 
         function rvShotNorm(s) {
             return String(s || "").normalize("NFKC").replace(/[|丨\\]/g, "/").replace(/\s+/g, "");
-        }
-        function lcsLen(a, b) {
-            const A = Array.from(a), B = Array.from(b);
-            let prev = new Array(B.length + 1).fill(0);
-            for (let i = 1; i <= A.length; i++) {
-                const cur = [0];
-                for (let j = 1; j <= B.length; j++) cur[j] = A[i - 1] === B[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
-                prev = cur;
-            }
-            return prev[B.length];
-        }
-        function rvDeriveCourtLabel(src) {
-            const s0 = String(src || "");
-            if (/全面/.test(s0)) return "全面";
-            const s = s0.replace(/主競技場|副競技場|競技場/g, "").replace(/\d+\/\d+面?/g, "").replace(/半面|面/g, "").replace(/[^\p{L}]/gu, "");
-            return s.slice(0, 10);
         }
         function rvDateKey(y, m, d) {
             const dt = new Date(y, m - 1, d);
@@ -9080,110 +8855,9 @@
             if (choice === "view" && realAdmin() && isAdmin()) setViewMode("view");
             cb();
         }
-        function onRosterBtnClick() { toggleRoster(); }
         function onTeamsTabClick() {
             if (currentView === "teams") { switchView("teams", true); return; }
             askDevModeIfVolleyDay(() => switchView("teams", true));
-        }
-
-        // ------- ローカルデータの共有・引き継ぎ -------
-        const APP_DATA_PREFIX = "attendance_";
-        const APP_DATA_EXCLUDE = [DEV_MODE_KEY, SURVEY_SORT_KEY, CAL_TIME_KEY, CAL_AXIS_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, MEMBER_ALERT_KEY]; // 端末ごとの状態なので共有しない
-        function shareMsg(t, err) {
-            const el = document.getElementById("shareDataMsg");
-            if (!el) return;
-            el.textContent = t;
-            el.style.color = err ? "#c92a2a" : "";
-        }
-        function collectAppData() {
-            const data = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && k.indexOf(APP_DATA_PREFIX) === 0 && APP_DATA_EXCLUDE.indexOf(k) < 0) data[k] = localStorage.getItem(k);
-            }
-            return { app: "nichiji-kanri", version: 1, exportedAt: new Date().toISOString(), data };
-        }
-        function appDataFileName() {
-            const d = new Date();
-            const p = n => String(n).padStart(2, "0");
-            return "日程管理データ_" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + ".json";
-        }
-        function downloadAppData() {
-            try {
-                const blob = new Blob([JSON.stringify(collectAppData())], { type: "application/json" });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = appDataFileName();
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-                shareMsg("データをファイルに保存しました。");
-            } catch (e) { shareMsg("保存に失敗しました。", true); }
-        }
-        async function shareAppData() {
-            try {
-                const json = JSON.stringify(collectAppData());
-                const file = new File([json], appDataFileName(), { type: "application/json" });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({ files: [file], title: "日程管理データ" });
-                    shareMsg("共有しました。");
-                } else {
-                    downloadAppData();
-                    shareMsg("この環境では共有メニューが使えないため、ファイルに保存しました。保存したファイルを送ってください。");
-                }
-            } catch (e) {
-                if (e && e.name === "AbortError") return;
-                shareMsg("共有に失敗しました。「ファイルに保存」をお試しください。", true);
-            }
-        }
-        function importAppData(input) {
-            const f = input.files && input.files[0];
-            input.value = "";
-            if (!f) return;
-            // 共有データは管理者だけが書き換えられる。管理者以外が読み込んでも、再読み込みのとき共有データで上書きされてしまう
-            if (firebaseAvailable && !firestoreEditor) {
-                const msg = "共有データに保存するため、管理者のGmailでログインしてから読み込んでください。";
-                shareMsg(msg, true);
-                alert(msg);
-                return;
-            }
-            const r = new FileReader();
-            r.onload = () => {
-                try {
-                    const obj = JSON.parse(r.result);
-                    if (!obj || obj.app !== "nichiji-kanri" || !obj.data || typeof obj.data !== "object") throw new Error("format");
-                    const keys = Object.keys(obj.data).filter(k => k.indexOf(APP_DATA_PREFIX) === 0 && APP_DATA_EXCLUDE.indexOf(k) < 0 && typeof obj.data[k] === "string");
-                    if (!keys.length) throw new Error("empty");
-                    if (!confirm("このファイルのデータ(" + keys.length + "項目)を読み込みます。\nこの端末の現在のデータは置き換わります。よろしいですか?")) return;
-                    const old = [];
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const k = localStorage.key(i);
-                        if (k && k.indexOf(APP_DATA_PREFIX) === 0 && APP_DATA_EXCLUDE.indexOf(k) < 0) old.push(k);
-                    }
-                    firestoreApplyingRemote = true;   // 途中の状態を共有データへ送らないようにする
-                    try {
-                        old.forEach(k => localStorage.removeItem(k));
-                        keys.forEach(k => localStorage.setItem(k, obj.data[k]));
-                    } finally { firestoreApplyingRemote = false; }
-                    if (firebaseAvailable && firestoreEditor && firestoreRef) {
-                        // 読み込んだデータを共有データにも保存してから再読み込みする(保存前に再読み込みすると、古い共有データで上書きされる)
-                        shareMsg("共有データに保存中…");
-                        const vals = getShareableLocalValues();
-            mergePendingAttendance(vals);
-            firestoreRef.set({ values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
-                            .then(() => { alert("読み込んで共有しました。画面を再読み込みします。"); location.reload(); })
-                            .catch(err => { console.error(err); shareMsg("共有データへの保存に失敗しました(" + ((err && err.code) || err) + ")。もう一度読み込んでください。", true); });
-                        return;
-                    }
-                    alert("読み込みました。画面を再読み込みします。");
-                    location.reload();
-                } catch (e) {
-                    shareMsg(e && e.message === "empty" ? "ファイルに読み込めるデータがありませんでした。" : "読み込めませんでした。このアプリで共有したファイルか確認してください。", true);
-                }
-            };
-            r.onerror = () => shareMsg("ファイルを読み込めませんでした。", true);
-            r.readAsText(f);
         }
 
         // ------- Cloud Firestore 同期 -------
@@ -9193,7 +8867,7 @@
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
         const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
-            SURVEY_SORT_KEY, CAL_TIME_KEY, CAL_AXIS_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, MEMBER_ALERT_KEY]);
+            SURVEY_SORT_KEY, CAL_TIME_KEY, CAL_AXIS_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
         let firestoreSaveTimer = null;
