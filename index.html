@@ -310,6 +310,9 @@
         .nv-chip { display: block; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.4; padding: 0 3px; border-radius: 3px; background: var(--plan-gray, var(--pcbg0)); color: var(--plan-ink, var(--ink-2)); }
         .nv-chip.cont { opacity: .7; }
         .nv-more { font-size: 9px; color: var(--ink-3); padding-left: 3px; }
+        /* 日またぎの予定: 週ごとに1本のバーでつなげる(タイムツリー風) */
+        .nv-lane { height: 12.6px; flex: none; }
+        .nv-seg { align-self: start; z-index: 2; pointer-events: none; height: 12.6px; box-sizing: border-box; text-overflow: ellipsis; }
         .nv-top { display: flex; align-items: center; justify-content: center; gap: 2px; height: 22px; }
         .nv-ic { display: inline-flex; align-items: center; gap: 2px; }
         .cal-day .nv-ic .vid-mark { position: static; display: inline-block; width: 11px; height: 8px; opacity: .8; }
@@ -334,15 +337,18 @@
         .nv-memo { margin-top: 3px; font-size: 13px; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; }
         .nv-empty { padding: 18px 0; text-align: center; font-size: 13px; color: var(--ink-3); }
         .cal-weekday { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--ink-3); padding: 4px 0 6px; }
-        .cal-grid > .cal-weekday:nth-child(7n+1) { color: var(--notcome); }
-        .cal-grid > .cal-weekday:nth-child(7n) { color: #3b6fd0; }
+        .cal-grid > .cal-weekday.dow-0 { color: var(--notcome); }
+        .cal-grid > .cal-weekday.dow-6 { color: #3b6fd0; }
+        .cal-wsrow { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 0 auto; font-size: 11px; color: var(--ink-3); }
+        .cal-wsrow .ws-btn { border: none; background: var(--bg); color: var(--ink-3); font: inherit; font-size: 12px; font-weight: 700; min-width: 30px; min-height: 24px; padding: 0 8px; border-radius: 999px; box-shadow: var(--raise-sm); cursor: pointer; }
+        .cal-wsrow .ws-btn.on { box-shadow: var(--sink); color: var(--ink); }
         .cal-day {
             position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: none; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: 500;
             background: transparent; color: var(--ink); min-height: 44px;
         }
-        .cal-grid > .cal-day:nth-child(7n+1):not(.other-month):not([class*="event-"]) { color: var(--notcome-ink); }
-        .cal-grid > .cal-day:nth-child(7n):not(.other-month):not([class*="event-"]) { color: #2f5fb8; }
+        .cal-grid > .cal-day.dow-0:not(.other-month):not([class*="event-"]) { color: var(--notcome-ink); }
+        .cal-grid > .cal-day.dow-6:not(.other-month):not([class*="event-"]) { color: #2f5fb8; }
         .cal-day:active { filter: brightness(.95); }
         .cal-day.other-month { color: var(--line-2); cursor: default; }
         .cal-day.other-month:active { filter: none; }
@@ -2036,6 +2042,12 @@
         .sv-btn.sel.notcome { background: var(--notcome-soft); color: var(--notcome-ink); }
         .sv-btn.sel.pending { background: var(--pending-soft); color: var(--pending-ink); }
 
+        .sv-sort { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 2px 12px; padding: 9px 12px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-sm); font-size: 13px; font-weight: 700; color: var(--ink-2); cursor: pointer; border: none; font-family: inherit; width: 100%; text-align: left; }
+        .sv-sort .sv-sw { flex: none; width: 40px; height: 24px; border-radius: 999px; background: var(--line-2, #c9ced6); position: relative; transition: background .15s; }
+        .sv-sort .sv-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
+        .sv-sort.on .sv-sw { background: var(--accent, #2f9e6e); }
+        .sv-sort.on .sv-sw::after { transform: translateX(16px); }
+
         /* =========================================================
            v47: ヘッダーの📝(回答)とモード選択
            ========================================================= */
@@ -2397,6 +2409,9 @@
             <span><span class="swatch warn"></span>やや不足</span>
             <span><span class="swatch bad"></span>不足/過多</span>
             <span><span class="swatch plan"></span>他の予定</span>
+            <div class="cal-wsrow" id="calWsRow" title="週の始まり" aria-label="週の始まり"><span>週</span>
+                <button type="button" class="ws-btn" id="wsBtn0" onclick="setWeekStart(0)" aria-pressed="false" aria-label="日曜始まり">日</button>
+                <button type="button" class="ws-btn" id="wsBtn1" onclick="setWeekStart(1)" aria-pressed="false" aria-label="月曜始まり">月</button></div>
         </div>
     </section>
 
@@ -2661,6 +2676,9 @@
         };
 
         const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+        const WEEK_START_KEY = "attendance_week_start_v1";
+        let weekStartDay = 0;   // 0=日曜始まり / 1=月曜始まり
+        try { weekStartDay = localStorage.getItem(WEEK_START_KEY) === "1" ? 1 : 0; } catch (e) { /* ignore */ }
         const DEFAULT_THRESHOLDS = { yellowMin: 8, cyanMin: 12, cyanMax: 14 };
         const STATUS_LIST = ["来る", "来ない", "未定", "未確認"];
         const STATUS_META = {
@@ -4594,7 +4612,48 @@
         var volleyFull = false;   // true: バレーのタスク画面を全体に表示(カレンダーは隠す)
         function openVolleyFull() { volleyFull = true; if (selectedDate >= formatDateKey(new Date())) switchView("member"); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
         function closeVolleyFull() { volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
-        function buildNormalCell(cellDate, inMonth, todayKey) {
+        // 月カレンダー1週分の「日またぎの予定」を、行(レーン)に割り当てる
+        function nvWeekLayout(days) {
+            const keys = days.map(formatDateKey);
+            const map = new Map();
+            keys.forEach((k, ci) => plansOn(k).forEach(pi => {
+                if (pi.first && pi.last) return;   // 1日だけの予定は日付枠の中に出す
+                const id = pi.p.id;
+                if (!map.has(id)) map.set(id, { p: pi.p, s: ci, e: ci });
+                map.get(id).e = ci;
+            }));
+            const segs = [...map.values()].sort((a, b) => a.s - b.s || (b.e - b.s) - (a.e - a.s) || a.p.id - b.p.id);
+            const laneEnd = [];
+            segs.forEach(g => {
+                let i = laneEnd.findIndex(x => x < g.s);
+                if (i < 0) { i = laneEnd.length; laneEnd.push(-1); }
+                laneEnd[i] = g.e; g.lane = i;
+                g.contL = g.p.startDate < keys[0];
+                g.contR = !!g.p.endDate && g.p.endDate > keys[6];
+            });
+            const MAXL = 3;
+            const perDay = keys.map(() => ({ lanes: 0, hidden: 0 }));
+            segs.forEach(g => {
+                for (let c = g.s; c <= g.e; c++) {
+                    if (g.lane < MAXL) perDay[c].lanes = Math.max(perDay[c].lanes, g.lane + 1);
+                    else perDay[c].hidden++;
+                }
+            });
+            return { segs: segs.filter(g => g.lane < MAXL), perDay };
+        }
+        function buildNvSeg(g, row) {
+            const el = document.createElement("div");
+            el.className = "nv-chip nv-seg" + pcCls(g.p);
+            el.textContent = g.p.title || "予定";
+            el.style.gridColumn = (g.s + 1) + " / " + (g.e + 2);
+            el.style.gridRow = String(row);
+            el.style.marginTop = "calc(27px + " + g.lane + " * 14.6px)";
+            el.style.marginLeft = g.contL ? "0" : "1px";
+            el.style.marginRight = g.contR ? "0" : "1px";
+            el.style.borderRadius = (g.contL ? "0" : "3px") + " " + (g.contR ? "0" : "3px") + " " + (g.contR ? "0" : "3px") + " " + (g.contL ? "0" : "3px");
+            return el;
+        }
+        function buildNormalCell(cellDate, inMonth, todayKey, lay) {
             const key = formatDateKey(cellDate);
             const cell = document.createElement("div");
             cell.className = "cal-day dow-" + cellDate.getDay() + (inMonth ? "" : " other-month");
@@ -4603,9 +4662,14 @@
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
             const chips = [];
             if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">🏐${n}名</span>`); }
-            plansOn(key).forEach(({ p, first }) => chips.push(`<span class="nv-chip${pcCls(p)}${first ? "" : " cont"}">${escapeHtml(p.title || "予定")}</span>`));
-            const shown = chips.slice(0, 3);
-            if (chips.length > 3) shown[2] = `<span class="nv-more">他${chips.length - 2}件</span>`;
+            plansOn(key).forEach(({ p, first, last }) => { if (first && last) chips.push(`<span class="nv-chip${pcCls(p)}">${escapeHtml(p.title || "予定")}</span>`); });
+            // 日またぎの予定はバーで上に出すので、その分の行を空けて、残りに1日だけの予定を並べる
+            const nl = lay ? lay.lanes : 0, hid = lay ? lay.hidden : 0;
+            const slots = 3 - nl, total = chips.length + hid;
+            let shown;
+            if (total <= slots) shown = chips;
+            else { const keep = Math.max(0, slots - 1); shown = chips.slice(0, keep); shown.push(`<span class="nv-more">他${total - keep}件</span>`); }
+            shown = new Array(nl).fill('<span class="nv-lane"></span>').concat(shown);
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
             const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">💰</span>` : "";
             cell.innerHTML = `<div class="nv-top"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${shown.join("")}`;
@@ -4702,7 +4766,19 @@
         }
         let calTimeMode = false;
         try { calTimeMode = localStorage.getItem(CAL_TIME_KEY) === "1"; } catch (e) { /* ignore */ }
-        function startOfWeek(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay()); }
+        function startOfWeek(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() - weekStartDay + 7) % 7)); }
+        function syncWeekStartUi() {
+            [0, 1].forEach(v => { const b = document.getElementById("wsBtn" + v); if (b) { b.classList.toggle("on", weekStartDay === v); b.setAttribute("aria-pressed", String(weekStartDay === v)); } });
+        }
+        function setWeekStart(v) {
+            v = v === 1 ? 1 : 0;
+            if (v === weekStartDay) return;
+            weekStartDay = v;
+            try { localStorage.setItem(WEEK_START_KEY, String(v)); } catch (e) { /* ignore */ }
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(selectedDate || "");
+            viewWeekStart = startOfWeek(m ? new Date(+m[1], +m[2] - 1, +m[3]) : viewWeekStart);
+            renderCalendar();
+        }
         let viewWeekStart = startOfWeek(new Date());
         function toggleCalTimeMode() {
             calTimeMode = !calTimeMode;
@@ -4995,7 +5071,7 @@
                 const [y, m, d] = (c.dataset.key || "").split("-").map(Number);
                 if (!y || n.dataset.key !== formatDateKey(new Date(y, m - 1, d + 1))) return;
                 if (listLike) { if (!grid.offsetParent || n.offsetTop !== c.offsetTop) return; }
-                else if (new Date(y, m - 1, d).getDay() === 6) return;   // 土曜で行が変わる
+                else if (new Date(y, m - 1, d).getDay() === (weekStartDay + 6) % 7) return;   // 週の最後の日で行が変わる
                 c.classList.add("cont-r"); n.classList.add("cont-l");
                 c.style.marginRight = (-gap) + "px";
             });
@@ -5182,10 +5258,14 @@
             grid.classList.toggle("nv", !calListMode && !calTimeMode);
             const keepScroll = (calListMode && !calListNeedScroll) ? grid.scrollTop : 0;
             grid.innerHTML = "";
-            if (!calListMode && !calTimeMode) WEEKDAYS.forEach(w => {
+            syncWeekStartUi();
+            if (!calListMode && !calTimeMode) WEEKDAYS.forEach((_, wi) => {
+                const dw = (wi + weekStartDay) % 7;
+                const w = WEEKDAYS[dw];
                 const el = document.createElement("div");
-                el.className = "cal-weekday";
+                el.className = "cal-weekday dow-" + dw;
                 el.textContent = w;
+                el.style.gridColumn = String(wi + 1); el.style.gridRow = "1";   // 日またぎのバーを重ねるので位置を固定
                 grid.appendChild(el);
             });
 
@@ -5213,16 +5293,26 @@
             }
 
             const firstOfMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
-            const startOffset = firstOfMonth.getDay();
+            const startOffset = (firstOfMonth.getDay() - weekStartDay + 7) % 7;
             const gridStart = new Date(firstOfMonth);
             gridStart.setDate(gridStart.getDate() - startOffset);
 
+            const nvLay = [];
+            for (let w = 0; w < 6; w++) {
+                const days = [];
+                for (let j = 0; j < 7; j++) days.push(new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + w * 7 + j));
+                nvLay.push(nvWeekLayout(days));
+            }
             for (let i = 0; i < 42; i++) {
                 const cellDate = new Date(gridStart);
                 cellDate.setDate(gridStart.getDate() + i);
                 const inMonth = cellDate.getMonth() === viewMonth.getMonth();
-                grid.appendChild(buildNormalCell(cellDate, inMonth, todayKey));
+                const w = Math.floor(i / 7), c = i % 7;
+                const cell = buildNormalCell(cellDate, inMonth, todayKey, nvLay[w].perDay[c]);
+                cell.style.gridColumn = String(c + 1); cell.style.gridRow = String(w + 2);
+                grid.appendChild(cell);
             }
+            nvLay.forEach((L, w) => L.segs.forEach(g => grid.appendChild(buildNvSeg(g, w + 2))));
             linkPlanCells(grid);
             refreshCalWarnMarks();
             renderNvPanel();
@@ -7125,6 +7215,14 @@
 
         // ------- 回答画面(来る○ / 来ない✖ / 未定△ だけ答える) -------
         let surveyOpen = false;
+        const SURVEY_SORT_KEY = "attendance_survey_unans_first_v1";
+        let surveyUnansFirst = false;   // true: 未回答・△の日を上に表示
+        try { surveyUnansFirst = localStorage.getItem(SURVEY_SORT_KEY) === "1"; } catch (e) { /* ignore */ }
+        function surveyToggleSort() {
+            surveyUnansFirst = !surveyUnansFirst;
+            try { localStorage.setItem(SURVEY_SORT_KEY, surveyUnansFirst ? "1" : "0"); } catch (e) { /* ignore */ }
+            renderSurvey();
+        }
         let surveyAdminName = "";   // 管理者が自分の名前に紐付いていないとき、代わりに答える人
         function surveyWho() { return myMemberName() || (isAdmin() ? surveyAdminName : ""); }
         function surveyDates() {
@@ -7193,7 +7291,16 @@
             } else {
                 who = `<div class="sv-who"><b>${escapeHtml(name)}</b> さんの出欠</div>`;
             }
-            const dates = name ? surveyDates() : [];
+            let dates = name ? surveyDates() : [];
+            if (surveyUnansFirst && name) {   // 未回答 → △ → ○/✖(同じ区分の中は日付順のまま)
+                const rank = d => {
+                    const mem = (attendanceByDate[d] || []).find(m => m.name === name);
+                    if (!mem) return 2;
+                    const st = mem.status;
+                    return st === "来る" || st === "来ない" ? 2 : st === "未定" ? 1 : 0;
+                };
+                dates = dates.map((d, i) => ({ d, i, r: rank(d) })).sort((a, b) => a.r - b.r || a.i - b.i).map(x => x.d);
+            }
             let unanswered = 0;
             const cards = dates.map(d => {
                 const mem = (attendanceByDate[d] || []).find(m => m.name === name);
@@ -7208,7 +7315,9 @@
             }).join("");
             const note = !name ? "" : dates.length === 0 ? `<div class="sv-empty">これからの予約日はありません。</div>`
                 : `<div class="sv-note">${unanswered > 0 ? `○か✖の回答がまだの日が ${unanswered}件 あります。` : "すべて回答済みです。"}</div>`;
-            box.innerHTML = who + note + cards;
+            const sortBtn = name && dates.length > 1
+                ? `<button type="button" class="sv-sort${surveyUnansFirst ? " on" : ""}" onclick="surveyToggleSort()" aria-pressed="${surveyUnansFirst}"><span>未回答・△を上に表示</span><span class="sv-sw"></span></button>` : "";
+            box.innerHTML = who + note + sortBtn + cards;
         }
 
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
@@ -9116,7 +9225,7 @@
             if (!st || !/^\d{4}-\d{2}-\d{2}$/.test(st.selectedDate || "")) return null;
             selectedDate = st.selectedDate;
             if (Array.isArray(st.month)) viewMonth = new Date(st.month[0], st.month[1], 1);
-            if (/^\d{4}-\d{2}-\d{2}$/.test(st.week || "")) { const [y, m, d] = st.week.split("-").map(Number); viewWeekStart = new Date(y, m - 1, d); }
+            if (/^\d{4}-\d{2}-\d{2}$/.test(st.week || "")) { const [y, m, d] = st.week.split("-").map(Number); viewWeekStart = startOfWeek(new Date(y, m - 1, d)); }
             return st;
         }
 
