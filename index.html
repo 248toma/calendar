@@ -263,6 +263,28 @@
         .op-title { flex: 0 0 56px; width: 56px; }
         .op-memo-in { flex: 1 1 0; }
         .op-row input[type="date"] { flex: 1.5 1 0; width: 0; }
+        /* 日付入力: 週の始まり(日/月)に連動する独自カレンダー */
+        input.dp-input { cursor: pointer; text-align: left; }
+        .op-row input.dp-input { flex: 1.5 1 0; width: 0; }
+        .video-form .vf-top input.dp-input { flex: 1 1 0; min-width: 0; }
+        .dp-pop { position: fixed; z-index: 10000; box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .25); padding: 10px 10px 8px; user-select: none; -webkit-user-select: none; }
+        .dp-pop button { font: inherit; color: inherit; border: none; background: transparent; cursor: pointer; }
+        .dp-head { display: flex; align-items: center; gap: 4px; padding: 2px 2px 8px; }
+        .dp-title { flex: 1; font-size: 15px; font-weight: 700; padding-left: 4px; }
+        .dp-nav { width: 36px; height: 32px; border-radius: 8px; font-size: 20px; line-height: 1; color: var(--ink-3); }
+        .dp-nav:active { background: var(--bg); }
+        .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px 0; }
+        .dp-wd { text-align: center; font-size: 11px; font-weight: 600; color: var(--ink-3); padding: 2px 0 4px; }
+        .dp-wd.dp-sun, .dp-day.dp-sun { color: var(--notcome-ink); }
+        .dp-wd.dp-sat, .dp-day.dp-sat { color: #2f5fb8; }
+        .dp-day { height: 36px; border-radius: 50%; font-size: 15px; font-weight: 500; }
+        .dp-day:active:not(:disabled) { background: var(--bg); }
+        .dp-day.dp-today { box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 800; }
+        .dp-day.dp-sel { background: var(--ink); color: var(--surface); font-weight: 800; box-shadow: none; }
+        .dp-day:disabled { opacity: .3; cursor: default; }
+        .dp-foot { display: flex; justify-content: space-between; padding-top: 6px; }
+        .dp-foot button { font-size: 13px; font-weight: 600; color: var(--ink-2); padding: 6px 12px; border-radius: 999px; }
+        .dp-foot button:active { background: var(--bg); }
         .op-row input[type="time"] { flex: 1 1 0; width: 0; }
         .op-sep { flex: none; font-size: 11px; color: var(--ink-3); }
         .op-add { flex: none; height: 28px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--ink-fill); background: var(--ink-fill); color: #fff; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
@@ -9339,6 +9361,110 @@
         if (restoredUi && restoredUi.volleyFull && events[selectedDate]) { volleyFull = true; renderOtherPlanBox(); renderNvPanel(); }
         if (restoredUi && restoredUi.list && !calListMode) { calListMode = true; calListNeedScroll = true; renderCalendar(); }
         if (restoredUi && restoredUi.survey) openSurvey();
+        // ------- 日付入力: 「週の始まり(日/月)」の設定に連動する独自カレンダー -------
+        // 端末標準の日付ピッカーは曜日の並びを変えられないため、日付入力をこのカレンダーに置き換える(値は従来どおり YYYY-MM-DD)
+        (function () {
+            const ISO = /^\d{4}-\d{2}-\d{2}$/;
+            const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+            const pad = n => String(n).padStart(2, "0");
+            const mk = (y, m, d) => y + "-" + pad(m + 1) + "-" + pad(d);
+            let pop = null, cur = null, vy = 0, vm = 0, openedAt = 0;
+            function enhance(el) {
+                if (!el || el.dataset.dp) return;
+                el.dataset.dp = "1";
+                let iso = proto.get.call(el) || "";
+                el.type = "text";
+                el.readOnly = true;
+                el.setAttribute("inputmode", "none");
+                el.setAttribute("autocomplete", "off");
+                el.placeholder = "----/--/--";
+                el.classList.add("dp-input");
+                const show = () => proto.set.call(el, iso ? iso.replace(/-/g, "/") : "");
+                Object.defineProperty(el, "value", {
+                    configurable: true,
+                    get() { return iso; },
+                    set(v) { iso = ISO.test(String(v || "")) ? String(v) : ""; show(); }
+                });
+                show();
+            }
+            function close() { if (pop) { pop.remove(); pop = null; } cur = null; }
+            function pick(iso) {
+                const el = cur; if (!el) return;
+                close();
+                if (el.value === iso) return;
+                el.value = iso;
+                el.dispatchEvent(new Event("input", { bubbles: true }));
+                el.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            function render() {
+                const ws = weekStartDay === 1 ? 1 : 0;
+                const off = (new Date(vy, vm, 1).getDay() - ws + 7) % 7;
+                const dim = new Date(vy, vm + 1, 0).getDate();
+                const min = cur.min || "", max = cur.max || "", val = cur.value;
+                const t = new Date(), tk = mk(t.getFullYear(), t.getMonth(), t.getDate());
+                let h = '<div class="dp-head"><div class="dp-title">' + vy + '年' + (vm + 1) + '月</div>'
+                    + '<button type="button" class="dp-nav" data-nav="-1" aria-label="前の月">‹</button>'
+                    + '<button type="button" class="dp-nav" data-nav="1" aria-label="次の月">›</button></div><div class="dp-grid">';
+                for (let i = 0; i < 7; i++) {
+                    const w = (i + ws) % 7;
+                    h += '<div class="dp-wd' + (w === 0 ? ' dp-sun' : w === 6 ? ' dp-sat' : '') + '">' + "日月火水木金土"[w] + '</div>';
+                }
+                for (let i = 0; i < off; i++) h += "<span></span>";
+                for (let d = 1; d <= dim; d++) {
+                    const k = mk(vy, vm, d), w = new Date(vy, vm, d).getDay();
+                    const dis = (min && k < min) || (max && k > max);
+                    h += '<button type="button" class="dp-day' + (w === 0 ? ' dp-sun' : w === 6 ? ' dp-sat' : '') + (k === tk ? ' dp-today' : '') + (k === val ? ' dp-sel' : '') + '" data-d="' + k + '"' + (dis ? ' disabled' : '') + '>' + d + '</button>';
+                }
+                h += '</div><div class="dp-foot"><button type="button" data-a="clear">リセット</button><button type="button" data-a="today">今日</button><button type="button" data-a="close">閉じる</button></div>';
+                pop.innerHTML = h;
+            }
+            function place() {
+                const r = cur.getBoundingClientRect();
+                const w = Math.min(320, window.innerWidth - 16);
+                pop.style.width = w + "px";
+                pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + "px";
+                const hh = pop.offsetHeight, below = window.innerHeight - r.bottom, above = r.top;
+                const top = (below >= hh + 12 || below >= above) ? r.bottom + 6 : r.top - hh - 6;
+                pop.style.top = Math.max(8, Math.min(top, window.innerHeight - hh - 8)) + "px";
+            }
+            function open(el) {
+                if (cur === el && pop) return;
+                close();
+                cur = el;
+                const base = ISO.test(el.value) ? el.value : (ISO.test(el.min || "") ? el.min : (typeof selectedDate === "string" && ISO.test(selectedDate) ? selectedDate : mk(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())));
+                vy = +base.slice(0, 4); vm = +base.slice(5, 7) - 1;
+                pop = document.createElement("div");
+                pop.className = "dp-pop";
+                pop.setAttribute("role", "dialog");
+                pop.addEventListener("click", e => {
+                    const b = e.target.closest("button"); if (!b) return;
+                    if (b.dataset.d) { pick(b.dataset.d); return; }
+                    if (b.dataset.nav) { vm += +b.dataset.nav; if (vm < 0) { vm = 11; vy--; } else if (vm > 11) { vm = 0; vy++; } render(); return; }
+                    if (b.dataset.a === "clear") pick("");
+                    else if (b.dataset.a === "today") { const t = new Date(); pick(mk(t.getFullYear(), t.getMonth(), t.getDate())); }
+                    else if (b.dataset.a === "close") close();
+                });
+                document.body.appendChild(pop);
+                render(); place();
+                openedAt = Date.now();
+            }
+            document.addEventListener("click", e => {
+                const t = e.target.closest ? e.target.closest("input.dp-input") : null;
+                if (t) { e.preventDefault(); open(t); return; }
+                if (pop && !pop.contains(e.target)) close();
+            });
+            window.addEventListener("resize", () => { if (pop) place(); });
+            window.addEventListener("scroll", e => { if (pop && Date.now() - openedAt > 400 && !pop.contains(e.target)) close(); }, true);
+            document.addEventListener("keydown", e => { if (pop && e.key === "Escape") close(); });
+            document.querySelectorAll('input[type="date"]').forEach(enhance);
+            new MutationObserver(list => {
+                list.forEach(m => m.addedNodes.forEach(n => {
+                    if (n.nodeType !== 1) return;
+                    if (n.matches && n.matches('input[type="date"]')) enhance(n);
+                    if (n.querySelectorAll) n.querySelectorAll('input[type="date"]').forEach(enhance);
+                }));
+            }).observe(document.body, { childList: true, subtree: true });
+        })();
         startFirestoreSync();
     </script>
 </body>
