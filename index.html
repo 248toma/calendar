@@ -8958,8 +8958,8 @@
         // 管理者以外は「閲覧モード」(開発ボタン・予測・端数単位は非表示)。ログインすると名簿と紐付いた「自分」が分かります。
         const FIRESTORE_DOCUMENT_PATH = ["sharedApps", "volleyball-schedule"];
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
-        // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定)
-        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY]);
+        // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月))
+        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
         let firestoreSaveTimer = null;
