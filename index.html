@@ -5,11 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta name="theme-color" content="#f3f4f7">
     <title>日程管理アプリ</title>
-    <!-- Firebase(オンライン共有)。Firebase Hosting上では /__/firebase/init.js が設定を自動で読み込みます -->
+    <!-- Firebase(オンライン共有)。GitHub Pagesなど、どこに置いても動くよう設定値を直接書いています -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script src="/__/firebase/init.js"></script>
+    <script>
+        // Firebaseの設定(公開されても問題ない値。書き込みはFirestoreのルールと管理者アカウントで制限)
+        window.FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCupZ4RbR9eLzz991by5DFu9lxOsVbjrNg",
+            authDomain: "calendar24884.firebaseapp.com",
+            projectId: "calendar24884",
+            storageBucket: "calendar24884.firebasestorage.app",
+            messagingSenderId: "1057904352584",
+            appId: "1:1057904352584:web:dd6929223efc6f39b8277d"
+        };
+        // Firebase本体を読み込めない環境(プレビューなど)ではエラーにせず、この端末だけで動かす
+        try { if (window.firebase && firebase.initializeApp) firebase.initializeApp(window.FIREBASE_CONFIG); }
+        catch (e) { window.FIREBASE_INIT_ERROR = String((e && e.message) || e); console.warn("Firebaseを初期化できませんでした。", e); }
+    </script>
     <style>
         /* =========================================================
            Design tokens
@@ -8335,7 +8348,19 @@
         function isSharedKey(key) { return !!key && String(key).startsWith("attendance_") && !LOCAL_ONLY_KEYS.has(key); }
 
         function detectFirebase() {
+            // 初期化されていなければ、もう一度初期化する
+            try {
+                if (window.firebase && firebase.initializeApp && firebase.apps && !firebase.apps.length && window.FIREBASE_CONFIG) firebase.initializeApp(window.FIREBASE_CONFIG);
+            } catch (e) { window.FIREBASE_INIT_ERROR = String((e && e.message) || e); }
             firebaseAvailable = !!(window.firebase && firebase.apps && firebase.apps.length && firebase.firestore && firebase.auth);
+        }
+        // 共有に繋がらない理由(画面の表示用)
+        function firebaseUnavailableReason() {
+            if (!window.firebase) return "SDK読込失敗";
+            if (!firebase.auth) return "auth未読込";
+            if (!firebase.firestore) return "Firestore未読込";
+            if (!firebase.apps || !firebase.apps.length) return "初期化失敗" + (window.FIREBASE_INIT_ERROR ? ":" + window.FIREBASE_INIT_ERROR : "");
+            return "";
         }
 
         function getShareableLocalValues() {
@@ -8410,7 +8435,8 @@
 
         function startFirestoreSync() {
             if (!firebaseAvailable) {
-                setFirestoreSyncStatus("この端末のみ");
+                const why = firebaseUnavailableReason();
+                setFirestoreSyncStatus("この端末のみ" + (why ? "(" + why + ")" : ""));
                 return;
             }
             firestoreRef = firebase.firestore().collection(FIRESTORE_DOCUMENT_PATH[0]).doc(FIRESTORE_DOCUMENT_PATH[1]);
