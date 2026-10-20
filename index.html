@@ -235,14 +235,24 @@
         body.dark .cal-day.has-plan.event-warning { background: linear-gradient(135deg, #78581f 50%, var(--plan-gray) 50%); }
         .lv-plan { background: var(--plan-gray); color: var(--plan-ink); }
         /* 他の予定の色(バレーの 緑/黄/赤 と被らない 青・紫・橙。0=灰色が従来どおり) */
-        :root { --pcbg0: #d6d9de; --pcbg1: rgba(95, 134, 179, .30); --pcbg2: rgba(128, 98, 205, .34); --pcbg3: rgba(204, 132, 88, .32); }
-        body.dark { --pcbg0: #4b4f56; --pcbg1: rgba(95, 134, 179, .42); --pcbg2: rgba(150, 122, 225, .46); --pcbg3: rgba(204, 132, 88, .42); }
+        :root { --pcbg0: #d6d9de; --pcbg1: rgba(95, 134, 179, .30); --pcbg2: rgba(128, 98, 205, .34); --pcbg3: rgba(204, 132, 88, .32); --pcbg4: rgba(70, 168, 105, .32); --pcbg5: rgba(222, 85, 85, .30); --pcbg6: rgba(226, 108, 160, .32); --pcbg7: rgba(48, 170, 180, .32); --pcbg8: rgba(214, 170, 40, .36); }
+        body.dark { --pcbg0: #4b4f56; --pcbg1: rgba(95, 134, 179, .42); --pcbg2: rgba(150, 122, 225, .46); --pcbg3: rgba(204, 132, 88, .42); --pcbg4: rgba(70, 168, 105, .44); --pcbg5: rgba(230, 100, 100, .44); --pcbg6: rgba(230, 120, 170, .44); --pcbg7: rgba(60, 185, 195, .42); --pcbg8: rgba(220, 180, 50, .42); }
         .pc1 { --plan-gray: var(--pcbg1); --plan-ink: #3a608f; }
         .pc2 { --plan-gray: var(--pcbg2); --plan-ink: #5a40a8; }
         .pc3 { --plan-gray: var(--pcbg3); --plan-ink: #965828; }
+        .pc4 { --plan-gray: var(--pcbg4); --plan-ink: #23744a; }
+        .pc5 { --plan-gray: var(--pcbg5); --plan-ink: #b0312f; }
+        .pc6 { --plan-gray: var(--pcbg6); --plan-ink: #b0407a; }
+        .pc7 { --plan-gray: var(--pcbg7); --plan-ink: #1b7882; }
+        .pc8 { --plan-gray: var(--pcbg8); --plan-ink: #8a6a05; }
         body.dark .pc1 { --plan-ink: #a9c3e6; }
         body.dark .pc2 { --plan-ink: #d6caf8; }
         body.dark .pc3 { --plan-ink: #f0c4a0; }
+        body.dark .pc4 { --plan-ink: #a6e0bb; }
+        body.dark .pc5 { --plan-ink: #f5b3b3; }
+        body.dark .pc6 { --plan-ink: #f5bcd8; }
+        body.dark .pc7 { --plan-ink: #9fdde3; }
+        body.dark .pc8 { --plan-ink: #f2dc92; }
         .op-colors { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding: 0 2px; }
         .op-colors-lbl { font-size: 11px; font-weight: 600; color: var(--ink-3); }
         .op-dot { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; background: var(--dot); box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .25); position: relative; }
@@ -251,6 +261,11 @@
         .op-dot[data-c="1"] { --dot: #5f86b3; }
         .op-dot[data-c="2"] { --dot: #7a5fd0; }
         .op-dot[data-c="3"] { --dot: #cc8458; }
+        .op-dot[data-c="4"] { --dot: #46a869; }
+        .op-dot[data-c="5"] { --dot: #de5555; }
+        .op-dot[data-c="6"] { --dot: #e26ca0; }
+        .op-dot[data-c="7"] { --dot: #30aab4; }
+        .op-dot[data-c="8"] { --dot: #d6aa28; }
         .legend .swatch.plan { background: var(--plan-gray); }
         .day-toggles { display: flex; align-items: center; gap: 14px; flex: none; }
         /* バレーのスイッチの丸は🏐 */
@@ -343,10 +358,10 @@
         .cal-grid.nv .cal-day.today .nv-d { background: var(--ink-fill); color: #fff; }
         .nv-chip { display: block; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.4; padding: 0 3px; border-radius: 3px; background: var(--plan-gray, var(--pcbg0)); color: var(--plan-ink, var(--ink-2)); }
         .nv-chip.cont { opacity: .7; }
-        /* 時間指定のある予定は、塗りではなく枠に色をつける(終日は従来どおり塗り) */
-        .nv-chip.timed { background: transparent; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)); }
-        :root { --pr0: #7b818b; --pr1: #3a608f; --pr2: #5a40a8; --pr3: #965828; }
-        body.dark { --pr0: #a2a8b3; --pr1: #a9c3e6; --pr2: #d6caf8; --pr3: #f0c4a0; }
+        /* 終日の予定は塗りではなく枠だけ。日時の入っている予定は塗り */
+        .nv-chip.ring { background: transparent; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)); }
+        :root { --pr0: #7b818b; --pr1: #3a608f; --pr2: #5a40a8; --pr3: #965828; --pr4: #23744a; --pr5: #b0312f; --pr6: #b0407a; --pr7: #1b7882; --pr8: #8a6a05; }
+        body.dark { --pr0: #a2a8b3; --pr1: #a9c3e6; --pr2: #d6caf8; --pr3: #f0c4a0; --pr4: #a6e0bb; --pr5: #f5b3b3; --pr6: #f5bcd8; --pr7: #9fdde3; --pr8: #f2dc92; }
         .cal-day.p-ring::after { content: ""; position: absolute; inset: 0; box-sizing: border-box; border: 2px solid var(--ring, var(--plan-ink)); border-radius: inherit; pointer-events: none; }
         .cal-day.p-ring.cont-l::after { border-left: none; }
         .cal-day.p-ring.cont-r::after { border-right: none; }
@@ -368,7 +383,13 @@
         .nv-row.nv-go { cursor: pointer; }
         .nv-go .nv-ttl::after { content: " ›"; color: var(--ink-3); }
         #nvDayPanel { display: block; margin: 0 0 12px; }
-        .nv-head { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+        .nv-head { height: 0; margin: 0; }
+        .cl-list { max-height: 320px; overflow-y: auto; font-size: 12px; line-height: 1.5; }
+        .cl-row { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+        .cl-t { flex: none; width: 78px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+        .cl-b { flex: 1; min-width: 0; word-break: break-all; }
+        .cl-who { color: var(--ink-3); font-size: 11px; }
+        .cl-empty { color: var(--ink-3); padding: 8px 0; }
         .nv-row { display: flex; gap: 10px; align-items: stretch; padding: 9px 10px; margin-bottom: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
         .nv-time { flex: none; width: 44px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--ink-2); }
         .nv-time span:last-child { font-weight: 500; color: var(--ink-3); }
@@ -2392,6 +2413,15 @@
             </div>
         </details>
 
+        <div class="panel-group-label">管理</div>
+        <details class="acc" id="changeLogAcc">
+            <summary>変更ログ</summary>
+            <div class="acc-body">
+                <div class="settings-note" style="margin-top:0;">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
+                <div id="changeLogList" class="cl-list"></div>
+            </div>
+        </details>
+
         <div class="panel-group-label">説明</div>
         <details class="acc">
             <summary>説明:使い方・入れ替え操作</summary>
@@ -2488,6 +2518,11 @@
                 <button type="button" class="op-dot" data-c="1" role="radio" aria-label="青" onclick="setPlanColor(1)"></button>
                 <button type="button" class="op-dot" data-c="2" role="radio" aria-label="紫" onclick="setPlanColor(2)"></button>
                 <button type="button" class="op-dot" data-c="3" role="radio" aria-label="オレンジ" onclick="setPlanColor(3)"></button>
+                <button type="button" class="op-dot" data-c="4" role="radio" aria-label="緑" onclick="setPlanColor(4)"></button>
+                <button type="button" class="op-dot" data-c="5" role="radio" aria-label="赤" onclick="setPlanColor(5)"></button>
+                <button type="button" class="op-dot" data-c="6" role="radio" aria-label="ピンク" onclick="setPlanColor(6)"></button>
+                <button type="button" class="op-dot" data-c="7" role="radio" aria-label="水色" onclick="setPlanColor(7)"></button>
+                <button type="button" class="op-dot" data-c="8" role="radio" aria-label="黄" onclick="setPlanColor(8)"></button>
             </div>
         </div>
         <div class="op-scope admin-only" id="opScope" role="radiogroup" aria-label="保存先">
@@ -4670,7 +4705,7 @@
                 if (!map.has(id)) map.set(id, { p: pi.p, s: ci, e: ci });
                 map.get(id).e = ci;
             }));
-            const segs = [...map.values()].sort((a, b) => a.s - b.s || (b.e - b.s) - (a.e - a.s) || a.p.id - b.p.id);
+            const segs = [...map.values()].sort((a, b) => (planTimed(a.p) ? 1 : 0) - (planTimed(b.p) ? 1 : 0) || a.s - b.s || (b.e - b.s) - (a.e - a.s) || a.p.id - b.p.id);
             const laneEnd = [];
             segs.forEach(g => {
                 let i = laneEnd.findIndex(x => x < g.s);
@@ -4691,7 +4726,7 @@
         }
         function buildNvSeg(g, row) {
             const el = document.createElement("div");
-            el.className = "nv-chip nv-seg" + pcCls(g.p) + (planTimed(g.p) ? " timed" : "");
+            el.className = "nv-chip nv-seg" + pcCls(g.p) + (planTimed(g.p) ? "" : " ring");
             el.textContent = g.p.title || "予定";
             el.style.gridColumn = (g.s + 1) + " / " + (g.e + 2);
             el.style.gridRow = String(row);
@@ -4709,8 +4744,11 @@
             if (key === selectedDate) cell.classList.add("selected");
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
             const chips = [];
+            const chipOf = ({ p }) => `<span class="nv-chip${pcCls(p)}${planTimed(p) ? "" : " ring"}">${escapeHtml(p.title || "予定")}</span>`;
+            const single = plansOn(key).filter(x => x.first && x.last);
+            single.filter(x => !planTimed(x.p)).forEach(x => chips.push(chipOf(x)));   // 終日は日付のすぐ下(一番上)
             if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">🏐${n}名</span>`); }
-            plansOn(key).forEach(({ p, first, last }) => { if (first && last) chips.push(`<span class="nv-chip${pcCls(p)}${planTimed(p) ? " timed" : ""}">${escapeHtml(p.title || "予定")}</span>`); });
+            single.filter(x => planTimed(x.p)).forEach(x => chips.push(chipOf(x)));
             // 日またぎの予定はバーで上に出すので、その分の行を空けて、残りに1日だけの予定を並べる
             const nl = lay ? lay.lanes : 0, hid = lay ? lay.hidden : 0;
             const slots = 3 - nl, total = chips.length + hid;
@@ -4783,13 +4821,13 @@
                 const t1 = first ? (p.start || "終日") : "続き", t2 = last && p.end ? p.end : "";
                 const editable = isAdmin() || !!p.local;
                 const editing = planPanelIsOpen() && planEditId === p.id;
-                rows.push({ s: s == null ? -1 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">👥 ${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+                rows.push({ s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">👥 ${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
             });
             rows.sort((a, b) => a.s - b.s);
             const box = document.getElementById("otherPlanBox");
             if (box && el.contains(box)) el.parentNode.insertBefore(box, el);   // 一覧を作り直す前に入力欄を退避
             const isOpen = planPanelIsOpen(), isNew = isOpen && planEditId == null;
-            el.innerHTML = `<div class="nv-head"><button type="button" class="today-btn" onclick="${isNew ? "closePlanPanel()" : "openNewPlan()"}">${isNew ? "閉じる" : "＋ 予定を追加"}</button></div>` +
+            el.innerHTML = `<div class="nv-head"></div>` +
                 (rows.length ? rows.map(r => r.html).join("") : (isOpen ? "" : `<div class="nv-empty">予定はありません</div>`));
             // 入力欄は、押した予定の真下(新規は一覧の先頭)に差し込む
             if (box) {
@@ -4878,7 +4916,7 @@
         }
         // 時間指定のある予定(終日にしていなくて、開始か終了の時間がある)
         function planTimed(p) { return !!(p && !p.allDay && (p.start || p.end)); }
-        function pcCls(p) { const c = +(p && p.color) || 0; return c >= 1 && c <= 3 ? " pc" + c : ""; }
+        function pcCls(p) { const c = +(p && p.color) || 0; return c >= 1 && c <= 8 ? " pc" + c : ""; }
         function planInfo(key) { const l = plansOn(key); return l.length ? l[0] : null; }
         function parseHM(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; }
         // 予定の時間(開始・終了がそろって終了が後のときだけ)
@@ -5244,7 +5282,7 @@
             // 収支マイナスの日は右下に💰(開発モードのときだけ表示。他の表示とは重ならない位置)
             const minusMark = isDayBalanceMinus(cellKey) ? `<span class="minus-mark dev-only" title="収支マイナス">💰</span>` : "";
             const pinfos = calTimeMode ? [] : plansOn(cellKey);   // 時間表示のときは時間軸のブロックで表す
-            const fillInfos = pinfos.filter(x => !planTimed(x.p)), ringInfos = pinfos.filter(x => planTimed(x.p));   // 終日=塗り / 時間指定=枠
+            const fillInfos = pinfos.filter(x => planTimed(x.p)), ringInfos = pinfos.filter(x => !planTimed(x.p));   // 日時あり=塗り / 終日=枠
             const plan = fillInfos.length ? fillInfos[0].p : null;
             if (ringInfos.length) { cell.classList.add("p-ring"); cell.style.setProperty("--ring", "var(--pr" + (+ringInfos[0].p.color || 0) + ")"); }
             if (pinfos.length) cell.dataset.plan = pinfos.map(x => x.p.id).join(",");
@@ -5559,7 +5597,7 @@
         let planPanel = { date: "", open: false };   // 「他予定」の入力画面を開いているか(日付ごと)
         let planEditId = null;      // 編集中の予定(新規はnull)
         let planFormDate = "";      // 入力欄がどの日付用か
-        let planColor = 0;          // 入力欄の色(0=灰 1=青 2=紫 3=橙)
+        let planColor = 0;          // 入力欄の色(0=灰 1=青 2=紫 3=橙 4=緑 5=赤 6=ピンク 7=水色 8=黄)
         let planShare = [];         // 入力欄の共有先(名簿ID。空=全員)
         function renderPlanShare() {
             const box = document.getElementById("opShare"), el = document.getElementById("opShareChips");
@@ -8947,7 +8985,7 @@
 
         // ------- ローカルデータの共有・引き継ぎ -------
         const APP_DATA_PREFIX = "attendance_";
-        const APP_DATA_EXCLUDE = [DEV_MODE_KEY]; // 開発モードは端末ごとの状態なので共有しない
+        const APP_DATA_EXCLUDE = [DEV_MODE_KEY, SURVEY_SORT_KEY, CAL_TIME_KEY, CAL_AXIS_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, MEMBER_ALERT_KEY]; // 端末ごとの状態なので共有しない
         function shareMsg(t, err) {
             const el = document.getElementById("shareDataMsg");
             if (!el) return;
@@ -9050,8 +9088,9 @@
         // 管理者以外は「閲覧モード」(開発ボタン・予測・端数単位は非表示)。ログインすると名簿と紐付いた「自分」が分かります。
         const FIRESTORE_DOCUMENT_PATH = ["sharedApps", "volleyball-schedule"];
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
-        // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月))
-        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY]);
+        // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
+        const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
+            SURVEY_SORT_KEY, CAL_TIME_KEY, CAL_AXIS_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, MEMBER_ALERT_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
         let firestoreSaveTimer = null;
@@ -9263,6 +9302,7 @@
         // 閲覧者が自分の出欠を共有データへ反映する。共有データの最新を読み直し、自分の1件(日付+名前)だけ書き換えて保存する
         // (他の人の出欠や、管理者が同時に行った変更を上書きしないため)。Firestoreのルール側で閲覧者の更新を許可しておく必要がある
         function saveMyStatusToShared(date, name, status, stamp) {
+            let prevStatus = "";
             if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authUid) return;
             if (!name || name !== myMemberName()) return;   // 自分以外は送らない
             setFirestoreSyncStatus("同期中…");
@@ -9273,13 +9313,20 @@
                 const data = JSON.parse(values[BYDATE_KEY] || "{}");
                 const mem = (data[date] || []).find(m => m.name === name);
                 if (!mem) throw new Error("no-member");
+                prevStatus = mem.status;
                 mem.status = status;
                 mem.updated = stamp;
                 tx.update(firestoreRef, {
                     ["values." + BYDATE_KEY]: JSON.stringify(data),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-            }).then(() => setFirestoreSyncStatus("閲覧中"))
+            }).then(() => {
+                  setFirestoreSyncStatus("閲覧中");
+                  if (prevStatus !== status) {
+                      const sym = st => (STATUS_META[st] && STATUS_META[st].sym) || st;
+                      clAppendRemote(`出欠 ${clMd(date)} ${name}: ${sym(prevStatus)}→${sym(status)}(本人の回答)`, name);
+                  }
+              })
               .catch(err => {
                   console.error("出欠の共有に失敗しました。", err);
                   setFirestoreSyncStatus("閲覧中");
@@ -9420,6 +9467,126 @@
         applyDevMode();
         loadTeamMemberOpen();
         if (syncRosterToUpcomingDays()) saveData();
+
+        // ------- 変更ログ(管理者だけが見る。共有データに保存し、どの管理者の端末でも同じ履歴を見られる) -------
+        const CHANGELOG_KEY = "attendance_changelog_v1";
+        const CHANGELOG_MAX = 300;
+        function clWho() {
+            if (!firebaseAvailable) return "この端末";
+            return authEmail ? authEmail.split("@")[0] : "管理者";
+        }
+        function clMd(k) { const m = String(k).match(/^\d{4}-(\d{2})-(\d{2})$/); return m ? `${+m[1]}/${+m[2]}` : String(k); }
+        function clLoad() { try { const a = JSON.parse(localStorage.getItem(CHANGELOG_KEY) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+        function clFmtTime(t) {
+            const d = new Date(t), p = n => String(n).padStart(2, "0");
+            return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+        }
+        function renderChangeLog() {
+            const el = document.getElementById("changeLogList");
+            if (!el) return;
+            const list = clLoad().slice().reverse();
+            el.innerHTML = list.length
+                ? list.map(e => `<div class="cl-row"><span class="cl-t">${escapeHtml(clFmtTime(e.t))}</span><span class="cl-b">${escapeHtml(e.text)}<br><span class="cl-who">${escapeHtml(e.who || "")}</span></span></div>`).join("")
+                : `<div class="cl-empty">まだ記録がありません</div>`;
+        }
+        function clAppend(texts) {
+            if (!texts.length) return;
+            const log = clLoad(), t = Date.now(), who = clWho();
+            texts.forEach(text => log.push({ t, who, text }));
+            try { localStorage.setItem(CHANGELOG_KEY, JSON.stringify(log.slice(-CHANGELOG_MAX))); } catch (e) { /* 保存できなくても本体は止めない */ }
+            renderChangeLog();
+        }
+        // 閲覧者の回答は、本人の端末から共有データのログへ追記する(失敗しても回答自体には影響させない)
+        function clAppendRemote(text, who) {
+            if (!firestoreRef) return;
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) return;
+                const values = (snap.data() && snap.data().values) || {};
+                let log = [];
+                try { log = JSON.parse(values[CHANGELOG_KEY] || "[]"); } catch (e) { log = []; }
+                if (!Array.isArray(log)) log = [];
+                log.push({ t: Date.now(), who, text });
+                tx.update(firestoreRef, { ["values." + CHANGELOG_KEY]: JSON.stringify(log.slice(-CHANGELOG_MAX)), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            }).catch(err => console.warn("変更ログの追記に失敗しました。", err));
+        }
+        const CL_TRACK = [BYDATE_KEY, EVENTS_KEY, PLANS_KEY, ROSTER_KEY, RESERVATIONS_KEY, SETTLE_KEY];
+        function clSnapshot() {
+            const o = {};
+            CL_TRACK.forEach(k => { let v = null; try { v = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { v = null; } o[k] = v; });
+            return o;
+        }
+        function clDiff(a, b) {
+            const out = [];
+            const sym = st => (STATUS_META[st] && STATUS_META[st].sym) || st;
+            // バレー日
+            const ev0 = a[EVENTS_KEY] || {}, ev1 = b[EVENTS_KEY] || {};
+            Object.keys(ev1).filter(k => ev1[k] && !ev0[k]).sort().forEach(k => out.push(`${clMd(k)} をバレー日にした`));
+            Object.keys(ev0).filter(k => ev0[k] && !ev1[k]).sort().forEach(k => out.push(`${clMd(k)} のバレー日を解除した`));
+            // 出欠
+            const at0 = a[BYDATE_KEY] || {}, at1 = b[BYDATE_KEY] || {};
+            const adds = {}, dels = {}, chg = [];
+            Object.keys(at1).sort().forEach(d => {
+                if (!at0[d]) return;
+                const m0 = new Map((at0[d] || []).map(m => [m.name, m])), m1 = new Map((at1[d] || []).map(m => [m.name, m]));
+                m1.forEach((m, n) => {
+                    if (!m0.has(n)) (adds[n] = adds[n] || []).push(d);
+                    else if (m0.get(n).status !== m.status) chg.push(`${clMd(d)} ${n}: ${sym(m0.get(n).status)}→${sym(m.status)}`);
+                });
+                m0.forEach((m, n) => { if (!m1.has(n)) (dels[n] = dels[n] || []).push(d); });
+            });
+            if (chg.length > 12) out.push(`出欠を${chg.length}件更新した`); else chg.forEach(t => out.push("出欠 " + t));
+            Object.keys(adds).forEach(n => out.push(`${n} を${adds[n].length}日の出欠に追加した`));
+            Object.keys(dels).forEach(n => out.push(`${n} を${dels[n].length}日の出欠から外した`));
+            // 名簿
+            const r0 = new Map((a[ROSTER_KEY] || []).map(r => [r.id, r])), r1 = new Map((b[ROSTER_KEY] || []).map(r => [r.id, r]));
+            r1.forEach((r, id) => {
+                if (!r0.has(id)) out.push(`名簿に ${r.name} を追加した`);
+                else if (r0.get(id).name !== r.name) out.push(`名簿の名前を変更: ${r0.get(id).name}→${r.name}`);
+            });
+            r0.forEach((r, id) => { if (!r1.has(id)) out.push(`名簿から ${r.name} を削除した`); });
+            // 他の予定
+            const p0 = new Map((a[PLANS_KEY] || []).map(p => [p.id, p])), p1 = new Map((b[PLANS_KEY] || []).map(p => [p.id, p]));
+            const pl = p => `「${p.title || "予定"}」(${clMd(p.startDate)}${p.endDate ? "〜" + clMd(p.endDate) : ""})`;
+            p1.forEach((p, id) => {
+                if (!p0.has(id)) out.push(`予定 ${pl(p)} を追加した`);
+                else if (JSON.stringify(p0.get(id)) !== JSON.stringify(p)) out.push(`予定 ${pl(p)} を変更した`);
+            });
+            p0.forEach((p, id) => { if (!p1.has(id)) out.push(`予定 ${pl(p)} を削除した`); });
+            // 予約・精算(日付ごと)
+            const byDate = (x, y, label) => {
+                const X = x || {}, Y = y || {};
+                [...new Set([...Object.keys(X), ...Object.keys(Y)])].sort().forEach(d => {
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+                    const j0 = JSON.stringify(X[d] == null ? null : X[d]), j1 = JSON.stringify(Y[d] == null ? null : Y[d]);
+                    if (j0 === j1) return;
+                    const empty = v => v == null || (Array.isArray(v) && !v.length);
+                    out.push(`${clMd(d)} の${label}を${empty(X[d]) ? "登録" : empty(Y[d]) ? "削除" : "更新"}した`);
+                });
+            };
+            byDate(a[RESERVATIONS_KEY], b[RESERVATIONS_KEY], "予約");
+            byDate(a[SETTLE_KEY], b[SETTLE_KEY], "精算");
+            return out;
+        }
+        (function installChangeLog() {
+            let snap = clSnapshot(), timer = null;
+            const flush = () => {
+                timer = null;
+                const next = clSnapshot();
+                try { if (realAdmin() && !firestoreApplyingRemote) clAppend(clDiff(snap, next)); } catch (e) { console.warn("変更ログの記録に失敗しました。", e); }
+                snap = next;
+            };
+            const nativeSet = Storage.prototype.setItem;
+            Storage.prototype.setItem = function (key, value) {
+                nativeSet.call(this, key, value);
+                if (this !== localStorage || CL_TRACK.indexOf(String(key)) < 0) return;
+                if (firestoreApplyingRemote) { snap = clSnapshot(); return; }   // 共有データを取り込んだだけの更新は記録しない
+                if (timer == null) timer = setTimeout(flush, 0);
+            };
+            const acc = document.getElementById("changeLogAcc");
+            if (acc) acc.addEventListener("toggle", () => { if (acc.open) renderChangeLog(); });
+            renderChangeLog();
+        })();
         const restoredUi = restoreUiStateAfterReload();
         renderCalendar();
         renderRoster();
