@@ -2004,6 +2004,34 @@
         }
         body.dark .cal-grid .cal-day.selected, body.dark .cal-grid .cal-day.selected:not([class*="event-"]) { box-shadow: var(--sink); }
         body.dark .cal-grid .cal-day.today.selected { box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
+
+        /* =========================================================
+           v46: 回答画面(来る○ / 来ない✖ / 未定△ だけ答える)
+           ========================================================= */
+        #surveyOv { display: none; position: fixed; inset: 0; z-index: 900; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;
+            padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+        .sv-wrap { max-width: 560px; margin: 0 auto; }
+        .sv-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+        .sv-head h2 { font-size: 16px; font-weight: 800; margin: 0; }
+        .sv-close { border: none; background: var(--bg); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 700; min-height: 38px; padding: 0 16px; border-radius: 999px; box-shadow: var(--raise-sm); cursor: pointer; }
+        .sv-who { font-size: 14px; margin: 0 2px 6px; }
+        .sv-who select { font: inherit; margin-left: 8px; }
+        .sv-note { font-size: 12.5px; color: var(--ink-3); margin: 0 2px 12px; }
+        .sv-empty { padding: 28px 8px; text-align: center; color: var(--ink-3); font-size: 13.5px; line-height: 1.7; }
+        .sv-card { background: var(--bg); border-radius: var(--r-lg); box-shadow: var(--raise); padding: 14px 14px 16px; margin-bottom: 14px; }
+        .sv-date { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .sv-tag { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--unconf-soft); color: var(--unconf-ink); }
+        .sv-info { font-size: 13.5px; color: var(--ink-2); margin: 4px 0 12px; line-height: 1.5; }
+        .sv-btns { display: flex; gap: 12px; }
+        .sv-btn { flex: 1; min-height: 58px; border: none; border-radius: 16px; background: var(--bg); color: var(--ink-3); box-shadow: var(--raise-sm); cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: inherit; }
+        .sv-btn:disabled { opacity: .4; cursor: default; }
+        .sv-sym { font-size: 24px; font-weight: 800; line-height: 1.1; }
+        .sv-lb { font-size: 11px; font-weight: 700; }
+        .sv-btn.sel { box-shadow: var(--sink); }
+        .sv-btn.sel.come { background: var(--come-soft); color: var(--come-ink); }
+        .sv-btn.sel.notcome { background: var(--notcome-soft); color: var(--notcome-ink); }
+        .sv-btn.sel.pending { background: var(--pending-soft); color: var(--pending-ink); }
     </style>
 </head>
 <body>
@@ -2018,6 +2046,17 @@
             <button class="settings-btn dev-toggle" id="devToggleBtn" onclick="onDevToggleClick()" title="パラメータの表示・編集">開発</button>
         </nav>
     </header>
+
+    <!-- ===== 回答画面(来る・来ない・未定だけ答える) ===== -->
+    <div id="surveyOv" role="dialog" aria-label="出欠の回答">
+        <div class="sv-wrap">
+            <div class="sv-head">
+                <h2>📝 出欠の回答</h2>
+                <button type="button" class="sv-close" onclick="closeSurvey()">閉じる</button>
+            </div>
+            <div id="surveyBody"></div>
+        </div>
+    </div>
 
 
     <!-- ===== バレー当日: 開発モード確認 ===== -->
@@ -2293,7 +2332,7 @@
             <button class="cal-nav-btn" id="calNextBtn" onclick="changeMonth(1)" aria-label="次の月">›</button>
             <div class="cal-hbtns">
                 <button class="today-btn" onclick="jumpToToday()">今日</button>
-                <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示">🕐</button>
+                <button class="today-btn" id="calTimeBtn" onclick="onCalTimeBtnClick()" aria-pressed="false" aria-label="時間表示" title="時間表示">🕐</button>
                 <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日">🏐</button>
             </div>
         </div>
@@ -4833,6 +4872,7 @@
             cell.appendChild(ax);
         }
         let calListNeedScroll = false;   // 予約日モードに入った直後だけ今月へ移動する
+        function onCalTimeBtnClick() { if (calListMode) openSurvey(); else toggleCalTimeMode(); }
         function toggleReserveDateList() {
             calListMode = !calListMode;
             if (calListMode) {
@@ -4846,6 +4886,7 @@
             }
             if (calCollapsed) { calCollapsed = false; applyCalCollapsed(); }
             renderCalendar();
+            if (calListMode && !isAdmin()) openSurvey();   // 閲覧モードは、予約日一覧にしたらそのまま回答画面へ
         }
         function applyCalListMode() {
             const on = !!calListMode;
@@ -4862,7 +4903,14 @@
             g("calNextBtn").setAttribute("aria-label", weekNav ? "次の週" : "次の月");
             syncCalAxisUi();
             const tb = g("calTimeBtn");
-            if (tb) { tb.classList.toggle("on", !!calTimeMode); tb.setAttribute("aria-pressed", String(!!calTimeMode)); }
+            if (tb) {
+                // 予約日一覧のあいだは、時間表示ボタンが📝(出欠の回答画面)になる
+                tb.textContent = on ? "📝" : "🕐";
+                tb.title = on ? "出欠を回答" : "時間表示";
+                tb.setAttribute("aria-label", on ? "出欠を回答" : "時間表示");
+                const t = !on && !!calTimeMode;
+                tb.classList.toggle("on", t); tb.setAttribute("aria-pressed", String(t));
+            }
             const b = g("rvListBtn");
             b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
             // ラベルは🏐アイコンで固定(ONの間は色で示す)
@@ -6969,8 +7017,8 @@
         const MEMBER_ALERT_KEY = "attendance_member_alert_v1";
         const MEMBER_ALERT_INTERVAL_MS = 30 * 60 * 1000;
         function checkMemberTaskAlert() {
-            if (isAdmin() || !myMemberName()) return;
-            const now = new Date(), todayKey = formatDateKey(now);
+            if (isAdmin() || !myMemberName() || surveyOpen) return;
+            const now = new Date();
             let target = "";
             for (let i = 0; i <= 7 && !target; i++) {
                 const k = formatDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i));
@@ -6979,19 +7027,88 @@
             if (!target) return;
             // 最後に出した時刻を覚えておき、30分たつまでは出さない(共有データの受信で再読み込みされても、続けて出ない)
             const nowMs = Date.now();
+            let first = false;
             try {
                 const last = Number(sessionStorage.getItem(MEMBER_ALERT_KEY)) || 0;
                 if (last && nowMs - last < MEMBER_ALERT_INTERVAL_MS) return;
+                first = !last;
                 sessionStorage.setItem(MEMBER_ALERT_KEY, String(nowMs));
             } catch (e) { /* ignore */ }
             const [y, m, d] = target.split("-").map(Number);
-            alert(`⚠️ ${m}/${d}のバレーの出欠が未回答です。\nメンバー画面で回答してください。`);
-            calCollapsed = false; applyCalCollapsed();
-            viewMonth = new Date(y, m - 1, 1);
-            selectDate(target);
-            openVolleyFull();
-            switchView("member");
+            // 起動直後はそのまま回答画面を開く。30分ごとの再通知は、警告を出してから回答画面へ移動する
+            if (!first) alert(`⚠️ ${m}/${d}のバレーの出欠が未回答です。\n回答画面で答えてください。`);
+            openSurvey();
         }
+
+        // ------- 回答画面(来る○ / 来ない✖ / 未定△ だけ答える) -------
+        let surveyOpen = false;
+        let surveyAdminName = "";   // 管理者が自分の名前に紐付いていないとき、代わりに答える人
+        function surveyWho() { return myMemberName() || (isAdmin() ? surveyAdminName : ""); }
+        function surveyDates() {
+            const todayKey = formatDateKey(new Date());
+            return Object.keys(reservations || {}).filter(d => d >= todayKey && (reservations[d] || []).length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+        }
+        function openSurvey() {
+            surveyOpen = true;
+            renderSurvey();
+            const ov = document.getElementById("surveyOv");
+            ov.style.display = "block"; ov.scrollTop = 0;
+            document.body.style.overflow = "hidden";
+        }
+        function closeSurvey() {
+            surveyOpen = false;
+            document.getElementById("surveyOv").style.display = "none";
+            document.body.style.overflow = "";
+        }
+        function surveySetWho(name) { surveyAdminName = name; renderSurvey(); }
+        function surveySet(date, status) {
+            const name = surveyWho();
+            if (!name || !STATUS_META[status]) return;
+            const mem = (attendanceByDate[date] || []).find(m => m.name === name);
+            if (!mem) return;
+            mem.status = status;
+            mem.updated = nowStamp();
+            saveData();
+            if (!isAdmin()) saveMyStatusToShared(date, name, status, mem.updated);   // 閲覧者は共有データへ自分の1件だけ反映
+            renderRoster();
+            renderCalendar();
+            updateTabProgress();
+            renderSurvey();
+        }
+        function renderSurvey() {
+            const box = document.getElementById("surveyBody");
+            if (!box) return;
+            const name = surveyWho();
+            let who = "";
+            if (!name) {
+                if (isAdmin()) {
+                    who = `<div class="sv-who"><label>答える人
+                        <select onchange="surveySetWho(this.value)"><option value="">選んでください</option>${roster.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>`).join("")}</select></label></div>`;
+                } else {
+                    box.innerHTML = `<div class="sv-empty">名簿の自分の名前が選ばれていません。<br>名前を選んでから回答できます。</div>`;
+                    return;
+                }
+            } else {
+                who = `<div class="sv-who"><b>${escapeHtml(name)}</b> さんの出欠</div>`;
+            }
+            const dates = name ? surveyDates() : [];
+            let unanswered = 0;
+            const cards = dates.map(d => {
+                const mem = (attendanceByDate[d] || []).find(m => m.name === name);
+                const st = mem ? mem.status : "";
+                if (!(st === "来る" || st === "来ない")) unanswered++;
+                const [y, m, dd] = d.split("-").map(Number);
+                const wd = WEEKDAYS[new Date(y, m - 1, dd).getDay()];
+                const info = (reservations[d] || []).map(r => `<div>${escapeHtml([r.time, r.place + (r.court || "")].filter(Boolean).join(" "))}</div>`).join("");
+                const tag = st === "来る" || st === "来ない" ? "" : `<span class="sv-tag">未回答</span>`;
+                const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${st === s ? " sel" : ""}" ${mem ? "" : "disabled"} onclick="surveySet('${d}','${s}')"><span class="sv-sym">${STATUS_META[s].sym}</span><span class="sv-lb">${s}</span></button>`).join("");
+                return `<div class="sv-card"><div class="sv-date">${m}/${dd}(${wd})${tag}</div><div class="sv-info">${info}</div><div class="sv-btns">${btns}</div></div>`;
+            }).join("");
+            const note = !name ? "" : dates.length === 0 ? `<div class="sv-empty">これからの予約日はありません。</div>`
+                : `<div class="sv-note">${unanswered > 0 ? `○か✖の回答がまだの日が ${unanswered}件 あります。` : "すべて回答済みです。"}</div>`;
+            box.innerHTML = who + note + cards;
+        }
+
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
         setInterval(() => { if (!document.hidden) checkMemberTaskAlert(); }, 60000);
         document.addEventListener("visibilitychange", () => { if (!document.hidden) checkMemberTaskAlert(); });
