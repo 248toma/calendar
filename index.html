@@ -4425,6 +4425,10 @@
         }
         // 開発モードOFFのときは、日付を触ったら一番左の未完タスクのタブを開く(前の日に触っていたタブを引き継がない)
         function openFirstIncompleteTab() {
+            // 閲覧モード: ⚠️の条件(予約のある今日以降の日で、自分の出欠が ○・✖ 以外)のときは、メンバータスクを表示する
+            if (!isAdmin()) {
+                try { if (dayTaskState(selectedDate).myUnanswered) { switchView("member"); return; } } catch (e) { console.warn(e); }
+            }
             if (devMode) return;
             try {
                 const i = dayTaskState(selectedDate).oks.findIndex(ok => !ok);
@@ -8498,6 +8502,31 @@
               });
         }
 
+        // 共有データの更新で再読み込みするとき、見ていた日付・タブ・カレンダーの位置を保つ(毎回今日に戻らないようにする)
+        const UI_RESTORE_KEY = "ui_restore_after_reload";   // sessionStorage(共有されない)
+        function saveUiStateForReload() {
+            try {
+                sessionStorage.setItem(UI_RESTORE_KEY, JSON.stringify({
+                    selectedDate, currentView,
+                    month: [viewMonth.getFullYear(), viewMonth.getMonth()],
+                    week: formatDateKey(viewWeekStart),
+                    scrollY: window.scrollY || 0
+                }));
+            } catch (e) { /* 保存できなくても再読み込みは続ける */ }
+        }
+        function restoreUiStateAfterReload() {
+            let st = null;
+            try {
+                st = JSON.parse(sessionStorage.getItem(UI_RESTORE_KEY) || "null");
+                sessionStorage.removeItem(UI_RESTORE_KEY);
+            } catch (e) { st = null; }
+            if (!st || !/^\d{4}-\d{2}-\d{2}$/.test(st.selectedDate || "")) return null;
+            selectedDate = st.selectedDate;
+            if (Array.isArray(st.month)) viewMonth = new Date(st.month[0], st.month[1], 1);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(st.week || "")) { const [y, m, d] = st.week.split("-").map(Number); viewWeekStart = new Date(y, m - 1, d); }
+            return st;
+        }
+
         function startFirestoreSync() {
             if (!firebaseAvailable) {
                 const why = firebaseUnavailableReason();
@@ -8533,6 +8562,7 @@
                 Object.entries(remoteValues).forEach(([key, value]) => { if (isSharedKey(key)) nativeSetItem.call(localStorage, key, value); });
                 firestoreApplyingRemote = false;
                 setFirestoreSyncStatus("更新を受信しました");
+                saveUiStateForReload();
                 window.location.reload();
             }, error => { console.error("Firestoreの読み込みに失敗しました。", error); setFirestoreSyncStatus("共有エラー", true); });
 
@@ -8561,8 +8591,14 @@
         applyDevMode();
         loadTeamMemberOpen();
         if (syncRosterToUpcomingDays()) saveData();
+        const restoredUi = restoreUiStateAfterReload();
         renderCalendar();
         renderRoster();
+        if (restoredUi) {
+            const views = ["reserve", "member", "teams", "settle", "videos"];
+            if (views.indexOf(restoredUi.currentView) >= 0) switchView(restoredUi.currentView);
+            requestAnimationFrame(() => window.scrollTo(0, restoredUi.scrollY || 0));
+        }
         startFirestoreSync();
     </script>
 </body>
