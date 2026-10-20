@@ -7858,6 +7858,8 @@
             const nowD = new Date();
             const daysUntil = Math.round((new Date(dy, dm - 1, dd) - new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate())) / 86400000);
             const reserveMissing = !!events[d] && (reservations[d] || []).length === 0;   // バレーありなのに予約が入っていない
+            const memberShort = !!events[d] && daysUntil >= 0 && comers < thresholds.cyanMin;   // 当日まで: 「来る」が十分な人数(12人)に満たない → タスク画面のメンバーに⚠️
+            const memberVeryShort = !!events[d] && daysUntil >= 0 && comers < thresholds.yellowMin;   // 8人未満(赤)は、いつでもカレンダーに⚠️
             const memberShortSoon = !!events[d] && daysUntil >= 0 && daysUntil <= 7 && getStatusLevel(comers) !== "sufficient";
             // 予約・出席・精算・動画のどれにも実データがなければ、⚠️は出さない
             const noActivity = !hasData && !oks[4];
@@ -7869,7 +7871,7 @@
                 || (i === 3 && settleOverdue)
                 || (i === 1 && isPast && comers === 0 && getStatusLevel(comers) === "danger")))
                 // ⑤バレー日の1週間前(当日含む)になってもメンバーが過不足(人数が緑でない)
-                || (i === 1 && memberShortSoon)
+                || (i === 1 && (memberShortSoon || memberShort))
                 || (i === 3 && settleNoMember)
                 || (i === 0 && reserveMissing));
             // 当日を過ぎたら、メンバーの⚠️は出さない
@@ -7886,7 +7888,7 @@
                 const mySettleUnpaid = !!me && !!mine && mine.status === "来る" && d <= todayKey && t.amount > 0 && !t.paid[mine.id] && !t.done;
                 return { oks, warns: oks.map((_, i) => (i === 1 && myUnanswered) || (i === 3 && mySettleUnpaid)), pastIncomplete: false, memberShortSoon: false, myUnanswered, mySettleUnpaid };
             }
-            return { oks, warns, pastIncomplete, memberShortSoon, reserveMissing, myUnanswered: false, mySettleUnpaid: false };
+            return { oks, warns, pastIncomplete, memberShortSoon, memberVeryShort, reserveMissing, myUnanswered: false, mySettleUnpaid: false };
         }
 
         function updateTabProgress() {
@@ -7914,8 +7916,8 @@
                 const key = cell.dataset.key;
                 const viewer = !isAdmin();
                 const ts = (events[key] || (viewer && (reservations[key] || []).length > 0)) ? dayTaskState(key) : null;
-                const want = !!ts && (viewer ? (ts.myUnanswered || ts.mySettleUnpaid) : (ts.pastIncomplete || ts.memberShortSoon || ts.reserveMissing));
-                const title = viewer ? (ts && ts.mySettleUnpaid ? "あなたの精算が未完了です" : "あなたの出欠が未回答です") : (ts && ts.reserveMissing ? "予約が入っていません" : ts && ts.memberShortSoon ? "1週間以内なのにメンバーが過不足です" : "未完了のタスクがあります");
+                const want = !!ts && (viewer ? (ts.myUnanswered || ts.mySettleUnpaid) : (ts.pastIncomplete || ts.memberShortSoon || ts.memberVeryShort || ts.reserveMissing));
+                const title = viewer ? (ts && ts.mySettleUnpaid ? "あなたの精算が未完了です" : "あなたの出欠が未回答です") : (ts && ts.reserveMissing ? "予約が入っていません" : ts && ts.memberVeryShort && !ts.memberShortSoon ? "メンバーが不足しています" : ts && ts.memberShortSoon ? "1週間以内なのにメンバーが過不足です" : "未完了のタスクがあります");
                 const cur = cell.querySelector(".cal-warn");
                 if (want && !cur) {
                     const s = document.createElement("span");
