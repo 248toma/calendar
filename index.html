@@ -4670,7 +4670,19 @@
         // ------- カレンダー(タイムツリー風: 月カレンダー + 選んだ日の予定を下に一覧) -------
         var volleyFull = false;   // true: バレーのタスク画面を全体に表示(カレンダーは隠す)
         function openVolleyFull() { volleyFull = true; if (isAdmin()) switchView(pickAdminTaskView()); else if (selectedDate >= formatDateKey(new Date())) switchView("member"); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
-        function closeVolleyFull() { volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
+        // 管理者がバレーありにした直後の日。予約・メンバー・精算・動画に何も触らずカレンダーへ戻ったら、バレーなしに戻す
+        let volleyDraft = null;
+        function volleyDaySig(k) { return JSON.stringify([attendanceByDate[k] || null, reservations[k] || null, settlements[k] || null, (typeof videos !== "undefined" ? videos : []).filter(v => v.date === k).length]); }
+        function beginVolleyDraft(k, hadAtt) { volleyDraft = { key: k, hadAtt, sig: volleyDaySig(k) }; }
+        function dropUnchangedVolleyDraft() {
+            const d = volleyDraft; volleyDraft = null;
+            if (!d || !isAdmin() || !events[d.key] || volleyDaySig(d.key) !== d.sig) return false;
+            delete events[d.key];
+            if (!d.hadAtt) delete attendanceByDate[d.key];
+            saveData();
+            return true;
+        }
+        function closeVolleyFull() { dropUnchangedVolleyDraft(); volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
         // 月カレンダー1週分の「日またぎの予定」を、行(レーン)に割り当てる
         function nvWeekLayout(days) {
             const keys = days.map(formatDateKey);
@@ -4749,7 +4761,8 @@
                 if (!dbl) scrollToDayList();
                 else if (events[key]) openVolleyFull();                                     // ダブルタップ: バレーならタスク画面
                 else if (isAdmin()) {                                                       // 管理者: バレーのない日はバレーありにして、予約タスク画面へ
-                    events[key] = true; seedRosterForDay(key); saveData();
+                    const hadAtt = !!attendanceByDate[key];
+                    events[key] = true; seedRosterForDay(key); beginVolleyDraft(key, hadAtt); saveData();
                     renderRoster(); renderCalendar();
                     volleyFull = true; switchView("reserve"); renderOtherPlanBox(); renderNvPanel(); window.scrollTo(0, 0);
                 }
@@ -5739,9 +5752,12 @@
         }
         function toggleEventDay(checked) {
             if (checked) {
+                const hadAtt = !!attendanceByDate[selectedDate];
                 events[selectedDate] = true;
                 seedRosterForDay(selectedDate);
+                beginVolleyDraft(selectedDate, hadAtt);
             } else {
+                volleyDraft = null;
                 delete events[selectedDate];
             }
             saveData();
