@@ -4648,6 +4648,24 @@
             renderCalendar();
         }
 
+        // カレンダーを左右にスワイプして前後の月(週表示のときは週)へ。左へ=次、右へ=前。縦スクロールは邪魔しない
+        (function initCalSwipe() {
+            const grid = document.getElementById("calGrid");
+            if (!grid) return;
+            let sx = 0, sy = 0, st = 0, on = false;
+            grid.addEventListener("touchstart", e => {
+                if (calListMode || e.touches.length !== 1) { on = false; return; }
+                on = true; sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+            }, { passive: true });
+            grid.addEventListener("touchend", e => {
+                if (!on) return; on = false;
+                const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+                if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - st > 800) return;
+                nvLastTap = { key: "", t: 0 };
+                changeMonth(dx < 0 ? 1 : -1);
+            }, { passive: true });
+        })();
+
         function jumpToToday() {
             const today = new Date();
             viewMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -4837,16 +4855,16 @@
             const rs = reservations[selectedDate] || [];
             if (events[selectedDate]) {
                 const pr = rs.length ? parseTimeRangeMin(rs[0].time) : null;
-                rows.push({ s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl">🏐 バレー ${countComing(selectedDate)}名</div>${rs.length ? `<div class="nv-sub">${escapeHtml(rs.map(r => `${r.time} ${r.place}${r.court || ""}`).join(" / "))}</div>` : ""}</div></div>` });
+                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl">🏐 バレー ${countComing(selectedDate)}名</div>${rs.length ? `<div class="nv-sub">${escapeHtml(rs.map(r => `${r.time} ${r.place}${r.court || ""}`).join(" / "))}</div>` : ""}</div></div>` });
             }
             plansOn(selectedDate).forEach(({ p, first, last }) => {
                 const s = first ? parseHM(p.start) : null;
                 const t1 = first ? (p.start || "終日") : "続き", t2 = last && p.end ? p.end : "";
                 const editable = isAdmin() || !!p.local;
                 const editing = planPanelIsOpen() && planEditId === p.id;
-                rows.push({ s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">👥 ${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+                rows.push({ ad: planTimed(p) ? 1 : 0, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">👥 ${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
             });
-            rows.sort((a, b) => a.s - b.s);
+            rows.sort((a, b) => a.ad - b.ad || a.s - b.s);   // 終日の予定が必ず一番上
             const box = document.getElementById("otherPlanBox");
             if (box && el.contains(box)) el.parentNode.insertBefore(box, el);   // 一覧を作り直す前に入力欄を退避
             const isOpen = planPanelIsOpen(), isNew = isOpen && planEditId == null;
@@ -9165,6 +9183,7 @@
         function flushPendingRemote() {
             if (!firestorePendingValues) return;
             const rv = firestorePendingValues;
+            try { if (realAdmin()) addRemoteDiffToLog(rv); } catch (e) { console.warn("他の人の変更をログに入れられませんでした。", e); }
             firestorePendingValues = null;
             firestoreApplyingRemote = true;
             try { Object.entries(rv).forEach(([k, v]) => { if (isSharedKey(k)) localStorage.setItem(k, v); }); }
@@ -9320,7 +9339,9 @@
         function saveToFirestore() {
             if (!firestoreSyncActive || !firestoreEditor || firestoreApplyingRemote || !firestoreRef) return;
             setFirestoreSyncStatus("同期中…");
-            firestoreRef.set({ values: getShareableLocalValues(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+            const vals = getShareableLocalValues();
+            mergePendingLog(vals);
+            firestoreRef.set({ values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
                 .then(() => { if (firestorePendingValues) markRemoteUpdate(); else setFirestoreSyncStatus("共有中"); })
                 .catch(error => { console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true); });
         }
@@ -9535,6 +9556,30 @@
                 log.push({ t: Date.now(), who, text });
                 tx.update(firestoreRef, { ["values." + CHANGELOG_KEY]: JSON.stringify(log.slice(-CHANGELOG_MAX)), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
             }).catch(err => console.warn("変更ログの追記に失敗しました。", err));
+        }
+        // 管理者の画面に他の人(閲覧者・別の管理者)の変更が届いたとき、その差分もログに入れる。相手が書いたログと重なるものは除く
+        function addRemoteDiffToLog(rv) {
+            const before = clSnapshot(), after = {};
+            CL_TRACK.forEach(k => { try { after[k] = rv[k] !== undefined ? JSON.parse(rv[k] || "null") : before[k]; } catch (e) { after[k] = before[k]; } });
+            let remoteLog = [];
+            try { remoteLog = JSON.parse(rv[CHANGELOG_KEY] || "null") || clLoad(); } catch (e) { remoteLog = clLoad(); }
+            if (!Array.isArray(remoteLog)) remoteLog = [];
+            const texts = clDiff(before, after).filter(t => !remoteLog.some(e => e && String(e.text).indexOf(t) === 0));
+            if (!texts.length) return;
+            const now = Date.now();
+            texts.forEach(text => remoteLog.push({ t: now, who: "他の人の変更", text }));
+            rv[CHANGELOG_KEY] = JSON.stringify(remoteLog.slice(-CHANGELOG_MAX));
+        }
+        // 保存するとき、まだ取り込んでいない相手のログ(閲覧者の回答など)を消さずに残す
+        function mergePendingLog(values) {
+            if (!firestorePendingValues || !firestorePendingValues[CHANGELOG_KEY]) return;
+            try {
+                const rem = JSON.parse(firestorePendingValues[CHANGELOG_KEY]), loc = JSON.parse(values[CHANGELOG_KEY] || "[]");
+                const seen = new Set(loc.map(e => e.t + "|" + e.text));
+                rem.forEach(e => { if (!seen.has(e.t + "|" + e.text)) loc.push(e); });
+                loc.sort((a, b) => a.t - b.t);
+                values[CHANGELOG_KEY] = JSON.stringify(loc.slice(-CHANGELOG_MAX));
+            } catch (e) { /* 取り込めなければそのまま */ }
         }
         const CL_TRACK = [BYDATE_KEY, EVENTS_KEY, PLANS_KEY, ROSTER_KEY, RESERVATIONS_KEY, SETTLE_KEY];
         function clSnapshot() {
