@@ -210,6 +210,7 @@
         .cal-header .today-btn { height: 30px; padding: 0 8px; font-size: 12px; flex: none; white-space: nowrap; }
         .cal-header .month-label { flex: 1 1 auto; min-width: 0; text-align: center; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cal-hbtns { display: flex; gap: 4px; flex: none; }
+        #calTimeBtn, #rvListBtn { padding: 0; width: 34px; font-size: 15px; line-height: 1; }
         .tw-body { position: relative; display: grid; grid-template-columns: 22px repeat(7, 1fr); gap: 2px; height: calc(var(--hp) * var(--hrs)); background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px); background-size: 100% var(--hp); }
         .tw-gutter { position: relative; }
         .tw-gutter span { position: absolute; right: 3px; font-size: 8.5px; line-height: 1; color: var(--ink-3); }
@@ -297,6 +298,30 @@
         .cal-grid.list-mode > .cal-day.dow-6:not([class*="event-"]) { color: #2f5fb8; }
         .rvd-empty { grid-column: 1 / -1; padding: 18px 0; text-align: center; color: var(--ink-3); font-size: 13px; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        /* ノーマル表示(タイムツリー風) */
+        .cal-grid.nv { gap: 0; }
+        .cal-grid.nv .cal-day { height: auto; min-height: 78px; aspect-ratio: auto; justify-content: flex-start; align-items: stretch; gap: 2px; padding: 3px 1px 2px; border-radius: 0; box-shadow: none; background: transparent; border-top: 1px solid var(--line); }
+        .cal-grid.nv .cal-day.selected { background: var(--surface-2); }
+        .cal-grid.nv .cal-day.other-month .nv-chip, .cal-grid.nv .cal-day.other-month .nv-d { opacity: .4; }
+        .nv-d { align-self: center; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; font-weight: 600; border-radius: 50%; color: var(--ink); }
+        .cal-day.dow-0 .nv-d { color: var(--notcome); }
+        .cal-day.dow-6 .nv-d { color: #3b6fd0; }
+        .cal-grid.nv .cal-day.today .nv-d { background: var(--ink-fill); color: #fff; }
+        .nv-chip { display: block; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.4; padding: 0 3px; border-radius: 3px; background: var(--plan-gray, var(--pcbg0)); color: var(--plan-ink, var(--ink-2)); }
+        .nv-chip.cont { opacity: .7; }
+        .nv-more { font-size: 9px; color: var(--ink-3); padding-left: 3px; }
+        body.nv-on #calTimeBtn, body.nv-on #rvListBtn, body.nv-on #calLegend { display: none; }
+        #nvDayPanel { display: none; margin: 0 0 12px; }
+        .nv-head { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+        .nv-row { display: flex; gap: 10px; align-items: stretch; padding: 9px 10px; margin-bottom: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+        .nv-time { flex: none; width: 44px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+        .nv-time span:last-child { font-weight: 500; color: var(--ink-3); }
+        .nv-bar { flex: none; width: 3px; border-radius: 2px; background: var(--plan-ink, var(--ink-3)); }
+        .nv-body { flex: 1; min-width: 0; }
+        .nv-ttl { font-size: 15px; font-weight: 700; }
+        .nv-sub { font-size: 12px; color: var(--ink-3); }
+        .nv-memo { margin-top: 3px; font-size: 13px; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; }
+        .nv-empty { padding: 18px 0; text-align: center; font-size: 13px; color: var(--ink-3); }
         .cal-weekday { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--ink-3); padding: 4px 0 6px; }
         .cal-grid > .cal-weekday:nth-child(7n+1) { color: var(--notcome); }
         .cal-grid > .cal-weekday:nth-child(7n) { color: #3b6fd0; }
@@ -2251,8 +2276,9 @@
             <button class="cal-nav-btn" id="calNextBtn" onclick="changeMonth(1)" aria-label="次の月">›</button>
             <div class="cal-hbtns">
                 <button class="today-btn" onclick="jumpToToday()">今日</button>
-                <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false">時間表示</button>
-                <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false">予約日</button>
+                <button class="today-btn" id="calNvBtn" onclick="toggleNormalView()" aria-pressed="false">ノーマル</button>
+                <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示">🕐</button>
+                <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日">🏐</button>
             </div>
         </div>
         <div class="cal-grid" id="calGrid"></div>
@@ -2307,6 +2333,8 @@
             <button type="button" class="op-dot" data-c="3" role="radio" aria-label="オレンジ" onclick="setPlanColor(3)"></button>
         </div>
     </div>
+
+    <div id="nvDayPanel"></div>
 
     <div id="eventContent">
 
@@ -4424,7 +4452,7 @@
             renderCalendar();
             renderRoster();
             openFirstIncompleteTab();
-            scrollBelowHeader(document.getElementById("eventContent"));   // タスクの中身が全部見えるようにスクロール
+            if (!normalView) scrollBelowHeader(document.getElementById("eventContent"));   // タスクの中身が全部見えるようにスクロール
             if (lastTeamSplitResult && lastTeamSplitResult.dateKey !== dateKey) flushPendingRemote();   // 別の日の結果は表示しないので、保留していた更新を反映
         }
         // 開発モードOFFのときは、日付を触ったら一番左の未完タスクのタブを開く(前の日に触っていたタブを引き継がない)
@@ -4452,6 +4480,59 @@
 
         // ------- 予約日の一覧(カレンダーと同じ日付枠で、対象の日だけ表示) -------
         let calListMode = false;
+        // ------- ノーマル表示(タイムツリー風: 月カレンダー + 選んだ日の予定を下に一覧) -------
+        const NV_KEY = "attendance_view_normal_v1";
+        var normalView = false;
+        try { normalView = localStorage.getItem(NV_KEY) === "1"; } catch (e) { /* ignore */ }
+        function toggleNormalView() {
+            normalView = !normalView;
+            try { localStorage.setItem(NV_KEY, normalView ? "1" : "0"); } catch (e) { /* ignore */ }
+            if (!normalView) { try { calTimeMode = localStorage.getItem(CAL_TIME_KEY) === "1"; } catch (e) { /* ignore */ } }
+            if (calCollapsed) { calCollapsed = false; applyCalCollapsed(); }
+            const [y, m] = selectedDate.split("-").map(Number);
+            viewMonth = new Date(y, m - 1, 1);
+            renderCalendar();
+            renderOtherPlanBox();
+        }
+        function buildNormalCell(cellDate, inMonth, todayKey) {
+            const key = formatDateKey(cellDate);
+            const cell = document.createElement("div");
+            cell.className = "cal-day dow-" + cellDate.getDay() + (inMonth ? "" : " other-month");
+            if (key === todayKey) cell.classList.add("today");
+            if (key === selectedDate) cell.classList.add("selected");
+            const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
+            const chips = [];
+            if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">🏐${n}名</span>`); }
+            plansOn(key).forEach(({ p, first }) => chips.push(`<span class="nv-chip${pcCls(p)}${first ? "" : " cont"}">${escapeHtml(p.title || "予定")}</span>`));
+            const shown = chips.slice(0, 3);
+            if (chips.length > 3) shown[2] = `<span class="nv-more">他${chips.length - 2}件</span>`;
+            cell.innerHTML = `<span class="nv-d">${cellDate.getDate()}</span>${shown.join("")}`;
+            cell.dataset.key = key;
+            cell.onclick = () => selectDate(key);
+            return cell;
+        }
+        function nvEdit(id) { planPanel = { date: selectedDate, open: true }; renderOtherPlanBox(); editOtherPlan(id); }
+        function renderNvPanel() {
+            const el = document.getElementById("nvDayPanel");
+            if (!el) return;
+            el.style.display = normalView ? "block" : "none";
+            if (!normalView) return;
+            const rows = [];
+            const rs = reservations[selectedDate] || [];
+            if (events[selectedDate]) {
+                const pr = rs.length ? parseTimeRangeMin(rs[0].time) : null;
+                rows.push({ s: pr ? pr.s : -1, html: `<div class="nv-row" onclick="toggleNormalView()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl">🏐 バレー ${countComing(selectedDate)}名</div>${rs.length ? `<div class="nv-sub">${escapeHtml(rs.map(r => `${r.time} ${r.place}${r.court || ""}`).join(" / "))}</div>` : ""}</div></div>` });
+            }
+            plansOn(selectedDate).forEach(({ p, first, last }) => {
+                const s = first ? parseHM(p.start) : null;
+                const t1 = first ? (p.start || "終日") : "続き", t2 = last && p.end ? p.end : "";
+                const editable = isAdmin() || !!p.local;
+                rows.push({ s: s == null ? -1 : s, html: `<div class="nv-row${pcCls(p)}"${editable ? ` onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+            });
+            rows.sort((a, b) => a.s - b.s);
+            el.innerHTML = `<div class="nv-head"><button type="button" class="today-btn" onclick="togglePlanPanel(!planPanelIsOpen())">${planPanelIsOpen() ? "閉じる" : "＋ 予定を追加"}</button></div>` +
+                (rows.length ? rows.map(r => r.html).join("") : `<div class="nv-empty">予定はありません</div>`);
+        }
         // ------- 時間表示(週: 縦軸=時間 / 予約日モード: 月単位で各日に時間軸) -------
         const CAL_TIME_KEY = "attendance_cal_time_v1";
         const CAL_AXIS_KEY = "attendance_cal_axis_v1";
@@ -4750,7 +4831,7 @@
             if (tb) { tb.classList.toggle("on", !!calTimeMode); tb.setAttribute("aria-pressed", String(!!calTimeMode)); }
             const b = g("rvListBtn");
             b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
-            b.textContent = "予約日";   // ヘッダーを1行に収めるため、ラベルは固定(ONの間は色で示す)
+            // ラベルは🏐アイコンで固定(ONの間は色で示す)
         }
         // 同じ予定が続く日付枠を、隣とつなげて見せる(間のすき間を埋めて角を落とす)
         function linkPlanCells(grid) {
@@ -4929,12 +5010,16 @@
         }
         function renderCalendar() {
             videoDateSet = buildVideoDateSet();
+            document.body.classList.toggle("nv-on", !!normalView);
+            { const nb = document.getElementById("calNvBtn"); if (nb) { nb.classList.toggle("on", !!normalView); nb.setAttribute("aria-pressed", String(!!normalView)); } }
+            if (normalView) { calListMode = false; calTimeMode = false; }
             applyCalListMode();
             document.getElementById("monthLabel").textContent = calListMode ? "予約日一覧" :
                 calTimeMode ? weekLabel(viewWeekStart, 21) :
                 `${viewMonth.getFullYear()}年${viewMonth.getMonth() + 1}月`;
 
             const grid = document.getElementById("calGrid");
+            grid.classList.toggle("nv", !!normalView);
             const keepScroll = (calListMode && !calListNeedScroll) ? grid.scrollTop : 0;
             grid.innerHTML = "";
             if (!calListMode && !calTimeMode) WEEKDAYS.forEach(w => {
@@ -4974,10 +5059,11 @@
                 const cellDate = new Date(gridStart);
                 cellDate.setDate(gridStart.getDate() + i);
                 const inMonth = cellDate.getMonth() === viewMonth.getMonth();
-                grid.appendChild(buildCalCell(cellDate, inMonth, todayKey));
+                grid.appendChild((normalView ? buildNormalCell : buildCalCell)(cellDate, inMonth, todayKey));
             }
             linkPlanCells(grid);
             refreshCalWarnMarks();
+            renderNvPanel();
         }
 
         // ------- 選択日パネル描画(共通) -------
@@ -5173,7 +5259,7 @@
                 b.classList.toggle("on", on); b.setAttribute("aria-checked", on ? "true" : "false");
             });
         }
-        function planPanelIsOpen() { return planPanel.date === selectedDate ? planPanel.open : (!events[selectedDate] && plansOn(selectedDate).length > 0); }
+        function planPanelIsOpen() { return planPanel.date === selectedDate ? planPanel.open : (!normalView && !events[selectedDate] && plansOn(selectedDate).length > 0); }
         function togglePlanPanel(checked) {
             planPanel = { date: selectedDate, open: !!checked };
             renderOtherPlanBox();
@@ -5207,12 +5293,14 @@
         function renderOtherPlanBox() {
             const box = $op("otherPlanBox");
             if (!box) return;
+            { const ti = document.getElementById("opTitle"); if (ti) ti.maxLength = normalView ? 12 : 4; }
+            renderNvPanel();
             const open = planPanelIsOpen();
             const tg = $op("planToggle");
             if (tg) tg.checked = open;
             box.style.display = open ? "block" : "none";
             const ec = document.getElementById("eventContent");
-            if (ec) ec.style.display = (events[selectedDate] && !open) ? "block" : "none";   // 他予定オンの間はバレー画面を隠す
+            if (ec) ec.style.display = (events[selectedDate] && !open && !normalView) ? "block" : "none";   // 他予定オンの間はバレー画面を隠す
             if (!open) return;
             if (planFormDate !== selectedDate) resetPlanForm(); else renderPlanList();
         }
@@ -5230,7 +5318,7 @@
             renderPlanList();
         }
         function addOtherPlan() {
-            const title = Array.from($op("opTitle").value.trim()).slice(0, 4).join("");
+            const title = Array.from($op("opTitle").value.trim()).slice(0, 12).join("");
             const memo = $op("opMemo").value.trim();
             const start = $op("opStart").value || "", end = $op("opEnd").value || "";
             const sd = $op("opStartDate").value || selectedDate;
