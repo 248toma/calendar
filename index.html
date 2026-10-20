@@ -300,7 +300,7 @@
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         /* ノーマル表示(タイムツリー風) */
         .cal-grid.nv { gap: 0; }
-        .cal-grid.nv .cal-day { height: auto; min-height: 90px; touch-action: manipulation; aspect-ratio: auto; justify-content: flex-start; align-items: stretch; gap: 2px; padding: 3px 1px 2px; border-radius: 0; box-shadow: none; background: transparent; border-top: 1px solid var(--line); }
+        .cal-grid.nv .cal-day { height: auto; min-height: 78px; touch-action: manipulation; aspect-ratio: auto; justify-content: flex-start; align-items: stretch; gap: 2px; padding: 3px 1px 2px; border-radius: 0; box-shadow: none; background: transparent; border-top: 1px solid var(--line); }
         .cal-grid.nv .cal-day.selected { background: var(--surface-2); }
         .cal-grid.nv .cal-day.other-month .nv-chip, .cal-grid.nv .cal-day.other-month .nv-d { opacity: .4; }
         .nv-d { align-self: center; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; font-weight: 600; border-radius: 50%; color: var(--ink); }
@@ -4510,15 +4510,10 @@
             if (key === selectedDate) cell.classList.add("selected");
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
             const chips = [];
-            if (events[key]) {
-                const n = countComing(key), bg = `var(${lv[getStatusLevel(n)]})`;
-                chips.push(`<span class="nv-chip" style="background:${bg};color:var(--ink)">🏐${n}名</span>`);
-                const rs = reservations[key] || [], pr = rs.length ? parseTimeRangeMin(rs[0].time) : null;
-                if (pr) chips.push(`<span class="nv-chip" style="background:${bg};color:var(--ink-2)">${fmtMinShort(pr.s)}-${fmtMinShort(pr.e)}${rs.length > 1 ? "+" : ""}</span>`);
-            }
+            if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">🏐${n}名</span>`); }
             plansOn(key).forEach(({ p, first }) => chips.push(`<span class="nv-chip${pcCls(p)}${first ? "" : " cont"}">${escapeHtml(p.title || "予定")}</span>`));
-            const shown = chips.slice(0, 4);
-            if (chips.length > 4) shown[3] = `<span class="nv-more">他${chips.length - 3}件</span>`;
+            const shown = chips.slice(0, 3);
+            if (chips.length > 3) shown[2] = `<span class="nv-more">他${chips.length - 2}件</span>`;
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
             const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">💰</span>` : "";
             cell.innerHTML = `<div class="nv-top"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${shown.join("")}`;
@@ -4928,9 +4923,9 @@
             if (!todayIsRv) counts[curYm] = (counts[curYm] || 0) + 1;   // 今日の印の分
             const yms = Object.keys(counts).map(Number).sort((a, b) => a - b);
             let wi = yms.findIndex(v => v >= curYm);
-            if (wi < 0) wi = Math.max(0, yms.length - 2);
-            const win = yms.slice(wi, wi + 2).map(v => counts[v]);
-            const cellH = calTimeMode ? 84 : 38, maxH = calTimeMode ? 360 : 300;
+            if (wi < 0) wi = Math.max(0, yms.length - 3);
+            const win = yms.slice(wi, wi + 3).map(v => counts[v]);
+            const cellH = calTimeMode ? 84 : 38, maxH = calTimeMode ? 540 : 450;
             let cols = 12;
             for (let c = 7; c <= 12; c++) {
                 const rows = win.reduce((a, n) => a + Math.ceil(n / c), 0);
@@ -5035,10 +5030,10 @@
             const now = new Date();
             const cur = now.getFullYear() * 12 + now.getMonth();
             let i = heads.findIndex(h => Number(h.dataset.ym) >= cur);
-            if (i < 0) i = Math.max(0, heads.length - 2);
+            if (i < 0) i = Math.max(0, heads.length - 3);
             const top = heads[i].offsetTop;
-            const end = heads[i + 2] ? heads[i + 2].offsetTop : grid.scrollHeight;
-            grid.style.maxHeight = Math.min(Math.max(end - top, 110), 460) + "px";
+            const end = heads[i + 3] ? heads[i + 3].offsetTop : grid.scrollHeight;
+            grid.style.maxHeight = Math.min(Math.max(end - top, 110), 620) + "px";
         }
         function scrollListToThisMonth(grid) {
             fitListToTwoMonths(grid);
