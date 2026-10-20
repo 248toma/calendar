@@ -278,8 +278,10 @@
         .op-row + .op-row { margin-top: 6px; }
         .op-box.allday .op-t { display: none; }
         .op-opts { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-        .op-opts .op-colors { margin: 0 0 0 auto; padding: 0; gap: 12px; }
-        .op-opts .op-sc { padding: 6px 14px; font-size: 13px; }
+        .op-opts { flex-wrap: wrap; gap: 8px 10px; }
+        .op-opts .op-colors { margin: 0 0 0 auto; padding: 0; gap: 7px; flex: 1 1 0; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+        .op-opts .op-dot { width: 24px; height: 24px; flex: none; }
+        .op-opts .op-sc { flex: none; white-space: nowrap; writing-mode: horizontal-tb; padding: 6px 14px; font-size: 13px; }
         .op-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
         .op-grow { flex: 1; }
         .op-delbtn { display: none; border: none; background: none; color: var(--notcome-ink); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 6px; cursor: pointer; }
@@ -2181,10 +2183,10 @@
     <!-- ===== バレー当日: 開発モード確認 ===== -->
     <div class="dv-ov" id="devAskOv">
         <div class="dv-box">
-            <h4>開発モードがONです</h4>
-            <p id="devAskMsg">今日はバレー当日です。開発モードのまま開きますか?</p>
-            <button type="button" class="primary" onclick="devAskAnswer('keep')">開発モードのまま開く</button>
-            <button type="button" onclick="devAskAnswer('off')">開発モードをOFFにして開く</button>
+            <h4>管理モードです</h4>
+            <p id="devAskMsg">今日はバレー当日です。管理モードのまま開きますか?</p>
+            <button type="button" class="primary" onclick="devAskAnswer('keep')">管理モードのまま開く</button>
+            <button type="button" onclick="devAskAnswer('view')">閲覧モードに切り替えて開く</button>
             <button type="button" class="cancel" onclick="devAskAnswer('cancel')">キャンセル</button>
         </div>
     </div>
@@ -2217,6 +2219,15 @@
                 </div>
             </div>
         </div>
+        <div class="panel-group-label">管理</div>
+        <details class="acc" id="changeLogAcc">
+            <summary>変更ログ</summary>
+            <div class="acc-body">
+                <div class="settings-note" style="margin-top:0;">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
+                <div id="changeLogList" class="cl-list"></div>
+            </div>
+        </details>
+
         <div class="panel-group-label">メンバー</div>
         <details class="acc" id="rosterAcc">
             <summary>名簿</summary>
@@ -2410,15 +2421,6 @@
                     <button onclick="addPair()">追加</button>
                 </div>
                 <div id="pairList"></div>
-            </div>
-        </details>
-
-        <div class="panel-group-label">管理</div>
-        <details class="acc" id="changeLogAcc">
-            <summary>変更ログ</summary>
-            <div class="acc-body">
-                <div class="settings-note" style="margin-top:0;">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
-                <div id="changeLogList" class="cl-list"></div>
             </div>
         </details>
 
@@ -3488,7 +3490,7 @@
             const acc = document.getElementById("rosterAcc");
             if (acc) acc.addEventListener("toggle", () => {
                 if (!acc.open) return;
-                askDevModeIfVolleyDay(() => renderRosterPanel());
+                askDevModeIfVolleyDay(() => renderRosterPanel(), () => { acc.open = false; });
             });
         });
 
@@ -4665,13 +4667,23 @@
             renderRoster();
             openFirstIncompleteTab();
         }
+        // 管理者が開く画面: ⚠️が付いているタブ(一番左)→なければ未完了のタスク(一番左)→すべて完了なら動画
+        function pickAdminTaskView() {
+            const views = ["reserve", "member", "teams", "settle", "videos"];
+            try {
+                const st = dayTaskState(selectedDate);
+                let i = st.warns.findIndex(Boolean);
+                if (i < 0) i = st.oks.findIndex(ok => !ok);
+                return views[i < 0 ? 4 : i];
+            } catch (e) { return "member"; }
+        }
         // 開発モードOFFのときは、日付を触ったら一番左の未完タスクのタブを開く(前の日に触っていたタブを引き継がない)
         function openFirstIncompleteTab() {
             // 閲覧モード: ⚠️の条件(予約のある今日以降の日で、自分の出欠が ○・✖ 以外)のときは、メンバータスクを表示する
             if (!isAdmin()) {
                 try { if (dayTaskState(selectedDate).myUnanswered) { switchView("member"); return; } } catch (e) { console.warn(e); }
             }
-            if (devMode) return;
+            if (isAdmin()) { if (events[selectedDate]) switchView(pickAdminTaskView()); return; }   // 管理者: ⚠️のタブ、なければ一番左の未完了タスク
             if (selectedDate >= formatDateKey(new Date())) { switchView("member"); return; }   // 当日まではメンバータスクを最初に表示
             try {
                 const i = dayTaskState(selectedDate).oks.findIndex(ok => !ok);
@@ -4693,7 +4705,7 @@
         let calListMode = false;
         // ------- カレンダー(タイムツリー風: 月カレンダー + 選んだ日の予定を下に一覧) -------
         var volleyFull = false;   // true: バレーのタスク画面を全体に表示(カレンダーは隠す)
-        function openVolleyFull() { volleyFull = true; if (selectedDate >= formatDateKey(new Date())) switchView("member"); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
+        function openVolleyFull() { volleyFull = true; if (isAdmin()) switchView(pickAdminTaskView()); else if (selectedDate >= formatDateKey(new Date())) switchView("member"); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
         function closeVolleyFull() { volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
         // 月カレンダー1週分の「日またぎの予定」を、行(レーン)に割り当てる
         function nvWeekLayout(days) {
@@ -4714,7 +4726,10 @@
                 g.contL = g.p.startDate < keys[0];
                 g.contR = !!g.p.endDate && g.p.endDate > keys[6];
             });
-            const MAXL = 3;
+            // 終日(1日だけ)の予定は必ず一番上。その分(週の中で一番多い日に合わせて)行を空けて、帯はその下に置く
+            const adCnt = keys.map(k => plansOn(k).filter(pi => pi.first && pi.last && !planTimed(pi.p)).length);
+            const AD = Math.min(2, Math.max(0, ...adCnt));
+            const MAXL = 3 - AD;
             const perDay = keys.map(() => ({ lanes: 0, hidden: 0 }));
             segs.forEach(g => {
                 for (let c = g.s; c <= g.e; c++) {
@@ -4722,15 +4737,16 @@
                     else perDay[c].hidden++;
                 }
             });
-            return { segs: segs.filter(g => g.lane < MAXL), perDay };
+            perDay.forEach(d => { d.ad = AD; });
+            return { segs: segs.filter(g => g.lane < MAXL), perDay, ad: AD };
         }
-        function buildNvSeg(g, row) {
+        function buildNvSeg(g, row, ad) {
             const el = document.createElement("div");
             el.className = "nv-chip nv-seg" + pcCls(g.p) + (planTimed(g.p) ? "" : " ring");
             el.textContent = g.p.title || "予定";
             el.style.gridColumn = (g.s + 1) + " / " + (g.e + 2);
             el.style.gridRow = String(row);
-            el.style.marginTop = "calc(27px + " + g.lane + " * 14.6px)";
+            el.style.marginTop = "calc(27px + " + (g.lane + (ad || 0)) + " * 14.6px)";
             el.style.marginLeft = g.contL ? "0" : "1px";
             el.style.marginRight = g.contR ? "0" : "1px";
             el.style.borderRadius = (g.contL ? "0" : "3px") + " " + (g.contR ? "0" : "3px") + " " + (g.contR ? "0" : "3px") + " " + (g.contL ? "0" : "3px");
@@ -4743,19 +4759,21 @@
             if (key === todayKey) cell.classList.add("today");
             if (key === selectedDate) cell.classList.add("selected");
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
-            const chips = [];
             const chipOf = ({ p }) => `<span class="nv-chip${pcCls(p)}${planTimed(p) ? "" : " ring"}">${escapeHtml(p.title || "予定")}</span>`;
             const single = plansOn(key).filter(x => x.first && x.last);
-            single.filter(x => !planTimed(x.p)).forEach(x => chips.push(chipOf(x)));   // 終日は日付のすぐ下(一番上)
+            const adAll = single.filter(x => !planTimed(x.p)).map(chipOf);   // 終日は必ず一番上
+            const chips = [];
             if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">🏐${n}名</span>`); }
             single.filter(x => planTimed(x.p)).forEach(x => chips.push(chipOf(x)));
-            // 日またぎの予定はバーで上に出すので、その分の行を空けて、残りに1日だけの予定を並べる
+            const AD = lay ? (lay.ad || 0) : 0;
+            const topAd = adAll.slice(0, AD), rest = adAll.slice(AD).concat(chips);
+            // 日またぎの予定はバーで出すので、その分の行を空けて、残りを並べる
             const nl = lay ? lay.lanes : 0, hid = lay ? lay.hidden : 0;
-            const slots = 3 - nl, total = chips.length + hid;
+            const slots = 3 - AD - nl, total = rest.length + hid;
             let shown;
-            if (total <= slots) shown = chips;
-            else { const keep = Math.max(0, slots - 1); shown = chips.slice(0, keep); shown.push(`<span class="nv-more">他${total - keep}件</span>`); }
-            shown = new Array(nl).fill('<span class="nv-lane"></span>').concat(shown);
+            if (total <= slots) shown = rest;
+            else { const keep = Math.max(0, slots - 1); shown = rest.slice(0, keep); shown.push(`<span class="nv-more">他${total - keep}件</span>`); }
+            shown = topAd.concat(new Array(AD - topAd.length).fill('<span class="nv-lane"></span>'), new Array(nl).fill('<span class="nv-lane"></span>'), shown);
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
             const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">💰</span>` : "";
             cell.innerHTML = `<div class="nv-top"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${shown.join("")}`;
@@ -4766,6 +4784,11 @@
                 selectDate(key);
                 if (!dbl) scrollToDayList();
                 else if (events[key]) openVolleyFull();                                     // ダブルタップ: バレーならタスク画面
+                else if (isAdmin()) {                                                       // 管理者: バレーのない日はバレーありにして、予約タスク画面へ
+                    events[key] = true; seedRosterForDay(key); saveData();
+                    renderRoster(); renderCalendar();
+                    volleyFull = true; switchView("reserve"); renderOtherPlanBox(); renderNvPanel(); window.scrollTo(0, 0);
+                }
                 else if (plansOn(key).length) scrollBelowHeader(document.querySelector(".day-bar"), 4);   // 他の予定なら下の表示を先頭に
             };
             return cell;
@@ -5415,7 +5438,7 @@
                 cell.style.gridColumn = String(c + 1); cell.style.gridRow = String(w + 2);
                 grid.appendChild(cell);
             }
-            nvLay.forEach((L, w) => L.segs.forEach(g => grid.appendChild(buildNvSeg(g, w + 2))));
+            nvLay.forEach((L, w) => L.segs.forEach(g => grid.appendChild(buildNvSeg(g, w + 2, L.ad))));
             linkPlanCells(grid);
             refreshCalWarnMarks();
             renderNvPanel();
@@ -7950,6 +7973,7 @@
             const [dy, dm, dd] = d.split("-").map(Number);
             const nowD = new Date();
             const daysUntil = Math.round((new Date(dy, dm - 1, dd) - new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate())) / 86400000);
+            const reserveMissing = !!events[d] && (reservations[d] || []).length === 0;   // バレーありなのに予約が入っていない
             const memberShortSoon = !!events[d] && daysUntil >= 0 && daysUntil <= 7 && getStatusLevel(comers) !== "sufficient";
             // 予約・出席・精算・動画のどれにも実データがなければ、⚠️は出さない
             const noActivity = !hasData && !oks[4];
@@ -7962,7 +7986,8 @@
                 || (i === 1 && isPast && comers === 0 && getStatusLevel(comers) === "danger")))
                 // ⑤バレー日の1週間前(当日含む)になってもメンバーが過不足(人数が緑でない)
                 || (i === 1 && memberShortSoon)
-                || (i === 3 && settleNoMember));
+                || (i === 3 && settleNoMember)
+                || (i === 0 && reserveMissing));
             // 当日を過ぎたら、メンバーの⚠️は出さない
             if (isPast) warns[1] = false;
             // 当日を過ぎて未完了のタスクがある日(カレンダーの⚠️用。メンバーは除く)
@@ -7977,7 +8002,7 @@
                 const mySettleUnpaid = !!me && !!mine && mine.status === "来る" && d <= todayKey && t.amount > 0 && !t.paid[mine.id] && !t.done;
                 return { oks, warns: oks.map((_, i) => (i === 1 && myUnanswered) || (i === 3 && mySettleUnpaid)), pastIncomplete: false, memberShortSoon: false, myUnanswered, mySettleUnpaid };
             }
-            return { oks, warns, pastIncomplete, memberShortSoon, myUnanswered: false, mySettleUnpaid: false };
+            return { oks, warns, pastIncomplete, memberShortSoon, reserveMissing, myUnanswered: false, mySettleUnpaid: false };
         }
 
         function updateTabProgress() {
@@ -8005,8 +8030,8 @@
                 const key = cell.dataset.key;
                 const viewer = !isAdmin();
                 const ts = (events[key] || (viewer && (reservations[key] || []).length > 0)) ? dayTaskState(key) : null;
-                const want = !!ts && (viewer ? (ts.myUnanswered || ts.mySettleUnpaid) : (ts.pastIncomplete || ts.memberShortSoon));
-                const title = viewer ? (ts && ts.mySettleUnpaid ? "あなたの精算が未完了です" : "あなたの出欠が未回答です") : (ts && ts.memberShortSoon ? "1週間以内なのにメンバーが過不足です" : "未完了のタスクがあります");
+                const want = !!ts && (viewer ? (ts.myUnanswered || ts.mySettleUnpaid) : (ts.pastIncomplete || ts.memberShortSoon || ts.reserveMissing));
+                const title = viewer ? (ts && ts.mySettleUnpaid ? "あなたの精算が未完了です" : "あなたの出欠が未回答です") : (ts && ts.reserveMissing ? "予約が入っていません" : ts && ts.memberShortSoon ? "1週間以内なのにメンバーが過不足です" : "未完了のタスクがあります");
                 const cur = cell.querySelector(".cal-warn");
                 if (want && !cur) {
                     const s = document.createElement("span");
@@ -8962,19 +8987,20 @@
             return !!(events && events[k]) || !!(reservations && reservations[k] && reservations[k].length);
         }
         let devAskCallback = null;
-        function askDevModeIfVolleyDay(proceed) {
-            proceed();   // 開発モードは管理者モードに統合したので、確認は出さない
+        let devAskCancelCb = null;
+        function askDevModeIfVolleyDay(proceed, onCancel) {
+            // 管理モードでバレー当日に開くときは、管理のまま開くか閲覧モードに切り替えるか確認する
+            if (!isAdmin() || !isVolleyToday()) { proceed(); return; }
+            devAskCallback = proceed; devAskCancelCb = onCancel || null;
+            document.getElementById("devAskOv").classList.add("open");
         }
         function devAskAnswer(choice) {
             document.getElementById("devAskOv").classList.remove("open");
             const cb = devAskCallback;
             devAskCallback = null;
-            if (choice === "cancel" || !cb) return;
-            if (choice === "off") {
-                devMode = false;
-                saveDevMode();
-                applyDevMode();
-            }
+            const cc = devAskCancelCb; devAskCancelCb = null;
+            if (choice === "cancel" || !cb) { if (cc) cc(); return; }
+            if (choice === "view" && realAdmin() && isAdmin()) setViewMode("view");
             cb();
         }
         function onRosterBtnClick() { toggleRoster(); }
