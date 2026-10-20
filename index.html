@@ -4921,6 +4921,7 @@
             keys.forEach(k => { const [y, m] = k.split("-").map(Number); const n = y * 12 + (m - 1); counts[n] = (counts[n] || 0) + 1; });
             const todayIsRv = keys.includes(todayKey);   // 今日が予約日なら、その日付枠自体が今日の印になる
             if (!todayIsRv) counts[curYm] = (counts[curYm] || 0) + 1;   // 今日の印の分
+            [curYm, curYm + 1, curYm + 2].forEach(v => { if (!(v in counts)) counts[v] = 0; });   // 予約日がない月も3か月分の枠に数える
             const yms = Object.keys(counts).map(Number).sort((a, b) => a - b);
             let wi = yms.findIndex(v => v >= curYm);
             if (wi < 0) wi = Math.max(0, yms.length - 3);
@@ -4963,6 +4964,17 @@
                 }
                 grid.insertBefore(mk, before || node);   // 今月の最後まで来たら、次の月の見出しの前(なければ末尾)
             }
+            // 今月から3か月分は、予約日がない月も見出しを出す(「予約日なし」)
+            const ensureMonth = (ymNum) => {
+                if (grid.querySelector(`.cal-month-head[data-ym="${ymNum}"]`)) return;
+                const h = document.createElement("div");
+                h.className = "cal-month-head"; h.textContent = `${Math.floor(ymNum / 12)}年${ymNum % 12 + 1}月`; h.dataset.ym = String(ymNum);
+                const n = document.createElement("div");
+                n.className = "rvd-none"; n.textContent = "予約日なし";
+                const next = [...grid.querySelectorAll(".cal-month-head[data-ym]")].find(x => Number(x.dataset.ym) > ymNum);
+                if (next) { grid.insertBefore(h, next); grid.insertBefore(n, next); } else { grid.appendChild(h); grid.appendChild(n); }
+            };
+            ensureMonth(curYm + 1); ensureMonth(curYm + 2);
         }
         // その日の精算実績(回収済み − コート代)がマイナスか。精算に記録がある日だけ判定(合計収支と同じ基準)
         function isDayBalanceMinus(dateKey) {
