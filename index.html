@@ -8309,6 +8309,13 @@
             const f = input.files && input.files[0];
             input.value = "";
             if (!f) return;
+            // 共有データは管理者だけが書き換えられる。管理者以外が読み込んでも、再読み込みのとき共有データで上書きされてしまう
+            if (firebaseAvailable && !firestoreEditor) {
+                const msg = "共有データに保存するため、管理者のGmailでログインしてから読み込んでください。";
+                shareMsg(msg, true);
+                alert(msg);
+                return;
+            }
             const r = new FileReader();
             r.onload = () => {
                 try {
@@ -8322,11 +8329,24 @@
                         const k = localStorage.key(i);
                         if (k && k.indexOf(APP_DATA_PREFIX) === 0 && APP_DATA_EXCLUDE.indexOf(k) < 0) old.push(k);
                     }
-                    old.forEach(k => localStorage.removeItem(k));
-                    keys.forEach(k => localStorage.setItem(k, obj.data[k]));
+                    firestoreApplyingRemote = true;   // 途中の状態を共有データへ送らないようにする
+                    try {
+                        old.forEach(k => localStorage.removeItem(k));
+                        keys.forEach(k => localStorage.setItem(k, obj.data[k]));
+                    } finally { firestoreApplyingRemote = false; }
+                    if (firebaseAvailable && firestoreEditor && firestoreRef) {
+                        // 読み込んだデータを共有データにも保存してから再読み込みする(保存前に再読み込みすると、古い共有データで上書きされる)
+                        shareMsg("共有データに保存中…");
+                        firestoreRef.set({ values: getShareableLocalValues(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+                            .then(() => { alert("読み込んで共有しました。画面を再読み込みします。"); location.reload(); })
+                            .catch(err => { console.error(err); shareMsg("共有データへの保存に失敗しました(" + ((err && err.code) || err) + ")。もう一度読み込んでください。", true); });
+                        return;
+                    }
                     alert("読み込みました。画面を再読み込みします。");
                     location.reload();
-                } catch (e) { shareMsg("読み込めませんでした。このアプリで共有したファイルか確認してください。", true); }
+                } catch (e) {
+                    shareMsg(e && e.message === "empty" ? "ファイルに読み込めるデータがありませんでした。" : "読み込めませんでした。このアプリで共有したファイルか確認してください。", true);
+                }
             };
             r.onerror = () => shareMsg("ファイルを読み込めませんでした。", true);
             r.readAsText(f);
