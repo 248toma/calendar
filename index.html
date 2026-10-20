@@ -9219,7 +9219,7 @@
 
         // 共有データの内容が、すべてこの端末に入っているか(端末にしかないキーがあっても再読み込みを繰り返さない)
         function remoteCoveredByLocal(remote, local) {
-            return Object.keys(remote || {}).filter(isSharedKey).every(k => local[k] === remote[k]);
+            return Object.keys(remote || {}).filter(isSharedKey).every(k => k === CHANGELOG_KEY ? clRemoteCovered(remote[k], local[k]) : local[k] === remote[k]);
         }
 
         // メールはそのまま保存せず、ハッシュにして名簿と照合する
@@ -9475,6 +9475,10 @@
                 firestoreSyncActive = true;
                 if (remoteCoveredByLocal(remoteValues, localValues)) {
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
+                    // 取り込み時に足した「他の人の変更」のログなど、この端末にだけあるログは共有データへ送る
+                    if (firestoreEditor && !firestoreApplyingRemote && clLocalHasExtra(remoteValues[CHANGELOG_KEY], localValues[CHANGELOG_KEY])) {
+                        clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 400);
+                    }
                     return;
                 }
                 // 他の人の更新では画面を勝手に切り替えない。保留して、↻を押す/アプリに戻ってきたときに反映する
@@ -9567,8 +9571,24 @@
             const texts = clDiff(before, after).filter(t => !remoteLog.some(e => e && String(e.text).indexOf(t) === 0));
             if (!texts.length) return;
             const now = Date.now();
-            texts.forEach(text => remoteLog.push({ t: now, who: "他の人の変更", text }));
-            rv[CHANGELOG_KEY] = JSON.stringify(remoteLog.slice(-CHANGELOG_MAX));
+            const merged = clUnion(clLoad(), remoteLog);   // この端末のログと相手のログを両方残す
+            texts.forEach(text => merged.push({ t: now, who: "他の人の変更", text }));
+            rv[CHANGELOG_KEY] = JSON.stringify(merged.slice(-CHANGELOG_MAX));
+        }
+        function clUnion(a, b) {
+            const seen = new Set(), out = [];
+            (a || []).concat(b || []).forEach(e => { if (!e) return; const k = e.t + "|" + e.text; if (!seen.has(k)) { seen.add(k); out.push(e); } });
+            return out.sort((x, y) => x.t - y.t);
+        }
+        function clParse(v) { try { const a = JSON.parse(v || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+        // 共有データのログの全項目が、この端末のログに入っているか(この端末にだけ多くあっても「同じ」とみなす)
+        function clRemoteCovered(remoteStr, localStr) {
+            const loc = new Set(clParse(localStr).map(e => e.t + "|" + e.text));
+            return clParse(remoteStr).every(e => loc.has(e.t + "|" + e.text));
+        }
+        function clLocalHasExtra(remoteStr, localStr) {
+            const rem = new Set(clParse(remoteStr).map(e => e.t + "|" + e.text));
+            return clParse(localStr).some(e => !rem.has(e.t + "|" + e.text));
         }
         // 保存するとき、まだ取り込んでいない相手のログ(閲覧者の回答など)を消さずに残す
         function mergePendingLog(values) {
