@@ -4921,12 +4921,12 @@
             keys.forEach(k => { const [y, m] = k.split("-").map(Number); const n = y * 12 + (m - 1); counts[n] = (counts[n] || 0) + 1; });
             const todayIsRv = keys.includes(todayKey);   // 今日が予約日なら、その日付枠自体が今日の印になる
             if (!todayIsRv) counts[curYm] = (counts[curYm] || 0) + 1;   // 今日の印の分
-            [curYm, curYm + 1, curYm + 2].forEach(v => { if (!(v in counts)) counts[v] = 0; });   // 予約日がない月も3か月分の枠に数える
+            [curYm, curYm + 1, curYm + 2, curYm + 3].forEach(v => { if (!(v in counts)) counts[v] = 0; });   // 予約日がない月も3か月分の枠に数える
             const yms = Object.keys(counts).map(Number).sort((a, b) => a - b);
             let wi = yms.findIndex(v => v >= curYm);
-            if (wi < 0) wi = Math.max(0, yms.length - 3);
-            const win = yms.slice(wi, wi + 3).map(v => counts[v]);
-            const cellH = calTimeMode ? 84 : 38, maxH = calTimeMode ? 540 : 450;
+            if (wi < 0) wi = Math.max(0, yms.length - 4);
+            const win = yms.slice(wi, wi + 4).map(v => counts[v]);
+            const cellH = calTimeMode ? 84 : 38, maxH = calTimeMode ? 700 : 560;
             let cols = 12;
             for (let c = 7; c <= 12; c++) {
                 const rows = win.reduce((a, n) => a + Math.ceil(n / c), 0);
@@ -4974,7 +4974,7 @@
                 const next = [...grid.querySelectorAll(".cal-month-head[data-ym]")].find(x => Number(x.dataset.ym) > ymNum);
                 if (next) { grid.insertBefore(h, next); grid.insertBefore(n, next); } else { grid.appendChild(h); grid.appendChild(n); }
             };
-            ensureMonth(curYm + 1); ensureMonth(curYm + 2);
+            ensureMonth(curYm + 1); ensureMonth(curYm + 2); ensureMonth(curYm + 3);
         }
         // その日の精算実績(回収済み − コート代)がマイナスか。精算に記録がある日だけ判定(合計収支と同じ基準)
         function isDayBalanceMinus(dateKey) {
@@ -5042,10 +5042,10 @@
             const now = new Date();
             const cur = now.getFullYear() * 12 + now.getMonth();
             let i = heads.findIndex(h => Number(h.dataset.ym) >= cur);
-            if (i < 0) i = Math.max(0, heads.length - 3);
+            if (i < 0) i = Math.max(0, heads.length - 4);
             const top = heads[i].offsetTop;
-            const end = heads[i + 3] ? heads[i + 3].offsetTop : grid.scrollHeight;
-            grid.style.maxHeight = Math.min(Math.max(end - top, 110), 620) + "px";
+            const end = heads[i + 4] ? heads[i + 4].offsetTop : grid.scrollHeight;
+            grid.style.maxHeight = Math.min(Math.max(end - top + 12, 110), 760) + "px";
         }
         function scrollListToThisMonth(grid) {
             fitListToTwoMonths(grid);
@@ -6974,6 +6974,27 @@
             applyDevMode();
         }
         // ログイン状態(管理者/閲覧者)が変わったときに画面へ反映する
+        // 閲覧モード: 今日から1週間以内(当日含む)のバレー日で、自分の出欠が未回答なら、警告を出してその日のメンバー画面へ移動する(開くたびに1回)
+        const MEMBER_ALERT_KEY = "attendance_member_alert_v1";
+        function checkMemberTaskAlert() {
+            if (isAdmin() || !myMemberName()) return;
+            const now = new Date(), todayKey = formatDateKey(now);
+            let target = "";
+            for (let i = 0; i <= 7 && !target; i++) {
+                const k = formatDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i));
+                try { if (events[k] && dayTaskState(k).myUnanswered) target = k; } catch (e) { /* ignore */ }
+            }
+            if (!target) return;
+            const flag = todayKey + "|" + target;   // 共有データの受信で再読み込みされても、同じ日の分は繰り返さない
+            try { if (sessionStorage.getItem(MEMBER_ALERT_KEY) === flag) return; sessionStorage.setItem(MEMBER_ALERT_KEY, flag); } catch (e) { /* ignore */ }
+            const [y, m, d] = target.split("-").map(Number);
+            alert(`⚠️ ${m}/${d}のバレーの出欠が未回答です。\nメンバー画面で回答してください。`);
+            calCollapsed = false; applyCalCollapsed();
+            viewMonth = new Date(y, m - 1, 1);
+            selectDate(target);
+            openVolleyFull();
+            switchView("member");
+        }
         function applyRole() {
             devMode = isAdmin() && devModePref;
             applyDevMode();
@@ -8887,6 +8908,7 @@
                 } else setFirestoreSyncStatus(authIsGuest ? "ゲスト" : "閲覧中");
                 refreshMyMember().then(() => {
                     applyRole();
+                    setTimeout(checkMemberTaskAlert, 1200);   // 共有データの受信が落ち着いてから確認する
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
                     guestJustSignedIn = false;
