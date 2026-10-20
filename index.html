@@ -316,6 +316,8 @@
         .cal-day .nv-ic .cal-warn { position: static; font-size: 10px; line-height: 1; }
         .cal-day .nv-ic .minus-mark { position: static; font-size: 10px; line-height: 1; }
         #nvBack { display: none; margin: 0 0 8px; }
+        body.nv-full #nvBack { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        #nvBack .nv-step { display: flex; gap: 6px; }
         body.nv-full #nvBack { display: block; }
         body.nv-full #calCard, body.nv-full #nvDayPanel, body.nv-full #otherPlanBox { display: none !important; }
         .nv-row.nv-go { cursor: pointer; }
@@ -2069,6 +2071,8 @@
         .header-btns .settings-btn.mode-select { padding-right: 16px; }
         .settings-btn.refresh-btn { position: relative; }
         .settings-btn.refresh-btn.has-update::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: #e5484d; }
+        body.nv-full #nvBack { display: flex !important; align-items: center; justify-content: flex-start; gap: 6px; }
+        #nvBack .nv-step { display: inline-flex; gap: 6px; margin-left: 0; }
     </style>
 </head>
 <body>
@@ -2442,7 +2446,7 @@
 
     <div id="nvDayPanel"></div>
 
-    <div id="nvBack"><button type="button" class="today-btn" onclick="closeVolleyFull()">‹ カレンダーに戻る</button></div>
+    <div id="nvBack"><button type="button" class="today-btn" onclick="closeVolleyFull()">‹ カレンダーに戻る</button><span class="nv-step"><button type="button" class="today-btn" onclick="moveVolleyDate(-1)" aria-label="前のバレー予約日">‹ 前</button><button type="button" class="today-btn" onclick="moveVolleyDate(1)" aria-label="次のバレー予約日">次 ›</button></span></div>
 
     <div id="eventContent">
 
@@ -4567,6 +4571,7 @@
                 try { if (dayTaskState(selectedDate).myUnanswered) { switchView("member"); return; } } catch (e) { console.warn(e); }
             }
             if (devMode) return;
+            if (selectedDate >= formatDateKey(new Date())) { switchView("member"); return; }   // 当日まではメンバータスクを最初に表示
             try {
                 const i = dayTaskState(selectedDate).oks.findIndex(ok => !ok);
                 const views = ["reserve", "member", "teams", "settle", "videos"];
@@ -4587,7 +4592,7 @@
         let calListMode = false;
         // ------- カレンダー(タイムツリー風: 月カレンダー + 選んだ日の予定を下に一覧) -------
         var volleyFull = false;   // true: バレーのタスク画面を全体に表示(カレンダーは隠す)
-        function openVolleyFull() { volleyFull = true; renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
+        function openVolleyFull() { volleyFull = true; if (selectedDate >= formatDateKey(new Date())) switchView("member"); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
         function closeVolleyFull() { volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
         function buildNormalCell(cellDate, inMonth, todayKey) {
             const key = formatDateKey(cellDate);
@@ -4614,6 +4619,19 @@
                 else if (plansOn(key).length) scrollBelowHeader(document.querySelector(".day-bar"), 4);   // 他の予定なら下の表示を先頭に
             };
             return cell;
+        }
+        // タスク画面のまま、前/次のバレー予約日へ移る
+        function moveVolleyDate(dir) {
+            const keys = reserveListKeys();
+            const k = dir > 0 ? keys.find(x => x > selectedDate) : [...keys].reverse().find(x => x < selectedDate);
+            if (!k) { try { alert(dir > 0 ? "これより後のバレー予約日はありません。" : "これより前のバレー予約日はありません。"); } catch (e) {} return; }
+            const view = currentView;
+            selectDate(k);
+            volleyFull = true;
+            switchView(view);
+            renderOtherPlanBox();
+            renderNvPanel();
+            window.scrollTo(0, 0);
         }
         var nvLastTap = { key: "", t: 0 };
         // 日付を押したとき、下の予定一覧(日付バー+一覧)が画面内に収まる最小限だけスクロールする
@@ -9074,7 +9092,7 @@
         function saveUiStateForReload() {
             try {
                 sessionStorage.setItem(UI_RESTORE_KEY, JSON.stringify({
-                    selectedDate, currentView, volleyFull: !!volleyFull, survey: !!surveyOpen,
+                    selectedDate, currentView, volleyFull: !!volleyFull, survey: !!surveyOpen, list: !!calListMode,
                     month: [viewMonth.getFullYear(), viewMonth.getMonth()],
                     week: formatDateKey(viewWeekStart),
                     scrollY: window.scrollY || 0
@@ -9210,6 +9228,7 @@
             requestAnimationFrame(() => window.scrollTo(0, restoredUi.scrollY || 0));
         }
         if (restoredUi && restoredUi.volleyFull && events[selectedDate]) { volleyFull = true; renderOtherPlanBox(); renderNvPanel(); }
+        if (restoredUi && restoredUi.list && !calListMode) { calListMode = true; calListNeedScroll = true; renderCalendar(); }
         if (restoredUi && restoredUi.survey) openSurvey();
         startFirestoreSync();
     </script>
