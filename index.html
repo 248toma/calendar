@@ -1913,6 +1913,8 @@
 
         /* ---- ☀️🌙 テーマ切替ボタン ---- */
         .settings-btn.theme-toggle { font-size: 15px; line-height: 1; padding: 0 8px; }
+        .settings-btn.refresh-btn { font-size: 17px; line-height: 1; padding: 0 8px; }
+        .settings-btn.refresh-btn.spin { pointer-events: none; opacity: .6; }
         html.theme-anim body, html.theme-anim body * { transition: background-color .25s ease, color .25s ease, border-color .25s ease; }
 
         /* ---- v28: 合計収支バッジ(「+2000」だけ・1行)。ヘッダーの幅/高さを動かさないよう枠外に置く ---- */
@@ -1978,6 +1980,30 @@
         .st-total { flex-wrap: wrap; row-gap: 2px; }
         .st-got { min-width: 0; }
         .st-bal-inl { margin-left: 8px; font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+
+        /* =========================================================
+           v45: ライトモードでも凹凸をはっきり(写真のようなニューモーフィズム。色は変えない)
+           ========================================================= */
+        :root {
+            --sh: rgba(112, 124, 150, .38);
+            --raise:    -4px -4px 10px var(--hl), 4px 5px 12px var(--sh);
+            --raise-sm: -3px -3px 7px var(--hl), 3px 3px 8px var(--sh);
+            --sink:     inset 3px 3px 7px var(--sh), inset -3px -3px 7px var(--hl);
+        }
+        :root:has(body.dark) {
+            --hl: rgba(255, 255, 255, .055);
+            --sh: rgba(12, 15, 24, .55);
+        }
+        /* 選択日: 深く凹ませる(予定ありの色付きの日でも凹みが見えるように、他の指定より強く) */
+        .cal-grid .cal-day.selected, .cal-grid .cal-day.selected:not([class*="event-"]) {
+            box-shadow: inset 3px 3px 7px rgba(100, 112, 140, .55), inset -3px -3px 7px #fff;
+            background-image: none; font-weight: 800;
+        }
+        .cal-grid .cal-day.today.selected {
+            box-shadow: inset 3px 3px 7px rgba(100, 112, 140, .55), inset -3px -3px 7px #fff, inset 0 0 0 1.5px var(--accent);
+        }
+        body.dark .cal-grid .cal-day.selected, body.dark .cal-grid .cal-day.selected:not([class*="event-"]) { box-shadow: var(--sink); }
+        body.dark .cal-grid .cal-day.today.selected { box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
     </style>
 </head>
 <body>
@@ -1985,9 +2011,9 @@
     <header class="app-header">
         <h1 class="app-title"><span class="total-balance dev-only" id="totalBalance" title="精算で回収済みの金額 − コート代の合計(薄字は従来の予測収支)"></span></h1>
         <nav class="header-btns">
-            <button class="settings-btn" data-panel="rosterPanel" onclick="onRosterBtnClick()">名簿</button>
-            <button class="settings-btn" data-panel="teamSettingsPanel" onclick="toggleTeamSettings()">ロジック</button>
-            <button class="settings-btn" data-panel="settingsPanel" onclick="toggleSettings()">設定</button>
+            <button class="settings-btn admin-only" data-panel="rosterPanel" onclick="onRosterBtnClick()">名簿</button>
+            <button class="settings-btn admin-only" data-panel="settingsPanel" onclick="toggleSettings()">設定</button>
+            <button class="settings-btn refresh-btn" id="refreshBtn" onclick="refreshApp()" title="最新の状態に更新" aria-label="更新">↻</button>
             <button class="settings-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="ライト/ダーク切替(開発モード中は逆)" aria-label="テーマ切替">☀️</button>
             <button class="settings-btn dev-toggle" id="devToggleBtn" onclick="onDevToggleClick()" title="パラメータの表示・編集">開発</button>
         </nav>
@@ -2023,7 +2049,7 @@
         <div class="settings-note" id="devPassMsg" style="color:#c92a2a; font-weight:700;"></div>
     </div>
 
-    <div class="settings-panel" id="settingsPanel">
+    <div class="settings-panel admin-only" id="settingsPanel">
         <div class="panel-sticky">
             <div class="panel-head">
                 <h3>設定</h3>
@@ -2099,6 +2125,21 @@
         </details>
 
         <div class="panel-group-label">データ</div>
+        <details class="acc" id="teamSettingsAcc">
+            <summary>ロジック</summary>
+            <div class="acc-body">
+        <div class="panel-group-label">設定項目</div>
+
+        <details class="acc">
+            <summary>希望ポジションの一覧</summary>
+            <div class="acc-body">
+                <div class="roles-edit-row">
+                    <input type="text" id="inputRolesText" placeholder="例: セッター, リベロ, スパイカー, 初心者">
+                </div>
+                <div class="settings-note">カンマ区切りで編集できます(右上の「保存」で反映)。チーム分けはこのポジションごとに均等に分けます。</div>
+            </div>
+        </details>
+
         <details class="acc">
             <summary>データの共有・引き継ぎ(ローカルデータごと)</summary>
             <div class="acc-body">
@@ -2110,77 +2151,6 @@
                 </div>
                 <input type="file" id="importDataFile" accept=".json,application/json,text/plain" style="display:none" onchange="importAppData(this)">
                 <div class="settings-note" id="shareDataMsg"></div>
-            </div>
-        </details>
-
-    </div>
-
-    <!-- ===== 名簿パネル ===== -->
-    <div class="roster-panel" id="rosterPanel">
-        <div class="panel-sticky">
-            <div class="panel-head">
-                <h3>メンバー名簿</h3>
-                <div class="panel-actions">
-                    <span class="panel-auto">変更は自動保存</span>
-                    <button type="button" class="panel-x" onclick="toggleRoster()">閉じる</button>
-                </div>
-            </div>
-            <div class="roster-search-row">
-                <input type="text" id="rosterSearchInput" placeholder="名前・LINE名・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
-                <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
-            </div>
-            <div class="roster-sort-row">
-                <span class="rs-label">並び順</span>
-                <div class="rs-seg" id="rosterSortSeg"></div>
-            </div>
-            <div class="roster-sort-row" id="rosterSortParamRow" style="display:none;">
-                <span class="rs-label">項目</span>
-                <div class="rs-seg" id="rosterSortParamSeg"></div>
-            </div>
-            <div class="roster-sort-note" id="rosterSortNote"></div>
-        </div>
-        <div class="roster-meta">
-            <span class="roster-search-count" id="rosterSearchCount"></span>
-            <button type="button" class="link-btn" id="rosterToggleAllBtn" onclick="toggleAllRosterCards()">すべて開く</button>
-        </div>
-        <div class="roster-add-row">
-            <input type="text" id="newRosterName" maxlength="4" placeholder="新しいメンバー名(4文字まで)" onkeydown="if(event.key==='Enter') addRosterMember()">
-            <button class="add-btn" onclick="addRosterMember()">追加</button>
-        </div>
-        <div id="rosterList"></div>
-        <details class="note-details">
-            <summary>名簿の使い方</summary>
-            <div class="settings-note">
-                チーム分け用に、名前・性別・希望ポジション・パラメータを登録します。
-                名前は出欠入力と同じにしてください。
-                LINEの表示名が違う人は「LINE名」も登録しておくと、投票スクショから自動で照合できます。
-                スクショ取込は、「来れる」などの参加者一覧のスクショを貼ると、名簿の名前・LINE名と照合して選択中の日に追加します(複数枚OK)。
-                並び順を「五十音順」にしたとき、漢字の名前は末尾に並びます。名簿カードの「よみ」を入れると五十音順に入ります。
-                名簿にいる人は、すべての日のメンバーに自動で入り、五十音順に並びます。メンバーから外したいときは名簿から削除してください(今日以降の日程から外れます。過去の記録は残ります)。
-            </div>
-        </details>
-    </div>
-
-    <!-- ===== チームロジックパネル ===== -->
-    <div class="roster-panel" id="teamSettingsPanel">
-        <div class="panel-sticky">
-            <div class="panel-head">
-                <h3>ロジック</h3>
-                <div class="panel-actions">
-                    <button type="button" class="panel-save" onclick="saveTeamSettings()">保存</button>
-                    <button type="button" class="panel-x" onclick="toggleTeamSettings()">閉じる</button>
-                </div>
-            </div>
-        </div>
-        <div class="panel-group-label">設定項目</div>
-
-        <details class="acc">
-            <summary>希望ポジションの一覧</summary>
-            <div class="acc-body">
-                <div class="roles-edit-row">
-                    <input type="text" id="inputRolesText" placeholder="例: セッター, リベロ, スパイカー, 初心者">
-                </div>
-                <div class="settings-note">カンマ区切りで編集できます(右上の「保存」で反映)。チーム分けはこのポジションごとに均等に分けます。</div>
             </div>
         </details>
 
@@ -2279,6 +2249,55 @@
                 「ランダム」をONにすると、キー・平均値・配置の数値調整をせず、ペア・希望ポジション・性別・人数だけで分けます。
             </div>
                         </div>
+        </details>
+            </div>
+        </details>
+
+    </div>
+
+    <!-- ===== 名簿パネル ===== -->
+    <div class="roster-panel admin-only" id="rosterPanel">
+        <div class="panel-sticky">
+            <div class="panel-head">
+                <h3>メンバー名簿</h3>
+                <div class="panel-actions">
+                    <span class="panel-auto">変更は自動保存</span>
+                    <button type="button" class="panel-x" onclick="toggleRoster()">閉じる</button>
+                </div>
+            </div>
+            <div class="roster-search-row">
+                <input type="text" id="rosterSearchInput" placeholder="名前・LINE名・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
+                <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
+            </div>
+            <div class="roster-sort-row">
+                <span class="rs-label">並び順</span>
+                <div class="rs-seg" id="rosterSortSeg"></div>
+            </div>
+            <div class="roster-sort-row" id="rosterSortParamRow" style="display:none;">
+                <span class="rs-label">項目</span>
+                <div class="rs-seg" id="rosterSortParamSeg"></div>
+            </div>
+            <div class="roster-sort-note" id="rosterSortNote"></div>
+        </div>
+        <div class="roster-meta">
+            <span class="roster-search-count" id="rosterSearchCount"></span>
+            <button type="button" class="link-btn" id="rosterToggleAllBtn" onclick="toggleAllRosterCards()">すべて開く</button>
+        </div>
+        <div class="roster-add-row">
+            <input type="text" id="newRosterName" maxlength="4" placeholder="新しいメンバー名(4文字まで)" onkeydown="if(event.key==='Enter') addRosterMember()">
+            <button class="add-btn" onclick="addRosterMember()">追加</button>
+        </div>
+        <div id="rosterList"></div>
+        <details class="note-details">
+            <summary>名簿の使い方</summary>
+            <div class="settings-note">
+                チーム分け用に、名前・性別・希望ポジション・パラメータを登録します。
+                名前は出欠入力と同じにしてください。
+                LINEの表示名が違う人は「LINE名」も登録しておくと、投票スクショから自動で照合できます。
+                スクショ取込は、「来れる」などの参加者一覧のスクショを貼ると、名簿の名前・LINE名と照合して選択中の日に追加します(複数枚OK)。
+                並び順を「五十音順」にしたとき、漢字の名前は末尾に並びます。名簿カードの「よみ」を入れると五十音順に入ります。
+                名簿にいる人は、すべての日のメンバーに自動で入り、五十音順に並びます。メンバーから外したいときは名簿から削除してください(今日以降の日程から外れます。過去の記録は残ります)。
+            </div>
         </details>
     </div>
 
@@ -3196,7 +3215,7 @@
 
         // ------- 設定パネル -------
         // 名簿・ロジック・設定・開発は、どれか1つを開くと他は閉じる
-        const HEADER_PANEL_IDS = ["devPanel", "settingsPanel", "rosterPanel", "teamSettingsPanel"];
+        const HEADER_PANEL_IDS = ["devPanel", "settingsPanel", "rosterPanel"];
         function closeOtherPanels(keepId) {
             let closed = false;
             HEADER_PANEL_IDS.forEach(id => {
@@ -3238,6 +3257,7 @@
                 document.getElementById("inputIncludeUnconfirmed").checked = followSettings.includeUnconfirmed;
                 document.getElementById("inputRoundUnit").value = rvRoundUnit;
                 renderRvPresetEditor();
+                renderTeamSettingsPanel();
             }
         }
 
@@ -3262,6 +3282,9 @@
             }
             const includePending = document.getElementById("inputIncludePending").checked;
             const includeUnconfirmed = document.getElementById("inputIncludeUnconfirmed").checked;
+            // ロジック(設定内)もまとめて保存
+            if (devMode && !saveParamRoles(true)) return;
+            if (!saveRoles()) return;
 
             thresholds = { yellowMin, cyanMin, cyanMax };
             followSettings = { template, includePending, includeUnconfirmed };
@@ -3281,15 +3304,7 @@
             if (opening) renderRosterPanel();
         }
 
-        // チームロジックパネル(希望ポジションの一覧・ローテ場所・パラメータ・背反・ペア)
-        function toggleTeamSettings() {
-            const panel = document.getElementById("teamSettingsPanel");
-            const opening = !panel.classList.contains("open");
-            if (opening) closeOtherPanels("teamSettingsPanel");
-            panel.classList.toggle("open");
-            if (opening) renderTeamSettingsPanel();
-        }
-
+        // ロジックは設定パネルの中(アコーディオン)。renderTeamSettingsPanel は設定を開くときに呼ぶ
         function renderTeamSettingsPanel() {
             document.getElementById("inputRolesText").value = roles.join(", ");
             renderParamRoleCheckboxes();
@@ -3298,15 +3313,12 @@
             renderRoleSlotSettings();
         }
 
-        // チーム分けタブから設定パネルを開く(開いていれば開いたまま、設定パネルの位置までスクロール)
+        // チーム分けタブからロジックを開く(設定パネルを開き、ロジックの項目まで移動)
         function openTeamSettings() {
-            const panel = document.getElementById("teamSettingsPanel");
-            if (!panel.classList.contains("open")) {
-                closeOtherPanels("teamSettingsPanel");
-                panel.classList.add("open");
-                renderTeamSettingsPanel();
-            }
-            panel.scrollIntoView({ behavior: "smooth", block: "start" });
+            const panel = document.getElementById("settingsPanel");
+            if (!panel.classList.contains("open")) toggleSettings();
+            const acc = document.getElementById("teamSettingsAcc");
+            if (acc) { acc.open = true; acc.scrollIntoView({ behavior: "smooth", block: "start" }); }
         }
 
         function paramCheckboxesHtml(group, selectedList) {
@@ -3499,13 +3511,6 @@
             renderConflictRuleList();
             if (currentView === "teams") renderTeamSplitTab();
             return true;
-        }
-
-        // チームロジックパネル右上の「保存」: 希望ポジション一覧 + (開発モードONなら)パラメータ設定をまとめて保存
-        function saveTeamSettings() {
-            if (devMode && !saveParamRoles(true)) return;
-            if (!saveRoles()) return;
-            alert("チームロジックを保存しました。");
         }
 
         function positionOptionsHtml(selected) {
@@ -6959,7 +6964,7 @@
             const btn = document.getElementById("devToggleBtn");
             if (btn) { btn.classList.toggle("on", devMode); btn.textContent = "開発"; }
             if (document.getElementById("rosterPanel").classList.contains("open")) renderRosterPanel();
-            if (document.getElementById("teamSettingsPanel").classList.contains("open")) renderTeamSettingsPanel();
+            if (document.getElementById("settingsPanel").classList.contains("open")) renderTeamSettingsPanel();
             renderKeyMarkLegend();
             if (lastTeamSplitResult) renderTeamResults();
             if (currentView === "teams") renderTeamSplitTab();
@@ -7179,9 +7184,31 @@
             if (!/^https?:\/\//i.test(u)) u = "https://" + u;
             return /(youtube\.com|youtu\.be)/i.test(u) ? u : null;
         }
+        // 連続した日付をまとめる: ["2026-10-17","2026-10-18","2026-10-24"] → [{dates:[17,18]},{dates:[24]}](古い順)
+        function libRuns(dates) {
+            const arr = Array.from(new Set(Array.isArray(dates) ? dates : [dates])).filter(Boolean).sort();
+            const runs = [];
+            arr.forEach(d => {
+                const last = runs[runs.length - 1];
+                if (last) {
+                    const [y, m, dd] = last.dates[last.dates.length - 1].split("-").map(Number);
+                    if (formatDateKey(new Date(y, m - 1, dd + 1)) === d) { last.dates.push(d); return; }
+                }
+                runs.push({ dates: [d] });
+            });
+            return runs;
+        }
+        // 連続は「10月17日(土)〜19日(月)」、月をまたぐときは「10月31日(土)〜11月2日(月)」
+        function libRunText(dates) {
+            const first = dates[0], last = dates[dates.length - 1];
+            if (first === last) return videoWhenText({ date: first });
+            const a = videoWhenText({ date: first });
+            const b = videoWhenText({ date: last });
+            const sameMonth = first.slice(0, 7) === last.slice(0, 7);
+            return a + "〜" + (sameMonth ? b.replace(/^\d+月/, "") : b);
+        }
         function libAddedText(dates) {
-            const arr = Array.isArray(dates) ? dates : [dates];
-            return arr.map(d => videoWhenText({ date: d })).join("、") + "追加済み";
+            return libRuns(dates).map(r => libRunText(r.dates)).join("、") + "追加済み";
         }
         function setVideoMode(lib) {
             document.getElementById("videoLibChk").checked = !!lib;
@@ -7197,6 +7224,17 @@
             document.getElementById("videoLibCancel").style.display = (on && videoLib.added[date]) ? "" : "none";
         }
         let videoLibEditDate = null;   // リスト追加済みを編集中の元の日付
+        const libRunOpen = new Set();  // 連続日程のうち、個別表示に開いているもの(先頭の日付で管理)
+        function toggleLibRun(d) { if (libRunOpen.has(d)) libRunOpen.delete(d); else libRunOpen.add(d); renderVideosView(); }
+        function deleteLibRun(d) {
+            const run = libRuns(Object.keys(videoLib.added).filter(k => videoLib.added[k])).find(r => r.dates.includes(d));
+            if (!run) return;
+            if (!confirm(`${libAddedText(run.dates)} を削除しますか?`)) return;
+            run.dates.forEach(k => { delete videoLib.added[k]; });
+            libRunOpen.delete(run.dates[0]);
+            saveVideoLib();
+            renderVideosView();
+        }
         function editLibAdded(date) {
             openVideoForm(null);
             videoLibEditDate = date;
@@ -8278,7 +8316,15 @@
             // リストは同じリンクなので、追加済みの日付をまとめて1枚に表示
             const libCard = libDates.length ? `
                     <div class="video-card lib-card">
-                        <div class="vc-top" style="flex-direction:column;align-items:stretch;gap:6px;">${libDates.map(d => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span class="vc-when">${escapeHtml(libAddedText(d))}</span><span class="vc-actions"><button type="button" onclick="editLibAdded('${d}')">編集</button><button type="button" class="vc-del" onclick="deleteLibAdded('${d}')">削除</button></span></div>`).join("")}</div>
+                        <div class="vc-top" style="flex-direction:column;align-items:stretch;gap:6px;">${libRuns(libDates).sort((x, y) => y.dates[0].localeCompare(x.dates[0])).map(r => {
+                            const d = r.dates[0];
+                            const row = (dd, txt) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span class="vc-when">${escapeHtml(txt)}</span><span class="vc-actions"><button type="button" onclick="editLibAdded('${dd}')">編集</button><button type="button" class="vc-del" onclick="deleteLibAdded('${dd}')">削除</button></span></div>`;
+                            if (r.dates.length === 1) return row(d, libAddedText(d));
+                            const open = libRunOpen.has(d);
+                            const head = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span class="vc-when">${escapeHtml(libAddedText(r.dates))}</span><span class="vc-actions"><button type="button" onclick="toggleLibRun('${d}')">${open ? "閉じる" : "個別"}</button><button type="button" class="vc-del" onclick="deleteLibRun('${d}')">削除</button></span></div>`;
+                            const kids = open ? r.dates.slice().reverse().map(dd => `<div style="padding-left:14px;">${row(dd, libAddedText(dd))}</div>`).join("") : "";
+                            return head + kids;
+                        }).join("")}</div>
                         <div class="vc-links" style="border-bottom:none;margin:4px 0 0;">${videoLib.url
                             ? `<a class="vc-link" href="${escapeHtml(videoLib.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(videoLib.url)}</a>`
                             : `<span class="settings-note" style="margin:0;">リストのリンクが未登録です(＋動画で登録できます)</span>`}</div>
@@ -8320,8 +8366,8 @@
                 .sort((x, y) => y.localeCompare(x));
         }
         // リスト追加済みも動画と同じ見出し形式: 【バレー動画】10月17日(土)追加済み + リンク
-        function libShareText(date) {
-            return [`【バレー動画】${libAddedText(date)}`, videoLib.url].join("\n");
+        function libShareText(dates) {
+            return [`【バレー動画】${libAddedText(dates)}`, videoLib.url].join("\n");
         }
         function copyVideoList(list, label, onlyDate) {
             list = list.filter(v => !videoNone[v.date]);
@@ -8333,7 +8379,7 @@
             }
             // 動画とリストを、日付の新しい順に同じ形式で並べる
             const items = sortedVideos(list).map(v => ({ date: v.date, text: videoShareText(v), lib: 0 }))
-                .concat(libDates.map(d => ({ date: d, text: libShareText(d), lib: 1 })));
+                .concat(libRuns(libDates).map(r => ({ date: r.dates[r.dates.length - 1], text: libShareText(r.dates), lib: 1 })));
             items.sort((a, b) => String(b.date).localeCompare(String(a.date)) || (b.lib - a.lib));
             const blocks = items.map(it => it.text);
             const parts = [];
@@ -8807,6 +8853,14 @@
                     scrollY: window.scrollY || 0
                 }));
             } catch (e) { /* 保存できなくても再読み込みは続ける */ }
+        }
+        // 更新ボタン: 見ていた日付・タブ・位置を保ったまま、最新の共有データで再読み込みする
+        function refreshApp() {
+            const b = document.getElementById("refreshBtn");
+            if (b) b.classList.add("spin");
+            if (firestorePendingValues) { flushPendingRemote(); return; }
+            saveUiStateForReload();
+            window.location.reload();
         }
         function restoreUiStateAfterReload() {
             let st = null;
