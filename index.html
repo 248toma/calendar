@@ -2060,9 +2060,8 @@
             <button class="settings-btn refresh-btn" id="refreshBtn" onclick="refreshApp()" title="最新の状態に更新" aria-label="更新">↻</button>
             <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答">📝<span class="sv-badge" id="surveyBadge"></span></button>
             <button class="settings-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="ライト/ダーク切替(開発モード中は逆)" aria-label="テーマ切替">☀️</button>
-            <select class="settings-btn mode-select real-admin-only" id="modeSelect" onchange="setViewMode(this.value)" title="モード(管理者・開発・閲覧)" aria-label="モード">
+            <select class="settings-btn mode-select real-admin-only" id="modeSelect" onchange="setViewMode(this.value)" title="モード(管理者・閲覧)" aria-label="モード">
                 <option value="admin">管理者</option>
-                <option value="dev">開発</option>
                 <option value="view">閲覧</option>
             </select>
         </nav>
@@ -6971,7 +6970,7 @@
 
         function loadDevMode() {
             try { devModePref = localStorage.getItem(DEV_MODE_KEY) === "true"; } catch (e) { devModePref = false; }
-            devMode = isAdmin() && devModePref;
+            devMode = isAdmin();   // 開発モードは管理者モードに統合(管理者は常にパラメータなども表示・編集できる)
         }
         function saveDevMode() {
             if (isAdmin()) devModePref = devMode;
@@ -6990,7 +6989,7 @@
         try { themeDark = localStorage.getItem(THEME_KEY) === "dark"; } catch (e) { themeDark = false; }
 
         function applyTheme() {
-            const dark = themeDark !== devMode;   // XOR
+            const dark = themeDark;
             document.body.classList.toggle("dark", dark);
             document.documentElement.style.colorScheme = dark ? "dark" : "light";
             const meta = document.querySelector('meta[name="theme-color"]');
@@ -6998,7 +6997,7 @@
             const btn = document.getElementById("themeToggleBtn");
             if (btn) {
                 btn.textContent = themeDark ? "🌙" : "☀️";
-                btn.title = (themeDark ? "ダーク設定" : "ライト設定") + (devMode ? "(開発モード中は逆の見た目)" : "") + " / タップで切替";
+                btn.title = (themeDark ? "ダーク設定" : "ライト設定") + "" + " / タップで切替";
             }
         }
         function toggleTheme() {
@@ -7015,7 +7014,7 @@
             applyTheme();
             document.body.classList.toggle("real-admin", realAdmin());
             const ms = document.getElementById("modeSelect");
-            if (ms) ms.value = viewPreview ? "view" : (devMode ? "dev" : "admin");
+            if (ms) ms.value = viewPreview ? "view" : "admin";
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }
             if (document.getElementById("rosterPanel").classList.contains("open")) renderRosterPanel();
             if (document.getElementById("settingsPanel").classList.contains("open")) renderTeamSettingsPanel();
@@ -7030,7 +7029,7 @@
             if (!realAdmin()) return;
             viewPreview = v === "view";
             try { localStorage.setItem(VIEW_PREVIEW_KEY, viewPreview ? "1" : "0"); } catch (e) { /* ignore */ }
-            if (!viewPreview) devMode = v === "dev";
+            devMode = isAdmin();
             saveDevMode();
             closeDevPanel();
             if (closeSurveyIfOpen) closeSurveyIfOpen();
@@ -7157,7 +7156,7 @@
         setInterval(() => { if (!document.hidden) checkMemberTaskAlert(); }, 60000);
         document.addEventListener("visibilitychange", () => { if (!document.hidden) checkMemberTaskAlert(); });
         function applyRole() {
-            devMode = isAdmin() && devModePref;
+            devMode = isAdmin();
             applyDevMode();
             renderRoster();
             renderCalendar();
@@ -8668,9 +8667,7 @@
         }
         let devAskCallback = null;
         function askDevModeIfVolleyDay(proceed) {
-            if (!devMode || !isVolleyToday()) { proceed(); return; }
-            devAskCallback = proceed;
-            document.getElementById("devAskOv").classList.add("open");
+            proceed();   // 開発モードは管理者モードに統合したので、確認は出さない
         }
         function devAskAnswer(choice) {
             document.getElementById("devAskOv").classList.remove("open");
