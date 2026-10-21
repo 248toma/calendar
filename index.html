@@ -2499,6 +2499,14 @@
         .cal-grid.nv .nv-chip.nv-line:not(.nv-vb) { background: var(--plan-ink, var(--ink-3)) !important; opacity: .75; }
         .cal-grid.nv .nv-chip.nv-line.ring:not(.nv-vb) { background: transparent !important; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)) !important; opacity: 1; }
         #daySheet { transition: height .2s ease; }
+        /* カレンダーの大きさ(3段階)を上下ボタンで切り替える */
+        .lv-btns { flex: none; display: inline-flex; flex-direction: column; width: 30px; align-self: stretch; min-height: 30px; border-radius: 12px; overflow: hidden; background: var(--bg); box-shadow: var(--raise-sm); }
+        .lv-btns button { flex: 1 1 0; min-height: 0; padding: 0; border: none; background: transparent; color: var(--ink-2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .lv-btns button + button { border-top: 1px solid var(--line); }
+        .lv-btns button:active { box-shadow: var(--sink); }
+        .lv-btns button:disabled { opacity: .3; cursor: default; box-shadow: none; }
+        .lv-btns svg { width: 12px; height: 8px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        body.nv-full .lv-btns, #calGrid.list-mode ~ .legend .lv-btns, #calGrid.tw-mode ~ .legend .lv-btns { visibility: hidden; }
         .cal-grid.nv .nv-chip .ic { width: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); height: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); vertical-align: middle; margin-top: -1px; }
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
@@ -2837,6 +2845,7 @@
                 <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日"><i class="ic ic-ball"></i></button>
                 <button class="today-btn" onclick="jumpToToday()">Today</button>
                 <button class="today-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
+                <span class="lv-btns" id="lvBtns"><button type="button" id="lvUp" onclick="stepSheetLevel(-1)" aria-label="予定欄を上げる(カレンダーを小さく)"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M2 6.5 6 2.5 10 6.5"/></svg></button><button type="button" id="lvDown" onclick="stepSheetLevel(1)" aria-label="予定欄を下げる(カレンダーを大きく)"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M2 1.5 6 5.5 10 1.5"/></svg></button></span>
             </div>
         </div>
     </section>
@@ -5116,6 +5125,9 @@
             // 帯は空いている行に置く。途中の日で行が空いていなければ、そこで区切って続きを別の行に置く
             segs.forEach(g => {
                 const L0 = g.p.startDate < keys[0], R0 = !!g.p.endDate && g.p.endDate > keys[6];
+                // 文字1つの表示では1行目をバレーに譲る。バレーの日にかかる帯は、期間全体(バレーのない日も)を線の行で出す
+                const minRow = (nvText === 1 && planHitsVolley(g.p)) ? 1 : 0;
+                const ok = (c, r) => r >= minRow && !perDay[c].occ[r];
                 // まず期間全体で同じ行が空いていれば1本で置く
                 let whole = -1;
                 for (let x = 0; x < nvSlots && whole < 0; x++) { let f = true; for (let c = g.s; c <= g.e; c++) if (!ok(c, x)) { f = false; break; } if (f) whole = x; }
@@ -5144,6 +5156,13 @@
                 });
             });
             return { segs: pieces, perDay };
+        }
+        // 連続した予定の期間(週をまたいでも全体)のどこかにバレーの日があるか
+        function planHitsVolley(p) {
+            if (!p.endDate) return !!events[p.startDate];
+            const d = new Date(p.startDate + "T00:00:00"), end = p.endDate;
+            for (let i = 0; i < 400; i++) { const k = formatDateKey(d); if (k > end) break; if (events[k]) return true; d.setDate(d.getDate() + 1); }
+            return false;
         }
         function buildNvSeg(g, row, ad) {
             const el = document.createElement("div");
@@ -9798,6 +9817,13 @@ const namesBtn = isAdmin() && dates.length > 0
         const SHEET_LV_KEY = "attendance_sheet_level_v1";
         var sheetLevel = null;
         function loadSheetLevel() { try { const n = parseInt(localStorage.getItem(SHEET_LV_KEY), 10); return n >= 1 && n <= 3 ? n : 3; } catch (e) { return 3; } }
+        // 上ボタン(-1): 予定欄を上げてカレンダーを小さく / 下ボタン(+1): カレンダーを大きく
+        function stepSheetLevel(dir) {
+            if (sheetLevel == null) sheetLevel = loadSheetLevel();
+            if (sheetCompact) { if (dir > 0) { sheetCompact = false; layoutSheet(); } return; }   // 縮めている状態からは「下」で元に戻す
+            sheetLevel = Math.max(1, Math.min(3, sheetLevel + dir));
+            saveSheetLevel(); layoutSheet();
+        }
         function saveSheetLevel() { try { localStorage.setItem(SHEET_LV_KEY, String(sheetLevel)); } catch (e) { /* ignore */ } }
         // [文字3つ, 2つ, 1つ] それぞれの予定欄の高さ
         function sheetLevelHs() {
@@ -9815,6 +9841,9 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!sh || document.body.classList.contains("nv-full")) return;
             if (sheetLevel == null) sheetLevel = loadSheetLevel();
             let h = sheetLevelHs()[3 - sheetLevel];   // sheetLevel = 日付内に文字で出す予定の数
+            const up = document.getElementById("lvUp"), dn = document.getElementById("lvDown");
+            if (up) up.disabled = sheetLevel <= 1 || sheetCompact;
+            if (dn) dn.disabled = sheetLevel >= 3 && !sheetCompact;
             if (sheetCompact) h = Math.max(h, compactSheetH());   // 縮めている間だけの高さ(自分で決めた高さは上書きしない)
             sh.style.setProperty("--sheet-h", h + "px");
             document.body.classList.toggle("cal-compact", !!sheetCompact);
@@ -9846,22 +9875,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const sh = document.getElementById("daySheet"), grip = document.getElementById("sheetGrip");
             if (!sh || !grip) return;
             let d = null;
-            // 引っぱっている間も高さは3段階だけ(途中の高さは作らない)。指の位置に一番近い段階へ切り替える
-            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, h: sh.offsetHeight, hs: sheetLevelHs(), moved: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
-            grip.addEventListener("pointermove", e => {
-                if (!d) return;
-                const dy = d.y - e.clientY;
-                if (Math.abs(dy) > 8) d.moved = true;
-                if (!d.moved) return;
-                const want = d.h + dy;
-                let best = 0; d.hs.forEach((h, i) => { if (Math.abs(h - want) < Math.abs(d.hs[best] - want)) best = i; });
-                const lv = 3 - best;
-                if (lv !== sheetLevel || sheetCompact) { sheetLevel = lv; sheetCompact = false; layoutSheet(); }
-            });
+            // 灰色の棒はタップだけ(縮める/戻す)。高さの段階はカレンダー下の上下ボタンで変える
+            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, moved: false }; });
+            grip.addEventListener("pointermove", e => { if (d && Math.abs(d.y - e.clientY) > 10) d.moved = true; });
             const end = () => {
                 if (!d) return;
-                if (!d.moved) { sheetCompact = !sheetCompact; d = null; layoutSheet(); return; }   // タップ: 縮める/元の高さに戻す(決めた高さはそのまま)
-                d = null; saveSheetLevel(); layoutSheet();
+                const tap = !d.moved; d = null;
+                if (tap) { sheetCompact = !sheetCompact; layoutSheet(); }
             };
             grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
             window.addEventListener("resize", () => layoutSheet());
