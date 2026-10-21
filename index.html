@@ -395,6 +395,11 @@
         .nv-go .nv-ttl::after { content: " ›"; color: var(--ink-3); }
         #nvDayPanel { display: block; margin: 0 0 12px; }
         .nv-head { height: 0; margin: 0; }
+        /* 引っぱって更新(ブラウザの標準の引き下げ更新と二重にならないよう、標準は止める) */
+        html, body { overscroll-behavior-y: contain; }
+        #ptr { position: fixed; left: 50%; top: 0; width: 38px; height: 38px; margin-left: -19px; border-radius: 50%; background: var(--surface); color: var(--ink-2); box-shadow: 0 2px 10px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 9000; pointer-events: none; opacity: 0; transform: translateY(-48px); }
+        #ptr.spin span { animation: ptrSpin .7s linear infinite; }
+        @keyframes ptrSpin { to { transform: rotate(360deg); } }
         .cl-list { max-height: 320px; overflow-y: auto; font-size: 12px; line-height: 1.5; }
         .cl-row { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
         .cl-t { flex: none; width: 78px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
@@ -2480,6 +2485,8 @@
                 <button type="button" class="ws-btn" id="wsBtn1" onclick="setWeekStart(1)" aria-pressed="false" aria-label="月曜始まり">月</button></div>
         </div>
     </section>
+
+    <div id="ptr" aria-hidden="true"><span>↻</span></div>
 
     <div class="day-bar">
         <div class="selected-date-label" id="selectedDateLabel" onclick="toggleCalendar()" role="button" tabindex="0" aria-label="カレンダーを開閉" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCalendar();}"></div>
@@ -9178,6 +9185,43 @@
                 }));
             } catch (e) { /* 保存できなくても再読み込みは続ける */ }
         }
+        // 画面を下に引っぱって離すと更新する(更新ボタンと同じ動き)
+        (function initPullToRefresh() {
+            const el = document.getElementById("ptr");
+            if (!el) return;
+            const TH = 70;
+            let sy = 0, sx = 0, pulling = false, armed = false, active = false;
+            const blocked = (t) => !!(t.closest && t.closest("input, textarea, select, #surveyOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
+                || document.body.style.overflow === "hidden";
+            const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
+            document.addEventListener("touchstart", e => {
+                active = e.touches.length === 1 && (window.scrollY || 0) <= 0 && !blocked(e.target);
+                pulling = false; armed = false;
+                if (active) { sy = e.touches[0].clientY; sx = e.touches[0].clientX; }
+            }, { passive: true });
+            document.addEventListener("touchmove", e => {
+                if (!active) return;
+                const dy = e.touches[0].clientY - sy, dx = e.touches[0].clientX - sx;
+                if (!pulling) {
+                    if (dy > 10 && dy > Math.abs(dx) * 1.5 && (window.scrollY || 0) <= 0) pulling = true;
+                    else { if (dy < -6 || Math.abs(dx) > 12) active = false; return; }
+                }
+                e.preventDefault();   // 画面のはずみ(ゴムのような動き)を止める
+                const y = dy * 0.5;
+                armed = y >= TH * 0.9;
+                el.style.transition = "none"; setY(y);
+            }, { passive: false });
+            const end = () => {
+                if (!pulling) { active = false; return; }
+                pulling = false; active = false;
+                if (armed) {
+                    el.style.transition = "transform .15s"; el.style.transform = "translateY(14px)"; el.style.opacity = "1"; el.classList.add("spin");
+                    refreshApp();
+                } else { el.style.transition = "transform .2s, opacity .2s"; el.style.opacity = "0"; el.style.transform = "translateY(-48px)"; }
+            };
+            document.addEventListener("touchend", end, { passive: true });
+            document.addEventListener("touchcancel", end, { passive: true });
+        })();
         // 更新ボタン: 見ていた日付・タブ・位置を保ったまま、最新の共有データで再読み込みする
         function refreshApp() {
             const b = document.getElementById("refreshBtn");
