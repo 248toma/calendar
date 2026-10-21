@@ -2494,6 +2494,11 @@
         .op-opts .op-dot { flex: 0 1 24px; width: auto; height: auto; min-width: 0; aspect-ratio: 1; }
         /* 予定の帯: 高さは --nv-lh(枠の高さから計算)で全部そろえる。縮んでも1つだけ潰れない */
         .cal-grid.nv .cal-day > .nv-chip, .cal-grid.nv .cal-day > .nv-lane, .cal-grid.nv .nv-seg { flex: none; height: var(--nv-lh, 12.6px); line-height: var(--nv-lh, 12.6px); font-size: clamp(7px, calc(var(--nv-lh, 12.6px) * .72), 9px); box-sizing: border-box; }
+        /* 文字の行を超えた予定は、色の線だけで出す */
+        .cal-grid.nv .cal-day > .nv-lane.nv-line, .cal-grid.nv .nv-chip.nv-line { height: 4px; min-height: 4px; line-height: 0; font-size: 0; padding: 0; border-radius: 2px !important; box-shadow: none !important; }
+        .cal-grid.nv .nv-chip.nv-line:not(.nv-vb) { background: var(--plan-ink, var(--ink-3)) !important; opacity: .75; }
+        .cal-grid.nv .nv-chip.nv-line.ring:not(.nv-vb) { background: transparent !important; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)) !important; opacity: 1; }
+        #daySheet { transition: height .2s ease; }
         .cal-grid.nv .nv-chip .ic { width: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); height: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); vertical-align: middle; margin-top: -1px; }
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
@@ -4936,14 +4941,19 @@
             function buildNeighbor(delta, w) {
                 const label = document.getElementById("monthLabel"), lt = label.textContent, vm = viewMonth, vw = viewWeekStart;
                 const tw = { twBase, twFrom, twTo, twTopWeek, twNeedInit };
+                // 外枠で大きさを固定する(描画のときにグリッド自身の高さ指定は消されるため。消えると行が詰まってずれて見えた)
+                const wrap = document.createElement("div");
+                wrap.style.cssText = `position:absolute;top:${grid.offsetTop}px;left:${grid.offsetLeft + delta * (w + GAP)}px;width:${w}px;height:${grid.offsetHeight}px;display:flex;flex-direction:column;overflow:hidden;pointer-events:none;will-change:transform;`;
                 const tmp = document.createElement("div");
-                tmp.className = "cal-grid";
-                tmp.style.cssText = `position:absolute;top:${grid.offsetTop}px;left:${grid.offsetLeft + delta * (w + GAP)}px;width:${w}px;height:${grid.offsetHeight}px;overflow:hidden;pointer-events:none;will-change:transform;`;
-                grid.parentNode.appendChild(tmp);
+                tmp.className = grid.className;
+                tmp.style.cssText = "flex:1 1 0;min-height:0;overflow:hidden;";
+                ["--nv-lh", "--nv-off"].forEach(v => tmp.style.setProperty(v, grid.style.getPropertyValue(v)));
+                wrap.appendChild(tmp);
+                grid.parentNode.appendChild(wrap);
                 grid.id = "calGridLive"; tmp.id = "calGrid";
                 try { changeMonth(delta); }
                 finally { tmp.id = ""; grid.id = "calGrid"; viewMonth = vm; viewWeekStart = vw; ({ twBase, twFrom, twTo, twTopWeek, twNeedInit } = tw); label.textContent = lt; }
-                return tmp;
+                return wrap;
             }
             const all = () => [grid].concat(nb);
             const setT = (v, anim) => all().forEach(el => { el.style.transition = anim || "none"; el.style.transform = v; });
@@ -5058,18 +5068,22 @@
         }
         function closeVolleyFull() { dropUnchangedVolleyDraft(); volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
         // 月カレンダー1週分の「日またぎの予定」を、行(レーン)に割り当てる
-        var nvSlots = 3, nvMode = "chips";
+        var nvSlots = 3, nvMode = "chips", nvText = 3;
         // カレンダーの高さに合わせて表示を段階的に変える: 文字つきの帯 → 色だけの小さな点 → 予定ありの印だけ
         function nvCalc() {
             const g = document.getElementById("calGrid");
-            if (!g || !g.clientHeight || document.body.classList.contains("nv-full")) return { mode: "chips", slots: 3 };
+            if (!g || !g.clientHeight || document.body.classList.contains("nv-full")) return { mode: "chips", slots: 3, text: 3, lh: NV_TEXT };
             const wd = g.querySelector(".cal-weekday"), head = (wd && g.children.length > 7) ? wd.offsetHeight : 25;   // 作り直し中は曜日の行だけが縮まず伸びるので、固定値を使う
-            const cellH = (g.clientHeight - head) / 6;
-            // 予定は1日2つまで。枠が低くなったら2つとも同じだけ細くする(一方だけ潰れないように)
-            const lh = Math.min(12.6, (cellH - nvOff(g) - 4) / 2);
-            if (lh >= 9) return { mode: "chips", slots: 2, lh };
-            return { mode: cellH >= 38 ? "pips" : "dot", slots: 0, lh: 12.6 };
+            const cellH = (g.clientHeight - head) / 6, off = nvOff(g);
+            // 1日3行。上から文字つきの行がtext個、残りは線だけ。4つ目以降は「+N」
+            for (let t = 3; t >= 1; t--) if (cellH >= nvNeed(t, off) - 0.5) return { mode: "chips", slots: 3, text: t, lh: NV_TEXT };
+            return { mode: cellH >= 38 ? "pips" : "dot", slots: 0, text: 0, lh: NV_TEXT };
         }
+        const NV_TEXT = 12.6, NV_LINE = 4, NV_GAP = 2;
+        // 文字の行がt個(残りは線)のときに、日付の枠に必要な高さ
+        function nvNeed(t, off) { return off + t * (NV_TEXT + NV_GAP) + (3 - t) * (NV_LINE + NV_GAP) + 2; }
+        // r行目の上端(1行目の上端からの距離)
+        function nvRowTop(r) { const t = Math.min(r, nvText); return t * (NV_TEXT + NV_GAP) + (r - t) * (NV_LINE + NV_GAP); }
         // 日付の下の、予定1つ目が始まる位置(枠の余白+日付の高さ+すき間)
         function nvOff(g) {
             const c = g && g.querySelector(".cal-day"), t = c && c.querySelector(".nv-top");
@@ -5084,7 +5098,7 @@
             g.style.setProperty("--nv-lh", c.lh.toFixed(2) + "px");
             g.style.setProperty("--nv-off", nvOff(g).toFixed(2) + "px");
         }
-        function nvCalcSlots() { const c = nvCalc(); return c.mode + c.slots; }
+        function nvCalcSlots() { const c = nvCalc(); return c.mode + c.slots + "/" + c.text; }
         function nvWeekLayout(days) {
             const keys = days.map(formatDateKey);
             const map = new Map();
@@ -5102,6 +5116,16 @@
             // 帯は空いている行に置く。途中の日で行が空いていなければ、そこで区切って続きを別の行に置く
             segs.forEach(g => {
                 const L0 = g.p.startDate < keys[0], R0 = !!g.p.endDate && g.p.endDate > keys[6];
+                // まず期間全体で同じ行が空いていれば1本で置く
+                let whole = -1;
+                for (let x = 0; x < nvSlots && whole < 0; x++) { let f = true; for (let c = g.s; c <= g.e; c++) if (!ok(c, x)) { f = false; break; } if (f) whole = x; }
+                if (whole >= 0) {
+                    for (let c = g.s; c <= g.e; c++) perDay[c].occ[whole] = true;
+                    pieces.push({ p: g.p, s: g.s, e: g.e, row: whole, contL: L0, contR: R0 });
+                    return;
+                }
+                // 途中で途切れる帯がバレーの日にかかるときは、バレーの日の表記(+N)に合わせて期間全体を「+N」にする
+                if (keys.slice(g.s, g.e + 1).some(k => events[k])) { for (let c = g.s; c <= g.e; c++) perDay[c].hidden++; return; }
                 let cur = null;
                 const close = () => { if (cur) { pieces.push(cur); cur = null; } };
                 for (let c = g.s; c <= g.e; c++) {
@@ -5123,11 +5147,12 @@
         }
         function buildNvSeg(g, row, ad) {
             const el = document.createElement("div");
-            el.className = "nv-chip nv-seg" + pcCls(g.p) + (planTimed(g.p) ? "" : " ring");
-            el.textContent = g.p.title || "予定";
+            const line = g.row >= nvText;
+            el.className = "nv-chip nv-seg" + pcCls(g.p) + (planTimed(g.p) ? "" : " ring") + (line ? " nv-line" : "");
+            el.textContent = line ? "" : (g.p.title || "予定");
             el.style.gridColumn = (g.s + 1) + " / " + (g.e + 2);
             el.style.gridRow = String(row);
-            el.style.marginTop = "calc(var(--nv-off, 28px) + " + g.row + " * (var(--nv-lh, 12.6px) + 2px))";
+            el.style.marginTop = "calc(var(--nv-off, 28px) + " + nvRowTop(g.row) + "px)";
             el.style.marginLeft = g.contL ? "0" : "1px";
             el.style.marginRight = g.contR ? "0" : "1px";
             el.style.borderRadius = (g.contL ? "0" : "3px") + " " + (g.contR ? "0" : "3px") + " " + (g.contR ? "0" : "3px") + " " + (g.contL ? "0" : "3px");
@@ -5140,22 +5165,22 @@
             if (key === todayKey) cell.classList.add("today");
             if (key === selectedDate) cell.classList.add("selected");
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
-            const chipOf = ({ p }) => `<span class="nv-chip${pcCls(p)}${planTimed(p) ? "" : " ring"}">${escapeHtml(p.title || "予定")}</span>`;
+            const chipOf = ({ p }) => ({ t: `<span class="nv-chip${pcCls(p)}${planTimed(p) ? "" : " ring"}">${escapeHtml(p.title || "予定")}</span>`, l: `<span class="nv-chip nv-line${pcCls(p)}${planTimed(p) ? "" : " ring"}"></span>` });
             const single = plansOn(key).filter(x => x.first && x.last);
             const adAll = single.filter(x => !planTimed(x.p)).map(chipOf);   // 終日は必ず一番上
             const chips = [];
-            if (events[key]) { const n = countComing(key); adAll.unshift(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">${IC("ball")}${n}</span>`); }
+            if (events[key]) { const n = countComing(key); adAll.unshift({ t: `<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">${IC("ball")}${n}</span>`, l: `<span class="nv-chip nv-line nv-vb" style="background:var(${lv[getStatusLevel(n)]})"></span>` }); }
             single.filter(x => planTimed(x.p)).forEach(x => chips.push(chipOf(x)));
             // 行ごとに: 帯が通る行は空ける → 空いた行にバレー → 終日 → その他の順で入れる
             const occ = lay && lay.occ ? lay.occ : [];
             const rest = adAll.concat(chips);
             let shown = [], ri = 0;
+            const lane = (r) => `<span class="nv-lane${r >= nvText ? " nv-line" : ""}"></span>`;
             for (let r = 0; r < nvSlots; r++) {
-                if (occ[r]) shown.push('<span class="nv-lane"></span>');
-                else if (ri < rest.length) shown.push(rest[ri++]);
-                else shown.push('<span class="nv-lane"></span>');
+                if (occ[r] || ri >= rest.length) shown.push(lane(r));
+                else { const it = rest[ri++]; shown.push(r < nvText ? it.t : it.l); }   // 文字の行を超えた分は線だけ
             }
-            while (shown.length && shown[shown.length - 1] === '<span class="nv-lane"></span>') shown.pop();
+            while (shown.length && shown[shown.length - 1].startsWith('<span class="nv-lane')) shown.pop();
             const more = rest.length - ri + (lay ? lay.hidden : 0);   // 入り切らない分は日付の横に「+N」で出す(予定の行は使わない)
             if (nvMode !== "chips") shown = [];
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
@@ -5853,7 +5878,7 @@
             const gridStart = new Date(firstOfMonth);
             gridStart.setDate(gridStart.getDate() - startOffset);
 
-            { const c = nvCalc(); nvSlots = c.slots; nvMode = c.mode; }
+            { const c = nvCalc(); nvSlots = c.slots; nvMode = c.mode; nvText = c.text; }
             applyNvLane();
             const nvLay = [];
             for (let w = 0; w < 6; w++) {
@@ -9769,16 +9794,27 @@ const namesBtn = isAdmin() && dates.length > 0
             const host = document.body.classList.contains("nv-full") ? document.querySelector(".day-bar") : document.querySelector("#calCard .cal-hbtns");
             if (host && t.parentNode !== host) host.appendChild(t);
         }
-        const SHEET_KEY = "attendance_sheet_ratio_v1";   // 予定欄の高さ(画面に対する割合)。この端末だけに保存
-        function loadSheetH() { try { const r = parseFloat(localStorage.getItem(SHEET_KEY)); return r > 0 ? Math.round(r * window.innerHeight) : null; } catch (e) { return null; } }
-        function saveSheetH() { try { if (sheetUserH == null) localStorage.removeItem(SHEET_KEY); else localStorage.setItem(SHEET_KEY, String(sheetUserH / window.innerHeight)); } catch (e) { /* ignore */ } }
+        // 予定欄の高さは3段階: カレンダーの日付内に文字の予定が 3つ / 2つ / 1つ 入る高さ。この端末だけに保存
+        const SHEET_LV_KEY = "attendance_sheet_level_v1";
+        var sheetLevel = null;
+        function loadSheetLevel() { try { const n = parseInt(localStorage.getItem(SHEET_LV_KEY), 10); return n >= 1 && n <= 3 ? n : 3; } catch (e) { return 3; } }
+        function saveSheetLevel() { try { localStorage.setItem(SHEET_LV_KEY, String(sheetLevel)); } catch (e) { /* ignore */ } }
+        // [文字3つ, 2つ, 1つ] それぞれの予定欄の高さ
+        function sheetLevelHs() {
+            const sh = document.getElementById("daySheet"), g = document.getElementById("calGrid"), vh = window.innerHeight;
+            const cap = (h) => Math.max(64, Math.min(Math.round(h), Math.round(vh * 0.72)));
+            if (!sh || !g || !g.clientHeight || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return [cap(112), cap(vh * 0.3), cap(vh * 0.38)];
+            const wd = g.querySelector(".cal-weekday"), head = wd ? wd.offsetHeight : 25, off = nvOff(g);
+            const hFor = (t) => sh.offsetHeight + g.clientHeight - (head + 6 * (nvNeed(t, off) + 1));
+            const h3 = cap(Math.min(112, hFor(3))), h2 = Math.max(h3, cap(hFor(2))), h1 = Math.max(h2, cap(hFor(1)));
+            return [h3, h2, h1];
+        }
         // 高さは自分で引き上げたときだけ変わる(予定の数や入力欄では動かない)。決めた高さは保存して次回も使う
         function layoutSheet() {
             const sh = document.getElementById("daySheet");
             if (!sh || document.body.classList.contains("nv-full")) return;
-            if (sheetUserH == null) sheetUserH = loadSheetH();
-            const vh = window.innerHeight, maxH = Math.round(vh * 0.72);
-            let h = sheetUserH == null ? 112 : Math.max(64, Math.min(sheetUserH, maxH));
+            if (sheetLevel == null) sheetLevel = loadSheetLevel();
+            let h = sheetLevelHs()[3 - sheetLevel];   // sheetLevel = 日付内に文字で出す予定の数
             if (sheetCompact) h = Math.max(h, compactSheetH());   // 縮めている間だけの高さ(自分で決めた高さは上書きしない)
             sh.style.setProperty("--sheet-h", h + "px");
             document.body.classList.toggle("cal-compact", !!sheetCompact);
@@ -9802,7 +9838,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     raf = 0;
                     if (document.body.classList.contains("nv-full") || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return;
                     applyNvLane();
-                    if (nvCalcSlots() !== nvMode + nvSlots) renderCalendar();
+                    if (nvCalcSlots() !== nvMode + nvSlots + "/" + nvText) renderCalendar();
                 });
             }).observe(g);
         })();
@@ -9810,22 +9846,22 @@ const namesBtn = isAdmin() && dates.length > 0
             const sh = document.getElementById("daySheet"), grip = document.getElementById("sheetGrip");
             if (!sh || !grip) return;
             let d = null;
-            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, h: sh.offsetHeight, moved: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } sh.classList.add("dragging"); });
+            // 引っぱっている間も高さは3段階だけ(途中の高さは作らない)。指の位置に一番近い段階へ切り替える
+            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, h: sh.offsetHeight, hs: sheetLevelHs(), moved: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
             grip.addEventListener("pointermove", e => {
                 if (!d) return;
                 const dy = d.y - e.clientY;
-                if (Math.abs(dy) > 3) d.moved = true;
+                if (Math.abs(dy) > 8) d.moved = true;
                 if (!d.moved) return;
-                if (sheetCompact) { sheetCompact = false; document.body.classList.remove("cal-compact"); }   // 引っぱったら、その高さを新しく決めた高さにする
-                sheetUserH = Math.max(64, Math.min(d.h + dy, Math.round(window.innerHeight * 0.72)));
-                sh.style.setProperty("--sheet-h", sheetUserH + "px");
+                const want = d.h + dy;
+                let best = 0; d.hs.forEach((h, i) => { if (Math.abs(h - want) < Math.abs(d.hs[best] - want)) best = i; });
+                const lv = 3 - best;
+                if (lv !== sheetLevel || sheetCompact) { sheetLevel = lv; sheetCompact = false; layoutSheet(); }
             });
             const end = () => {
                 if (!d) return;
-                sh.classList.remove("dragging");
                 if (!d.moved) { sheetCompact = !sheetCompact; d = null; layoutSheet(); return; }   // タップ: 縮める/元の高さに戻す(決めた高さはそのまま)
-                if (sheetUserH != null && sheetUserH < 110) sheetUserH = null;   // 低く下げたら元の高さへ
-                d = null; saveSheetH(); layoutSheet();
+                d = null; saveSheetLevel(); layoutSheet();
             };
             grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
             window.addEventListener("resize", () => layoutSheet());
