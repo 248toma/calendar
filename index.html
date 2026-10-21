@@ -5095,10 +5095,9 @@
                 map.get(id).e = ci;
             }));
             const segs = [...map.values()].sort((a, b) => (planTimed(a.p) ? 1 : 0) - (planTimed(b.p) ? 1 : 0) || a.s - b.s || (b.e - b.s) - (a.e - a.s) || a.p.id - b.p.id);
-            // バレー・終日(1日だけ)の予定は、その日の一番上の行に置く(週全体ではなく日ごと)
-            const top = keys.map(k => Math.min(nvSlots, plansOn(k).filter(pi => pi.first && pi.last && !planTimed(pi.p)).length + (events[k] ? 1 : 0)));
-            const perDay = keys.map((k, c) => ({ top: top[c], occ: new Array(nvSlots).fill(false), hidden: 0 }));
-            const ok = (c, r) => r >= top[c] && !perDay[c].occ[r];
+            // 並び順: 連続した予定(帯) → バレー → 終日 → その他。帯を先に上の行から置き、残りの行に日ごとの予定を入れる
+            const perDay = keys.map(() => ({ occ: new Array(nvSlots).fill(false), hidden: 0 }));
+            const ok = (c, r) => !perDay[c].occ[r];
             const pieces = [];
             // 帯は空いている行に置く。途中の日で行が空いていなければ、そこで区切って続きを別の行に置く
             segs.forEach(g => {
@@ -5147,13 +5146,12 @@
             const chips = [];
             if (events[key]) { const n = countComing(key); adAll.unshift(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">${IC("ball")}${n}</span>`); }
             single.filter(x => planTimed(x.p)).forEach(x => chips.push(chipOf(x)));
-            // 行ごとに: 上からバレー・終日 → 帯が通る行は空ける → 空いた行に残りの予定
-            const TOP = Math.min(nvSlots, adAll.length), occ = lay && lay.occ ? lay.occ : [];
-            const rest = adAll.slice(TOP).concat(chips);
+            // 行ごとに: 帯が通る行は空ける → 空いた行にバレー → 終日 → その他の順で入れる
+            const occ = lay && lay.occ ? lay.occ : [];
+            const rest = adAll.concat(chips);
             let shown = [], ri = 0;
             for (let r = 0; r < nvSlots; r++) {
-                if (r < TOP) shown.push(adAll[r]);
-                else if (occ[r]) shown.push('<span class="nv-lane"></span>');
+                if (occ[r]) shown.push('<span class="nv-lane"></span>');
                 else if (ri < rest.length) shown.push(rest[ri++]);
                 else shown.push('<span class="nv-lane"></span>');
             }
@@ -5234,7 +5232,7 @@
             const rs = reservations[selectedDate] || [];
             if (events[selectedDate]) {
                 const pr = rs.length ? parseTimeRangeMin(rs[0].time) : null;
-                rows.push({ ad: -1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl">${IC("ball")}Volley · ${countComing(selectedDate)}</div>${rs.length ? `<div class="nv-sub">${escapeHtml(rs.map(r => `${r.time} ${r.place}${r.court || ""}`).join(" / "))}</div>` : ""}</div></div>` });
+                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl">${IC("ball")}Volley · ${countComing(selectedDate)}</div>${rs.length ? `<div class="nv-sub">${escapeHtml(rs.map(r => `${r.time} ${r.place}${r.court || ""}`).join(" / "))}</div>` : ""}</div></div>` });
             }
             plansOn(selectedDate).forEach(({ p, first, last }) => {
                 const s = first ? parseHM(p.start) : null;
@@ -5242,9 +5240,9 @@
                 const t1 = first ? (p.start || "終日") : md(p.startDate), t2 = first ? (last && p.end ? p.end : "") : (p.start || "");
                 const editable = isAdmin() || !!p.local;
                 const editing = planPanelIsOpen() && planEditId === p.id;
-                rows.push({ ad: planTimed(p) ? 1 : 0, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</div>${shareText(p) ? `<div class="nv-share">${IC("users")}${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+                rows.push({ ad: !(first && last) ? 0 : planTimed(p) ? 3 : 2, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</div>${shareText(p) ? `<div class="nv-share">${IC("users")}${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
             });
-            rows.sort((a, b) => a.ad - b.ad || a.s - b.s);   // 終日の予定が必ず一番上
+            rows.sort((a, b) => a.ad - b.ad || a.s - b.s);   // 連続した予定 → バレー → 終日 → その他
             const box = document.getElementById("otherPlanBox");
             if (box && el.contains(box)) el.parentNode.insertBefore(box, el);   // 一覧を作り直す前に入力欄を退避
             const isOpen = planPanelIsOpen(), isNew = isOpen && planEditId == null;
