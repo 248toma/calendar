@@ -8917,9 +8917,19 @@ const namesBtn = isAdmin() && dates.length > 0
             const url = URL.createObjectURL(blob);
             const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
             if (ios) { location.href = url; return; } // iPhone: SafariがそのままカレンダーのAdd Allを出す
+            // Android: まず共有シート(ファイル共有)。出せない/キャンセル以外の失敗はダウンロードへ
+            try {
+                const f = new File([blob], "volley.ics", { type: "text/calendar" });
+                if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: "バレー予約" }); return; }
+            } catch (e) { if (e && e.name === "AbortError") return; }
+            // ダウンロード → 通知をタップでGoogleカレンダーが開く
             const a = document.createElement("a");
             a.href = url; a.download = "volley.ics"; document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            setTimeout(() => URL.revokeObjectURL(url), 8000);
+            const t = document.createElement("div");
+            t.textContent = "volley.ics ↓ 通知をタップ → Googleカレンダー";
+            t.style.cssText = "position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:99999;background:#222;color:#fff;padding:12px 16px;border-radius:12px;font:600 13px/1.4 sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:86vw;text-align:center";
+            document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
         }
 
 
