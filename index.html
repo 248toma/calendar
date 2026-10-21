@@ -2099,6 +2099,13 @@
         .sv-empty { padding: 28px 8px; text-align: center; color: var(--ink-3); font-size: 13.5px; line-height: 1.7; }
         .sv-card { background: var(--bg); border-radius: var(--r-lg); box-shadow: var(--raise); padding: 14px 14px 16px; margin-bottom: 14px; }
         .sv-date { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .sv-date { flex-wrap: wrap; }
+        .sv-dt { white-space: nowrap; }
+        .sv-ppls { display: flex; flex-wrap: wrap; gap: 4px 6px; flex: 1 1 0; min-width: 0; justify-content: flex-end; }
+        .sv-ppl { font-size: 11px; font-weight: 600; line-height: 1.5; padding: 1px 8px; border-radius: 10px; max-width: 100%; }
+        .sv-ppl b { font-weight: 800; margin-right: 2px; }
+        .sv-ppl.un { background: var(--unconf-soft); color: var(--unconf-ink); }
+        .sv-ppl.pd { background: var(--pending-soft); color: var(--pending-ink); }
         .sv-tag { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--unconf-soft); color: var(--unconf-ink); }
         .sv-info { font-size: 13.5px; color: var(--ink-2); margin: 4px 0 12px; line-height: 1.5; }
         .sv-btns { display: flex; gap: 12px; }
@@ -7368,7 +7375,7 @@
             } else {
                 who = `<div class="sv-who"><b>${escapeHtml(name)}</b> さんの出欠</div>`;
             }
-            let dates = name ? surveyDates() : [];
+            let dates = (name || isAdmin()) ? surveyDates() : [];   // 管理者は、答える人を選ばなくても日付ごとの状況を見られる
             if (surveyUnansFirst && name) {   // 未回答 → △ → ○/✖(同じ区分の中は日付順のまま)
                 const rank = d => {
                     const mem = (attendanceByDate[d] || []).find(m => m.name === name);
@@ -7386,9 +7393,16 @@
                 const [y, m, dd] = d.split("-").map(Number);
                 const wd = WEEKDAYS[new Date(y, m - 1, dd).getDay()];
                 const info = (reservations[d] || []).map(r => `<div>${escapeHtml([r.time, r.place + (r.court || "")].filter(Boolean).join(" "))}</div>`).join("");
-                const tag = st === "来る" || st === "来ない" ? "" : `<span class="sv-tag">未回答</span>`;
+                const tag = !name || st === "来る" || st === "来ない" ? "" : `<span class="sv-tag">未回答</span>`;
+                // 管理者: その日、誰が未回答(未確認)か・△(未定)かを日付の横に並べる
+                let ppl = "";
+                if (isAdmin()) {
+                    const day = attendanceByDate[d] || [];
+                    const un = day.filter(x => x.status === "未確認").map(x => escapeHtml(x.name)), pd = day.filter(x => x.status === "未定").map(x => escapeHtml(x.name));
+                    ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>未回答</b> ${un.join("・")}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${pd.join("・")}</span>` : ""}</span>`;
+                }
                 const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${st === s ? " sel" : ""}" ${mem ? "" : "disabled"} onclick="surveySet('${d}','${s}')"><span class="sv-sym">${STATUS_META[s].sym}</span><span class="sv-lb">${s}</span></button>`).join("");
-                return `<div class="sv-card"><div class="sv-date">${m}/${dd}(${wd})${tag}</div><div class="sv-info">${info}</div><div class="sv-btns">${btns}</div></div>`;
+                return `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tag}${ppl}</div><div class="sv-info">${info}</div>${name ? `<div class="sv-btns">${btns}</div>` : ""}</div>`;
             }).join("");
             const note = !name ? "" : dates.length === 0 ? `<div class="sv-empty">これからの予約日はありません。</div>`
                 : `<div class="sv-note">${unanswered > 0 ? `○か✖の回答がまだの日が ${unanswered}件 あります。` : "すべて回答済みです。"}</div>`;
