@@ -8913,11 +8913,11 @@ const namesBtn = isAdmin() && dates.length > 0
         async function exportReservationsIcs() {
             const { text, count } = buildReservationsIcs();
             if (!count) { alert("追加できる予約日がありません(今日以降で、時間が入っている予約)"); return; }
-            const file = new File([text], "volley.ics", { type: "text/calendar" });
-            try {
-                if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "バレー予約" }); return; }
-            } catch (e) { if (e && e.name === "AbortError") return; }
-            const url = URL.createObjectURL(file), a = document.createElement("a");
+            const blob = new Blob([text], { type: "text/calendar;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+            if (ios) { location.href = url; return; } // iPhone: SafariがそのままカレンダーのAdd Allを出す
+            const a = document.createElement("a");
             a.href = url; a.download = "volley.ics"; document.body.appendChild(a); a.click(); a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 4000);
         }
