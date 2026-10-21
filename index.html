@@ -2500,12 +2500,16 @@
         .cal-grid.nv .nv-chip.nv-line.ring:not(.nv-vb) { background: transparent !important; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)) !important; opacity: 1; }
         #daySheet { transition: height .2s ease; }
         /* カレンダーの大きさ(3段階)を上下ボタンで切り替える */
-        .lv-btns { flex: none; display: inline-flex; flex-direction: column; width: 30px; align-self: stretch; min-height: 30px; border-radius: 12px; overflow: hidden; background: var(--bg); box-shadow: var(--raise-sm); }
-        .lv-btns button { flex: 1 1 0; min-height: 0; padding: 0; border: none; background: transparent; color: var(--ink-2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .lv-btns button + button { border-top: 1px solid var(--line); }
-        .lv-btns button:active { box-shadow: var(--sink); }
-        .lv-btns button:disabled { opacity: .3; cursor: default; box-shadow: none; }
-        .lv-btns svg { width: 12px; height: 8px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .today-btn.lv-btns { flex: none; display: inline-flex; flex-direction: row; align-items: stretch; padding: 0; overflow: hidden; }
+        .lv-btns button { width: 26px; padding: 0; border: none; background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 0; box-shadow: none; min-height: 0; }
+        .lv-btns button:first-child { padding-left: 4px; }
+        .lv-btns button:last-child { padding-right: 4px; }
+        .lv-btns button + button { box-shadow: inset 1px 0 0 var(--line); }
+        .lv-btns button:active:not(:disabled) { background: var(--surface-2); }
+        .lv-btns button:disabled { opacity: .3; cursor: default; }
+        .lv-btns svg { width: 12px; height: 8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        /* バレーの日を押した直後、裏のバレー画面が一瞬表示されてカレンダーの高さが狂わないようにする */
+        body:not(.nv-full) #eventContent { display: none !important; }
         body.nv-full .lv-btns, #calGrid.list-mode ~ .legend .lv-btns, #calGrid.tw-mode ~ .legend .lv-btns { visibility: hidden; }
         .cal-grid.nv .nv-chip .ic { width: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); height: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); vertical-align: middle; margin-top: -1px; }
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
@@ -2841,11 +2845,11 @@
         <div class="cal-grid" id="calGrid"></div>
         <div class="legend" id="calLegend">
             <div class="cal-hbtns">
+                <span class="today-btn lv-btns" id="lvBtns" role="group" aria-label="カレンダーの大きさ"><button type="button" id="lvUp" onclick="stepSheetLevel(-1)" aria-label="予定欄を上げる(カレンダーを小さく)"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M2 6.5 6 2.5 10 6.5"/></svg></button><button type="button" id="lvDown" onclick="stepSheetLevel(1)" aria-label="予定欄を下げる(カレンダーを大きく)"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M2 1.5 6 5.5 10 1.5"/></svg></button></span>
                 <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示"><i class="ic ic-clock"></i></button>
                 <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日"><i class="ic ic-ball"></i></button>
                 <button class="today-btn" onclick="jumpToToday()">Today</button>
                 <button class="today-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
-                <span class="lv-btns" id="lvBtns"><button type="button" id="lvUp" onclick="stepSheetLevel(-1)" aria-label="予定欄を上げる(カレンダーを小さく)"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M2 6.5 6 2.5 10 6.5"/></svg></button><button type="button" id="lvDown" onclick="stepSheetLevel(1)" aria-label="予定欄を下げる(カレンダーを大きく)"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M2 1.5 6 5.5 10 1.5"/></svg></button></span>
             </div>
         </div>
     </section>
