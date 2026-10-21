@@ -2488,6 +2488,8 @@
         #sheetBody { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px 6px 8px; }
         /* つまみをタップしてカレンダーを縮めたときは、日付の横のマーク(動画・注意など)を隠す */
         body.cal-compact #calGrid .nv-ic { display: none; }
+        /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
+        #nvDayPanel .nv-row.editing { display: none; }
         #daySheet.dragging { transition: none; }
         #sheetBody #nvDayPanel { margin: 0; }
         .nv-top.has-dot::after { content: ""; position: absolute; right: 5px; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
@@ -5226,9 +5228,12 @@
                     box.style.display = "block";
                 } else box.style.display = "none";
             }
+            // 入力欄を開いたらカレンダーを縮め、閉じたら開く前の状態に戻す
+            if (isOpen && !sheetPrevOpen) { sheetCompactBeforeEdit = sheetCompact; sheetCompact = true; }
+            else if (!isOpen && sheetPrevOpen) sheetCompact = sheetCompactBeforeEdit;
             layoutSheet();
-            if (isOpen && !sheetPrevOpen) { const bx = document.getElementById("otherPlanBox"), sb = document.getElementById("sheetBody"); if (bx && sb) sb.scrollTop = Math.max(0, bx.offsetTop - 30); }   // 入力欄が見える位置へ(枠の高さは変えない)
-            sheetPrevOpen = isOpen;
+            if (isOpen && (!sheetPrevOpen || planEditId !== sheetPrevEditId)) centerPlanBox();
+            sheetPrevOpen = isOpen; sheetPrevEditId = isOpen ? planEditId : undefined;
         }
         // ------- 時間表示(週: 縦軸=時間 / 予約日モード: 月単位で各日に時間軸) -------
         const CAL_TIME_KEY = "attendance_cal_time_v1";
@@ -9716,7 +9721,18 @@ const namesBtn = isAdmin() && dates.length > 0
         }
 
         // ------- 下の予定シート(引き上げ式)と、バレー/予定ボタンの置き場所 -------
-        var sheetUserH = null, sheetPrevOpen = false, sheetCompact = false;
+        var sheetUserH = null, sheetPrevOpen = false, sheetCompact = false, sheetCompactBeforeEdit = false, sheetPrevEditId;
+        // 入力欄が予定欄の真ん中に来るようにスクロールする(入り切らないときは上端をそろえる)
+        function centerPlanBox() {
+            const bx = document.getElementById("otherPlanBox"), sb = document.getElementById("sheetBody");
+            if (!bx || !sb) return;
+            const go = () => {
+                const top = bx.getBoundingClientRect().top - sb.getBoundingClientRect().top + sb.scrollTop;
+                const room = sb.clientHeight - bx.offsetHeight;
+                sb.scrollTop = Math.max(0, room > 0 ? top - room / 2 : top - 12);
+            };
+            go(); requestAnimationFrame(go);   // カレンダーの作り直しで位置が動いても合わせ直す
+        }
         function placeDayToggles() {
             const t = document.querySelector(".day-toggles");
             if (!t) return;
