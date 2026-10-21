@@ -222,7 +222,7 @@
         .legend { align-items: center; }
         .cal-card { overflow-x: clip; position: relative; }
         #calGrid { touch-action: pan-y; will-change: transform; }
-        #calTimeBtn, #rvListBtn { padding: 0; width: 34px; font-size: 15px; line-height: 1; }
+        #calTimeBtn, #rvListBtn, #calExportBtn { padding: 0; width: 34px; font-size: 15px; line-height: 1; }
         .tw-body { position: relative; display: grid; grid-template-columns: 22px repeat(7, 1fr); gap: 2px; height: calc(var(--hp) * var(--hrs)); background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px); background-size: 100% var(--hp); }
         .tw-gutter { position: relative; }
         .tw-gutter span { position: absolute; right: 3px; font-size: 8.5px; line-height: 1; color: var(--ink-3); }
@@ -2167,12 +2167,13 @@
             --i-plus:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.4'%20stroke-linecap='round'%3E%3Cpath%20d='M12%205v14M5%2012h14'/%3E%3C/svg%3E");
             --i-dice:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='4'%20y='4'%20width='16'%20height='16'%20rx='4.500'/%3E%3Ccircle%20cx='9'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='9'%20cy='15'%20r='1.200'%20fill='black'/%3E%3C/svg%3E");--i-shuffle:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%207h3c4.500%200%205.500%2010%2010%2010h2M3%2017h3c1.800%200%203-1.200%204-2.800M14%208.800C15%207.800%2015.800%207%2017%207h1M18%204l3%203-3%203M18%2014l3%203-3%203'/%3E%3C/svg%3E");--i-undo:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M9%2014%204%209l5-5M4%209h10.500a5.500%205.500%200%200%201%200%2011H11'/%3E%3C/svg%3E");--i-close:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%206l12%2012M18%206%206%2018'/%3E%3C/svg%3E");
             --i-eye:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3.600-7%2010-7%2010%207%2010%207-3.600%207-10%207S2%2012%202%2012z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3C/svg%3E");--i-eyeoff:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3.600-7%2010-7%2010%207%2010%207-3.600%207-10%207S2%2012%202%2012z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3Cpath%20d='M4%204l16%2016'/%3E%3C/svg%3E");
+            --i-caldown:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2012V7.500a2.500%202.500%200%200%200-2.500-2.500h-11A2.500%202.500%200%200%200%204%207.500v11A2.500%202.500%200%200%200%206.500%2021H12M4%2010h16M8.500%203.500v3M15.500%203.500v3M18%2015v6M15%2018.500l3%203%203-3'/%3E%3C/svg%3E");
             --raise-xs: -1px -1px 2px var(--hl), 1.5px 2px 3.5px var(--sh);
             --amber: #d98a00; }
         body.dark { --amber: #f0b44a; }
         body, button, input, select, textarea { font-family: "Outfit", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; letter-spacing: .01em; }
         .ic { display: inline-block; width: 1em; height: 1em; flex: none; background: currentColor; vertical-align: -.15em; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
-        .ic-dice{-webkit-mask-image:var(--i-dice);mask-image:var(--i-dice);}.ic-shuffle{-webkit-mask-image:var(--i-shuffle);mask-image:var(--i-shuffle);}.ic-undo{-webkit-mask-image:var(--i-undo);mask-image:var(--i-undo);}.ic-close{-webkit-mask-image:var(--i-close);mask-image:var(--i-close);}.ic-eye{-webkit-mask-image:var(--i-eye);mask-image:var(--i-eye);}.ic-eyeoff{-webkit-mask-image:var(--i-eyeoff);mask-image:var(--i-eyeoff);}.ic-plus{-webkit-mask-image:var(--i-plus);mask-image:var(--i-plus);}.ic-ball{-webkit-mask-image:var(--i-ball);mask-image:var(--i-ball);}.ic-warn{-webkit-mask-image:var(--i-warn);mask-image:var(--i-warn);}.ic-coin{-webkit-mask-image:var(--i-coin);mask-image:var(--i-coin);}.ic-user{-webkit-mask-image:var(--i-user);mask-image:var(--i-user);}.ic-users{-webkit-mask-image:var(--i-users);mask-image:var(--i-users);}.ic-crown{-webkit-mask-image:var(--i-crown);mask-image:var(--i-crown);}.ic-moon{-webkit-mask-image:var(--i-moon);mask-image:var(--i-moon);}.ic-sun{-webkit-mask-image:var(--i-sun);mask-image:var(--i-sun);}.ic-phone{-webkit-mask-image:var(--i-phone);mask-image:var(--i-phone);}.ic-camera{-webkit-mask-image:var(--i-camera);mask-image:var(--i-camera);}.ic-survey{-webkit-mask-image:var(--i-survey);mask-image:var(--i-survey);}.ic-clock{-webkit-mask-image:var(--i-clock);mask-image:var(--i-clock);}.ic-refresh{-webkit-mask-image:var(--i-refresh);mask-image:var(--i-refresh);}.ic-sliders{-webkit-mask-image:var(--i-sliders);mask-image:var(--i-sliders);}.ic-cal{-webkit-mask-image:var(--i-cal);mask-image:var(--i-cal);}
+        .ic-dice{-webkit-mask-image:var(--i-dice);mask-image:var(--i-dice);}.ic-shuffle{-webkit-mask-image:var(--i-shuffle);mask-image:var(--i-shuffle);}.ic-undo{-webkit-mask-image:var(--i-undo);mask-image:var(--i-undo);}.ic-close{-webkit-mask-image:var(--i-close);mask-image:var(--i-close);}.ic-eye{-webkit-mask-image:var(--i-eye);mask-image:var(--i-eye);}.ic-eyeoff{-webkit-mask-image:var(--i-eyeoff);mask-image:var(--i-eyeoff);}.ic-caldown{-webkit-mask-image:var(--i-caldown);mask-image:var(--i-caldown);}.ic-plus{-webkit-mask-image:var(--i-plus);mask-image:var(--i-plus);}.ic-ball{-webkit-mask-image:var(--i-ball);mask-image:var(--i-ball);}.ic-warn{-webkit-mask-image:var(--i-warn);mask-image:var(--i-warn);}.ic-coin{-webkit-mask-image:var(--i-coin);mask-image:var(--i-coin);}.ic-user{-webkit-mask-image:var(--i-user);mask-image:var(--i-user);}.ic-users{-webkit-mask-image:var(--i-users);mask-image:var(--i-users);}.ic-crown{-webkit-mask-image:var(--i-crown);mask-image:var(--i-crown);}.ic-moon{-webkit-mask-image:var(--i-moon);mask-image:var(--i-moon);}.ic-sun{-webkit-mask-image:var(--i-sun);mask-image:var(--i-sun);}.ic-phone{-webkit-mask-image:var(--i-phone);mask-image:var(--i-phone);}.ic-camera{-webkit-mask-image:var(--i-camera);mask-image:var(--i-camera);}.ic-survey{-webkit-mask-image:var(--i-survey);mask-image:var(--i-survey);}.ic-clock{-webkit-mask-image:var(--i-clock);mask-image:var(--i-clock);}.ic-refresh{-webkit-mask-image:var(--i-refresh);mask-image:var(--i-refresh);}.ic-sliders{-webkit-mask-image:var(--i-sliders);mask-image:var(--i-sliders);}.ic-cal{-webkit-mask-image:var(--i-cal);mask-image:var(--i-cal);}
         .settings-btn .ic { width: 19px; height: 19px; vertical-align: middle; }
         .settings-btn.survey-btn .ic { width: 19px; height: 19px; }
         .today-btn .ic { width: 17px; height: 17px; vertical-align: middle; }
@@ -2425,6 +2426,40 @@
         .minus-mark .ic { width: 11px; height: 11px; vertical-align: 0; }
         .cal-day .minus-mark { position: absolute; bottom: 3px; right: 3px; }
         .cal-day .nv-ic .minus-mark { position: static; }
+
+        /* ===== v58: 日またぎの予定を凹みの上で濃く / 選択中の名前は所属グループの色 ===== */
+        .cal-grid.nv .nv-chip:not(.ring):not([style*="background"]) { background: linear-gradient(var(--plan-gray, var(--pcbg0)), var(--plan-gray, var(--pcbg0))), linear-gradient(var(--bg), var(--bg)); }
+        .cal-grid.nv .nv-seg { z-index: 5; position: relative; }
+        #memberView .confirm-group.come .mv-chip.sel, #memberView .confirm-group.come .mv-chip.open, body.dark #memberView .confirm-group.come .mv-chip.sel, body.dark #memberView .confirm-group.come .mv-chip.open { background: var(--come); color: #fff; }
+        #memberView .confirm-group.notcome .mv-chip.sel, #memberView .confirm-group.notcome .mv-chip.open, body.dark #memberView .confirm-group.notcome .mv-chip.sel, body.dark #memberView .confirm-group.notcome .mv-chip.open { background: var(--notcome); color: #fff; }
+        #memberView .confirm-group.pending .mv-chip.sel, #memberView .confirm-group.pending .mv-chip.open, body.dark #memberView .confirm-group.pending .mv-chip.sel, body.dark #memberView .confirm-group.pending .mv-chip.open { background: var(--pending); color: #fff; }
+        #memberView .confirm-group.unconfirmed .mv-chip.sel, #memberView .confirm-group.unconfirmed .mv-chip.open, body.dark #memberView .confirm-group.unconfirmed .mv-chip.sel, body.dark #memberView .confirm-group.unconfirmed .mv-chip.open { background: var(--unconf); color: #fff; }
+        .cal-grid.nv .nv-chip.ring:not(.nv-lane):not(.nv-more) { box-shadow: var(--raise-xs), inset 0 0 0 1.2px var(--plan-ink, var(--ink-3)); }
+        .cal-grid.nv .cal-day.selected .nv-chip.ring:not(.nv-lane):not(.nv-more) { box-shadow: -1px -1px 2px var(--hl), 2px 2.5px 4px var(--sh), inset 0 0 0 1.2px var(--plan-ink, var(--ink-3)); }
+
+        /* ===== v59: 予約の一括追加シート ===== */
+        #bulkAddOv { position: fixed; inset: 0; z-index: 1500; display: none; align-items: flex-end; justify-content: center; background: rgba(20, 24, 34, .45); }
+        #bulkAddOv.open { display: flex; }
+        #bulkAddOv .ba-sheet { width: 100%; max-width: 560px; max-height: 82vh; display: flex; flex-direction: column; padding: 16px 16px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.25); }
+        #bulkAddOv .ba-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        #bulkAddOv .ba-ttl { font-size: 16px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
+        #bulkAddOv .ba-x, #bulkAddOv .ba-add { width: 38px; height: 38px; padding: 0; border: none; border-radius: 12px; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-sm); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; cursor: pointer; }
+        #bulkAddOv .ba-x:active, #bulkAddOv .ba-add:active { box-shadow: var(--sink); }
+        #bulkAddOv .ba-acts { display: flex; gap: 10px; margin-bottom: 12px; }
+        #bulkAddOv .ba-acts button { height: 42px; border: none; border-radius: 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: var(--raise-sm); }
+        #bulkAddOv .ba-main { flex: 1; background: var(--accent); color: #fff; }
+        #bulkAddOv .ba-main:disabled { background: var(--bg); color: var(--accent); box-shadow: var(--sink); }
+        #bulkAddOv .ba-sub { flex: none; padding: 0 18px; background: var(--bg); color: var(--ink-2); }
+        #bulkAddOv .ba-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 4px 6px; }
+        #bulkAddOv .ba-row { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-xs); }
+        #bulkAddOv .ba-row.done { box-shadow: var(--sink); opacity: .75; }
+        #bulkAddOv .ba-row.done .ba-add { color: var(--accent); }
+        #bulkAddOv .ba-d { flex: none; width: 46px; font-size: 17px; font-weight: 800; line-height: 1.1; }
+        #bulkAddOv .ba-d small { display: block; font-size: 10px; font-weight: 600; color: var(--ink-3); }
+        #bulkAddOv .ba-i { flex: 1; min-width: 0; font-size: 13px; color: var(--ink-2); line-height: 1.4; }
+        #bulkAddOv .ba-i b { color: var(--ink); }
+        #bulkAddOv .ba-add .ic { width: 16px; height: 16px; }
+        #bulkAddOv .ba-empty { text-align: center; color: var(--ink-3); padding: 24px; }
     </style>
 </head>
 <body>
@@ -2749,6 +2784,7 @@
                 <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示"><i class="ic ic-clock"></i></button>
                 <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日"><i class="ic ic-ball"></i></button>
                 <button class="today-btn" onclick="jumpToToday()">Today</button>
+                <button class="today-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
             </div>
         </div>
     </section>
@@ -8807,10 +8843,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const text = `${m}/${d}(${wd}) ${r.time} ${r.place}${r.court ? " " + r.court : ""}`;
             copyText(text, `コピーしました: ${text}`);
         }
-        function addReservationToGoogleCalendar(id) {
-            const r = (reservations[selectedDate] || []).find(x => x.id === id);
+        function addReservationToGoogleCalendar(id, dateKey) {
+            dateKey = dateKey || selectedDate;
+            const r = (reservations[dateKey] || []).find(x => x.id === id);
             if (!r) return;
-            const ymd = selectedDate.replace(/-/g, "");
+            gcalMarkAdded(dateKey, r);
+            const ymd = dateKey.replace(/-/g, "");
             const [st, en] = r.time.split("-").map(t => {
                 const [h, m] = t.split(":");
                 return ymd + "T" + h.padStart(2, "0") + m + "00";
@@ -8829,6 +8867,110 @@ const namesBtn = isAdmin() && dates.length > 0
             const w = window.open(web, "_blank");
             if (!w) location.href = web;
         }
+
+
+        // ------- 予約日を .ics にして一括追加(Googleカレンダー・iPhone純正など)。同じ予約は同じUIDなので、もう一度読み込んでも重複せず上書きされる -------
+        function icsEsc(t) { return String(t == null ? "" : t).replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+        function icsFold(line) {
+            const enc = new TextEncoder(), out = [];
+            let cur = "", bytes = 0;
+            for (const ch of line) {
+                const b = enc.encode(ch).length;
+                if (bytes + b > 73) { out.push(cur); cur = " " + ch; bytes = 1 + b; } else { cur += ch; bytes += b; }
+            }
+            out.push(cur);
+            return out.join("\r\n");
+        }
+        function buildReservationsIcs() {
+            const today = formatDateKey(new Date());
+            const now = new Date(), z = (n) => String(n).padStart(2, "0");
+            const stamp = now.getUTCFullYear() + z(now.getUTCMonth() + 1) + z(now.getUTCDate()) + "T" + z(now.getUTCHours()) + z(now.getUTCMinutes()) + z(now.getUTCSeconds()) + "Z";
+            const seq = Math.floor(now.getTime() / 60000);
+            const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Volley Schedule//JA", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:バレー", "X-WR-TIMEZONE:Asia/Tokyo",
+                "BEGIN:VTIMEZONE", "TZID:Asia/Tokyo", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0900", "TZOFFSETTO:+0900", "TZNAME:JST", "END:STANDARD", "END:VTIMEZONE"];
+            let n = 0;
+            Object.keys(reservations).filter(d => d >= today).sort().forEach(d => {
+                (reservations[d] || []).forEach((r, i) => {
+                    const t = parseTimeRangeMin(r.time);
+                    if (!t) return;
+                    const ymd = d.replace(/-/g, "");
+                    const hm = (v) => z(Math.floor(v / 60) % 24) + z(v % 60) + "00";
+                    const endDay = t.e >= 1440 ? (() => { const x = new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10) + 1); return x.getFullYear() + z(x.getMonth() + 1) + z(x.getDate()); })() : ymd;
+                    const uid = `volley-${d}-${r.id != null ? r.id : i}@volley-schedule`;
+                    const court = r.court ? ` ${r.court}` : "";
+                    L.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp, "LAST-MODIFIED:" + stamp, "SEQUENCE:" + seq,
+                        `DTSTART;TZID=Asia/Tokyo:${ymd}T${hm(t.s)}`, `DTEND;TZID=Asia/Tokyo:${endDay}T${hm(t.e >= 1440 ? 0 : t.e)}`,
+                        "SUMMARY:" + icsEsc(`バレー ${r.place || ""}${court}`.trim()), "LOCATION:" + icsEsc(r.address || r.place || ""),
+                        "DESCRIPTION:" + icsEsc(`時間: ${r.time}${r.court ? "\nコート: " + r.court : ""}`), "END:VEVENT");
+                    n++;
+                });
+            });
+            L.push("END:VCALENDAR");
+            return { text: L.map(icsFold).join("\r\n") + "\r\n", count: n };
+        }
+        async function exportReservationsIcs() {
+            const { text, count } = buildReservationsIcs();
+            if (!count) { alert("追加できる予約日がありません(今日以降で、時間が入っている予約)"); return; }
+            const file = new File([text], "volley.ics", { type: "text/calendar" });
+            try {
+                if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "バレー予約" }); return; }
+            } catch (e) { if (e && e.name === "AbortError") return; }
+            const url = URL.createObjectURL(file), a = document.createElement("a");
+            a.href = url; a.download = "volley.ics"; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+        }
+
+
+        // ------- 予約日の一括追加(各予約の「Add」と同じGoogleカレンダーの作成画面を、未追加の予約ぶん順に開く) -------
+        const GCAL_ADDED_KEY = "attendance_gcal_added_v1";
+        function gcalAddedMap() { try { return JSON.parse(localStorage.getItem(GCAL_ADDED_KEY) || "{}") || {}; } catch (e) { return {}; } }
+        function gcalSig(r) { return [r.time, r.place, r.court || ""].join("|"); }
+        function gcalIsAdded(d, r, map) { return (map || gcalAddedMap())[d + "#" + r.id] === gcalSig(r); }
+        function gcalMarkAdded(d, r) {
+            const m = gcalAddedMap(); m[d + "#" + r.id] = gcalSig(r);
+            try { localStorage.setItem(GCAL_ADDED_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ }
+        }
+        function gcalFutureList() {
+            const today = formatDateKey(new Date()), out = [];
+            Object.keys(reservations).filter(d => d >= today).sort().forEach(d => (reservations[d] || []).forEach(r => { if (parseTimeRangeMin(r.time)) out.push({ d, r }); }));
+            return out;
+        }
+        function openBulkAdd() {
+            let ov = document.getElementById("bulkAddOv");
+            if (!ov) {
+                ov = document.createElement("div"); ov.id = "bulkAddOv";
+                ov.innerHTML = '<div class="ba-sheet" role="dialog" aria-label="予約をカレンダーに追加"><div class="ba-head"><span class="ba-ttl"><i class="ic ic-cal"></i> Calendar</span><button type="button" class="ba-x" aria-label="閉じる" onclick="closeBulkAdd()"><i class="ic ic-close"></i></button></div><div class="ba-acts"></div><div class="ba-list"></div></div>';
+                ov.addEventListener("click", (e) => { if (e.target === ov) closeBulkAdd(); });
+                document.body.appendChild(ov);
+            }
+            ov.classList.add("open");
+            renderBulkAdd();
+        }
+        function closeBulkAdd() { const ov = document.getElementById("bulkAddOv"); if (ov) ov.classList.remove("open"); }
+        function renderBulkAdd() {
+            const ov = document.getElementById("bulkAddOv");
+            if (!ov || !ov.classList.contains("open")) return;
+            const list = gcalFutureList(), map = gcalAddedMap();
+            const todo = list.filter(x => !gcalIsAdded(x.d, x.r, map));
+            ov.querySelector(".ba-acts").innerHTML = list.length
+                ? `<button type="button" class="ba-main" ${todo.length ? "" : "disabled"} onclick="bulkAddNext()">${todo.length ? `Next · ${todo.length}` : "✓ All"}</button><button type="button" class="ba-sub" onclick="exportReservationsIcs()">.ics</button>`
+                : "";
+            ov.querySelector(".ba-list").innerHTML = list.length ? list.map(({ d, r }) => {
+                const [y, m, dd] = d.split("-").map(Number), wd = WEEKDAYS[new Date(y, m - 1, dd).getDay()], done = gcalIsAdded(d, r, map);
+                return `<div class="ba-row${done ? " done" : ""}"><div class="ba-d">${m}/${dd}<small>${wd}</small></div><div class="ba-i"><b>${escapeHtml(r.time)}</b> ${escapeHtml(r.place || "")}${escapeHtml(r.court ? " " + r.court : "")}</div><button type="button" class="ba-add" onclick="bulkAddOne('${d}', ${r.id})" aria-label="追加">${done ? "✓" : '<i class="ic ic-plus"></i>'}</button></div>`;
+            }).join("") : '<div class="ba-empty">—</div>';
+        }
+        function bulkAddOne(d, id) {
+            const r = (reservations[d] || []).find(x => x.id === id);
+            if (!r) return;
+            addReservationToGoogleCalendar(id, d);
+            renderBulkAdd();
+        }
+        function bulkAddNext() {
+            const map = gcalAddedMap(), next = gcalFutureList().find(x => !gcalIsAdded(x.d, x.r, map));
+            if (next) bulkAddOne(next.d, next.r.id);
+        }
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) renderBulkAdd(); });
 
         // 戻ってきたとき(ブラウザの戻る・タブ切り替え)に画面を最新にする
         window.addEventListener("pageshow", (e) => { if (e.persisted && typeof renderRoster === "function") renderRoster(); });
@@ -9230,7 +9372,7 @@ const namesBtn = isAdmin() && dates.length > 0
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
         const HIDE_TP_KEY = "attendance_hide_tparams_v1";
-        const LOCAL_ONLY_KEYS = new Set([HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
+        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
             SURVEY_SORT_KEY, CAL_TIME_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, SURVEY_NAMES_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
