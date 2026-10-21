@@ -9536,7 +9536,7 @@ const namesBtn = isAdmin() && dates.length > 0
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
         const HIDE_TP_KEY = "attendance_hide_tparams_v1";
-        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
+        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
             SURVEY_SORT_KEY, CAL_TIME_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, SURVEY_NAMES_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
@@ -9818,9 +9818,9 @@ const namesBtn = isAdmin() && dates.length > 0
             if (host && t.parentNode !== host) host.appendChild(t);
         }
         // 予定欄の高さは3段階: カレンダーの日付内に文字の予定が 3つ / 2つ / 1つ 入る高さ。この端末だけに保存
-        const SHEET_LV_KEY = "attendance_sheet_level_v1";
+        const SHEET_LV_KEY = "attendance_sheet_level_v2", SHEET_HS_KEY = "attendance_sheet_hs_v1";   // どちらも端末ごと(共有しない)
         var sheetLevel = null;
-        function loadSheetLevel() { try { const n = parseInt(localStorage.getItem(SHEET_LV_KEY), 10); return n >= 1 && n <= 3 ? n : 3; } catch (e) { return 3; } }
+        function loadSheetLevel() { try { const n = parseInt(localStorage.getItem(SHEET_LV_KEY), 10); return n >= 1 && n <= 3 ? n : 2; } catch (e) { return 2; } }   // 初期値は「2つ表示」
         // 上ボタン(-1): 予定欄を上げてカレンダーを小さく / 下ボタン(+1): カレンダーを大きく
         function stepSheetLevel(dir) {
             if (sheetLevel == null) sheetLevel = loadSheetLevel();
@@ -9833,12 +9833,22 @@ const namesBtn = isAdmin() && dates.length > 0
         function sheetLevelHs() {
             const sh = document.getElementById("daySheet"), g = document.getElementById("calGrid"), vh = window.innerHeight;
             const cap = (h) => Math.max(64, Math.min(Math.round(h), Math.round(vh * 0.72)));
-            if (!sh || !g || !g.clientHeight || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return [cap(112), cap(vh * 0.3), cap(vh * 0.38)];
+            // 予約日・時間表示のときは測れないので、通常表示で最後に測った高さをそのまま使う
+            if (!sh || !g || !g.clientHeight || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) {
+                if (!sheetHsCache || sheetHsCache.vh !== vh) { sheetHsCache = null; try { const c = JSON.parse(localStorage.getItem(SHEET_HS_KEY) || "null"); if (c && c.vh === vh && Array.isArray(c.hs)) sheetHsCache = c; } catch (e) { /* ignore */ } }
+                return sheetHsCache ? sheetHsCache.hs : [cap(112), cap(vh * 0.3), cap(vh * 0.38)];
+            }
             const wd = g.querySelector(".cal-weekday"), head = wd ? wd.offsetHeight : 25, off = nvOff(g);
             const hFor = (t) => sh.offsetHeight + g.clientHeight - (head + 6 * (nvNeed(t, off) + 1));
             const h3 = cap(Math.min(112, hFor(3))), h2 = Math.max(h3, cap(hFor(2))), h1 = Math.max(h2, cap(hFor(1)));
-            return [h3, h2, h1];
+            const hs = [h3, h2, h1];
+            if (!sheetHsCache || sheetHsCache.vh !== vh || hs.some((h, i) => h !== sheetHsCache.hs[i])) {
+                sheetHsCache = { vh, hs };
+                try { localStorage.setItem(SHEET_HS_KEY, JSON.stringify({ vh, hs })); } catch (e) { /* ignore */ }
+            }
+            return hs;
         }
+        var sheetHsCache = null;
         // 高さは自分で引き上げたときだけ変わる(予定の数や入力欄では動かない)。決めた高さは保存して次回も使う
         function layoutSheet() {
             const sh = document.getElementById("daySheet");
