@@ -2482,9 +2482,12 @@
         #calCard .day-toggles { margin-left: auto; gap: 10px; }
         #daySheet { flex: none; display: flex; flex-direction: column; height: var(--sheet-h, 120px); margin: 10px 0 0; background: var(--bg); border-radius: 24px; box-shadow: var(--raise-sm); overflow: hidden; }
         body.nv-full #daySheet { display: none !important; }
-        #sheetGrip { flex: none; height: 26px; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
+        #sheetGrip { flex: none; height: 20px; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
         #sheetGrip span { width: 42px; height: 5px; border-radius: 3px; background: var(--ink-3); opacity: .45; }
-        #sheetBody { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 0 6px 8px; }
+        /* 上にも余白を取り、1番上の予定の影(左上の光)が切れて立体感がなくならないようにする */
+        #sheetBody { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px 6px 8px; }
+        /* つまみをタップしてカレンダーを縮めたときは、日付の横のマーク(動画・注意など)を隠す */
+        body.cal-compact #calGrid .nv-ic { display: none; }
         #daySheet.dragging { transition: none; }
         #sheetBody #nvDayPanel { margin: 0; }
         .nv-top.has-dot::after { content: ""; position: absolute; right: 5px; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
@@ -9713,7 +9716,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
 
         // ------- 下の予定シート(引き上げ式)と、バレー/予定ボタンの置き場所 -------
-        var sheetUserH = null, sheetPrevOpen = false;
+        var sheetUserH = null, sheetPrevOpen = false, sheetCompact = false;
         function placeDayToggles() {
             const t = document.querySelector(".day-toggles");
             if (!t) return;
@@ -9729,8 +9732,19 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!sh || document.body.classList.contains("nv-full")) return;
             if (sheetUserH == null) sheetUserH = loadSheetH();
             const vh = window.innerHeight, maxH = Math.round(vh * 0.72);
-            const h = sheetUserH == null ? 112 : Math.max(64, Math.min(sheetUserH, maxH));
+            let h = sheetUserH == null ? 112 : Math.max(64, Math.min(sheetUserH, maxH));
+            if (sheetCompact) h = Math.max(h, compactSheetH());   // 縮めている間だけの高さ(自分で決めた高さは上書きしない)
             sh.style.setProperty("--sheet-h", h + "px");
+            document.body.classList.toggle("cal-compact", !!sheetCompact);
+        }
+        // カレンダーの1行が日付だけ入る高さになるまでシートを引き上げたときの高さ
+        const COMPACT_ROW = 30;
+        function compactSheetH() {
+            const sh = document.getElementById("daySheet"), g = document.getElementById("calGrid"), vh = window.innerHeight;
+            if (!sh || !g || !g.clientHeight || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return Math.round(vh * 0.55);
+            const wd = g.querySelector(".cal-weekday"), head = wd ? wd.offsetHeight : 25;
+            const want = head + COMPACT_ROW * 6;
+            return Math.max(64, Math.min(Math.round(sh.offsetHeight + g.clientHeight - want), Math.round(vh * 0.8)));
         }
         (function initCalResize() {
             const g = document.getElementById("calGrid");
@@ -9755,14 +9769,15 @@ const namesBtn = isAdmin() && dates.length > 0
                 const dy = d.y - e.clientY;
                 if (Math.abs(dy) > 3) d.moved = true;
                 if (!d.moved) return;
+                if (sheetCompact) { sheetCompact = false; document.body.classList.remove("cal-compact"); }   // 引っぱったら、その高さを新しく決めた高さにする
                 sheetUserH = Math.max(64, Math.min(d.h + dy, Math.round(window.innerHeight * 0.72)));
                 sh.style.setProperty("--sheet-h", sheetUserH + "px");
             });
             const end = () => {
                 if (!d) return;
                 sh.classList.remove("dragging");
-                if (!d.moved) { sheetUserH = sh.offsetHeight < window.innerHeight * 0.45 ? Math.round(window.innerHeight * 0.62) : null; }   // タップ: 広げる/戻す
-                else if (sheetUserH != null && sheetUserH < 110) sheetUserH = null;   // 低く下げたら元の高さへ
+                if (!d.moved) { sheetCompact = !sheetCompact; d = null; layoutSheet(); return; }   // タップ: 縮める/元の高さに戻す(決めた高さはそのまま)
+                if (sheetUserH != null && sheetUserH < 110) sheetUserH = null;   // 低く下げたら元の高さへ
                 d = null; saveSheetH(); layoutSheet();
             };
             grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
