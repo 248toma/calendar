@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f3f4f7">
     <title>日程管理アプリ</title>
     <!-- ホーム画面に追加したときのアイコン(iPhone: apple-touch-icon / Android: manifest) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.webmanifest">
@@ -51,8 +52,8 @@
 
             --come: #0a8f6a;     --come-soft: #e2f5ee;     --come-ink: #066b50;
             --notcome: #e5484d;  --notcome-soft: #fdebec;  --notcome-ink: #b4232a;
-            --pending: #7b8494;  --pending-soft: #eceff3;  --pending-ink: #4a5262;
-            --unconf: #e08a00;   --unconf-soft: #fff1d6;   --unconf-ink: #8f5600;
+            --pending: #e08a00;  --pending-soft: #fff1d6;  --pending-ink: #8f5600;
+            --unconf: #7b8494;   --unconf-soft: #eceff3;   --unconf-ink: #4a5262;
 
             --line-brand: #06c755;
             --ink-fill: #12151c;   /* 塗りボタン(選択中など)の背景。ダーク時のみ別色 */
@@ -278,8 +279,6 @@
         .op-dot[data-c="7"] { --dot: #30aab4; }
         .op-dot[data-c="8"] { --dot: #d6aa28; }
         .day-toggles { display: flex; align-items: center; gap: 14px; flex: none; }
-        /* バレーのスイッチの丸は🏐 */
-        #eventToggle::after { content: "🏐"; display: flex; align-items: center; justify-content: center; background: transparent; box-shadow: none; font-size: 15px; line-height: 1; }
         /* 他予定の入力画面(必要最小限・2行) */
         .op-box { margin: 0 0 8px; padding: 8px; background: var(--surface); border: 1px solid var(--ink-fill); border-radius: 12px; display: none; }
         .op-box.attached { margin-top: -6px; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
@@ -1564,8 +1563,8 @@
             --accent-soft: #266a57;   --accent-ink: #7fe6c2;
             --come-soft: #266a57;     --come-ink: #7fe6c2;
             --notcome-soft: #7a3d48;  --notcome-ink: #ffb0b4;
-            --pending-soft: #4a5268;  --pending-ink: #c3cad8;
-            --unconf-soft: #78581f;   --unconf-ink: #ffd27d;
+            --pending-soft: #78581f;  --pending-ink: #ffd27d;
+            --unconf-soft: #4a5268;   --unconf-ink: #c3cad8;
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, .25);
             --shadow-md: 0 2px 8px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .4);
         }
@@ -2162,6 +2161,202 @@
         .settings-btn.refresh-btn.has-update::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: #e5484d; }
         body.nv-full #nvBack { display: flex !important; align-items: center; justify-content: flex-start; gap: 6px; }
         #nvBack .nv-step { display: inline-flex; gap: 6px; margin-left: 0; }
+
+        /* ===== v48: デザイン刷新(アイコン・フォント・カレンダーの凹凸) ===== */
+        :root { --i-ball:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='1.9'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9.500'/%3E%3Cpath%20d='M12%202.500C10%207%2011%2011%2015.500%2013.500%2018%2015%2020%2015.500%2021.500%2015'/%3E%3Cpath%20d='M3.500%207.500C8%208%2011%2010%2012.500%2013.500%2013.500%2016%2013%2019%2011%2021.500'/%3E%3Cpath%20d='M2.800%2015C6%2014%209%2013.500%2012%2012'/%3E%3C/svg%3E");--i-warn:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%204%203%2020h18z'/%3E%3Cpath%20d='M12%2010v4.5M12%2017.3v.4'/%3E%3C/svg%3E");--i-coin:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M9%208l3%204.2L15%208M12%2012v5M9.6%2013.2h4.8M9.6%2015.2h4.8'/%3E%3C/svg%3E");--i-user:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='8'%20r='4'/%3E%3Cpath%20d='M4.5%2020.5c.9-4.5%204.6-5.8%207.5-5.8s6.600%201.300%207.500%205.800'/%3E%3C/svg%3E");--i-users:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='9'%20cy='8.500'%20r='3.500'/%3E%3Cpath%20d='M2.500%2020c.8-4%203.500-5%206.500-5s5.700%201%206.500%205M16%205.200a3.500%203.500%200%200%201%200%206.600M18%2015.200c2%20.6%203%202%203.500%204.800'/%3E%3C/svg%3E");--i-crown:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3.500%208.500%208%2012.500l4-7%204%207%204.500-4-1.800%2010.500H5.300z'/%3E%3C/svg%3E");--i-moon:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2014.500A8%208%200%201%201%209.500%204%206.500%206.500%200%200%200%2020%2014.500z'/%3E%3C/svg%3E");--i-sun:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='4'/%3E%3Cpath%20d='M12%202.500v2.500M12%2019v2.500M2.500%2012H5M19%2012h2.500M5.300%205.300l1.800%201.800M16.900%2016.900l1.800%201.800M5.300%2018.700l1.800-1.800M16.900%207.100l1.800-1.800'/%3E%3C/svg%3E");--i-phone:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='7'%20y='3'%20width='10'%20height='18'%20rx='2.500'/%3E%3Cpath%20d='M11%2018h2'/%3E%3C/svg%3E");--i-camera:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%208h3l2-3h6l2%203h3v11H4z'/%3E%3Ccircle%20cx='12'%20cy='13'%20r='3.500'/%3E%3C/svg%3E");--i-survey:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='5'%20y='4.500'%20width='14'%20height='16.500'%20rx='2.500'/%3E%3Cpath%20d='M9%203h6v3.500H9zM9%2014l2.200%202.200L15.500%2012'/%3E%3C/svg%3E");--i-clock:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M12%207v5.200l3.200%202'/%3E%3C/svg%3E");--i-refresh:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2011A8%208%200%200%200%205.800%207M4%204v4h4M4%2013a8%208%200%200%200%2014.200%204M20%2020v-4h-4'/%3E%3C/svg%3E");--i-sliders:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%207h9M19%207h1M4%2017h1M11%2017h9'/%3E%3Ccircle%20cx='16'%20cy='7'%20r='2.300'/%3E%3Ccircle%20cx='8'%20cy='17'%20r='2.300'/%3E%3C/svg%3E");--i-cal:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='4'%20y='5.500'%20width='16'%20height='15'%20rx='2.500'/%3E%3Cpath%20d='M4%2010h16M8.500%203.500v4M15.500%203.500v4'/%3E%3C/svg%3E");
+            --i-plus:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.4'%20stroke-linecap='round'%3E%3Cpath%20d='M12%205v14M5%2012h14'/%3E%3C/svg%3E");
+            --i-dice:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='4'%20y='4'%20width='16'%20height='16'%20rx='4.500'/%3E%3Ccircle%20cx='9'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='9'%20cy='15'%20r='1.200'%20fill='black'/%3E%3C/svg%3E");--i-shuffle:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%207h3c4.500%200%205.500%2010%2010%2010h2M3%2017h3c1.800%200%203-1.200%204-2.800M14%208.800C15%207.800%2015.800%207%2017%207h1M18%204l3%203-3%203M18%2014l3%203-3%203'/%3E%3C/svg%3E");--i-undo:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M9%2014%204%209l5-5M4%209h10.500a5.500%205.500%200%200%201%200%2011H11'/%3E%3C/svg%3E");--i-close:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%206l12%2012M18%206%206%2018'/%3E%3C/svg%3E");
+            --raise-xs: -1px -1px 2px var(--hl), 1.5px 2px 3.5px var(--sh);
+            --amber: #d98a00; }
+        body.dark { --amber: #f0b44a; }
+        body, button, input, select, textarea { font-family: "Outfit", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; letter-spacing: .01em; }
+        .ic { display: inline-block; width: 1em; height: 1em; flex: none; background: currentColor; vertical-align: -.15em; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+        .ic-dice{-webkit-mask-image:var(--i-dice);mask-image:var(--i-dice);}.ic-shuffle{-webkit-mask-image:var(--i-shuffle);mask-image:var(--i-shuffle);}.ic-undo{-webkit-mask-image:var(--i-undo);mask-image:var(--i-undo);}.ic-close{-webkit-mask-image:var(--i-close);mask-image:var(--i-close);}.ic-plus{-webkit-mask-image:var(--i-plus);mask-image:var(--i-plus);}.ic-ball{-webkit-mask-image:var(--i-ball);mask-image:var(--i-ball);}.ic-warn{-webkit-mask-image:var(--i-warn);mask-image:var(--i-warn);}.ic-coin{-webkit-mask-image:var(--i-coin);mask-image:var(--i-coin);}.ic-user{-webkit-mask-image:var(--i-user);mask-image:var(--i-user);}.ic-users{-webkit-mask-image:var(--i-users);mask-image:var(--i-users);}.ic-crown{-webkit-mask-image:var(--i-crown);mask-image:var(--i-crown);}.ic-moon{-webkit-mask-image:var(--i-moon);mask-image:var(--i-moon);}.ic-sun{-webkit-mask-image:var(--i-sun);mask-image:var(--i-sun);}.ic-phone{-webkit-mask-image:var(--i-phone);mask-image:var(--i-phone);}.ic-camera{-webkit-mask-image:var(--i-camera);mask-image:var(--i-camera);}.ic-survey{-webkit-mask-image:var(--i-survey);mask-image:var(--i-survey);}.ic-clock{-webkit-mask-image:var(--i-clock);mask-image:var(--i-clock);}.ic-refresh{-webkit-mask-image:var(--i-refresh);mask-image:var(--i-refresh);}.ic-sliders{-webkit-mask-image:var(--i-sliders);mask-image:var(--i-sliders);}.ic-cal{-webkit-mask-image:var(--i-cal);mask-image:var(--i-cal);}
+        .settings-btn .ic { width: 19px; height: 19px; vertical-align: middle; }
+        .settings-btn.survey-btn .ic { width: 19px; height: 19px; }
+        .today-btn .ic { width: 17px; height: 17px; vertical-align: middle; }
+        #ptr .ic { width: 18px; height: 18px; }
+        .settings-btn.refresh-btn .ic { width: 18px; height: 18px; }
+        .view-tab-btn.warn::after { content: ""; width: 11px; height: 11px; top: -4px; right: -1px; background: var(--amber); -webkit-mask: var(--i-warn) center/contain no-repeat; mask: var(--i-warn) center/contain no-repeat; font-size: 0; }
+        .rc-top::after { content: ""; width: 13px; height: 13px; background: var(--amber); -webkit-mask: var(--i-crown) center/contain no-repeat; mask: var(--i-crown) center/contain no-repeat; font-size: 0; }
+        .cal-day .cal-warn, .cal-day .nv-ic .cal-warn { color: var(--amber); font-size: 11px; }
+        .cal-day .minus-mark, .cal-day .nv-ic .minus-mark { color: #d4605a; font-size: 11px; }
+        .vt-tx { font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+        .nv-chip .ic { width: 9px; height: 9px; margin-right: 2px; vertical-align: -1px; }
+        .nv-ttl .ic, .nv-share .ic { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
+        .month-label { font-weight: 700; letter-spacing: .04em; }
+        .cal-weekday { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+        /* カレンダー: 予定は浮き、選んだ日は凹む(予定は凹みの上にさらに浮く) */
+        .cal-grid.nv .cal-day { border-top: none; border-radius: 14px; margin: 1px; min-height: 76px; transition: box-shadow .18s ease, background .18s ease; }
+        .cal-grid.nv .cal-day.selected, .cal-grid.nv .cal-day.selected:active { background: transparent; box-shadow: var(--sink); }
+        .cal-grid.nv .nv-chip:not(.nv-lane):not(.nv-more) { border-radius: 5px; box-shadow: var(--raise-xs); margin: 0 1px; }
+        .cal-grid.nv .cal-day.selected .nv-chip:not(.nv-lane):not(.nv-more) { box-shadow: -1px -1px 2px var(--hl), 2px 2.5px 4px var(--sh); }
+        .cal-grid.nv .nv-chip.ring { background: var(--bg); box-shadow: var(--raise-xs), inset 0 0 0 1px var(--plan-ink, var(--ink-3)); }
+        .cal-grid.nv .nv-chip.ring.cont { opacity: .85; }
+        .cal-grid.nv .cal-day.today .nv-d { background: var(--bg); color: var(--ink); font-weight: 800; box-shadow: var(--raise-sm); }
+        .cal-grid.nv .cal-day.selected.today .nv-d { box-shadow: var(--raise-sm); }
+        .nv-d { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .nv-empty { color: var(--ink-3); letter-spacing: .06em; }
+
+        /* ===== スイッチ: 溝は凹、つまみは凸。ONは溝に色が差し、つまみのマークが色づく ===== */
+        body .event-toggle input[type="checkbox"], body .settings-row.checkbox-row input[type="checkbox"], body .param-visibility-toggle input[type="checkbox"] {
+            width: 46px; height: 28px; background: var(--bg); box-shadow: var(--sink); transition: background-color .25s, box-shadow .25s; }
+        body .event-toggle input[type="checkbox"]::after, body .settings-row.checkbox-row input[type="checkbox"]::after, body .param-visibility-toggle input[type="checkbox"]::after {
+            top: 4px; left: 4px; width: 20px; height: 20px; background: var(--bg); box-shadow: -1.5px -1.5px 3px var(--hl), 2px 2px 5px var(--sh); transition: transform .28s cubic-bezier(.3,1.3,.5,1); }
+        body .event-toggle input[type="checkbox"]:checked, body .settings-row.checkbox-row input[type="checkbox"]:checked, body .param-visibility-toggle input[type="checkbox"]:checked {
+            background: color-mix(in srgb, var(--accent) 38%, var(--bg)); box-shadow: var(--sink), inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+        body .event-toggle input[type="checkbox"]:checked::after, body .settings-row.checkbox-row input[type="checkbox"]:checked::after, body .param-visibility-toggle input[type="checkbox"]:checked::after { transform: translateX(18px); }
+        #eventToggle::before, #planToggle::before { content: ""; position: absolute; z-index: 1; top: 8px; left: 8px; width: 12px; height: 12px; background: var(--ink-3); opacity: .75; pointer-events: none;
+            -webkit-mask: var(--i) center/contain no-repeat; mask: var(--i) center/contain no-repeat; transition: transform .28s cubic-bezier(.3,1.3,.5,1), background-color .25s, opacity .25s; }
+        #eventToggle { --i: var(--i-ball); } #planToggle { --i: var(--i-plus); }
+        #eventToggle:checked::before, #planToggle:checked::before { transform: translateX(18px); background: var(--accent); opacity: 1; }
+        #planToggle:checked::before { transform: translateX(18px) rotate(45deg); }
+        /* ===== 下の予定カード: 浮いたカード、色の帯は溝に埋まる ===== */
+        .nv-row { background: var(--bg); border: none; border-radius: 18px; padding: 11px 14px 11px 12px; margin: 0 4px 12px; box-shadow: var(--raise); }
+        .nv-row.editing { box-shadow: var(--sink); }
+        .nv-row.editing.has-form { border-radius: 18px 18px 0 0; }
+        .nv-row:active { box-shadow: var(--sink); }
+        .nv-time { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+        .nv-bar { width: 6px; border-radius: 6px; background: var(--plan-gray, var(--pcbg0)); box-shadow: inset 1px 1px 2px var(--sh), inset -1px -1px 2px var(--hl), inset 0 0 0 5px color-mix(in srgb, var(--plan-ink, var(--ink-3)) 55%, transparent); }
+        .nv-ttl { letter-spacing: .02em; }
+        .nv-empty { padding: 14px; text-align: center; border-radius: 16px; box-shadow: var(--sink); }
+
+        /* ===== v49: ヘッダー・日付行・バレータスク画面の整理(凹凸) ===== */
+        .header-btns { flex: none; gap: 2px; }
+        .settings-btn.mode-select { font-size: 12px; padding: 0 18px 0 6px; min-width: 62px; text-overflow: clip; }
+        .selected-date-label { flex-wrap: nowrap; white-space: nowrap; }
+        .selected-date-label .sd-main { flex: none; white-space: nowrap; font-size: 20px; }
+        .selected-date-label .sd-sub { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .selected-date-label .sd-caret { flex: none; margin-left: 0; }
+        body.nv-full #nvBack, body.nv-full #nvBack .nv-step { display: flex !important; align-items: center; gap: 10px; }
+        body.nv-full #nvBack { margin: 6px 2px 14px; }
+        #nvBack .today-btn { min-height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; box-shadow: var(--raise-sm); }
+        #nvBack .nv-step .today-btn { width: 38px; padding: 0; font-size: 18px; border-radius: 50%; }
+        #nvBack .today-btn:active { box-shadow: var(--sink); }
+        #nvBack .today-btn .ic { width: 15px; height: 15px; margin-right: 4px; vertical-align: -2px; }
+        /* 追加・取込 */
+        #memberView .add-row { display: flex; align-items: center; gap: 12px; margin: 4px 2px 14px; }
+        #memberView .add-row input { flex: 1 1 auto; width: auto; min-height: 42px; height: 42px; padding: 0 16px; border: none; border-radius: 21px; background: var(--bg); box-shadow: var(--sink); font-size: 14px; }
+        #memberView .add-row .add-btn, #memberView .add-row .qa-btn { flex: none; width: 42px; height: 42px; min-height: 42px; padding: 0; border: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); color: var(--ink); box-shadow: var(--raise-sm); }
+        #memberView .add-row .add-btn { color: var(--accent); }
+        #memberView .add-row .ic { width: 19px; height: 19px; vertical-align: 0; }
+        #memberView .add-row button:active { box-shadow: var(--sink); }
+        /* ツールバー: 4つを同じ幅・同じ高さで1行 */
+        #memberView .input-toolbar { flex-direction: column; align-items: stretch; gap: 10px; margin: 0 2px 14px; padding: 0; }
+        #memberView .input-toolbar .status-badge { align-self: flex-start; }
+        #memberView .input-toolbar .bulk-action-row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; width: 100%; }
+        #memberView .input-toolbar .bulk-action-row button { min-height: 38px; padding: 0 4px; font-size: 13px; font-weight: 700; border: none; border-radius: 19px; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-sm); white-space: nowrap; }
+        #memberView .input-toolbar .bulk-action-row button.mv-act.line { background: var(--bg); color: var(--line-brand, #06a355); }
+        #memberView .input-toolbar .bulk-action-row button:active { box-shadow: var(--sink); }
+        /* 状態の帯: 凹んだ皿の中に、色つきの記号キー(凸)と名前チップ(凸) */
+        #memberView .confirm-group, #memberView .confirm-group.come, #memberView .confirm-group.notcome, #memberView .confirm-group.pending, #memberView .confirm-group.unconfirmed {
+            background: var(--bg); box-shadow: var(--sink); border-radius: 22px; padding: 8px; gap: 8px; margin: 0 2px 14px; overflow: visible; }
+        #memberView button.confirm-group-title, #memberView button.confirm-group-title.come, #memberView button.confirm-group-title.notcome, #memberView button.confirm-group-title.pending, #memberView button.confirm-group-title.unconfirmed {
+            width: 46px; min-height: 54px; height: 54px; align-self: flex-start; border-radius: 16px; background: var(--bg); box-shadow: var(--raise-sm); }
+        #memberView button.confirm-group-title.come { color: var(--come); }
+        #memberView button.confirm-group-title.notcome { color: var(--notcome); }
+        #memberView button.confirm-group-title.pending { color: var(--pending); }
+        #memberView button.confirm-group-title.unconfirmed { color: var(--unconf); }
+        #memberView button.confirm-group-title .gt-sym { font-size: 21px; }
+        #memberView button.confirm-group-title .gt-n { color: var(--ink-3); opacity: 1; font-size: 10px; }
+        #memberView button.confirm-group-title.armed { box-shadow: var(--sink); }
+        #memberView button.confirm-group-title:active { filter: none; box-shadow: var(--sink); }
+        #memberView .confirm-group .mv-group-body { padding: 2px 2px 2px 0; align-items: center; }
+        #memberView .confirm-group .confirm-name-chip, #memberView .confirm-group.pending .confirm-name-chip, #memberView .confirm-group.unconfirmed .confirm-name-chip {
+            background: var(--bg); color: var(--ink); border: none; box-shadow: var(--raise-xs); min-height: 34px; padding: 5px 13px; font-weight: 600; }
+        #memberView .confirm-group .confirm-name-chip.chip-unlinked { box-shadow: var(--raise-xs), inset 0 0 0 1px var(--ink-3); }
+        #memberView .confirm-group .mv-chip.sel, #memberView .confirm-group .mv-chip.open { box-shadow: var(--sink); color: var(--accent); }
+        #memberView .confirm-group .mv-chip.sel::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 2px; }
+        #memberView .confirm-group .confirm-name-chip.me { box-shadow: var(--raise-xs), inset 0 0 0 1.5px var(--accent) !important; }
+        #memberView .confirm-group .confirm-name-chip.me::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 2px; }
+        #memberView .confirm-group .confirm-empty-note { padding: 0 4px; color: var(--ink-3); }
+        body.dark #memberView .confirm-group .confirm-name-chip, body.dark #memberView .confirm-group.pending .confirm-name-chip, body.dark #memberView .confirm-group.unconfirmed .confirm-name-chip { background: var(--bg); color: var(--ink); border-color: transparent; }
+        body.dark #memberView .confirm-group .confirm-name-chip.chip-unlinked { border: 1px dashed var(--ink-3); }
+
+        /* ===== v50: アンケート・チーム分けをシンプルに / 選択は色の反転 ===== */
+        .sv-head h2 .ic { width: 20px; height: 20px; margin-right: 4px; }
+        .sv-close { width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+        .sv-close .ic { width: 16px; height: 16px; }
+        .sv-who { display: inline-flex; align-items: center; gap: 4px; margin: 0 2px 14px; padding: 6px 14px; border-radius: 999px; box-shadow: var(--sink); font-size: 15px; }
+        .sv-who .ic { width: 15px; height: 15px; color: var(--ink-3); }
+        .sv-tools { display: flex; gap: 10px; margin: 0 2px 14px; }
+        .sv-tools .sv-sort { flex: 1; margin: 0; min-width: 0; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+        .sv-tools .sv-sort .ic { width: 15px; height: 15px; }
+        .sv-tag { width: 9px; height: 9px; padding: 0; border-radius: 50%; background: var(--pending); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pending) 25%, transparent); font-size: 0; }
+        .sv-ppl { font-size: 12px; font-weight: 700; padding: 2px 10px; }
+        .sv-ppl.un { background: var(--unconf-soft); color: var(--unconf-ink); }
+        .sv-ppl.pd { background: var(--pending-soft); color: var(--pending-ink); }
+        .sv-btn { min-height: 54px; }
+        .sv-btn .sv-sym { font-size: 26px; }
+        .sv-btn.come { color: var(--come); } .sv-btn.notcome { color: var(--notcome); } .sv-btn.pending { color: var(--pending); }
+        .sv-btn.sel, .sv-btn.sel.come, .sv-btn.sel.notcome, .sv-btn.sel.pending { box-shadow: var(--raise-sm); color: #fff; }
+        .sv-btn.sel.come { background: var(--come); } .sv-btn.sel.notcome { background: var(--notcome); } .sv-btn.sel.pending { background: var(--pending); }
+        /* メンバー選択: 記号キーは色が反転、名前は色つきに(黒くしない) */
+        #memberView button.confirm-group-title.armed, #memberView button.confirm-group-title:active { box-shadow: var(--raise-sm); filter: none; color: #fff; }
+        #memberView button.confirm-group-title.armed .gt-n, #memberView button.confirm-group-title:active .gt-n { color: rgba(255,255,255,.85); }
+        #memberView button.confirm-group-title.come.armed, #memberView button.confirm-group-title.come:active { background: var(--come); }
+        #memberView button.confirm-group-title.notcome.armed, #memberView button.confirm-group-title.notcome:active { background: var(--notcome); }
+        #memberView button.confirm-group-title.pending.armed, #memberView button.confirm-group-title.pending:active { background: var(--pending); }
+        #memberView button.confirm-group-title.unconfirmed.armed, #memberView button.confirm-group-title.unconfirmed:active { background: var(--unconf); }
+        #memberView .confirm-group .mv-chip.sel, #memberView .confirm-group .mv-chip.open, body.dark #memberView .confirm-group .mv-chip.sel {
+            background: var(--accent); color: #fff; border-color: transparent; box-shadow: var(--raise-xs); }
+        #memberView .confirm-group .mv-chip.sel::before, #memberView .confirm-group .mv-chip.sel::after { content: none; display: none; }
+        /* チーム分けの操作: 1行・記号 */
+        .team-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 10px; margin: 0 2px 12px; }
+        .team-toolbar .team-controls { flex: none; display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0 4px 0 12px; min-height: 42px; height: 42px; border: none; border-radius: 21px; background: var(--bg); box-shadow: var(--sink); }
+        .team-toolbar .team-controls label { display: inline-flex; color: var(--ink-3); }
+        .team-toolbar .team-controls .ic { width: 17px; height: 17px; }
+        .team-toolbar .team-controls input[type="number"] { width: 38px; height: 34px; min-height: 34px; padding: 0; border: none; background: transparent; box-shadow: none; font-size: 16px; font-weight: 800; }
+        .team-toolbar .random-toggle { flex: none; width: 42px; height: 42px; min-height: 42px; padding: 0; margin: 0; border: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); color: var(--ink-3); box-shadow: var(--raise-sm); cursor: pointer; transition: background-color .2s, color .2s; }
+        .team-toolbar .random-toggle .ic { width: 20px; height: 20px; }
+        .team-toolbar .random-toggle:has(input:checked) { background: var(--accent); color: #fff; }
+        .team-toolbar .team-split-btn, .team-toolbar .team-rerun-btn { flex: 1 1 auto; width: auto; min-width: 0; height: 42px; min-height: 42px; margin: 0; padding: 0 12px; border: none; border-radius: 21px; background: var(--accent); color: #fff; box-shadow: var(--raise-sm); display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; }
+        .team-toolbar .team-rerun-btn { background: var(--bg); color: var(--ink-2); }
+        .team-toolbar .team-rerun-btn.team-reset-btn { flex: none; width: 42px; padding: 0; border-radius: 50%; }
+        .team-toolbar .team-split-btn[style*="none"], .team-toolbar .team-rerun-btn[style*="none"] { display: none !important; }
+        .team-toolbar .team-split-btn .ic, .team-toolbar .team-rerun-btn .ic { width: 19px; height: 19px; }
+        .team-toolbar button:active { box-shadow: var(--sink); }
+
+        /* ===== v51: 日付横の薄文字を消す / 状態・追加を1行に ===== */
+        .selected-date-label .sd-sub { display: none; }
+        #memberView .mv-top { display: flex; align-items: center; gap: 8px; margin: 4px 2px 14px; }
+        #memberView .mv-top .add-row { flex: 1 1 auto; min-width: 0; margin: 0; gap: 8px; }
+        #memberView .mv-top .add-row input { min-width: 0; padding: 0 14px; }
+        #memberView .mv-top .mv-state { flex: none; margin: 0; padding: 0; }
+        #memberView .mv-top .mv-state-text { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: 800; color: var(--come); background: var(--bg); box-shadow: var(--raise-xs); }
+        #memberView .mv-top .status-badge { flex: none; margin: 0; padding: 4px 10px; font-size: 11px; white-space: nowrap; }
+
+        /* ===== v52: 閲覧モードは1行 / 出欠の帯を状態色でうすく塗る ===== */
+        #memberView .mv-head { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; }
+        #memberView .mv-head > .mv-top, #memberView .mv-head > .input-toolbar { flex: 1 1 100%; min-width: 0; }
+        body.viewer-mode #memberView .mv-head { flex-wrap: nowrap; margin: 4px 2px 14px; }
+        body.viewer-mode #memberView .mv-head > .mv-top { flex: none; margin: 0; }
+        body.viewer-mode #memberView .mv-head > .input-toolbar { flex: 1 1 auto; margin: 0; }
+        body.viewer-mode #memberView .input-toolbar .bulk-action-row { gap: 8px; }
+        #memberView .confirm-group.come { background: color-mix(in srgb, var(--come) 14%, var(--bg)); }
+        #memberView .confirm-group.notcome { background: color-mix(in srgb, var(--notcome) 14%, var(--bg)); }
+        #memberView .confirm-group.pending { background: color-mix(in srgb, var(--pending) 16%, var(--bg)); }
+        #memberView .confirm-group.unconfirmed { background: color-mix(in srgb, var(--unconf) 14%, var(--bg)); }
+
+        /* ===== v53: 落ち着いた形・色に(丸みと塗りを控えめに) ===== */
+        #memberView .confirm-group, #memberView .confirm-group.come, #memberView .confirm-group.notcome, #memberView .confirm-group.pending, #memberView .confirm-group.unconfirmed { border-radius: 14px; padding: 7px; gap: 7px; }
+        #memberView .confirm-group.come { background: color-mix(in srgb, var(--come) 7%, var(--bg)); }
+        #memberView .confirm-group.notcome { background: color-mix(in srgb, var(--notcome) 7%, var(--bg)); }
+        #memberView .confirm-group.pending { background: color-mix(in srgb, var(--pending) 8%, var(--bg)); }
+        #memberView .confirm-group.unconfirmed { background: color-mix(in srgb, var(--unconf) 7%, var(--bg)); }
+        #memberView button.confirm-group-title, #memberView button.confirm-group-title.come, #memberView button.confirm-group-title.notcome, #memberView button.confirm-group-title.pending, #memberView button.confirm-group-title.unconfirmed { border-radius: 10px; }
+        #memberView .confirm-group .confirm-name-chip, #memberView .confirm-group.pending .confirm-name-chip, #memberView .confirm-group.unconfirmed .confirm-name-chip { border-radius: 10px; min-height: 32px; padding: 4px 12px; font-weight: 600; }
+        #memberView .input-toolbar .bulk-action-row button { border-radius: 12px; font-weight: 600; }
+        #memberView .add-row input { border-radius: 12px; }
+        #memberView .add-row .add-btn, #memberView .add-row .qa-btn { border-radius: 12px; }
+        #memberView .mv-top .status-badge { border-radius: 8px; }
+        #memberView .mv-top .mv-state-text { border-radius: 10px; }
+        #nvBack .today-btn { border-radius: 12px; font-weight: 600; }
+        #nvBack .nv-step .today-btn { border-radius: 12px; }
+        .nv-row { border-radius: 14px; }
+        .team-toolbar .team-controls, .team-toolbar .team-split-btn, .team-toolbar .team-rerun-btn { border-radius: 12px; }
+        .team-toolbar .random-toggle, .team-toolbar .team-rerun-btn.team-reset-btn { border-radius: 12px; }
+        .sv-card { border-radius: 14px; } .sv-btn { border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -2169,13 +2364,13 @@
     <header class="app-header">
         <h1 class="app-title"><span class="total-balance dev-only" id="totalBalance" title="精算で回収済みの金額 − コート代の合計(薄字は従来の予測収支)"></span></h1>
         <nav class="header-btns">
-            <button class="settings-btn refresh-btn" id="refreshBtn" onclick="refreshApp()" title="最新の状態に更新" aria-label="更新">↻</button>
-            <button class="settings-btn admin-only" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定">⚙️</button>
-            <button class="settings-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="ライト/ダーク切替(開発モード中は逆)" aria-label="テーマ切替">☀️</button>
-            <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答">📝<span class="sv-badge" id="surveyBadge"></span></button>
+            <button class="settings-btn refresh-btn" id="refreshBtn" onclick="refreshApp()" title="最新の状態に更新" aria-label="更新"><i class="ic ic-refresh"></i></button>
+            <button class="settings-btn admin-only" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定"><i class="ic ic-sliders"></i></button>
+            <button class="settings-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="ライト/ダーク切替(開発モード中は逆)" aria-label="テーマ切替"><i class="ic ic-sun"></i></button>
+            <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge" id="surveyBadge"></span></button>
             <select class="settings-btn mode-select real-admin-only" id="modeSelect" onchange="setViewMode(this.value)" title="モード(管理・閲覧)" aria-label="モード">
-                <option value="admin">管理</option>
-                <option value="view">閲覧</option>
+                <option value="admin">Admin</option>
+                <option value="view">View</option>
             </select>
         </nav>
     </header>
@@ -2184,8 +2379,8 @@
     <div id="surveyOv" role="dialog" aria-label="出欠の回答">
         <div class="sv-wrap">
             <div class="sv-head">
-                <h2>📝 出欠の回答</h2>
-                <button type="button" class="sv-close" onclick="closeSurvey()">閉じる</button>
+                <h2><i class="ic ic-survey"></i> RSVP</h2>
+                <button type="button" class="sv-close" onclick="closeSurvey()" aria-label="閉じる"><i class="ic ic-close"></i></button>
             </div>
             <div id="surveyBody"></div>
         </div>
@@ -2483,17 +2678,14 @@
         <div class="cal-grid" id="calGrid"></div>
         <div class="legend" id="calLegend">
             <div class="cal-hbtns">
-                <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示">🕐</button>
-                <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日">🏐</button>
-                <button class="today-btn" onclick="jumpToToday()">今日</button>
+                <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示"><i class="ic ic-clock"></i></button>
+                <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日"><i class="ic ic-ball"></i></button>
+                <button class="today-btn" onclick="jumpToToday()">Today</button>
             </div>
-            <div class="cal-wsrow" id="calWsRow" title="週の始まり" aria-label="週の始まり"><span>週</span>
-                <button type="button" class="ws-btn" id="wsBtn0" onclick="setWeekStart(0)" aria-pressed="false" aria-label="日曜始まり">日</button>
-                <button type="button" class="ws-btn" id="wsBtn1" onclick="setWeekStart(1)" aria-pressed="false" aria-label="月曜始まり">月</button></div>
         </div>
     </section>
 
-    <div id="ptr" aria-hidden="true"><span>↻</span></div>
+    <div id="ptr" aria-hidden="true"><span><i class="ic ic-refresh"></i></span></div>
 
     <div class="day-bar">
         <div class="selected-date-label" id="selectedDateLabel" onclick="toggleCalendar()" role="button" tabindex="0" aria-label="カレンダーを開閉" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCalendar();}"></div>
@@ -2535,8 +2727,8 @@
         </div>
         <div class="op-scope admin-only" id="opScope" role="radiogroup" aria-label="保存先">
             <span class="op-colors-lbl">保存</span>
-            <button type="button" class="op-sc on admin-only" data-s="shared" role="radio" onclick="setPlanScope('shared')">共有</button>
-            <button type="button" class="op-sc" data-s="local" role="radio" onclick="setPlanScope('local')">この端末のみ📱</button>
+            <button type="button" class="op-sc on admin-only" data-s="shared" role="radio" onclick="setPlanScope('shared')">Shared</button>
+            <button type="button" class="op-sc" data-s="local" role="radio" onclick="setPlanScope('local')">Local <i class="ic ic-phone"></i></button>
         </div>
         <div class="op-share admin-only" id="opShare">
             <button type="button" class="op-share-tg" id="opShareTg" onclick="togglePlanShareOpen()" aria-expanded="false"></button>
@@ -2552,27 +2744,22 @@
 
     <div id="nvDayPanel"></div>
 
-    <div id="nvBack"><button type="button" class="today-btn" onclick="closeVolleyFull()">‹ カレンダーに戻る</button><span class="nv-step"><button type="button" class="today-btn" onclick="moveVolleyDate(-1)" aria-label="前のバレー予約日">‹ 前</button><button type="button" class="today-btn" onclick="moveVolleyDate(1)" aria-label="次のバレー予約日">次 ›</button></span></div>
+    <div id="nvBack"><button type="button" class="today-btn" onclick="closeVolleyFull()" aria-label="カレンダーに戻る"><i class="ic ic-cal"></i> Calendar</button><span class="nv-step"><button type="button" class="today-btn" onclick="moveVolleyDate(-1)" aria-label="前のバレー予約日">‹</button><button type="button" class="today-btn" onclick="moveVolleyDate(1)" aria-label="次のバレー予約日">›</button></span></div>
 
     <div id="eventContent">
 
         <div class="view-tabs-wrap">
             <div class="view-tabs">
-                <button class="view-tab-btn past" id="tabReserveBtn" onclick="switchView('reserve', true)"><span class="vt-no">1</span><span class="vt-tx">予約</span></button>
-                <button class="view-tab-btn active" id="tabMemberBtn" onclick="switchView('member', true)"><span class="vt-no">2</span><span class="vt-tx">メンバー</span></button>
-                <button class="view-tab-btn" id="tabTeamsBtn" onclick="onTeamsTabClick()"><span class="vt-no">3</span><span class="vt-tx">チーム</span></button>
-                <button class="view-tab-btn" id="tabSettleBtn" onclick="switchView('settle', true)"><span class="vt-no">4</span><span class="vt-tx">精算</span></button>
-                <button class="view-tab-btn" id="tabVideosBtn" onclick="switchView('videos', true)"><span class="vt-no">5</span><span class="vt-tx">動画</span></button>
+                <button class="view-tab-btn past" id="tabReserveBtn" onclick="switchView('reserve', true)"><span class="vt-no">1</span><span class="vt-tx">Book</span></button>
+                <button class="view-tab-btn active" id="tabMemberBtn" onclick="switchView('member', true)"><span class="vt-no">2</span><span class="vt-tx">Roster</span></button>
+                <button class="view-tab-btn" id="tabTeamsBtn" onclick="onTeamsTabClick()"><span class="vt-no">3</span><span class="vt-tx">Teams</span></button>
+                <button class="view-tab-btn" id="tabSettleBtn" onclick="switchView('settle', true)"><span class="vt-no">4</span><span class="vt-tx">Pay</span></button>
+                <button class="view-tab-btn" id="tabVideosBtn" onclick="switchView('videos', true)"><span class="vt-no">5</span><span class="vt-tx">Video</span></button>
             </div>
         </div>
 
         <!-- ===== メンバー(入力+確認 統合) ===== -->
         <div id="memberView">
-            <div class="add-row admin-only">
-                <input type="text" id="newName" maxlength="4" placeholder="新メンバー" onkeydown="if(event.key==='Enter') addMember()">
-                <button class="add-btn" onclick="addMember()">追加</button>
-                <button class="qa-btn" onclick="toggleShotPanel()">スクショ取込</button>
-            </div>
 
             <div class="copy-panel admin-only" id="shotPanel">
                 <h3>LINEの投票スクショから追加</h3>
@@ -2589,19 +2776,29 @@
                 </div>
             </div>
 
-            <div class="mv-state" id="mvState">
-                <span class="mv-state-text" id="attentionText"></span>
+            <div class="mv-head">
+            <div class="mv-top">
+                <div class="mv-state" id="mvState">
+                    <span class="mv-state-text" id="attentionText"></span>
+                </div>
+                <span class="status-badge" id="statusBadgeConfirm"></span>
+            <div class="add-row admin-only">
+                    <input type="text" id="newName" maxlength="4" placeholder="新メンバー" onkeydown="if(event.key==='Enter') addMember()">
+                    <button class="add-btn" onclick="addMember()" aria-label="追加"><i class="ic ic-plus"></i></button>
+                    <button class="qa-btn" onclick="toggleShotPanel()" aria-label="スクショ取込"><i class="ic ic-camera"></i></button>
+                </div>
             </div>
             <div class="confirm-count-grid" id="confirmCountGrid" style="display:none;"></div>
 
             <div class="input-toolbar">
-                <span class="status-badge" id="statusBadgeConfirm"></span>
                 <div class="bulk-action-row">
                     <button type="button" class="admin-only" onclick="selectAllBulk(true)">全選択</button>
-                    <button type="button" class="admin-only" onclick="selectAllBulk(false)">全解除</button>
-                    <button type="button" class="mv-act follow" id="followBtn" onclick="copyFollowText()">フォロー文</button>
-                    <button type="button" class="mv-act line" onclick="copyForLine()">LINE用コピー</button>
+                    <button type="button" class="admin-only" onclick="selectAllBulk(false)">解除</button>
+                    <button type="button" class="mv-act follow admin-only" id="followBtn" onclick="copyFollowText()">フォロー</button>
+                    <button type="button" class="mv-act line admin-only" onclick="copyForLine()">LINE</button>
                 </div>
+            </div>
+
             </div>
 
             <div id="confirmGroups"></div>
@@ -2613,16 +2810,16 @@
 
             <div class="team-toolbar">
                 <div class="team-controls">
-                    <label for="teamCountInput">チーム数</label>
+                    <label for="teamCountInput" aria-label="チーム数"><i class="ic ic-users"></i></label>
                     <input type="number" id="teamCountInput" min="2" max="8" value="2">
                 </div>
-                <label class="param-visibility-toggle random-toggle" title="ONにすると、パラメータを使わずランダムに分けます">
+                <label class="param-visibility-toggle random-toggle" title="ランダム(パラメータを使わず分ける)">
                     <input type="checkbox" id="ignoreParamsToggle" onchange="toggleIgnoreParams()">
-                    <span>ランダム</span>
+                    <span><i class="ic ic-dice"></i></span>
                 </label>
-                <button class="team-split-btn" id="teamSplitBtn" onclick="runTeamSplit()">チーム分け</button>
-                <button class="team-rerun-btn" id="teamRerunBtn" onclick="runTeamSplit()" title="過去と重複しない組み合わせを探します" style="display:none;">もう一度分ける<span id="dupMark"></span></button>
-                <button class="team-rerun-btn team-reset-btn" id="teamResetBtn" onclick="resetTeamSplit()" title="結果・過去の分け方の記録・予測をリセット" style="display:none;">リセット</button>
+                <button class="team-split-btn" id="teamSplitBtn" onclick="runTeamSplit()" aria-label="チーム分け"><i class="ic ic-shuffle"></i></button>
+                <button class="team-rerun-btn" id="teamRerunBtn" onclick="runTeamSplit()" title="もう一度分ける(過去と重複しない組み合わせ)" aria-label="もう一度分ける" style="display:none;"><i class="ic ic-shuffle"></i><span id="dupMark"></span></button>
+                <button class="team-rerun-btn team-reset-btn" id="teamResetBtn" onclick="resetTeamSplit()" title="リセット" aria-label="リセット" style="display:none;"><i class="ic ic-undo"></i></button>
             </div>
 
             <div class="team-legend" id="teamLegend" style="display:none;">
@@ -2659,7 +2856,7 @@
             <div class="rv-chips" id="rvTimeChips"></div>
             <div class="rv-add-row">
                 <button type="button" class="rv-add" id="rvAddBtn" onclick="addReservation()" disabled>この日に予約を追加</button>
-                <button type="button" class="rv-shot-toggle" onclick="toggleRvShotPanel()">📷 スクショ取込</button>
+                <button type="button" class="rv-shot-toggle" onclick="toggleRvShotPanel()"><i class="ic ic-camera"></i> Import</button>
             </div>
             <div class="rvs-panel" id="rvShotPanel" style="display:none;">
                 <div class="rvs-note-s">日付・時間だけ読み取ります。場所・コート・料金は手動で選びます。</div>
@@ -2767,6 +2964,9 @@
         };
 
         const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+        const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const IC = (n) => `<i class="ic ic-${n}"></i>`;
         const WEEK_START_KEY = "attendance_week_start_v1";
         let weekStartDay = 0;   // 0=日曜始まり / 1=月曜始まり
         try { weekStartDay = localStorage.getItem(WEEK_START_KEY) === "1" ? 1 : 0; } catch (e) { /* ignore */ }
@@ -2876,7 +3076,7 @@
             tops = tops || rosterTopValues();
             const eff = effectiveParams(m.params || {});
             return "補正後: " + ROLE_PARAM_DEFS.map(d =>
-                `${d.label}${fmtParam(eff[d.key])}${eff[d.key] === tops[d.key] ? "👑" : ""}`).join(" / ");
+                `${d.label}${fmtParam(eff[d.key])}${eff[d.key] === tops[d.key] ? IC("crown") : ""}`).join(" / ");
         }
         // 誰かの値が変わるとトップも変わるので、全員分を更新する
         function refreshRosterEffective() {
@@ -4759,7 +4959,7 @@
             const single = plansOn(key).filter(x => x.first && x.last);
             const adAll = single.filter(x => !planTimed(x.p)).map(chipOf);   // 終日は必ず一番上
             const chips = [];
-            if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">🏐${n}名</span>`); }
+            if (events[key]) { const n = countComing(key); chips.push(`<span class="nv-chip" style="background:var(${lv[getStatusLevel(n)]});color:var(--ink)">${IC("ball")}${n}</span>`); }
             single.filter(x => planTimed(x.p)).forEach(x => chips.push(chipOf(x)));
             const AD = lay ? (lay.ad || 0) : 0;
             const topAd = adAll.slice(0, AD), rest = adAll.slice(AD).concat(chips);
@@ -4768,10 +4968,10 @@
             const slots = 3 - AD - nl, total = rest.length + hid;
             let shown;
             if (total <= slots) shown = rest;
-            else { const keep = Math.max(0, slots - 1); shown = rest.slice(0, keep); shown.push(`<span class="nv-more">他${total - keep}件</span>`); }
+            else { const keep = Math.max(0, slots - 1); shown = rest.slice(0, keep); shown.push(`<span class="nv-more">+${total - keep}</span>`); }
             shown = topAd.concat(new Array(AD - topAd.length).fill('<span class="nv-lane"></span>'), new Array(nl).fill('<span class="nv-lane"></span>'), shown);
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
-            const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">💰</span>` : "";
+            const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">${IC("coin")}</span>` : "";
             cell.innerHTML = `<div class="nv-top"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${shown.join("")}`;
             cell.dataset.key = key;
             cell.onclick = () => {
@@ -4834,21 +5034,21 @@
             const rs = reservations[selectedDate] || [];
             if (events[selectedDate]) {
                 const pr = rs.length ? parseTimeRangeMin(rs[0].time) : null;
-                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl">🏐 バレー ${countComing(selectedDate)}名</div>${rs.length ? `<div class="nv-sub">${escapeHtml(rs.map(r => `${r.time} ${r.place}${r.court || ""}`).join(" / "))}</div>` : ""}</div></div>` });
+                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl">${IC("ball")}Volley · ${countComing(selectedDate)}</div>${rs.length ? `<div class="nv-sub">${escapeHtml(rs.map(r => `${r.time} ${r.place}${r.court || ""}`).join(" / "))}</div>` : ""}</div></div>` });
             }
             plansOn(selectedDate).forEach(({ p, first, last }) => {
                 const s = first ? parseHM(p.start) : null;
                 const t1 = first ? (p.start || "終日") : "続き", t2 = last && p.end ? p.end : "";
                 const editable = isAdmin() || !!p.local;
                 const editing = planPanelIsOpen() && planEditId === p.id;
-                rows.push({ ad: planTimed(p) ? 1 : 0, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? "📱" : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">👥 ${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+                rows.push({ ad: planTimed(p) ? 1 : 0, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</div>${p.endDate ? `<div class="nv-sub">${escapeHtml(planRangeText(p))}</div>` : ""}${shareText(p) ? `<div class="nv-share">${IC("users")}${escapeHtml(shareText(p))}</div>` : ""}${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
             });
             rows.sort((a, b) => a.ad - b.ad || a.s - b.s);   // 終日の予定が必ず一番上
             const box = document.getElementById("otherPlanBox");
             if (box && el.contains(box)) el.parentNode.insertBefore(box, el);   // 一覧を作り直す前に入力欄を退避
             const isOpen = planPanelIsOpen(), isNew = isOpen && planEditId == null;
             el.innerHTML = `<div class="nv-head"></div>` +
-                (rows.length ? rows.map(r => r.html).join("") : (isOpen ? "" : `<div class="nv-empty">予定はありません</div>`));
+                (rows.length ? rows.map(r => r.html).join("") : (isOpen ? "" : `<div class="nv-empty">No plans</div>`));
             // 入力欄は、押した予定の真下(新規は一覧の先頭)に差し込む
             if (box) {
                 if (isOpen) {
@@ -4967,7 +5167,7 @@
             const yr = (start.getFullYear() !== ny || end.getFullYear() !== start.getFullYear());
             const a = `${yr ? start.getFullYear() + "/" : ""}${start.getMonth() + 1}/${start.getDate()}`;
             const b = `${yr && end.getFullYear() !== start.getFullYear() ? end.getFullYear() + "/" : ""}${end.getMonth() + 1}/${end.getDate()}`;
-            return `${a}〜${b}`;
+            return `${a} – ${b}`;
         }
         // 時間表示(通常のカレンダー側): 2週間分を縦に並べる。各週は上段が日付枠、下段が縦軸=時間(1時間ごとに薄い線)
         // 今いちばん上に見えている週を調べて、見出し(期間)を合わせる
@@ -5307,7 +5507,7 @@
             const dayHtml = showWd ? `${cellDate.getDate()}<span class="wd">${WEEKDAYS[cellDate.getDay()]}</span>` : `${cellDate.getDate()}`;
             const vidMark = videoDateSet.has(cellKey) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
             // 収支マイナスの日は右下に💰(開発モードのときだけ表示。他の表示とは重ならない位置)
-            const minusMark = isDayBalanceMinus(cellKey) ? `<span class="minus-mark dev-only" title="収支マイナス">💰</span>` : "";
+            const minusMark = isDayBalanceMinus(cellKey) ? `<span class="minus-mark dev-only" title="収支マイナス">${IC("coin")}</span>` : "";
             const pinfos = calTimeMode ? [] : plansOn(cellKey);   // 時間表示のときは時間軸のブロックで表す
             const fillInfos = pinfos.filter(x => planTimed(x.p)), ringInfos = pinfos.filter(x => !planTimed(x.p));   // 日時あり=塗り / 終日=枠
             const plan = fillInfos.length ? fillInfos[0].p : null;
@@ -5329,14 +5529,14 @@
                 cell.classList.add("event-" + getStatusLevel(count));
                 if (plan) { cell.classList.add("has-plan"); const c = pcCls(plan).trim(); if (c) cell.classList.add(c); }
                 if (pinfos.length) cell.title = planTip;
-                const pn = pinfos.length ? `<span class="plan-n">他${pinfos.length}</span>` : "";
+                const pn = pinfos.length ? `<span class="plan-n">+${pinfos.length}</span>` : "";
                 cell.innerHTML = `<span>${dayHtml}</span><span class="cnt">${count}名</span>${pn}${vidMark}${minusMark}`;
             } else if (pinfos.length) {
                 cell.classList.add(plan ? "plan-only" : "plan-ringonly");
                 { const c = pcCls(plan || ringInfos[0].p).trim(); if (c) cell.classList.add(c); }
                 cell.title = planTip;
                 const tl = pinfos.map(x => x.p.title || "予定");
-                const lines = tl.length <= 2 ? tl : [tl[0], `他${tl.length - 1}`];   // 3件以上は「他N」でまとめる
+                const lines = tl.length <= 2 ? tl : [tl[0], `+${tl.length - 1}`];   // 3件以上は「他N」でまとめる
                 cell.innerHTML = `<span>${dayHtml}</span>${lines.map(t => `<span class="plan-ttl">${escapeHtml(t)}</span>`).join("")}${vidMark}${minusMark}`;
             } else {
                 cell.innerHTML = `<span>${dayHtml}</span>${vidMark}${minusMark}`;
@@ -5391,9 +5591,9 @@
         function renderCalendar() {
             videoDateSet = buildVideoDateSet();
             applyCalListMode();
-            document.getElementById("monthLabel").textContent = calListMode ? "予約日一覧" :
+            document.getElementById("monthLabel").textContent = calListMode ? "Booked" :
                 calTimeMode ? weekLabel(viewWeekStart, 14) :
-                `${viewMonth.getFullYear()}年${viewMonth.getMonth() + 1}月`;
+                `${viewMonth.getFullYear()}.${String(viewMonth.getMonth() + 1).padStart(2, "0")}`;
 
             const grid = document.getElementById("calGrid");
             grid.classList.toggle("nv", !calListMode && !calTimeMode);
@@ -5402,10 +5602,11 @@
             syncWeekStartUi();
             if (!calListMode && !calTimeMode) WEEKDAYS.forEach((_, wi) => {
                 const dw = (wi + weekStartDay) % 7;
-                const w = WEEKDAYS[dw];
+                const w = WD_EN[dw];
                 const el = document.createElement("div");
                 el.className = "cal-weekday dow-" + dw;
                 el.textContent = w;
+                if (dw === 0 || dw === 1) { el.style.cursor = "pointer"; el.title = "週の始まりを切替"; el.onclick = () => setWeekStart(weekStartDay === 1 ? 0 : 1); }
                 el.style.gridColumn = String(wi + 1); el.style.gridRow = "1";   // 日またぎのバーを重ねるので位置を固定
                 grid.appendChild(el);
             });
@@ -5514,7 +5715,7 @@
             const followBtn = document.getElementById("followBtn");
             if (dayMembers.length === 0) {
                 state.className = "mv-state";
-                stateText.textContent = "メンバーがいません。「追加」などで登録してください";
+                stateText.textContent = "";
                 followBtn.disabled = true;
             } else if (notRespondedCount > 0) {
                 state.className = "mv-state todo";
@@ -5522,7 +5723,8 @@
                 followBtn.disabled = false;
             } else {
                 state.className = "mv-state ok";
-                stateText.textContent = "✅ 出欠確認完了";
+                stateText.textContent = "✓";
+                stateText.title = "出欠確認完了";
                 followBtn.disabled = true;
             }
 
@@ -5541,7 +5743,7 @@
                         if (bulkSelectedIds.has(m.id)) cls.push("sel");
                         return `<button type="button" class="${cls.join(" ")}" onclick="onMemberChipClick(${m.id}, this)">${escapeHtml(m.name)}</button>`;
                     }).join("")}</div>`
-                    : `<div class="confirm-empty-note">なし</div>`;
+                    : `<div class="confirm-empty-note">—</div>`;
                 return `
                     <div class="confirm-group ${meta.cls}">
                         <button type="button" class="confirm-group-title gt-btn ${meta.cls}" onclick="applyBulkStatus('${s}')" aria-label="選択中のメンバーを「${s}」にする" title="${s}">
@@ -5865,12 +6067,11 @@
             const [y, m, d] = selectedDate.split("-").map(Number);
             const dayMembers = attendanceByDate[selectedDate] || [];
 
-            let text = `【${m}/${d} の出欠状況】\n\n`;
+            let text = `${m}/${d} 出欠`;
             STATUS_LIST.forEach(status => {
-                const icon = STATUS_META[status].icon;
-                const listMembers = dayMembers.filter(m => m.status === status);
-                text += `${icon} ${status} (${listMembers.length}名)\n`;
-                text += listMembers.length ? listMembers.map(m => `・${m.name}`).join("\n") + "\n\n" : "なし\n\n";
+                const sym = STATUS_META[status].sym.replace("\uFE0E", "");
+                const list = dayMembers.filter(x => x.status === status);
+                text += `\n${sym} ${list.length}${list.length ? "  " + list.map(x => x.name).join(" ") : ""}`;
             });
             text = text.trim();
 
@@ -5882,8 +6083,7 @@
         }
 
         function formatFollowGroupBlock(icon, label, list) {
-            const body = list.length ? list.map(mm => `・${mm.name}`).join("\n") : "なし";
-            return `${icon} ${label} (${list.length}名)\n${body}\n`;
+            return `${label} ${list.length}名${list.length ? "  " + list.map(mm => mm.name).join(" ") : ""}\n`;
         }
 
         function buildFollowText() {
@@ -7253,7 +7453,7 @@
             if (meta) meta.setAttribute("content", dark ? "#313746" : "#f3f4f7");
             const btn = document.getElementById("themeToggleBtn");
             if (btn) {
-                btn.textContent = dark ? "🌙" : "☀️";
+                btn.innerHTML = IC(dark ? "moon" : "sun");
                 btn.title = (dark ? "ダーク表示" : "ライト表示") + "(管理モードは反転) / タップで切替";
             }
         }
@@ -7377,11 +7577,11 @@
                     box.innerHTML = `<div class="sv-empty">読み込み中…</div>`;
                     return;
                 } else {
-                    box.innerHTML = `<div class="sv-empty">名簿の自分の名前が選ばれていません。<br>名前を選んでから回答できます。</div>`;
+                    box.innerHTML = `<div class="sv-empty">名前を選んでください</div>`;
                     return;
                 }
             } else {
-                who = `<div class="sv-who"><b>${escapeHtml(name)}</b> さんの出欠</div>`;
+                who = `<div class="sv-who"><i class="ic ic-user"></i> <b>${escapeHtml(name)}</b></div>`;
             }
             let dates = (name || isAdmin()) ? surveyDates() : [];   // 管理者は、答える人を選ばなくても日付ごとの状況を見られる
             if (surveyUnansFirst && name) {   // 未回答 → △ → ○/✖(同じ区分の中は日付順のまま)
@@ -7401,25 +7601,25 @@
                 const [y, m, dd] = d.split("-").map(Number);
                 const wd = WEEKDAYS[new Date(y, m - 1, dd).getDay()];
                 const info = (reservations[d] || []).map(r => `<div>${escapeHtml([r.time, r.place + (r.court || "")].filter(Boolean).join(" "))}</div>`).join("");
-                const tag = !name || st === "来る" || st === "来ない" ? "" : `<span class="sv-tag">未回答</span>`;
+                const tag = !name || st === "来る" || st === "来ない" ? "" : `<span class="sv-tag" title="未回答"></span>`;
                 // 管理者: その日、誰が未回答(未確認)か・△(未定)かを日付の横に並べる
                 let ppl = "";
                 if (isAdmin()) {
                     const day = attendanceByDate[d] || [];
                     const un = day.filter(x => x.status === "未確認").map(x => escapeHtml(x.name)), pd = day.filter(x => x.status === "未定").map(x => escapeHtml(x.name));
-                    const txt = (a) => surveyShowNames ? a.join("・") : `${a.length}人`;
-                    ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>未回答</b> ${txt(un)}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${txt(pd)}</span>` : ""}</span>`;
+                    const txt = (a) => surveyShowNames ? a.join("・") : `${a.length}`;
+                    ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>?</b> ${txt(un)}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${txt(pd)}</span>` : ""}</span>`;
                 }
-                const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${st === s ? " sel" : ""}" ${mem ? "" : "disabled"} onclick="surveySet('${d}','${s}')"><span class="sv-sym">${STATUS_META[s].sym}</span><span class="sv-lb">${s}</span></button>`).join("");
+                const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${st === s ? " sel" : ""}" ${mem ? "" : "disabled"} onclick="surveySet('${d}','${s}')" aria-label="${s}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("");
                 return `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tag}${ppl}</div><div class="sv-info">${info}</div>${name ? `<div class="sv-btns">${btns}</div>` : ""}</div>`;
             }).join("");
-            const note = !name ? "" : dates.length === 0 ? `<div class="sv-empty">これからの予約日はありません。</div>`
-                : `<div class="sv-note">${unanswered > 0 ? `○か✖の回答がまだの日が ${unanswered}件 あります。` : "すべて回答済みです。"}</div>`;
+            const note = !name ? "" : dates.length === 0 ? `<div class="sv-empty">—</div>`
+                : "";
             const sortBtn = name && dates.length > 1
-                ? `<button type="button" class="sv-sort${surveyUnansFirst ? " on" : ""}" onclick="surveyToggleSort()" aria-pressed="${surveyUnansFirst}"><span>未回答・△を上に表示</span><span class="sv-sw"></span></button>` : "";
+                ? `<button type="button" class="sv-sort${surveyUnansFirst ? " on" : ""}" onclick="surveyToggleSort()" aria-pressed="${surveyUnansFirst}"><span>? △ ↑</span><span class="sv-sw"></span></button>` : "";
 const namesBtn = isAdmin() && dates.length > 0
-                ? `<button type="button" class="sv-sort${surveyShowNames ? " on" : ""}" onclick="surveyToggleNames()" aria-pressed="${surveyShowNames}"><span>未回答・△の名前を表示</span><span class="sv-sw"></span></button>` : "";
-            box.innerHTML = who + note + namesBtn + sortBtn + cards;
+                ? `<button type="button" class="sv-sort${surveyShowNames ? " on" : ""}" onclick="surveyToggleNames()" aria-pressed="${surveyShowNames}"><span><i class="ic ic-users"></i> ? △</span><span class="sv-sw"></span></button>` : "";
+            box.innerHTML = who + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards;
         }
 
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
@@ -7893,8 +8093,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const rs = reservations[selectedDate] || [];
             const sub = rs.length === 0
                 ? ""
-                : `${rs[0].time} ${rs[0].place}${rs[0].court || ""}${rs.length > 1 ? ` 他${rs.length - 1}` : ""}`;
-            el.innerHTML = `<span class="sd-main">${m}/${d}(${wd})</span><span class="sd-sub">${escapeHtml(sub)}</span><span class="sd-caret" aria-hidden="true">▼</span>`;
+                : `${rs[0].time} ${rs[0].place}${rs[0].court || ""}${rs.length > 1 ? ` +${rs.length - 1}` : ""}`;
+            el.innerHTML = `<span class="sd-main">${m}月${d}日(${wd})</span><span class="sd-sub">${escapeHtml(sub)}</span><span class="sd-caret" aria-hidden="true">▼</span>`;
         }
         // タブの完了表示(薄い紺色)。左から順に完了したものだけ色が付く
         // 指定日のタスク状態(タブの完了・⚠️とカレンダーの⚠️で共通)
@@ -7986,7 +8186,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const cur = cell.querySelector(".cal-warn");
                 if (want && !cur) {
                     const s = document.createElement("span");
-                    s.className = "cal-warn"; s.textContent = "⚠️"; s.title = title;
+                    s.className = "cal-warn"; s.innerHTML = IC("warn"); s.title = title;
                     const host = cell.querySelector(".nv-ic");
                     if (host) host.prepend(s); else cell.appendChild(s);
                 } else if (want && cur) cur.title = title;
@@ -8200,7 +8400,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     <div class="rv-sub">${sub}</div>${dev}
                 </div>
                 <button type="button" class="rv-gcal" onclick="copyReservationForLine(${r.id})">LINE</button>
-                <button type="button" class="rv-gcal" onclick="addReservationToGoogleCalendar(${r.id})">📅追加</button>
+                <button type="button" class="rv-gcal" onclick="addReservationToGoogleCalendar(${r.id})"><i class="ic ic-cal"></i> Add</button>
                 <button type="button" class="rv-del" aria-label="削除" onclick="deleteReservation(${r.id})">×</button>
             </div>`;
         }
@@ -9077,11 +9277,11 @@ const namesBtn = isAdmin() && dates.length > 0
                     wrap.appendChild(b);
                 };
                 if (!authUid) {
-                    mk("ログイン", signInForFirestore);
-                    mk("ゲスト", signInAsGuest);
+                    mk("Sign in", signInForFirestore);
+                    mk("Guest", signInAsGuest);
                 } else {
-                    if (authIsGuest) mk(myMemberName() ? "👤" + myMemberName() : "名前を選ぶ", openGuestNamePicker);
-                    mk("ログアウト", signOutFromFirestore);
+                    if (authIsGuest) mk(myMemberName() || "Name", openGuestNamePicker);
+                    mk("Sign out", signOutFromFirestore);
                 }
             }
         }
