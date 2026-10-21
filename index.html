@@ -6175,13 +6175,15 @@
             const [y, m, d] = selectedDate.split("-").map(Number);
             const dayMembers = attendanceByDate[selectedDate] || [];
 
-            let text = `${m}/${d} 出欠`;
+            const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
+            const head = { "来る": "🟢 来る", "来ない": "🔴 来ない", "未定": "🟡 未定", "未確認": "⚪ 未確認" };
+            const blocks = [`【${m}/${d}(${wd}) 出欠】`];
             STATUS_LIST.forEach(status => {
-                const sym = STATUS_META[status].sym.replace("\uFE0E", "");
                 const list = dayMembers.filter(x => x.status === status);
-                text += `\n${sym} ${list.length}${list.length ? "  " + list.map(x => x.name).join(" ") : ""}`;
+                if (!list.length) return;
+                blocks.push(`${head[status]} ${list.length}名\n${list.map(x => x.name).join("、")}`);
             });
-            text = text.trim();
+            let text = blocks.join("\n\n").trim();
 
             navigator.clipboard.writeText(text).then(() => {
                 alert("コピーしました。LINEに貼り付けできます。");
