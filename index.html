@@ -9866,11 +9866,15 @@ const namesBtn = isAdmin() && dates.length > 0
         const COMPACT_ROW = 30;
         function compactSheetH() {
             const sh = document.getElementById("daySheet"), g = document.getElementById("calGrid"), vh = window.innerHeight;
-            if (!sh || !g || !g.clientHeight || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return Math.round(vh * 0.55);
+            // 予約日・時間表示のときは測れないので、通常表示で最後に測った高さを使う
+            if (!sh || !g || !g.clientHeight || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return compactHCache && compactHCache.vh === vh ? compactHCache.h : Math.round(vh * 0.55);
             const wd = g.querySelector(".cal-weekday"), head = wd ? wd.offsetHeight : 25;
             const want = head + COMPACT_ROW * 6;
-            return Math.max(64, Math.min(Math.round(sh.offsetHeight + g.clientHeight - want), Math.round(vh * 0.8)));
+            const h = Math.max(64, Math.min(Math.round(sh.offsetHeight + g.clientHeight - want), Math.round(vh * 0.8)));
+            compactHCache = { vh, h };
+            return h;
         }
+        var compactHCache = null;
         (function initCalResize() {
             const g = document.getElementById("calGrid");
             if (!g || !window.ResizeObserver) return;
