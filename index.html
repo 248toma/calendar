@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <meta name="theme-color" content="#f3f4f7">
+    <meta name="theme-color" content="#eceff4">
     <title>日程管理アプリ</title>
     <!-- ホーム画面に追加したときのアイコン(iPhone: apple-touch-icon / Android: manifest) -->
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -37,7 +37,7 @@
            Design tokens
            ========================================================= */
         :root {
-            --bg: #f3f4f7;
+            --bg: #eceff4;
             --surface: #ffffff;
             --surface-2: #f7f8fa;
             --ink: #12151c;
@@ -2409,6 +2409,22 @@
         body.hide-tparams .team-eye-btn .ic-eyeoff { display: inline-block; }
         .team-toolbar .team-eye-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
         body.hide-tparams #teamResults .court-params, body.hide-tparams #teamResults .team-avg-line, body.hide-tparams #teamResults .team-avg-table { display: none !important; }
+
+        /* ===== v57: ライトモードの凹凸を強く / お金マークを見やすく / 時間入力の凹み ===== */
+        :root {
+            --sh: rgba(105, 118, 150, .40);
+            --raise:    -4px -4px 10px var(--hl), 4px 5px 12px var(--sh);
+            --raise-sm: -3px -3px 6px var(--hl), 3px 3px 7px var(--sh);
+            --raise-xs: -2px -2px 4px var(--hl), 2px 2.5px 4.5px var(--sh);
+            --sink:     inset 3px 3px 6px var(--sh), inset -3px -3px 6px var(--hl);
+        }
+        :root:has(body.dark) { --sh: rgba(12, 15, 24, .55); }
+        .op-box input[type="time"] { -webkit-appearance: none; appearance: none; background: var(--bg); box-shadow: var(--sink); border: none; border-radius: 10px; min-height: 38px; height: 38px; color: var(--ink); }
+        .op-box input[type="time"]::-webkit-date-and-time-value { text-align: center; min-height: 1em; }
+        .minus-mark, .cal-day .minus-mark, .cal-day .nv-ic .minus-mark { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #d9534f; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); font-size: 0; }
+        .minus-mark .ic { width: 11px; height: 11px; vertical-align: 0; }
+        .cal-day .minus-mark { position: absolute; bottom: 3px; right: 3px; }
+        .cal-day .nv-ic .minus-mark { position: static; }
     </style>
 </head>
 <body>
@@ -7514,7 +7530,7 @@
             document.body.classList.toggle("dark", dark);
             document.documentElement.style.colorScheme = dark ? "dark" : "light";
             const meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) meta.setAttribute("content", dark ? "#313746" : "#f3f4f7");
+            if (meta) meta.setAttribute("content", dark ? "#313746" : "#eceff4");
             const btn = document.getElementById("themeToggleBtn");
             if (btn) {
                 btn.innerHTML = IC(dark ? "moon" : "sun");
@@ -9823,9 +9839,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 el.readOnly = true;
                 el.setAttribute("inputmode", "none");
                 el.setAttribute("autocomplete", "off");
-                el.placeholder = "----/--/--";
+                el.placeholder = el.closest("#otherPlanBox") ? "--/--" : "----/--/--";
                 el.classList.add("dp-input");
-                const show = () => proto.set.call(el, iso ? iso.replace(/-/g, "/") : "");
+                const show = () => proto.set.call(el, iso ? (el.closest("#otherPlanBox") ? (+iso.slice(5, 7)) + "/" + (+iso.slice(8, 10)) : iso.replace(/-/g, "/")) : "");
                 Object.defineProperty(el, "value", {
                     configurable: true,
                     get() { return iso; },
