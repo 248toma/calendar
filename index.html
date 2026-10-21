@@ -7304,6 +7304,14 @@
             try { localStorage.setItem(SURVEY_SORT_KEY, surveyUnansFirst ? "1" : "0"); } catch (e) { /* ignore */ }
             renderSurvey();
         }
+        const SURVEY_NAMES_KEY = "attendance_survey_names_v1";
+        let surveyShowNames = false;   // 管理者: false=人数だけ / true=名前も表示(この端末だけに保存)
+        try { surveyShowNames = localStorage.getItem(SURVEY_NAMES_KEY) === "1"; } catch (e) { /* ignore */ }
+        function surveyToggleNames() {
+            surveyShowNames = !surveyShowNames;
+            try { localStorage.setItem(SURVEY_NAMES_KEY, surveyShowNames ? "1" : "0"); } catch (e) { /* ignore */ }
+            renderSurvey();
+        }
         let surveyAdminName = "";   // 管理者が自分の名前に紐付いていないとき、代わりに答える人
         function surveyWho() { return myMemberName() || (isAdmin() ? surveyAdminName : ""); }
         function surveyDates() {
@@ -7399,7 +7407,8 @@
                 if (isAdmin()) {
                     const day = attendanceByDate[d] || [];
                     const un = day.filter(x => x.status === "未確認").map(x => escapeHtml(x.name)), pd = day.filter(x => x.status === "未定").map(x => escapeHtml(x.name));
-                    ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>未回答</b> ${un.join("・")}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${pd.join("・")}</span>` : ""}</span>`;
+                    const txt = (a) => surveyShowNames ? a.join("・") : `${a.length}人`;
+                    ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>未回答</b> ${txt(un)}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${txt(pd)}</span>` : ""}</span>`;
                 }
                 const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${st === s ? " sel" : ""}" ${mem ? "" : "disabled"} onclick="surveySet('${d}','${s}')"><span class="sv-sym">${STATUS_META[s].sym}</span><span class="sv-lb">${s}</span></button>`).join("");
                 return `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tag}${ppl}</div><div class="sv-info">${info}</div>${name ? `<div class="sv-btns">${btns}</div>` : ""}</div>`;
@@ -7408,7 +7417,9 @@
                 : `<div class="sv-note">${unanswered > 0 ? `○か✖の回答がまだの日が ${unanswered}件 あります。` : "すべて回答済みです。"}</div>`;
             const sortBtn = name && dates.length > 1
                 ? `<button type="button" class="sv-sort${surveyUnansFirst ? " on" : ""}" onclick="surveyToggleSort()" aria-pressed="${surveyUnansFirst}"><span>未回答・△を上に表示</span><span class="sv-sw"></span></button>` : "";
-            box.innerHTML = who + note + sortBtn + cards;
+const namesBtn = isAdmin() && dates.length > 0
+                ? `<button type="button" class="sv-sort${surveyShowNames ? " on" : ""}" onclick="surveyToggleNames()" aria-pressed="${surveyShowNames}"><span>未回答・△の名前を表示</span><span class="sv-sw"></span></button>` : "";
+            box.innerHTML = who + note + namesBtn + sortBtn + cards;
         }
 
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
@@ -8939,7 +8950,7 @@
         const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
         const LOCAL_ONLY_KEYS = new Set([DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
-            SURVEY_SORT_KEY, CAL_TIME_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY]);
+            SURVEY_SORT_KEY, CAL_TIME_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, SURVEY_NAMES_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
         let firestoreSaveTimer = null;
