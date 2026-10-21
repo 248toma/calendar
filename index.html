@@ -2462,6 +2462,12 @@
         #bulkAddOv .ba-i b { color: var(--ink); }
         #bulkAddOv .ba-add .ic { width: 16px; height: 16px; }
         #bulkAddOv .ba-empty { text-align: center; color: var(--ink-3); padding: 24px; }
+        /* v60: 予定タイトルの長さで列幅が変わらないよう、7列を常に均等にする */
+        .cal-grid, .dp-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+        .tw-head, .tw-body { grid-template-columns: 22px repeat(7, minmax(0, 1fr)) !important; }
+        .cal-grid > .cal-day, .cal-grid > .cal-weekday, .tw-body > *, .tw-head > * { min-width: 0; }
+        .cal-grid.nv .cal-day { overflow: hidden; }
+        .cal-grid.nv .nv-chip { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
 </head>
 <body>
