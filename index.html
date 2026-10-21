@@ -2448,7 +2448,9 @@
         #bulkAddOv .ba-acts { display: flex; gap: 10px; margin-bottom: 12px; }
         #bulkAddOv .ba-acts button { height: 42px; border: none; border-radius: 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: var(--raise-sm); }
         #bulkAddOv .ba-main { flex: 1; background: var(--accent); color: #fff; }
-        #bulkAddOv .ba-main:disabled { background: var(--bg); color: var(--accent); box-shadow: var(--sink); }
+        #bulkAddOv .ba-main { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        #bulkAddOv .ba-main .ic { width: 18px; height: 18px; }
+        #bulkAddOv .ba-sub:disabled { opacity: .5; box-shadow: var(--sink); }
         #bulkAddOv .ba-sub { flex: none; padding: 0 18px; background: var(--bg); color: var(--ink-2); }
         #bulkAddOv .ba-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 4px 6px; }
         #bulkAddOv .ba-row { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-xs); }
@@ -8953,7 +8955,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const list = gcalFutureList(), map = gcalAddedMap();
             const todo = list.filter(x => !gcalIsAdded(x.d, x.r, map));
             ov.querySelector(".ba-acts").innerHTML = list.length
-                ? `<button type="button" class="ba-main" ${todo.length ? "" : "disabled"} onclick="bulkAddNext()">${todo.length ? `Next · ${todo.length}` : "✓ All"}</button><button type="button" class="ba-sub" onclick="exportReservationsIcs()">.ics</button>`
+                ? `<button type="button" class="ba-main" onclick="exportReservationsIcs()"><i class="ic ic-caldown"></i> All · ${list.length}</button><button type="button" class="ba-sub" ${todo.length ? "" : "disabled"} onclick="bulkAddNext()">1 by 1 · ${todo.length}</button>`
                 : "";
             ov.querySelector(".ba-list").innerHTML = list.length ? list.map(({ d, r }) => {
                 const [y, m, dd] = d.split("-").map(Number), wd = WEEKDAYS[new Date(y, m - 1, dd).getDay()], done = gcalIsAdded(d, r, map);
