@@ -2144,11 +2144,11 @@
 
         /* ---- 横にはみ出して画面が左右に動かないようにする ---- */
         html, body { overflow-x: clip; max-width: 100%; }
-        .app-header { max-width: 100vw; box-sizing: border-box; overflow: hidden; }
+        .app-header { max-width: 100vw; box-sizing: border-box; overflow-x: clip; overflow-y: visible; }
         .app-header .app-title { flex-wrap: nowrap !important; min-width: 0; overflow: hidden; }
         .app-header .total-balance { flex: 0 1 auto; min-width: 0; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; }
         #firestoreSyncStatus { flex: 1 1 0; min-width: 0; flex-wrap: nowrap !important; overflow: hidden; white-space: nowrap; }
-        .header-btns { min-width: 0; flex-wrap: nowrap; overflow: hidden; }
+        .header-btns { min-width: 0; flex-wrap: nowrap; overflow: visible; padding: 8px 6px; margin: -8px -6px; }   /* アンケートの強調(広がる輪・バッジ)が切れないよう、はみ出しを許す */
         .header-btns .settings-btn { flex: 0 1 auto; min-width: 0; padding-left: 8px; padding-right: 8px; }
         .header-btns .settings-btn.mode-select { padding-right: 16px; }
         .settings-btn.refresh-btn { position: relative; }
