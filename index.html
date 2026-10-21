@@ -5211,12 +5211,14 @@
         // バレー以外の予定(中身が1つでもあるものだけ)
         function planHas(p) { return !!(p && (p.title || p.start || p.end || p.memo || p.endDate)); }
         // その日にかかっている予定(開始日が早い順)。first=初日 / last=最終日
-        // 共有相手を選んだ予定(p.to=名簿IDの配列)は、管理者と選ばれたメンバーにだけ表示する(to無し=全員)
+        // 共有相手を選んだ予定(p.to=名簿IDの配列)は、選ばれたメンバーと作った本人だけに表示する(to無し=全員)
         function planVisible(p) {
-            if (!p || !p.to || !p.to.length || p.local || isAdmin()) return true;
+            if (!p || !p.to || !p.to.length || p.local) return true;
             const me = myMemberName(), r = me ? roster.find(x => x.name === me) : null;
-            return !!r && p.to.includes(r.id);
+            if (r && p.to.includes(r.id)) return true;
+            return isAdmin() && !!p.by && p.by === planAuthorKey();   // 管理者でも、共有相手か作った本人だけ
         }
+        function planAuthorKey() { return (typeof myEmailHash !== "undefined" && myEmailHash) || ("n:" + (myMemberName() || "")); }
         function plansOn(key) {
             return planList
                 .filter(p => planHas(p) && planVisible(p) && p.startDate <= key && (p.endDate ? p.endDate >= key : p.startDate === key))
@@ -6084,6 +6086,7 @@
             const toLocal = isAdmin() ? planScope === "local" : true;
             if (toLocal) p.local = true;
             else if (planShare.length) p.to = planShare.slice();
+            if (p.to) p.by = (planEditId != null && (planList.find(x => x.id === planEditId) || {}).by) || planAuthorKey();
             const i = planEditId != null ? planList.findIndex(x => x.id === planEditId) : -1;
             if (i >= 0 && !!planList[i].local === toLocal) { p.id = planEditId; planList[i] = p; }
             else {
@@ -8922,7 +8925,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // Android: まず共有シート(ファイル共有)。出せない/キャンセル以外の失敗はダウンロードへ
             try {
                 const f = new File([blob], "volley.ics", { type: "text/calendar" });
-                if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: "バレー予約" }); return; }
+                if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return; } // title/textを付けるとカレンダーが候補から外れるため、ファイルだけ渡す
             } catch (e) { if (e && e.name === "AbortError") return; }
             // ダウンロード → 通知をタップでGoogleカレンダーが開く
             const a = document.createElement("a");
