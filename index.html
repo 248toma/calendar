@@ -2466,8 +2466,27 @@
         .cal-grid, .dp-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
         .tw-head, .tw-body { grid-template-columns: 22px repeat(7, minmax(0, 1fr)) !important; }
         .cal-grid > .cal-day, .cal-grid > .cal-weekday, .tw-body > *, .tw-head > * { min-width: 0; }
-        .cal-grid.nv .cal-day { overflow: hidden; }
+        .cal-grid.nv .cal-day { overflow-x: visible; overflow-y: clip; }
         .cal-grid.nv .nv-chip { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* v61: カレンダー画面は全体スクロールなし。下の予定は引き上げ式のシートで、引き上げるとカレンダーが縮む */
+        body:not(.nv-full) { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+        body:not(.nv-full) > * { flex: none; }
+        body:not(.nv-full) .day-bar { display: none; }
+        body:not(.nv-full) #calCard { flex: 1 1 0; min-height: 150px; display: flex; flex-direction: column; margin-bottom: 0; }
+        body:not(.nv-full) #calCard > .cal-header, body:not(.nv-full) #calCard > .legend { flex: none; }
+        body:not(.nv-full) #calCard > .cal-grid { flex: 1 1 0; min-height: 0; max-height: none; }
+        body:not(.nv-full) .cal-grid:not(.list-mode):not(.tw-mode) { grid-template-rows: auto; grid-auto-rows: minmax(0, 1fr); overflow: hidden; }
+        body:not(.nv-full) .cal-grid.nv .cal-day { min-height: 0; }
+        body:not(.nv-full) .cal-grid.list-mode, body:not(.nv-full) .cal-grid.tw-mode { overflow-y: auto; }
+        #calCard .cal-hbtns { width: 100%; align-items: center; }
+        #calCard .day-toggles { margin-left: auto; gap: 10px; }
+        #daySheet { flex: none; display: flex; flex-direction: column; height: var(--sheet-h, 120px); margin: 10px 0 0; background: var(--bg); border-radius: 24px; box-shadow: var(--raise-sm); overflow: hidden; }
+        body.nv-full #daySheet { display: none !important; }
+        #sheetGrip { flex: none; height: 26px; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
+        #sheetGrip span { width: 42px; height: 5px; border-radius: 3px; background: var(--ink-3); opacity: .45; }
+        #sheetBody { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 0 6px 8px; }
+        #daySheet.dragging { transition: none; }
+        #sheetBody #nvDayPanel { margin: 0; }
     </style>
 </head>
 <body>
@@ -2811,6 +2830,7 @@
         </div>
     </div>
 
+    <div id="daySheet"><div id="sheetGrip" role="separator" aria-label="予定を引き上げる"><span></span></div><div id="sheetBody">
     <div class="op-box" id="otherPlanBox">
         <div class="op-row">
             <input type="text" id="opTitle" class="op-title" maxlength="12" placeholder="題名" aria-label="タイトル">
@@ -2855,6 +2875,7 @@
     </div>
 
     <div id="nvDayPanel"></div>
+    </div></div>
 
     <div id="nvBack"><button type="button" class="today-btn" onclick="closeVolleyFull()" aria-label="カレンダーに戻る"><i class="ic ic-cal"></i> Calendar</button><span class="nv-step"><button type="button" class="today-btn" onclick="moveVolleyDate(-1)" aria-label="前のバレー予約日">‹</button><button type="button" class="today-btn" onclick="moveVolleyDate(1)" aria-label="次のバレー予約日">›</button></span></div>
 
@@ -5143,6 +5164,7 @@
             if (!el) return;
             if (volleyFull && !events[selectedDate]) volleyFull = false;   // バレーが無くなった日は全体表示を解除
             document.body.classList.toggle("nv-full", volleyFull);
+            placeDayToggles();
             const rows = [];
             const rs = reservations[selectedDate] || [];
             if (events[selectedDate]) {
@@ -5172,6 +5194,7 @@
                     box.style.display = "block";
                 } else box.style.display = "none";
             }
+            layoutSheet(isOpen && !sheetPrevOpen); sheetPrevOpen = isOpen;
         }
         // ------- 時間表示(週: 縦軸=時間 / 予約日モード: 月単位で各日に時間軸) -------
         const CAL_TIME_KEY = "attendance_cal_time_v1";
@@ -9656,13 +9679,56 @@ const namesBtn = isAdmin() && dates.length > 0
                 }));
             } catch (e) { /* 保存できなくても再読み込みは続ける */ }
         }
+
+        // ------- 下の予定シート(引き上げ式)と、バレー/予定ボタンの置き場所 -------
+        var sheetUserH = null, sheetPrevOpen = false;
+        function placeDayToggles() {
+            const t = document.querySelector(".day-toggles");
+            if (!t) return;
+            const host = document.body.classList.contains("nv-full") ? document.querySelector(".day-bar") : document.querySelector("#calCard .cal-hbtns");
+            if (host && t.parentNode !== host) host.appendChild(t);
+        }
+        function layoutSheet(opened) {
+            const sh = document.getElementById("daySheet"), bd = document.getElementById("sheetBody");
+            if (!sh || !bd || document.body.classList.contains("nv-full")) return;
+            const vh = window.innerHeight, maxH = Math.round(vh * 0.72);
+            if (opened) sheetUserH = Math.max(sheetUserH == null ? 0 : sheetUserH, Math.round(vh * 0.62));   // 入力欄を開いたときは広げる
+            let h;
+            if (sheetUserH == null) {
+                h = Math.max(96, Math.min(26 + bd.scrollHeight + 8, Math.round(vh * 0.34)));
+            } else h = Math.max(64, Math.min(sheetUserH, maxH));
+            sh.style.setProperty("--sheet-h", h + "px");
+        }
+        (function initSheetDrag() {
+            const sh = document.getElementById("daySheet"), grip = document.getElementById("sheetGrip");
+            if (!sh || !grip) return;
+            let d = null;
+            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, h: sh.offsetHeight, moved: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } sh.classList.add("dragging"); });
+            grip.addEventListener("pointermove", e => {
+                if (!d) return;
+                const dy = d.y - e.clientY;
+                if (Math.abs(dy) > 3) d.moved = true;
+                if (!d.moved) return;
+                sheetUserH = Math.max(64, Math.min(d.h + dy, Math.round(window.innerHeight * 0.72)));
+                sh.style.setProperty("--sheet-h", sheetUserH + "px");
+            });
+            const end = () => {
+                if (!d) return;
+                sh.classList.remove("dragging");
+                if (!d.moved) { sheetUserH = sh.offsetHeight < window.innerHeight * 0.45 ? Math.round(window.innerHeight * 0.62) : null; }   // タップ: 広げる/戻す
+                else if (sheetUserH != null && sheetUserH < 110) sheetUserH = null;   // 低く下げたら元の高さへ
+                d = null; layoutSheet();
+            };
+            grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
+            window.addEventListener("resize", () => layoutSheet());
+        })();
         // 画面を下に引っぱって離すと更新する(更新ボタンと同じ動き)
         (function initPullToRefresh() {
             const el = document.getElementById("ptr");
             if (!el) return;
             const TH = 70;
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
-            const blocked = (t) => !!(t.closest && t.closest("input, textarea, select, #surveyOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
+            const blocked = (t) => !!(t.closest && t.closest("input, textarea, select, #daySheet, #surveyOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
                 || document.body.style.overflow === "hidden";
             const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
             document.addEventListener("touchstart", e => {
