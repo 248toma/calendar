@@ -2487,6 +2487,8 @@
         #sheetBody { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 0 6px 8px; }
         #daySheet.dragging { transition: none; }
         #sheetBody #nvDayPanel { margin: 0; }
+        .nv-top.has-dot::after { content: ""; position: absolute; right: 5px; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
+        body:not(.nv-full) .cal-grid.nv .cal-day { position: relative; }
     </style>
 </head>
 <body>
@@ -5038,6 +5040,15 @@
         }
         function closeVolleyFull() { dropUnchangedVolleyDraft(); volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
         // 月カレンダー1週分の「日またぎの予定」を、行(レーン)に割り当てる
+        var nvSlots = 3;
+        // カレンダーの高さに合わせて、1日に出せる予定の行数を決める(縮んでも全部の週で同じ数にそろえる)
+        function nvCalcSlots() {
+            const g = document.getElementById("calGrid");
+            if (!g || !g.clientHeight || document.body.classList.contains("nv-full")) return 3;
+            const wd = g.querySelector(".cal-weekday"), head = wd ? wd.offsetHeight : 22;
+            const cellH = (g.clientHeight - head) / 6;
+            return Math.max(0, Math.min(4, Math.floor((cellH - 29) / 14.6)));
+        }
         function nvWeekLayout(days) {
             const keys = days.map(formatDateKey);
             const map = new Map();
@@ -5059,7 +5070,7 @@
             // 終日(1日だけ)の予定は必ず一番上。その分(週の中で一番多い日に合わせて)行を空けて、帯はその下に置く
             const adCnt = keys.map(k => plansOn(k).filter(pi => pi.first && pi.last && !planTimed(pi.p)).length);
             const AD = Math.min(2, Math.max(0, ...adCnt));
-            const MAXL = 3 - AD;
+            const MAXL = Math.max(0, nvSlots - AD);
             const perDay = keys.map(() => ({ lanes: 0, hidden: 0 }));
             segs.forEach(g => {
                 for (let c = g.s; c <= g.e; c++) {
@@ -5099,14 +5110,16 @@
             const topAd = adAll.slice(0, AD), rest = adAll.slice(AD).concat(chips);
             // 日またぎの予定はバーで出すので、その分の行を空けて、残りを並べる
             const nl = lay ? lay.lanes : 0, hid = lay ? lay.hidden : 0;
-            const slots = 3 - AD - nl, total = rest.length + hid;
+            const slots = nvSlots - AD - nl, total = rest.length + hid;
             let shown;
             if (total <= slots) shown = rest;
             else { const keep = Math.max(0, slots - 1); shown = rest.slice(0, keep); shown.push(`<span class="nv-more">+${total - keep}</span>`); }
+            if (nvSlots <= 0) shown = [];
             shown = topAd.concat(new Array(AD - topAd.length).fill('<span class="nv-lane"></span>'), new Array(nl).fill('<span class="nv-lane"></span>'), shown);
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
             const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">${IC("coin")}</span>` : "";
-            cell.innerHTML = `<div class="nv-top"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${shown.join("")}`;
+            const hasAny = nvSlots <= 0 && (adAll.length + chips.length + (lay ? lay.lanes + lay.hidden : 0) > 0);
+            cell.innerHTML = `<div class="nv-top${hasAny ? " has-dot" : ""}"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${shown.join("")}`;
             cell.dataset.key = key;
             cell.onclick = () => {
                 const now = Date.now(), dbl = nvLastTap.key === key && now - nvLastTap.t < 380;
@@ -5785,6 +5798,7 @@
             const gridStart = new Date(firstOfMonth);
             gridStart.setDate(gridStart.getDate() - startOffset);
 
+            nvSlots = nvCalcSlots();
             const nvLay = [];
             for (let w = 0; w < 6; w++) {
                 const days = [];
@@ -9695,10 +9709,26 @@ const namesBtn = isAdmin() && dates.length > 0
             if (opened) sheetUserH = Math.max(sheetUserH == null ? 0 : sheetUserH, Math.round(vh * 0.62));   // 入力欄を開いたときは広げる
             let h;
             if (sheetUserH == null) {
-                h = Math.max(96, Math.min(26 + bd.scrollHeight + 8, Math.round(vh * 0.34)));
+                const f0 = bd.style.flex, h0 = bd.style.height;
+                bd.style.flex = "none"; bd.style.height = "auto";
+                const ch = bd.offsetHeight; bd.style.flex = f0; bd.style.height = h0;   // 中身そのものの高さ(今の枠の高さに引きずられない)
+                h = Math.max(100, Math.min(26 + ch + 4, Math.round(vh * 0.5)));   // 予定1件ぶんが基本、増えたら広げる
             } else h = Math.max(64, Math.min(sheetUserH, maxH));
             sh.style.setProperty("--sheet-h", h + "px");
         }
+        (function initCalResize() {
+            const g = document.getElementById("calGrid");
+            if (!g || !window.ResizeObserver) return;
+            let raf = 0;
+            new ResizeObserver(() => {
+                if (raf) return;
+                raf = requestAnimationFrame(() => {
+                    raf = 0;
+                    if (document.body.classList.contains("nv-full") || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return;
+                    if (nvCalcSlots() !== nvSlots) renderCalendar();
+                });
+            }).observe(g);
+        })();
         (function initSheetDrag() {
             const sh = document.getElementById("daySheet"), grip = document.getElementById("sheetGrip");
             if (!sh || !grip) return;
