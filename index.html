@@ -5148,7 +5148,7 @@
             g("calGrid").classList.toggle("tm-on", on && !!calTimeMode);
             g("calPrevBtn").style.display = on ? "none" : "";
             g("calNextBtn").style.display = on ? "none" : "";
-            if (!on) { g("calGrid").style.gridTemplateColumns = ""; g("calGrid").style.maxHeight = ""; }
+            if (!on) { g("calGrid").style.gridTemplateColumns = ""; g("calGrid").style.maxHeight = ""; g("calGrid").style.height = ""; }
             const weekNav = !on && !!calTimeMode;
             g("calPrevBtn").setAttribute("aria-label", weekNav ? "前の週" : "前の月");
             g("calNextBtn").setAttribute("aria-label", weekNav ? "次の週" : "次の月");
@@ -5320,10 +5320,18 @@
         }
 
         // 予約日一覧: 今日の月の見出しが先頭に来るようにスクロール(今月の予約日がなければ、次にある月)
+        // 予約日一覧・時間表示も、ベース(月カレンダー)と同じ高さにそろえる。入りきらない分はスクロール
+        let calBaseH = 0;
+        function applyBaseHeight(grid) {
+            if (!grid) return;
+            if (!calListMode && !calTimeMode) { if (grid.offsetHeight > 0) calBaseH = grid.offsetHeight; grid.style.height = ""; grid.style.overflowY = ""; return; }
+            if (!calBaseH) return;
+            grid.style.height = calBaseH + "px"; grid.style.maxHeight = calBaseH + "px"; grid.style.overflowY = "auto";
+        }
         function fitListToTwoMonths(grid) {
             if (!grid.offsetParent) return;   // 非表示の間は高さを測れない(バレー画面中など)ので、今の高さのまま
             const heads = [...grid.querySelectorAll(".cal-month-head[data-ym]")];
-            if (heads.length === 0) { grid.style.maxHeight = ""; return; }
+            if (heads.length === 0) { grid.style.maxHeight = ""; applyBaseHeight(grid); return; }
             const now = new Date();
             const cur = now.getFullYear() * 12 + now.getMonth();
             let i = heads.findIndex(h => Number(h.dataset.ym) >= cur);
@@ -5331,6 +5339,7 @@
             const top = heads[i].offsetTop;
             const end = heads[i + 4] ? heads[i + 4].offsetTop : grid.scrollHeight;
             grid.style.maxHeight = Math.min(Math.max(end - top + 12, 110), 760) + "px";
+            applyBaseHeight(grid);
         }
         function scrollListToThisMonth(grid) {
             fitListToTwoMonths(grid);
@@ -5389,6 +5398,7 @@
 
             if (calTimeMode) {
                 renderCalendarWeek(grid, todayKey);
+                applyBaseHeight(grid);
                 refreshCalWarnMarks();
                 renderNvPanel();
                 return;
@@ -5415,6 +5425,7 @@
                 grid.appendChild(cell);
             }
             nvLay.forEach((L, w) => L.segs.forEach(g => grid.appendChild(buildNvSeg(g, w + 2, L.ad))));
+            applyBaseHeight(grid);
             linkPlanCells(grid);
             refreshCalWarnMarks();
             renderNvPanel();
