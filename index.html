@@ -2489,6 +2489,11 @@
         #sheetBody #nvDayPanel { margin: 0; }
         .nv-top.has-dot::after { content: ""; position: absolute; right: 5px; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
         body:not(.nv-full) .cal-grid.nv .cal-day { position: relative; }
+        .nv-pips { display: flex; justify-content: center; align-items: center; gap: 3px; height: 8px; margin-top: 1px; }
+        .nv-pip { display: block; width: 14px; height: 5px; border-radius: 3px; background: var(--plan-ink, var(--ink-3)); opacity: .85; }
+        .nv-pip.ring { background: transparent; box-shadow: inset 0 0 0 1.4px var(--plan-ink, var(--ink-3)); }
+        .nv-pips b { font-size: 8px; line-height: 5px; color: var(--ink-3); }
+        .nv-top.has-dot::after { right: 6px; top: 50%; margin-top: -2px; }
     </style>
 </head>
 <body>
@@ -5040,15 +5045,18 @@
         }
         function closeVolleyFull() { dropUnchangedVolleyDraft(); volleyFull = false; document.body.classList.remove("nv-full"); if (calListMode) calListNeedScroll = true; renderCalendar(); renderOtherPlanBox(); window.scrollTo(0, 0); }
         // 月カレンダー1週分の「日またぎの予定」を、行(レーン)に割り当てる
-        var nvSlots = 3;
-        // カレンダーの高さに合わせて、1日に出せる予定の行数を決める(縮んでも全部の週で同じ数にそろえる)
-        function nvCalcSlots() {
+        var nvSlots = 3, nvMode = "chips";
+        // カレンダーの高さに合わせて表示を段階的に変える: 文字つきの帯 → 色だけの小さな点 → 予定ありの印だけ
+        function nvCalc() {
             const g = document.getElementById("calGrid");
-            if (!g || !g.clientHeight || document.body.classList.contains("nv-full")) return 3;
-            const wd = g.querySelector(".cal-weekday"), head = wd ? wd.offsetHeight : 22;
+            if (!g || !g.clientHeight || document.body.classList.contains("nv-full")) return { mode: "chips", slots: 3 };
+            const wd = g.querySelector(".cal-weekday"), head = (wd && g.children.length > 7) ? wd.offsetHeight : 25;   // 作り直し中は曜日の行だけが縮まず伸びるので、固定値を使う
             const cellH = (g.clientHeight - head) / 6;
-            return Math.max(0, Math.min(4, Math.floor((cellH - 29) / 14.6)));
+            const slots = Math.min(4, Math.floor((cellH - 29) / 14.6));
+            if (slots >= 2) return { mode: "chips", slots };
+            return { mode: cellH >= 38 ? "pips" : "dot", slots: 0 };
         }
+        function nvCalcSlots() { const c = nvCalc(); return c.mode + c.slots; }
         function nvWeekLayout(days) {
             const keys = days.map(formatDateKey);
             const map = new Map();
@@ -5114,12 +5122,20 @@
             let shown;
             if (total <= slots) shown = rest;
             else { const keep = Math.max(0, slots - 1); shown = rest.slice(0, keep); shown.push(`<span class="nv-more">+${total - keep}</span>`); }
-            if (nvSlots <= 0) shown = [];
             shown = topAd.concat(new Array(AD - topAd.length).fill('<span class="nv-lane"></span>'), new Array(nl).fill('<span class="nv-lane"></span>'), shown);
+            if (nvMode !== "chips") shown = [];
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
             const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">${IC("coin")}</span>` : "";
-            const hasAny = nvSlots <= 0 && (adAll.length + chips.length + (lay ? lay.lanes + lay.hidden : 0) > 0);
-            cell.innerHTML = `<div class="nv-top${hasAny ? " has-dot" : ""}"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${shown.join("")}`;
+            const dayAll = plansOn(key);
+            const hasAny = nvMode === "dot" && (dayAll.length > 0 || !!events[key]);
+            let pips = "";
+            if (nvMode === "pips") {
+                const arr = [];
+                if (events[key]) arr.push(`<i class="nv-pip" style="background:var(${lv[getStatusLevel(countComing(key))]})"></i>`);
+                dayAll.sort((a, b) => (planTimed(a.p) ? 1 : 0) - (planTimed(b.p) ? 1 : 0)).forEach(({ p }) => arr.push(`<i class="nv-pip${pcCls(p)}${planTimed(p) ? "" : " ring"}"></i>`));
+                pips = arr.length ? `<div class="nv-pips">${arr.slice(0, 4).join("")}${arr.length > 4 ? '<b>+</b>' : ""}</div>` : "";
+            }
+            cell.innerHTML = `<div class="nv-top${hasAny ? " has-dot" : ""}"><span class="nv-d">${cellDate.getDate()}</span><span class="nv-ic">${vid}${minus}</span></div>${pips}${shown.join("")}`;
             cell.dataset.key = key;
             cell.onclick = () => {
                 const now = Date.now(), dbl = nvLastTap.key === key && now - nvLastTap.t < 380;
@@ -5798,7 +5814,7 @@
             const gridStart = new Date(firstOfMonth);
             gridStart.setDate(gridStart.getDate() - startOffset);
 
-            nvSlots = nvCalcSlots();
+            { const c = nvCalc(); nvSlots = c.slots; nvMode = c.mode; }
             const nvLay = [];
             for (let w = 0; w < 6; w++) {
                 const days = [];
@@ -9725,7 +9741,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 raf = requestAnimationFrame(() => {
                     raf = 0;
                     if (document.body.classList.contains("nv-full") || g.classList.contains("list-mode") || g.classList.contains("tw-mode")) return;
-                    if (nvCalcSlots() !== nvSlots) renderCalendar();
+                    if (nvCalcSlots() !== nvMode + nvSlots) renderCalendar();
                 });
             }).observe(g);
         })();
