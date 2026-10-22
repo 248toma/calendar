@@ -2519,9 +2519,8 @@
         #calTimeBtn.on, #rvListBtn.on { background: var(--bg); color: var(--accent); border-color: transparent; box-shadow: var(--sink); }
         /* カレンダーの大きさ(3段階)を上下ボタンで切り替える */
         .today-btn.lv-btns { flex: none; display: inline-flex; flex-direction: row; align-items: stretch; padding: 0; overflow: hidden; }
-        .lv-btns button { width: 26px; padding: 0; border: none; background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 0; box-shadow: none; min-height: 0; }
-        .lv-btns button:first-child { padding-left: 4px; }
-        .lv-btns button:last-child { padding-right: 4px; }
+        .lv-btns button { flex: 1 1 0; width: auto; min-width: 0; padding: 0; border: none; background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 0; box-shadow: none; min-height: 0; }
+        .today-btn.lv-btns { width: 60px; min-width: 60px; gap: 0; }
         .lv-btns button + button { box-shadow: inset 1px 0 0 var(--line); }
         .lv-btns button:active:not(:disabled) { background: var(--surface-2); }
         .lv-btns button:disabled { opacity: .3; cursor: default; }
@@ -2533,6 +2532,34 @@
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
+        /* ヘッダーなし: カレンダーの上の段に まとめる */
+        .app-header { display: none !important; }
+        #calPrevBtn, #calNextBtn { display: none !important; }
+        .cal-header { display: grid !important; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+        .ch-left, .ch-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .ch-right { justify-content: flex-end; gap: 6px; }
+        .ch-left .pair-btn { position: static; transform: none; }
+        .ch-left .total-balance { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .ch-mid { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; }
+        .cal-header .ch-mid .month-label { padding: 0 !important; flex: none; }
+        .upd-dot { display: none; width: 10px; height: 10px; padding: 0; border: none; border-radius: 50%; background: #e5484d; box-shadow: 0 0 0 3px color-mix(in srgb, #e5484d 25%, transparent); cursor: pointer; animation: svPulse 1.8s ease-in-out infinite; }
+        .upd-dot.show { display: inline-block; }
+        .ch-right .settings-btn { width: 34px; height: 34px; min-height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-xs); }
+        .ch-right .settings-btn .ic { width: 17px; height: 17px; }
+        .ch-right .settings-btn.panel-on, .ch-right .settings-btn:active { box-shadow: var(--sink); }
+        .ch-right .settings-btn.survey-btn.alert { background: var(--bg); box-shadow: var(--raise-xs), 0 0 0 2px #e5484d; }
+        /* 設定: 画面いっぱいの重ね表示。いちばん上は誰でも使う設定 */
+        #settingsPanel.open { position: fixed; inset: 0; z-index: 9500; margin: 0; border-radius: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+        body.viewer-mode #settingsPanel > :not(.panel-sticky):not(#setTop) { display: none !important; }
+        body.viewer-mode #settingsPanel .panel-save { display: none !important; }
+        #setTop { display: flex; flex-direction: column; gap: 12px; margin: 4px 0 18px; padding: 14px 16px; border-radius: 16px; background: var(--bg); box-shadow: var(--sink); }
+        .st-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+        .st-lbl { flex: none; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+        .st-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: none; border-radius: 17px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
+        .st-btn .ic { width: 16px; height: 16px; }
+        .st-btn:active { box-shadow: var(--sink); }
+        .st-sel { height: 34px; padding: 0 12px; border: none; border-radius: 17px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); }
+        #setAccount { margin: 0; font-size: 12px; }
         /* 追加済みのお知らせ */
         #addNotice { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
         #addNotice.show { opacity: 1; pointer-events: auto; }
@@ -2541,6 +2568,25 @@
         #addNotice .ic { width: 28px; height: 28px; color: var(--amber, #d4a017); }
         #addNotice .an-msg { font-size: 14px; font-weight: 600; line-height: 1.6; }
         #addNotice .op-add { min-width: 120px; height: 40px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; }
+        /* 右下の＋ */
+        #calCard .day-toggles { display: none !important; }   /* 追加は右下の＋から */
+        /* 他のボタンと同じ凹凸(浮いた丸)。押すと凹む。＋は緑 */
+        #addFab { position: fixed; right: 20px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 60; width: 58px; height: 58px; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--accent); box-shadow: var(--raise), 0 8px 18px rgba(0,0,0,.10); cursor: pointer; transition: box-shadow .18s ease; }
+        #addFab::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; box-shadow: inset 1.5px 1.5px 3px var(--sh), inset -1.5px -1.5px 3px var(--hl); opacity: 0; transition: opacity .18s ease; }
+        #addFab .ic { position: relative; width: 24px; height: 24px; transition: transform .2s ease; }
+        #addFab.open, #addFab:active { box-shadow: var(--sink); }
+        #addFab.open::before { opacity: 1; }
+        #addFab.open .ic { transform: rotate(45deg); color: var(--ink-2); }
+        body.nv-full #addFab, body.nv-full #addChooser { display: none !important; }
+        #addChooser { position: fixed; inset: 0; z-index: 59; display: none; }
+        #addChooser.open { display: block; }
+        #addChooser .ac-box { position: absolute; right: 20px; bottom: calc(90px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+        #addChooser .ac-box button { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border: none; border-radius: 22px; background: var(--bg); color: var(--ink); font-size: 14px; font-weight: 700; box-shadow: var(--raise); cursor: pointer; }
+        #addChooser .ac-box .ic { width: 18px; height: 18px; color: var(--accent); }
+        #addChooser .ac-box button { animation: acIn .18s ease both; }
+        #addChooser .ac-box button:nth-child(2) { animation-delay: .04s; }
+        @keyframes acIn { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
+        #addChooser .ac-box button:active { box-shadow: var(--sink); }
         /* ペアモード */
         .cal-header { position: relative; }
         .cal-header .month-label { padding: 0 var(--pairpad, 0px); box-sizing: border-box; }
@@ -2634,17 +2680,8 @@
 <body>
 
     <header class="app-header">
-        <h1 class="app-title"><span class="total-balance dev-only" id="totalBalance" title="精算で回収済みの金額 − コート代の合計(薄字は従来の予測収支)"></span></h1>
-        <nav class="header-btns">
-            <button class="settings-btn refresh-btn" id="refreshBtn" onclick="refreshApp()" title="最新の状態に更新" aria-label="更新"><i class="ic ic-refresh"></i></button>
-            <button class="settings-btn admin-only" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定"><i class="ic ic-sliders"></i></button>
-            <button class="settings-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="ライト/ダーク切替(開発モード中は逆)" aria-label="テーマ切替"><i class="ic ic-sun"></i></button>
-            <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge" id="surveyBadge"></span></button>
-            <select class="settings-btn mode-select real-admin-only" id="modeSelect" onchange="setViewMode(this.value)" title="モード(管理・閲覧)" aria-label="モード">
-                <option value="admin">Admin</option>
-                <option value="view">View</option>
-            </select>
-        </nav>
+        <h1 class="app-title"></h1>
+        <nav class="header-btns"></nav>
     </header>
 
     <!-- ===== 回答画面(来る・来ない・未定だけ答える) ===== -->
@@ -2670,7 +2707,7 @@
         </div>
     </div>
 
-    <div class="settings-panel admin-only" id="settingsPanel">
+    <div class="settings-panel" id="settingsPanel">
         <div class="panel-sticky">
             <div class="panel-head">
                 <h3>設定</h3>
@@ -2679,6 +2716,16 @@
                     <button type="button" class="panel-x" onclick="toggleSettings()">閉じる</button>
                 </div>
             </div>
+        </div>
+        <!-- 誰でも使う設定(いちばん上) -->
+        <div id="setTop">
+            <div class="st-row"><span class="st-lbl">表示</span><button type="button" class="st-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="ic ic-sun"></i></button></div>
+            <div class="st-row real-admin-only"><span class="st-lbl">モード</span>
+                <select class="st-sel mode-select" id="modeSelect" onchange="setViewMode(this.value)" aria-label="モード(管理・閲覧)">
+                    <option value="admin">Admin</option>
+                    <option value="view">View</option>
+                </select></div>
+            <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
         </div>
         <div class="panel-group-label">管理</div>
         <details class="acc" id="changeLogAcc">
@@ -2924,8 +2971,15 @@
     <section class="card cal-card" id="calCard">
         <div class="cal-header">
             <button class="cal-nav-btn" id="calPrevBtn" onclick="changeMonth(-1)" aria-label="前の月">‹</button>
-            <button type="button" class="pair-btn" id="pairBtn" onclick="openPairPanel()" aria-label="ペアモード" style="display:none"></button>
-            <span class="month-label" id="monthLabel"></span>
+            <div class="ch-left">
+                <button type="button" class="pair-btn" id="pairBtn" onclick="openPairPanel()" aria-label="ペアモード" style="display:none"></button>
+                <span class="total-balance dev-only" id="totalBalance" title="精算で回収済みの金額 − コート代の合計(薄字は従来の予測収支)"></span>
+            </div>
+            <div class="ch-mid"><span class="month-label" id="monthLabel"></span><button type="button" class="upd-dot" id="updDot" onclick="refreshApp()" aria-label="更新があります(タップで反映)" title="更新があります(タップで反映)"></button></div>
+            <div class="ch-right header-btns">
+                <button class="settings-btn" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定"><i class="ic ic-sliders"></i></button>
+                <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge" id="surveyBadge"></span></button>
+            </div>
             <button class="cal-nav-btn" id="calNextBtn" onclick="changeMonth(1)" aria-label="次の月">›</button>
         </div>
         <div class="cal-grid" id="calGrid"></div>
@@ -2939,6 +2993,15 @@
             </div>
         </div>
     </section>
+
+    <!-- 予定の追加(右下の丸い＋) -->
+    <button type="button" id="addFab" onclick="onAddFab()" aria-label="予定を追加"><i class="ic ic-plus"></i></button>
+    <div id="addChooser" onclick="if(event.target===this) closeAddChooser()">
+        <div class="ac-box" role="menu" aria-label="追加するもの">
+            <button type="button" id="acVolley" onclick="addChooseVolley()"><i class="ic ic-ball"></i><span>Volley</span></button>
+            <button type="button" onclick="addChoosePlan()"><i class="ic ic-cal"></i><span>予定</span></button>
+        </div>
+    </div>
 
     <div id="ptr" aria-hidden="true"><span><i class="ic ic-refresh"></i></span></div>
 
@@ -4965,6 +5028,27 @@
             return `<span class="nv-to" title="${escapeHtml(names.join("・"))}">${av}${names.length > 3 ? `<b>+${names.length - 3}</b>` : ""}</span>`;
         }
         function nvEdit(id) { editOtherPlan(id); }
+
+        // ------- 右下の＋: 管理者は「バレー / 予定」を選ぶ。閲覧者はすぐ予定の入力へ -------
+        function onAddFab() {
+            if (!isAdmin()) { addChoosePlan(); return; }
+            const ac = document.getElementById("addChooser"), vb = document.getElementById("acVolley");
+            if (vb) vb.querySelector("span").textContent = events[selectedDate] ? "Volley ›" : "Volley";
+            ac.classList.toggle("open");
+            document.getElementById("addFab").classList.toggle("open", ac.classList.contains("open"));
+        }
+        function closeAddChooser() { document.getElementById("addChooser").classList.remove("open"); document.getElementById("addFab").classList.remove("open"); }
+        function addChoosePlan() { closeAddChooser(); planDetailId = null; openNewPlan(); }
+        function addChooseVolley() {
+            closeAddChooser();
+            if (!isAdmin()) return;
+            if (!events[selectedDate]) {   // バレーのない日はバレーありにして、予約の画面へ(ダブルタップと同じ)
+                const hadAtt = !!attendanceByDate[selectedDate];
+                events[selectedDate] = true; seedRosterForDay(selectedDate); beginVolleyDraft(selectedDate, hadAtt); saveData();
+                renderRoster(); renderCalendar();
+                volleyFull = true; switchView("reserve"); renderOtherPlanBox(); renderNvPanel(); window.scrollTo(0, 0);
+            } else openVolleyFull();
+        }
 
         // ------- ペアモード(決まった相手とだけ共有。設定は各自の端末に保存) -------
         const PAIR_KEY = "attendance_pair_v1";
@@ -7709,7 +7793,7 @@
             if (meta) meta.setAttribute("content", dark ? "#313746" : "#eceff4");
             const btn = document.getElementById("themeToggleBtn");
             if (btn) {
-                btn.innerHTML = IC(dark ? "moon" : "sun");
+                btn.innerHTML = IC(dark ? "moon" : "sun") + `<span>${dark ? "ダーク" : "ライト"}</span>`;
                 btn.title = (dark ? "ダーク表示" : "ライト表示") + "(管理モードは反転) / タップで切替";
             }
         }
@@ -9582,8 +9666,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (firestorePendingValues && remoteUpdateSafeToApply()) setTimeout(flushPendingRemote, 0);
         }
         function markRemoteUpdate() {
-            const b = document.getElementById("refreshBtn");
-            if (b) b.classList.add("has-update");
+            const d = document.getElementById("updDot");   // 年月の横の赤い点(タップで反映)
+            if (d) d.classList.add("show");
         }
         function remoteUpdateSafeToApply() {
             const a = document.activeElement;
@@ -9679,17 +9763,17 @@ const namesBtn = isAdmin() && dates.length > 0
         var lastSyncStatus = null;
         function setFirestoreSyncStatus(text, isError) {
             lastSyncStatus = { text, isError };
-            const title = document.querySelector(".app-title");
+            const title = document.getElementById("setAccount");
             if (!title) return;
             let wrap = document.getElementById("firestoreSyncStatus");
             if (!wrap) {
                 wrap = document.createElement("span");
                 wrap.id = "firestoreSyncStatus";
-                wrap.style.cssText = "display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--ink-3);margin-left:auto;letter-spacing:0;";
+                wrap.style.cssText = "display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:8px;font-size:12px;font-weight:600;color:var(--ink-3);letter-spacing:0;";
                 title.appendChild(wrap);
             }
             // ふだんの状態(共有中・閲覧中・管理者・ゲスト)は出さない。同期中・エラー・端末のみ など知らせたいときだけ文字を出す
-            const normal = !isError && ["共有中", "閲覧中", "管理者", "ゲスト"].includes(text);
+            const normal = false;   // 設定の中なので、状態はいつも出す
             wrap.textContent = "";
             if (!normal) { const t = document.createElement("span"); t.textContent = text; wrap.appendChild(t); }
             wrap.title = text;
