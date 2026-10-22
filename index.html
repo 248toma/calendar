@@ -2534,6 +2534,14 @@
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
         /* ペアモード */
+        .cal-header { position: relative; }
+        .cal-header .month-label { padding: 0 var(--pairpad, 0px); box-sizing: border-box; }
+        .pair-btn { position: absolute; left: 50px; top: 50%; transform: translateY(-50%); z-index: 2; display: inline-flex; align-items: center; gap: 4px; min-width: 28px; height: 28px; padding: 0 7px; justify-content: center; border: none; border-radius: 13px; background: var(--bg); color: var(--ink-3); font-size: 11px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
+        .pair-btn .ic { width: 14px; height: 14px; flex: none; }
+        .pair-btn b { font-size: 11px; }
+        .pair-btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pair-btn.on { background: var(--accent); color: #fff; box-shadow: var(--raise-xs); }
+        .pair-btn:active { box-shadow: var(--sink); }
         body.viewer-mode:not(.pair-on) .pair-or-admin { display: none !important; }
         .op-sc.locked { opacity: .75; cursor: default; }
         #pairOv { position: fixed; inset: 0; z-index: 9000; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.35); }
@@ -2908,6 +2916,7 @@
     <section class="card cal-card" id="calCard">
         <div class="cal-header">
             <button class="cal-nav-btn" id="calPrevBtn" onclick="changeMonth(-1)" aria-label="前の月">‹</button>
+            <button type="button" class="pair-btn" id="pairBtn" onclick="openPairPanel()" aria-label="ペアモード" style="display:none"></button>
             <span class="month-label" id="monthLabel"></span>
             <button class="cal-nav-btn" id="calNextBtn" onclick="changeMonth(1)" aria-label="次の月">›</button>
         </div>
@@ -4962,7 +4971,31 @@
             const names = pairIds().map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
             return pairMode.on && names.length ? "Pair: " + (names.length > 2 ? names.slice(0, 2).join("・") + " 他" + (names.length - 2) : names.join("・")) : "Pair";
         }
-        function applyPairClass() { document.body.classList.toggle("pair-on", pairActive()); }
+        function applyPairClass() { document.body.classList.toggle("pair-on", pairActive()); renderPairBtn(); }
+        // カレンダー左上(‹の横)のペアボタン。ログイン中(共有が使えないときは常に)だけ出す
+        function renderPairBtn() {
+            const b = document.getElementById("pairBtn");
+            if (!b) return;
+            const show = !firebaseAvailable || !!authUid;
+            b.style.display = show ? "" : "none";
+            if (!show) return;
+            const on = pairActive();
+            const names = pairIds().map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
+            b.classList.toggle("on", on);
+            b.innerHTML = IC("users") + (on && names.length > 1 ? `<b>${names.length}</b>` : "");   // アイコンだけ(オンは緑。相手が複数なら人数)
+            b.title = on ? "ペアモード: " + names.join("・") : "ペアモード(オフ)";
+            fitPairPad();
+        }
+        // 月の見出しがペアボタンと重ならないよう、左右に同じだけ余白を取る(見出しは中央のまま)
+        function fitPairPad() {
+            const b = document.getElementById("pairBtn"), lb = document.getElementById("monthLabel"), hd = b && b.parentNode;
+            if (!b || !lb || !hd) return;
+            hd.style.setProperty("--pairpad", "0px");
+            if (b.style.display === "none" || !b.offsetWidth) return;
+            const pad = Math.max(0, b.offsetLeft + b.offsetWidth - lb.offsetLeft + 6);
+            hd.style.setProperty("--pairpad", pad + "px");
+        }
+        window.addEventListener("resize", () => fitPairPad());
         function openPairPanel() {
             let ov = document.getElementById("pairOv");
             if (!ov) {
@@ -4995,7 +5028,6 @@
         }
         function pairChanged() {
             renderPairPanel(); applyPairClass();
-            if (lastSyncStatus) setFirestoreSyncStatus(lastSyncStatus.text, lastSyncStatus.isError);
             if (planPanelIsOpen() && planEditId == null) { resetPlanForm(); renderOtherPlanBox(); }
         }
 
@@ -9646,11 +9678,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 } else {
                     if (authIsGuest) mk(myMemberName() || "Name", openGuestNamePicker);
                     mk("Sign out", signOutFromFirestore);
-                    mk(pairLabel(), openPairPanel);   // ペアモード(各自の設定)
-                    const pb = wrap.lastChild;
-                    if (pairActive() && pb) { pb.style.background = "var(--accent)"; pb.style.color = "#fff"; pb.style.borderColor = "var(--accent)"; }
                 }
             }
+            renderPairBtn();
         }
 
         function signInForFirestore() {
