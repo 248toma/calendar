@@ -2533,6 +2533,10 @@
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
+        /* 追加済みのお知らせ */
+        #addNotice { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 99999; width: max-content; max-width: min(88vw, 420px); display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: 16px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 600; line-height: 1.5; box-shadow: var(--raise), 0 8px 24px rgba(0,0,0,.18); opacity: 0; pointer-events: none; transform: translate(-50%, 12px); transition: opacity .2s ease, transform .2s ease; }
+        #addNotice.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+        #addNotice .ic { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--amber, #d4a017); }
         /* ペアモード */
         .cal-header { position: relative; }
         .cal-header .month-label { padding: 0 var(--pairpad, 0px); box-sizing: border-box; }
@@ -9042,9 +9046,26 @@ const namesBtn = isAdmin() && dates.length > 0
             L.push("END:VCALENDAR");
             return { text: L.map(icsFold).join("\r\n") + "\r\n", count: n };
         }
+        // 追加したあとに出すお知らせ(カレンダーアプリから戻ってきたときに出す。戻らなくても少し後に出す)
+        let addNoticePending = "";
+        function showAddNotice(msg) {
+            addNoticePending = msg;
+            const fire = () => { if (!addNoticePending || document.hidden) return; const m = addNoticePending; addNoticePending = ""; renderAddNotice(m); };
+            setTimeout(fire, 1200);
+        }
+        document.addEventListener("visibilitychange", () => { if (!document.hidden && addNoticePending) { const m = addNoticePending; addNoticePending = ""; setTimeout(() => renderAddNotice(m), 300); } });
+        function renderAddNotice(msg) {
+            let el = document.getElementById("addNotice");
+            if (!el) { el = document.createElement("div"); el.id = "addNotice"; el.setAttribute("role", "alert"); el.onclick = () => el.classList.remove("show"); document.body.appendChild(el); }
+            el.innerHTML = `<i class="ic ic-warn"></i><span>${escapeHtml(msg)}</span>`;
+            el.classList.add("show");
+            clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 7000);
+        }
         async function exportReservationsIcs() {
             const { text, count } = buildReservationsIcs();
             if (!count) { alert("追加できる予約日がありません(今日以降で、時間が入っている予約)"); return; }
+            { const map = gcalAddedMap(), dup = gcalFutureList().filter(x => gcalIsAdded(x.d, x.r, map)).length;
+              if (dup) showAddNotice(`${dup}件はすでに追加済みでした。カレンダーに同じ予定が2つ入っていたら、片方を消してください。`); }
             const blob = new Blob([text], { type: "text/calendar;charset=utf-8" });
             const url = URL.createObjectURL(blob);
             const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -9107,7 +9128,9 @@ const namesBtn = isAdmin() && dates.length > 0
         function bulkAddOne(d, id) {
             const r = (reservations[d] || []).find(x => x.id === id);
             if (!r) return;
+            const was = gcalIsAdded(d, r);
             addReservationToGoogleCalendar(id, d);
+            if (was) { const [, m, dd] = d.split("-").map(Number); showAddNotice(`${m}/${dd} ${r.time} はすでに追加済みでした。カレンダーに2つ入っていたら、片方を消してください。`); }
             renderBulkAdd();
         }
         function bulkAddNext() {
