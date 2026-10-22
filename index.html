@@ -2564,9 +2564,10 @@
         .sv-plantab { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: none; border-radius: 999px; background: var(--bg); color: var(--ink-2); font-size: 14px; font-weight: 700; box-shadow: var(--raise-sm); cursor: pointer; }
         .sv-plantab.on { box-shadow: var(--sink); color: var(--accent); }
         .sv-pbadge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #e5484d; color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; }
-        .sv-card.sv-plan { display: block; width: 100%; text-align: left; border: none; color: inherit; font: inherit; cursor: pointer; padding: 12px 14px; }
-        .sv-plan .sv-date { font-size: 15px; }
-        .sv-plan .sv-info { margin: 2px 0 0; }
+        .sv-plink { cursor: pointer; }
+        .sv-plan .sv-go { margin-left: auto; font-size: 18px; }
+        .sv-plan .sv-info { margin: 4px 0 12px; }
+        .sv-pwhen { margin-left: 8px; color: var(--ink-3); font-size: 12px; }
         .sv-plan .sv-pbar { display: inline-block; width: 3px; height: 12px; margin-right: 8px; border-radius: 2px; vertical-align: -1px; background: var(--plan-ink, var(--ink-3)); }
         .sv-pst { margin-left: auto; font-size: 16px; font-weight: 800; color: var(--ink-3); }
         .sv-pst.come { color: var(--come); } .sv-pst.notcome { color: var(--notcome); } .sv-pst.pending { color: var(--pending); }
@@ -8122,7 +8123,10 @@ const namesBtn = isAdmin() && dates.length > 0
                 const st = planStatusOf(p, name), done = st === "来る" || st === "来ない";
                 const [, m, dd] = p.startDate.split("-").map(Number);
                 const wd = WEEKDAYS[new Date(p.startDate + "T00:00:00").getDay()];
-                return `<button type="button" class="sv-card sv-plan${pcCls(p)}" onclick="goPlanRsvp(${p.id})"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${done ? "" : `<span class="sv-tag" title="未回答"></span>`}<span class="sv-pst ${st ? STATUS_META[st].cls : ""}">${st ? STATUS_META[st].sym : ""}</span><span class="sv-go">›</span></div><div class="sv-info"><div><span class="sv-pbar"></span>${escapeHtml(p.title || "予定")}</div></div></button>`;
+                // その場で答えられる。上の段(日付・予定名)を押すと予定の詳細へ
+                const when = planTimed(p) && p.start ? ` ${p.start}${p.end ? "-" + p.end : ""}` : "";
+                const btns = ["来る", "来ない", "未定"].map(s2 => `<button type="button" class="sv-btn ${STATUS_META[s2].cls}${st === s2 ? " sel" : ""}" onclick="planRsvpSet(${p.id},'${s2}')" aria-label="${s2}"><span class="sv-sym">${STATUS_META[s2].sym}</span></button>`).join("");
+                return `<div class="sv-card sv-plan${pcCls(p)}"><div class="sv-plink" role="button" tabindex="0" onclick="goPlanRsvp(${p.id})"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${done ? "" : `<span class="sv-tag" title="未回答"></span>`}<span class="sv-go">›</span></div><div class="sv-info"><div><span class="sv-pbar"></span>${escapeHtml(p.title || "予定")}<span class="sv-pwhen">${escapeHtml(when)}</span></div></div></div><div class="sv-btns">${btns}</div></div>`;
             }).join("");
             // 名前の横に「予定」ボタン(未回答の件数つき)。押すとバレー以外の予定のアンケート一覧に切り替わる
             const pAll = myRsvpPlans(name), pUn = pAll.filter(p => { const st = planStatusOf(p, name); return !(st === "来る" || st === "来ない"); }).length;
