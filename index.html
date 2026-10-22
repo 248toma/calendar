@@ -2550,6 +2550,8 @@
         #todayFab { position: fixed; right: 90px; bottom: calc(31px + env(safe-area-inset-bottom)); z-index: 60; height: 40px; padding: 0 16px; border: none; border-radius: 20px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise), 0 8px 18px rgba(0,0,0,.08); cursor: pointer; }
         #todayFab:active { box-shadow: var(--sink); }
         body.nv-full #todayFab { display: none !important; }
+        body.plan-editing #todayFab, body.plan-editing #addFab, body.plan-editing #addChooser { opacity: 0; pointer-events: none; transform: scale(.8); }
+        #todayFab, #addFab { transition: opacity .18s ease, transform .18s ease, box-shadow .18s ease; }
         .st-seg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 17px; background: var(--bg); box-shadow: var(--sink); }
         .st-seg button { height: 28px; min-width: 44px; padding: 0 10px; border: none; border-radius: 14px; background: transparent; color: var(--ink-3); font-size: 12px; font-weight: 700; cursor: pointer; }
         .st-seg button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
@@ -2724,6 +2726,14 @@
         .ntf-chip.ex.on { background: var(--notcome-ink, #c0392b); }
         .ntf-chips.dis { opacity: .4; pointer-events: none; }
         .ntf-sel { height: 32px; padding: 0 10px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 700; box-shadow: var(--sink); }
+        .ntf-in { width: 100%; box-sizing: border-box; height: 38px; padding: 0 12px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 14px; box-shadow: var(--sink); }
+        .ntf-pv { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-all; font-family: inherit; }
+        .ntf-grps { display: flex; flex-direction: column; gap: 8px; }
+        .ntf-grp { display: flex; align-items: center; gap: 8px; }
+        .ntf-grp .ntf-gl { flex: 1; font-size: 13px; color: var(--ink-2); }
+        .ntf-grp.hide .ntf-sym, .ntf-grp.hide .ntf-gl { opacity: .45; }
+        .ntf-grp .dis1 { opacity: .4; pointer-events: none; }
+        .ntf-sym { width: 104px; height: 34px; flex: none; text-align: center; border: none; border-radius: 10px; background: var(--bg); color: var(--ink); font-size: 16px; box-shadow: var(--sink); }
         .ntf-off .ntf-dep { opacity: .4; pointer-events: none; }
         /* 予定の入力欄・詳細の「通知」 */
         .op-ntf { display: none; align-items: center; gap: 8px; margin-top: 12px; }
@@ -2937,6 +2947,13 @@
             <div class="acc-body">
                 <div class="acc-desc">LINEのボットがお知らせを送るタイミングです。予定ごとの設定(予定の「通知」・バレーの日の「通知」)があれば、そちらが優先されます。</div>
                 <div id="ntfSettings"></div>
+            </div>
+        </details>
+        <details class="acc" id="notifyTextAcc">
+            <summary>通知の文章</summary>
+            <div class="acc-body">
+                <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
+                <div id="ntfText"></div>
             </div>
         </details>
         <details class="acc" id="notifyExAcc">
@@ -5266,6 +5283,10 @@
         var NOTIFY_KEY = "attendance_notify_v1";
         var NTF_DAY_OPTS = [14, 10, 7, 5, 3, 2, 1, 0];
         var NTF_DEFAULT = { volley: { on: true, days: [7], hour: 20 }, plan: { on: true, days: [1], hour: 20, everyone: false }, exclude: [], vday: {} };
+        // 名前一覧の区分: [キー, 記号, 人数を出すか, 名前]
+        var NTF_GROUPS = [["come", "○", true, "来る"], ["no", "✖︎", false, "来ない"], ["pend", "△", false, "未定"], ["un", "？", false, "未確認"]];
+        var NTF_SYM_PRESETS = { plain: ["○", "✖︎", "△", "？"], color: ["🟢来る", "🔴来ない", "🟠未定", "⚪️未確認"] };
+        var NTF_TEXT_DEFAULT = { volleyHead: "【{いつ}のバレー】{日付}", ask: "↓ △と？の人はアンケート回答よろしく", done: "↓ 詳細はこちら", planHead: "【{いつ}の予定】" };
         var ntfDaysOk = (a) => Array.isArray(a) ? [...new Set(a.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 60))].sort((x, y) => y - x) : null;
         function notifyCfg() {
             let v = null;
@@ -5279,7 +5300,18 @@
                 if (k === "plan") o.everyone = !!x.everyone;
                 return o;
             };
-            return { volley: part("volley"), plan: part("plan"), exclude: Array.isArray(v.exclude) ? v.exclude.slice() : [], vday: v.vday && typeof v.vday === "object" ? { ...v.vday } : {} };
+            const tx = v.text && typeof v.text === "object" ? v.text : {}, text = {};
+            Object.keys(NTF_TEXT_DEFAULT).forEach(k => {
+                const x = typeof tx[k] === "string" ? tx[k].slice(0, 300) : null;
+                text[k] = x == null || (/Head$/.test(k) && !x.trim()) ? NTF_TEXT_DEFAULT[k] : x;   // 見出しは空にしない
+            });
+            const gx = tx.groups && typeof tx.groups === "object" ? tx.groups : {};
+            text.groups = {};
+            NTF_GROUPS.forEach(([k, sym, cnt]) => {
+                const x = gx[k] && typeof gx[k] === "object" ? gx[k] : {};
+                text.groups[k] = { show: x.show !== false, count: typeof x.count === "boolean" ? x.count : cnt, sym: typeof x.sym === "string" && x.sym.trim() ? x.sym.trim().slice(0, 12) : sym };
+            });
+            return { volley: part("volley"), plan: part("plan"), exclude: Array.isArray(v.exclude) ? v.exclude.slice() : [], vday: v.vday && typeof v.vday === "object" ? { ...v.vday } : {}, text };
         }
         function saveNotify(cfg) {
             if (!isAdmin()) return;
@@ -5321,6 +5353,7 @@
             box.innerHTML = blk("volley", "バレー", "LINEのグループに、出欠の一覧を送ります。")
                 + blk("plan", "その他の予定", "グループには送らず、ボットと連携した本人の個人LINEに送ります。共有した予定は共有相手それぞれに、端末だけの予定(Local)は自分に届きます。「全員あて」も送ると、連携している全員に1通ずつ届きます(LINEの無料枠は月200通)。",
                     `<div class="ntf-row ntf-dep"><span>全員あての予定も送る</span><span class="st-seg"><button type="button" class="${cfg.plan.everyone ? "on" : ""}" onclick="ntfSet('plan','everyone',true)">送る</button><button type="button" class="${cfg.plan.everyone ? "" : "on"}" onclick="ntfSet('plan','everyone',false)">送らない</button></span></div>`);
+            renderNotifyText(cfg);
             const names = sortedRosterForNtf();
             ex.innerHTML = names.length ? names.map(r => `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
         }
@@ -5343,6 +5376,76 @@
             saveNotify(cfg); renderNotifySettings(); setSavedMsg("保存しました ✓");
         }
 
+        // 通知の文章(入力中は画面を作り直さない。下の見本だけ更新)
+        var NTF_TEXT_FIELDS = [["volleyHead", "バレーの見出し", "【{いつ}のバレー】{日付}"], ["ask", "△・？の人がいるときの最後の一言", ""], ["done", "全員回答済みのときの最後の一言", ""], ["planHead", "その他の予定の見出し(下に題名・日時)", "【{いつ}の予定】"]];
+        function renderNotifyText(cfg) {
+            const el = document.getElementById("ntfText");
+            if (!el) return;
+            cfg = cfg || notifyCfg();
+            el.innerHTML = NTF_TEXT_FIELDS.map(([k, label]) => `<div class="ntf-row col"><span>${label}</span><input type="text" class="ntf-in" id="ntfTx_${k}" maxlength="300" value="${escapeHtml(cfg.text[k])}" oninput="ntfTextInput()" onchange="ntfTextInput(true)"></div>`).join("")
+                + `<div class="ntf-row col"><span>名前の一覧(載せる区分・人数・記号)</span><div class="ntf-grps">${NTF_GROUPS.map(([k, , , label]) => { const g = cfg.text.groups[k]; return `<div class="ntf-grp${g.show ? "" : " hide"}"><input type="text" class="ntf-sym" maxlength="12" value="${escapeHtml(g.sym)}" aria-label="${label}の記号" onchange="ntfGroupSet('${k}','sym',this.value)"><span class="ntf-gl">${label}</span><button type="button" class="ntf-chip${g.show ? " on" : ""}" onclick="ntfGroupSet('${k}','show',${!g.show})">${g.show ? "載せる" : "載せない"}</button><button type="button" class="ntf-chip${g.count ? " on" : ""}${g.show ? "" : " dis1"}" onclick="ntfGroupSet('${k}','count',${!g.count})">人数</button></div>`; }).join("")}</div>
+                    <div class="ntf-chips" style="margin-top:4px"><button type="button" class="ntf-chip" onclick="ntfSymPreset('plain')">○✖︎△？</button><button type="button" class="ntf-chip" onclick="ntfSymPreset('color')">🟢来る 🔴来ない…(色つき)</button></div></div>`
+                + `<div class="ntf-row col"><span>見本(次のバレー)</span><pre class="ntf-pv" id="ntfPvV"></pre></div>`
+                + `<div class="ntf-row col"><span>見本(その他の予定)</span><pre class="ntf-pv" id="ntfPvP"></pre></div>`
+                + `<button type="button" class="template-reset-btn" onclick="ntfTextReset()">初期の文章に戻す</button>`;
+            renderNtfPreview(cfg);
+        }
+        var ntfTextTimer = 0;
+        function ntfTextInput(now) {
+            clearTimeout(ntfTextTimer);
+            const run = () => {
+                const cfg = notifyCfg();
+                NTF_TEXT_FIELDS.forEach(([k]) => { const i = document.getElementById("ntfTx_" + k); if (i) cfg.text[k] = i.value; });
+                saveNotify(cfg); renderNtfPreview(notifyCfg()); setSavedMsg("保存しました ✓");
+            };
+            if (now) run(); else { renderNtfPreview((() => { const c = notifyCfg(); NTF_TEXT_FIELDS.forEach(([k]) => { const i = document.getElementById("ntfTx_" + k); if (i) c.text[k] = i.value || (/Head$/.test(k) ? NTF_TEXT_DEFAULT[k] : ""); }); return c; })()); ntfTextTimer = setTimeout(run, 600); }
+        }
+        function ntfGroupSet(k, field, val) {
+            const cfg = notifyCfg();
+            cfg.text.groups[k][field] = field === "sym" ? (String(val).trim() || NTF_GROUPS.find(x => x[0] === k)[1]) : !!val;
+            if (field === "show" && !NTF_GROUPS.some(([g]) => cfg.text.groups[g].show)) { setSavedMsg("1つ以上載せてください", true); renderNotifyText(); return; }
+            saveNotify(cfg); renderNotifyText(notifyCfg()); setSavedMsg("保存しました ✓");
+        }
+        function ntfSymPreset(name) {
+            const cfg = notifyCfg();
+            NTF_GROUPS.forEach(([k], i) => { cfg.text.groups[k].sym = NTF_SYM_PRESETS[name][i]; });
+            // 最後の一言が初期の文のままなら、記号に合わせて言い方も変える
+            const ASK = { plain: NTF_TEXT_DEFAULT.ask, color: "↓ 未定・未確認の人はアンケート回答よろしく" };
+            if (Object.values(ASK).includes(cfg.text.ask)) cfg.text.ask = ASK[name];
+            saveNotify(cfg); renderNotifyText(notifyCfg()); setSavedMsg("保存しました ✓");
+        }
+        function ntfTextReset() {
+            if (!confirm("通知の文章を初期のものに戻しますか？")) return;
+            const cfg = notifyCfg(); cfg.text = { ...NTF_TEXT_DEFAULT };   // 区分の設定も初期に戻る
+            saveNotify(cfg); renderNotifyText(notifyCfg()); setSavedMsg("保存しました ✓");
+        }
+        // ボット(GAS)と同じ作り方で見本を作る
+        var NTF_WD = ["日", "月", "火", "水", "木", "金", "土"];
+        function ntfMd(key) { const [y, m, d] = key.split("-").map(Number); return `${m}/${d}(${NTF_WD[new Date(y, m - 1, d).getDay()]})`; }
+        function ntfWhen(n) { return n === 0 ? "今日" : n === 1 ? "明日" : n === 7 ? "1週間後" : `${n}日後`; }
+        function ntfFill(t, n, key) { return String(t).replace(/\{いつ\}/g, ntfWhen(n)).replace(/\{日付\}/g, ntfMd(key)); }
+        var NTF_GUEST_RE = /^[男女][A-Za-zＡ-Ｚａ-ｚ]初?$/;
+        function renderNtfPreview(cfg) {
+            const pv = document.getElementById("ntfPvV"), pp = document.getElementById("ntfPvP");
+            if (!pv || !pp) return;
+            const today = formatDateKey(new Date());
+            const key = Object.keys(events).filter(k => events[k] && k >= today).sort()[0] || today;
+            const n = Math.max(0, Math.round((new Date(key + "T00:00") - new Date(today + "T00:00")) / 864e5));
+            const exNames = cfg.exclude.map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
+            const g = { come: [], no: [], pend: [], un: [] };
+            (attendanceByDate[key] || []).forEach(m => {
+                if (!m || NTF_GUEST_RE.test(m.name || "") || exNames.includes(m.name)) return;
+                (m.status === "来る" ? g.come : m.status === "来ない" ? g.no : m.status === "未定" ? g.pend : g.un).push(m.name);
+            });
+            const lines = [ntfFill(cfg.text.volleyHead, n, key)];
+            (reservations[key] || []).forEach(r => { const l = `${r.time || ""} ${r.place || ""}${r.court ? " " + r.court : ""}`.trim(); if (l) lines.push(l); });
+            NTF_GROUPS.forEach(([k]) => { const o = cfg.text.groups[k], a = g[k]; if (o.show && a.length) lines.push("", o.count ? `${o.sym} ${a.length}人` : o.sym, a.join("\u3000")); });
+            const last = g.pend.length || g.un.length ? cfg.text.ask : cfg.text.done;
+            pv.textContent = lines.join("\n") + "\n\n" + (last ? last + "\n" : "") + APP_LINK_FOR_NTF;
+            const pk = formatDateKey(new Date(Date.now() + 864e5));
+            pp.textContent = [ntfFill(cfg.text.planHead, 1, pk) + "飲み会", ntfMd(pk) + " 19:00〜21:00", "(メモ)"].join("\n") + "\n\n" + (cfg.text.done ? cfg.text.done + "\n" : "") + APP_LINK_FOR_NTF;
+        }
+        var APP_LINK_FOR_NTF = "https://248toma.github.io/calendar/";
         // 予定ごと・バレーの日ごとの設定(小さな画面)
         var ntfEdit = null;   // { kind: "plan" | "vday", date, off, custom, days }
         function openNtfModal(kind, entry, title, sub) {
@@ -6667,6 +6770,7 @@
             if (!box) return;
             { const ti = document.getElementById("opTitle"); if (ti) ti.maxLength = 12; }
             const open = planPanelIsOpen();
+            document.body.classList.toggle("plan-editing", open);   // 入力中は右下のToday・＋を隠す
             if (open && planFormDate !== selectedDate) resetPlanForm();
             const tg = $op("planToggle");
             if (tg) tg.checked = open;
