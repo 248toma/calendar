@@ -2708,6 +2708,49 @@
         .nv-pip.ring { background: transparent; box-shadow: inset 0 0 0 1.4px var(--plan-ink, var(--ink-3)); }
         .nv-pips b { font-size: 8px; line-height: 5px; color: var(--ink-3); }
         .nv-top.has-dot::after { right: 6px; top: 50%; margin-top: -2px; }
+        /* ===== LINE通知 ===== */
+        :root { --i-bell:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4'/%3E%3C/svg%3E"); --i-belloff:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4M4%204l16%2016'/%3E%3C/svg%3E"); }
+        .ic-bell{-webkit-mask-image:var(--i-bell);mask-image:var(--i-bell);}.ic-belloff{-webkit-mask-image:var(--i-belloff);mask-image:var(--i-belloff);}
+        .ntf-blk { padding: 10px 2px 12px; border-bottom: 1px solid var(--line); }
+        .ntf-blk:last-child { border-bottom: none; }
+        .ntf-h { font-size: 13px; font-weight: 800; color: var(--ink); margin-bottom: 2px; }
+        .ntf-sub { font-size: 11.5px; color: var(--ink-3); margin-bottom: 8px; line-height: 1.5; }
+        .ntf-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px; }
+        .ntf-row > span { font-size: 13px; color: var(--ink-2); flex: none; }
+        .ntf-row.col { flex-direction: column; align-items: stretch; gap: 6px; padding: 4px 0; }
+        .ntf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .ntf-chip { height: 30px; min-width: 52px; padding: 0 10px; border: none; border-radius: 15px; background: var(--bg); color: var(--ink-3); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
+        .ntf-chip.on { background: var(--accent); color: #fff; }
+        .ntf-chip.ex.on { background: var(--notcome-ink, #c0392b); }
+        .ntf-chips.dis { opacity: .4; pointer-events: none; }
+        .ntf-sel { height: 32px; padding: 0 10px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 700; box-shadow: var(--sink); }
+        .ntf-off .ntf-dep { opacity: .4; pointer-events: none; }
+        /* 予定の入力欄・詳細の「通知」 */
+        .op-ntf { display: none; align-items: center; gap: 8px; margin-top: 12px; }
+        .op-ntf.show { display: flex; }
+        .op-ntf-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 12px; border: none; border-radius: 10px; background: var(--bg); color: var(--ink-2); font-size: 12.5px; font-weight: 600; box-shadow: var(--raise-xs); cursor: pointer; text-align: left; }
+        .op-ntf-btn .ic { width: 14px; height: 14px; flex: none; }
+        .op-ntf-btn.off { color: var(--ink-3); }
+        .op-ntf-btn:active { box-shadow: var(--sink); }
+        .pd-ntf { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); margin: 2px 0 6px; }
+        .pd-ntf .ic { width: 13px; height: 13px; }
+        /* バレーの日の「通知」(日付の横、削除の左) */
+        .vb-ntf { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 12px; border: none; border-radius: 14px; background: var(--bg); color: var(--ink-2); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
+        .vb-ntf .ic { width: 13px; height: 13px; }
+        .vb-ntf.off { color: var(--ink-3); }
+        .vb-ntf:active { box-shadow: var(--sink); }
+        body:not(.nv-full) .vb-ntf { display: none !important; }
+        /* 通知の設定(予定ごと)の小さな画面 */
+        #ntfModal { position: fixed; inset: 0; z-index: 99998; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+        #ntfModal.show { opacity: 1; pointer-events: auto; }
+        #ntfModal .nm-box { width: min(90vw, 360px); display: flex; flex-direction: column; gap: 10px; padding: 18px 18px 16px; border-radius: 20px; background: var(--bg); color: var(--ink); box-shadow: var(--raise), 0 12px 32px rgba(0,0,0,.25); transform: scale(.96); transition: transform .2s ease; }
+        #ntfModal.show .nm-box { transform: scale(1); }
+        #ntfModal .nm-ttl { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+        #ntfModal .nm-ttl .ic { width: 16px; height: 16px; color: var(--accent); }
+        #ntfModal .nm-sub { font-size: 12px; color: var(--ink-3); margin-top: -4px; }
+        #ntfModal .nm-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+        #ntfModal .nm-acts button { height: 38px; min-width: 88px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-xs); }
+        #ntfModal .nm-acts .ok { background: var(--accent); color: #fff; }
     </style>
 </head>
 <body>
@@ -2888,6 +2931,21 @@
         </details>
             </div>
         </details>
+        <div class="panel-group-label">LINE通知</div>
+        <details class="acc" id="notifyAcc">
+            <summary>通知のタイミング</summary>
+            <div class="acc-body">
+                <div class="acc-desc">LINEのボットがお知らせを送るタイミングです。予定ごとの設定(予定の「通知」・バレーの日の「通知」)があれば、そちらが優先されます。</div>
+                <div id="ntfSettings"></div>
+            </div>
+        </details>
+        <details class="acc" id="notifyExAcc">
+            <summary>通知に載せない人</summary>
+            <div class="acc-body">
+                <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません。個人あての通知も届きません(アプリの出欠はそのまま)。</div>
+                <div class="ntf-chips" id="ntfExclude"></div>
+            </div>
+        </details>
         <div class="panel-group-label">予約</div>
         <details class="acc">
             <summary>予約情報プリセット</summary>
@@ -3042,6 +3100,7 @@
     <div class="day-bar">
         <div class="selected-date-label" id="selectedDateLabel" onclick="toggleCalendar()" role="button" tabindex="0" aria-label="カレンダーを開閉" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCalendar();}"></div>
         <button type="button" class="vb-del admin-only" id="vbDelBtn" onclick="deleteVolleyDay()" aria-label="この日のバレーを削除" title="この日のバレーを削除"><i class="ic ic-close"></i><span>削除</span></button>
+        <button type="button" class="vb-ntf admin-only" id="vbNtfBtn" onclick="openVolleyNtf()" aria-label="この日のLINE通知"><i class="ic ic-bell"></i><span>通知</span></button>
         <div class="day-toggles">
             <div class="event-toggle plan-toggle">
                 <input type="checkbox" id="planToggle" aria-label="バレー以外の予定の入力" onchange="togglePlanPanel(this.checked)">
@@ -3088,6 +3147,9 @@
         <div class="op-share pair-or-admin" id="opShare">
             <button type="button" class="op-share-tg" id="opShareTg" onclick="togglePlanShareOpen()" aria-expanded="false"></button>
             <div id="opShareChips"></div>
+        </div>
+        <div class="op-ntf" id="opNtf">
+            <button type="button" class="op-ntf-btn" id="opNtfBtn" onclick="openPlanNtf()"></button>
         </div>
         <div class="op-actions">
             <button type="button" class="op-delbtn" id="opDelBtn" onclick="deleteOtherPlan(planEditId)">削除</button>
@@ -3978,6 +4040,7 @@
                 document.getElementById("inputRoundUnit").value = rvRoundUnit;
                 renderRvPresetEditor();
                 renderTeamSettingsPanel();
+                renderNotifySettings();
                 if (document.getElementById("rosterAcc").open) renderRosterPanel();
             }
         }
@@ -4516,7 +4579,7 @@
                 const todayKey = formatDateKey(new Date());
                 let daysChanged = false;
                 Object.keys(attendanceByDate).forEach(k => {
-                    if (k < todayKey) return;
+                    if (k < todayKey || !/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
                     const l = attendanceByDate[k] || [];
                     const kept = l.filter(x => x.name !== mem.name);
                     if (kept.length !== l.length) { attendanceByDate[k] = kept; daysChanged = true; }
@@ -5196,7 +5259,217 @@
             const [, m, d] = selectedDate.split("-").map(Number);
             if (!confirm(`${m}/${d} のバレーを削除しますか？`)) return;
             toggleEventDay(false);
+            { const cfg = notifyCfg(); if (cfg.vday[selectedDate]) { delete cfg.vday[selectedDate]; saveNotify(cfg); } }
             closeVolleyFull();
+        }
+        // ------- LINE通知の設定(共有データに保存。LINEのボット(GAS)が毎時これを読んで送る) -------
+        var NOTIFY_KEY = "attendance_notify_v1";
+        var NTF_DAY_OPTS = [14, 10, 7, 5, 3, 2, 1, 0];
+        var NTF_DEFAULT = { volley: { on: true, days: [7], hour: 20 }, plan: { on: true, days: [1], hour: 20, everyone: false }, exclude: [], vday: {} };
+        var ntfDaysOk = (a) => Array.isArray(a) ? [...new Set(a.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 60))].sort((x, y) => y - x) : null;
+        function notifyCfg() {
+            let v = null;
+            try { v = JSON.parse(localStorage.getItem(NOTIFY_KEY) || "null"); } catch (e) { v = null; }
+            v = v && typeof v === "object" ? v : {};
+            const part = (k) => {
+                const d = NTF_DEFAULT[k], x = v[k] && typeof v[k] === "object" ? v[k] : {};
+                const days = ntfDaysOk(x.days);
+                const hour = Number.isInteger(x.hour) && x.hour >= 0 && x.hour <= 23 ? x.hour : d.hour;
+                const o = { on: x.on !== false, days: days && days.length ? days : d.days.slice(), hour };
+                if (k === "plan") o.everyone = !!x.everyone;
+                return o;
+            };
+            return { volley: part("volley"), plan: part("plan"), exclude: Array.isArray(v.exclude) ? v.exclude.slice() : [], vday: v.vday && typeof v.vday === "object" ? { ...v.vday } : {} };
+        }
+        function saveNotify(cfg) {
+            if (!isAdmin()) return;
+            // 過ぎた日の個別設定は捨てる
+            const today = formatDateKey(new Date());
+            Object.keys(cfg.vday).forEach(k => { if (k < today) delete cfg.vday[k]; });
+            try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(cfg)); } catch (e) { console.warn("通知設定の保存に失敗しました。", e); }
+        }
+        function ntfShortDays(days) {
+            const a = ntfDaysOk(days) || [], n = a.filter(x => x > 0);
+            const t = n.length ? n.join("・") + "日前" : "";
+            return a.includes(0) ? (t ? t + "・当日" : "当日") : t;
+        }
+        var ntfDayLabel = (n) => n === 0 ? "当日" : `${n}日前`;
+        // 個別設定(entry: undefined / {off:true} / {days:[...]})と全体設定から、表示する文
+        function ntfSummary(entry, base, opts) {
+            opts = opts || {};
+            if (!base.on) return { off: true, text: "通知しない(全体の設定でオフ)" };
+            if (entry && entry.off) return { off: true, text: "通知しない" };
+            if (opts.noTarget) return { off: true, text: opts.noTarget === "me" ? "名簿の名前が未設定のため通知できません" : "全員あての予定は通知しない設定です" };
+            const own = entry && ntfDaysOk(entry.days) && ntfDaysOk(entry.days).length;
+            const days = own ? ntfDaysOk(entry.days) : base.days;
+            return { off: false, text: `${days.map(ntfDayLabel).join("・")} ${base.hour}時台${own ? "" : "(いつもの設定)"}` };
+        }
+
+        // 設定画面
+        function renderNotifySettings() {
+            const box = document.getElementById("ntfSettings"), ex = document.getElementById("ntfExclude");
+            if (!box || !ex) return;
+            const cfg = notifyCfg();
+            const hourSel = (k, h) => `<select class="ntf-sel" onchange="ntfSet('${k}','hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${i === h ? " selected" : ""}>${i}時台</option>`).join("")}</select>`;
+            const seg = (k, on) => `<span class="st-seg"><button type="button" class="${on ? "on" : ""}" onclick="ntfSet('${k}','on',true)">オン</button><button type="button" class="${on ? "" : "on"}" onclick="ntfSet('${k}','on',false)">オフ</button></span>`;
+            const days = (k, arr) => `<div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${arr.includes(n) ? " on" : ""}" onclick="ntfToggleDay('${k}',${n})">${ntfDayLabel(n)}</button>`).join("")}</div>`;
+            const blk = (k, title, sub, extra) => `<div class="ntf-blk${cfg[k].on ? "" : " ntf-off"}">
+                <div class="ntf-h">${title}</div><div class="ntf-sub">${sub}</div>
+                <div class="ntf-row"><span>通知</span>${seg(k, cfg[k].on)}</div>
+                <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span>${days(k, cfg[k].days)}</div>
+                <div class="ntf-row ntf-dep"><span>時間</span>${hourSel(k, cfg[k].hour)}</div>${extra || ""}</div>`;
+            box.innerHTML = blk("volley", "バレー", "LINEのグループに、出欠の一覧を送ります。")
+                + blk("plan", "その他の予定", "グループには送らず、ボットと連携した本人の個人LINEに送ります。共有した予定は共有相手それぞれに、端末だけの予定(Local)は自分に届きます。「全員あて」も送ると、連携している全員に1通ずつ届きます(LINEの無料枠は月200通)。",
+                    `<div class="ntf-row ntf-dep"><span>全員あての予定も送る</span><span class="st-seg"><button type="button" class="${cfg.plan.everyone ? "on" : ""}" onclick="ntfSet('plan','everyone',true)">送る</button><button type="button" class="${cfg.plan.everyone ? "" : "on"}" onclick="ntfSet('plan','everyone',false)">送らない</button></span></div>`);
+            const names = sortedRosterForNtf();
+            ex.innerHTML = names.length ? names.map(r => `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
+        }
+        function sortedRosterForNtf() { return roster.slice().sort((a, b) => String(a.yomi || a.name).localeCompare(String(b.yomi || b.name), "ja")); }
+        function ntfSet(k, field, val) {
+            const cfg = notifyCfg();
+            cfg[k][field] = val;
+            saveNotify(cfg); renderNotifySettings(); renderPlanNtf(); updateVbNtf(); setSavedMsg("保存しました ✓");
+        }
+        function ntfToggleDay(k, n) {
+            const cfg = notifyCfg(), a = cfg[k].days;
+            const next = a.includes(n) ? a.filter(x => x !== n) : a.concat(n);
+            if (!next.length) { setSavedMsg("1つ以上えらんでください", true); return; }
+            cfg[k].days = ntfDaysOk(next);
+            saveNotify(cfg); renderNotifySettings(); renderPlanNtf(); updateVbNtf(); setSavedMsg("保存しました ✓");
+        }
+        function ntfToggleExclude(id) {
+            const cfg = notifyCfg();
+            cfg.exclude = cfg.exclude.includes(id) ? cfg.exclude.filter(x => x !== id) : cfg.exclude.concat(id);
+            saveNotify(cfg); renderNotifySettings(); setSavedMsg("保存しました ✓");
+        }
+
+        // 予定ごと・バレーの日ごとの設定(小さな画面)
+        var ntfEdit = null;   // { kind: "plan" | "vday", date, off, custom, days }
+        function openNtfModal(kind, entry, title, sub) {
+            const base = notifyCfg()[kind === "vday" ? "volley" : "plan"];
+            const own = entry && ntfDaysOk(entry.days) && ntfDaysOk(entry.days).length ? ntfDaysOk(entry.days) : null;
+            ntfEdit = { kind, date: selectedDate, off: !!(entry && entry.off), custom: !!own, days: own || base.days.slice(), title, sub };
+            renderNtfModal();
+            document.getElementById("ntfModal").classList.add("show");
+        }
+        function renderNtfModal() {
+            let el = document.getElementById("ntfModal");
+            if (!el) {
+                el = document.createElement("div"); el.id = "ntfModal";
+                el.addEventListener("click", (e) => { if (e.target === el) closeNtfModal(); });
+                document.body.appendChild(el);
+            }
+            const e = ntfEdit, base = notifyCfg()[e.kind === "vday" ? "volley" : "plan"];
+            const baseTxt = `${base.days.map(ntfDayLabel).join("・")} ${base.hour}時台`;
+            el.innerHTML = `<div class="nm-box" role="dialog" aria-label="通知の設定">
+                <div class="nm-ttl"><i class="ic ic-bell"></i>${escapeHtml(e.title)}</div>
+                ${e.sub ? `<div class="nm-sub">${escapeHtml(e.sub)}</div>` : ""}
+                ${base.on ? "" : `<div class="nm-sub" style="color:var(--notcome-ink,#c0392b)">全体の設定で、この種類の通知はオフになっています。</div>`}
+                <div class="ntf-row"><span>通知</span><span class="st-seg"><button type="button" class="${e.off ? "" : "on"}" onclick="ntfEdit.off=false;renderNtfModal()">する</button><button type="button" class="${e.off ? "on" : ""}" onclick="ntfEdit.off=true;renderNtfModal()">しない</button></span></div>
+                <div class="${e.off ? "ntf-off" : ""}">
+                    <div class="ntf-row ntf-dep"><span>タイミング</span><span class="st-seg"><button type="button" class="${e.custom ? "" : "on"}" onclick="ntfEdit.custom=false;renderNtfModal()">いつもの</button><button type="button" class="${e.custom ? "on" : ""}" onclick="ntfEdit.custom=true;renderNtfModal()">この予定だけ</button></span></div>
+                    <div class="ntf-row col ntf-dep">${e.custom
+                        ? `<div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${e.days.includes(n) ? " on" : ""}" onclick="ntfModalDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div><div class="nm-sub" style="margin:0">時間は全体の設定(${base.hour}時台)です</div>`
+                        : `<div class="nm-sub" style="margin:0">いつもの設定: ${escapeHtml(baseTxt)}</div>`}</div>
+                </div>
+                <div class="nm-acts"><button type="button" onclick="closeNtfModal()">キャンセル</button><button type="button" class="ok" onclick="applyNtfModal()">OK</button></div>
+            </div>`;
+        }
+        function ntfModalDay(n) {
+            const a = ntfEdit.days;
+            const next = a.includes(n) ? a.filter(x => x !== n) : a.concat(n);
+            if (!next.length) return;   // 1つは残す
+            ntfEdit.days = ntfDaysOk(next); renderNtfModal();
+        }
+        function closeNtfModal() { const el = document.getElementById("ntfModal"); if (el) el.classList.remove("show"); ntfEdit = null; }
+        function ntfEntryFromEdit(e) { return e.off ? { off: true } : e.custom ? { days: e.days.slice() } : null; }
+        function applyNtfModal() {
+            const e = ntfEdit; if (!e) return;
+            const entry = ntfEntryFromEdit(e);
+            if (e.kind === "plan") { planNtf = entry; renderPlanNtf(); }
+            else if (e.kind === "vday" && isAdmin()) {
+                const cfg = notifyCfg();
+                if (entry) cfg.vday[e.date] = entry; else delete cfg.vday[e.date];
+                saveNotify(cfg); updateVbNtf();
+            }
+            closeNtfModal();
+        }
+
+        // 予定の入力欄
+        var planNtf = null;   // 入力欄の通知設定(null=いつもの)
+        function planFormHasTarget() {
+            if (!isAdmin()) return true;   // 閲覧者の共有予定はペアの相手あて
+            return planShare.length > 0 || pairActive();
+        }
+        function renderPlanNtf() {
+            const row = document.getElementById("opNtf"), btn = document.getElementById("opNtfBtn");
+            if (!row || !btn) return;
+            const local = !((isAdmin() || pairActive()) && planScope === "shared");
+            row.classList.add("show");
+            const base = notifyCfg().plan;
+            const sm = ntfSummary(planNtf, base, { noTarget: local ? (myRosterId() == null ? "me" : false) : (!planFormHasTarget() && !base.everyone) });
+            btn.classList.toggle("off", sm.off);
+            btn.innerHTML = `<i class="ic ${sm.off ? "ic-belloff" : "ic-bell"}"></i><span>${escapeHtml(sm.text)}</span>`;
+        }
+        function openPlanNtf() {
+            const t = ($op("opTitle").value || "").trim() || "予定";
+            const local = !((isAdmin() || pairActive()) && planScope === "shared");
+            openNtfModal("plan", planNtf, `「${t}」の通知`, local ? "あなたの個人LINEに届きます(ボットとの連携が必要)" : planFormHasTarget() ? "共有相手のうち、ボットと連携した人の個人LINEに届きます" : "連携している全員の個人LINEに届きます");
+        }
+        function planNtfLine(p) {
+            const base = notifyCfg().plan, hasTo = Array.isArray(p.to) && p.to.length;
+            const sm = ntfSummary(p.ntf, base, { noTarget: p.local ? (myRosterId() == null ? "me" : false) : (!hasTo && !base.everyone) });
+            return `<div class="pd-ntf">${IC(sm.off ? "belloff" : "bell")}<span>LINE通知: ${escapeHtml(sm.text)}</span></div>`;
+        }
+
+        // この端末だけの予定(Local)は共有データに無いので、通知に使う分だけを出欠データの "localntf" に写す。
+        // [{ owner: 持ち主のキー, who: 名簿ID, list: [予定], ts }]。ボットはこれを見て本人の個人LINEへ送る
+        var LOCAL_NTF = "localntf";
+        function localNtfList() {
+            const today = formatDateKey(new Date());
+            return planList.filter(p => p.local && p.startDate && (p.endDate || p.startDate) >= today && !(p.ntf && p.ntf.off))
+                .map(p => { const o = { id: p.id, title: p.title || "", startDate: p.startDate }; ["start", "end", "endDate", "memo"].forEach(k => { if (p[k]) o[k] = p[k]; }); if (p.ntf) o.ntf = p.ntf; return o; })
+                .sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
+        }
+        function syncLocalNtf() {
+            const owner = planAuthorKey(), who = myRosterId();
+            if (!owner || owner === "n:") return;
+            const list = who == null ? [] : localNtfList();
+            const store = Array.isArray(attendanceByDate[LOCAL_NTF]) ? attendanceByDate[LOCAL_NTF] : [];
+            const cur = store.find(x => x.owner === owner);
+            if (cur ? (cur.who === who && JSON.stringify(cur.list) === JSON.stringify(list)) : !list.length) return;   // 変わっていない
+            const rec = { owner, who, list, ts: Date.now() };
+            const next = store.filter(x => x.owner !== owner);
+            if (list.length) next.push(rec);
+            attendanceByDate[LOCAL_NTF] = next;
+            saveData();
+            if (!isAdmin() && firebaseAvailable && !firestoreEditor && firestoreRef && firestoreSyncActive && authUid) {
+                firebase.firestore().runTransaction(async tx => {
+                    const snap = await tx.get(firestoreRef);
+                    if (!snap.exists) throw new Error("no-doc");
+                    const values = (snap.data() && snap.data().values) || {};
+                    const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                    const arr = (Array.isArray(data[LOCAL_NTF]) ? data[LOCAL_NTF] : []).filter(x => x.owner !== owner);
+                    if (list.length) arr.push(rec);
+                    data[LOCAL_NTF] = arr;
+                    tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                }).catch(err => console.error("通知用の予定を共有データに反映できませんでした。", err));
+            }
+        }
+        // バレーの日
+        function updateVbNtf() {
+            const b = document.getElementById("vbNtfBtn");
+            if (!b) return;
+            const cfg = notifyCfg(), sm = ntfSummary(cfg.vday[selectedDate], cfg.volley);
+            b.classList.toggle("off", sm.off);
+            const own = cfg.vday[selectedDate] && !cfg.vday[selectedDate].off;
+            b.innerHTML = `<i class="ic ${sm.off ? "ic-belloff" : "ic-bell"}"></i><span>${sm.off ? "通知なし" : own ? ntfShortDays(cfg.vday[selectedDate].days) : "通知"}</span>`;
+            b.title = `LINE通知: ${sm.text}`;
+        }
+        function openVolleyNtf() {
+            if (!isAdmin() || !events[selectedDate]) return;
+            const [, m, d] = selectedDate.split("-").map(Number);
+            openNtfModal("vday", notifyCfg().vday[selectedDate], `${m}/${d} バレーの通知`, "LINEのグループに届きます");
         }
         function addChooseVolley() {
             closeAddChooser();
@@ -5431,7 +5704,7 @@
                 <div class="pd-head"><span class="pd-bar"></span><div class="pd-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</div>${rsvp ? `<span class="pd-cnt">○ ${planComing(p)}</span>` : ""}</div>
                 <div class="pd-when">${escapeHtml(planWhenText(p))}</div>
                 ${p.memo ? `<div class="pd-memo">${escapeHtml(p.memo)}</div>` : ""}
-                ${btns}${mem}
+                ${planNtfLine(p)}${btns}${mem}
                 <div class="pd-acts">${editable ? `<button type="button" class="op-delbtn" onclick="deleteOtherPlan(${p.id})">削除</button>` : ""}<span class="op-grow"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button>${editable ? `<button type="button" class="op-add" onclick="editFromDetail(${p.id})">編集</button>` : ""}</div>
             </div>`;
         }
@@ -5441,6 +5714,7 @@
             if (volleyFull && !events[selectedDate]) volleyFull = false;   // バレーが無くなった日は全体表示を解除
             document.body.classList.toggle("nv-full", volleyFull);
             placeDayToggles();
+            updateVbNtf();
             const rows = [];
             if (planDetailId != null && !plansOn(selectedDate).some(x => x.p.id === planDetailId)) planDetailId = null;   // 別の日に移ったら詳細は閉じる
             const rs = reservations[selectedDate] || [];
@@ -6296,6 +6570,7 @@
             el.innerHTML = allChip + roster.filter(r => isAdmin() ? true : must.includes(r.id)).map(r => must.includes(r.id)
                 ? `<button type="button" class="op-sc on locked" disabled title="ペアの相手">${escapeHtml(r.name)}</button>`
                 : chip(planShare.includes(r.id), r.name, JSON.stringify(r.id))).join("");
+            renderPlanNtf();
         }
         // 管理者: 共有する予定で「来る・来ない・未定」のアンケートを取るか
         let planRsvp = false;
@@ -6373,7 +6648,7 @@
         function togglePlanAllDay() { setPlanAllDay(!planAllDay); }
         const $op = (id) => document.getElementById(id);
         function resetPlanForm() {
-            planEditId = null; planFormDate = selectedDate; setPlanColor(0); planShare = []; planShareOpen = false; planRsvp = false; setPlanScope(defaultPlanScope());
+            planEditId = null; planFormDate = selectedDate; setPlanColor(0); planShare = []; planShareOpen = false; planRsvp = false; planNtf = null; setPlanScope(defaultPlanScope());
             $op("opTitle").value = ""; $op("opMemo").value = "";
             $op("opStartDate").value = selectedDate; $op("opStart").value = "";
             $op("opEndDate").value = ""; $op("opEnd").value = "";
@@ -6407,7 +6682,7 @@
             planDetailId = null;
             planPanel = { date: selectedDate, open: true };
             planEditId = id; planFormDate = selectedDate;
-            setPlanColor(+p.color || 0); planShare = Array.isArray(p.to) ? p.to.slice() : []; planShareOpen = false; planRsvp = !!p.rsvp; setPlanScope(p.local ? "local" : "shared");
+            setPlanColor(+p.color || 0); planShare = Array.isArray(p.to) ? p.to.slice() : []; planShareOpen = false; planRsvp = !!p.rsvp; planNtf = p.ntf && typeof p.ntf === "object" ? { ...p.ntf } : null; setPlanScope(p.local ? "local" : "shared");
             $op("opTitle").value = p.title || ""; $op("opMemo").value = p.memo || "";
             $op("opStartDate").value = p.startDate; $op("opStart").value = p.start || "";
             $op("opEndDate").value = p.endDate || ""; $op("opEnd").value = p.end || "";
@@ -6432,13 +6707,14 @@
             if (planColor) p.color = planColor;
             const toLocal = (isAdmin() || pairActive()) ? planScope === "local" : true;
             const prev = planEditId != null ? planList.find(x => x.id === planEditId) : null;
-            if (toLocal) p.local = true;
+            if (toLocal) { p.local = true; if (planNtf) p.ntf = planNtf; }
             else {
                 let to = isAdmin() ? planShare.slice() : [];   // 閲覧者はペアの相手とだけ
                 if (pairActive()) { pairIds().forEach(id => { if (!to.includes(id)) to.push(id); }); }   // ペアの相手は必ず共有
                 const me = myRosterId();
                 if (to.length && me != null && !to.includes(me)) to.push(me);   // 自分にも見えるように
                 if (to.length) p.to = to;
+                if (planNtf) p.ntf = planNtf;
             }
             // 閲覧者の共有予定(=ペア予定)、もとからペア予定だったものは、出欠データ側(pairplans)に保存する
             if (!toLocal && (!isAdmin() || (prev && prev.pp))) {
@@ -6471,6 +6747,7 @@
             planPanel = { date: selectedDate, open: false };   // 保存したら入力欄は閉じる
             planEditId = null; planFormDate = "";
             saveData();
+            if (toLocal || (prev && prev.local)) syncLocalNtf();
             renderCalendar();
             renderOtherPlanBox();
         }
@@ -6483,6 +6760,7 @@
             delete attendanceByDate[planRsvpKey(id)];   // その予定の出欠も消す
             if (planDetailId === id) planDetailId = null;
             saveData();
+            if (target.local) syncLocalNtf();
             if (planEditId === id) { planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = ""; }
             renderCalendar();
             renderOtherPlanBox();
@@ -9846,6 +10124,11 @@ const namesBtn = isAdmin() && dates.length > 0
                         (rem[date] || []).forEach(rp => { const i = L.findIndex(x => x.id === rp.id); if (i < 0) L.push(rp); else if (stampNum(rp.updated) > stampNum(L[i].updated)) L[i] = rp; });
                         return;
                     }
+                    if (date === LOCAL_NTF) {   // ローカル予定の通知用コピー: 持ち主ごとに新しい方
+                        const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
+                        (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.owner === rp.owner); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
+                        return;
+                    }
                     if (/^plan:/.test(date)) {   // 共有予定の出欠: 新しい回答は足す
                         if (!loc[date]) loc[date] = [];
                         (rem[date] || []).forEach(rm => { const lm = loc[date].find(m => m.name === rm.name); if (!lm) loc[date].push(rm); else if (stampNum(rm.updated) > stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; } });
@@ -10375,6 +10658,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 } else setFirestoreSyncStatus(authIsGuest ? "ゲスト" : "閲覧中");
                 refreshMyMember().then(() => {
                     applyRole();
+                    setTimeout(syncLocalNtf, 1500);   // この端末だけの予定の通知用コピーを最新にする
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
                     guestJustSignedIn = false;
