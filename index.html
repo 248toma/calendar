@@ -2638,24 +2638,6 @@
         </div>
     </div>
 
-    <!-- ===== 開発モード(パス入力) ===== -->
-    <div class="settings-panel" id="devPanel">
-        <div class="panel-sticky">
-            <div class="panel-head">
-                <h3>開発モード</h3>
-                <div class="panel-actions">
-                    <button type="button" class="panel-save" onclick="submitDevPass()">ONにする</button>
-                    <button type="button" class="panel-x" onclick="closeDevPanel()">閉じる</button>
-                </div>
-            </div>
-        </div>
-        <div class="settings-row">
-            <label for="devPassInput">パス</label>
-            <input type="password" id="devPassInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" onkeydown="if(event.key==='Enter') submitDevPass()">
-        </div>
-        <div class="settings-note" id="devPassMsg" style="color:#c92a2a; font-weight:700;"></div>
-    </div>
-
     <div class="settings-panel admin-only" id="settingsPanel">
         <div class="panel-sticky">
             <div class="panel-head">
@@ -2688,7 +2670,7 @@
                 </div>
             </div>
             <div class="roster-search-row">
-                <input type="text" id="rosterSearchInput" placeholder="名前・LINE名・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
+                <input type="text" id="rosterSearchInput" placeholder="名前・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
                 <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
             </div>
             <div class="roster-sort-row">
@@ -2715,8 +2697,6 @@
             <div class="settings-note">
                 チーム分け用に、名前・性別・希望ポジション・パラメータを登録します。
                 名前は出欠入力と同じにしてください。
-                LINEの表示名が違う人は「LINE名」も登録しておくと、投票スクショから自動で照合できます。
-                スクショ取込は、「来れる」などの参加者一覧のスクショを貼ると、名簿の名前・LINE名と照合して選択中の日に追加します(複数枚OK)。
                 並び順を「五十音順」にしたとき、漢字の名前は末尾に並びます。名簿カードの「よみ」を入れると五十音順に入ります。
                 名簿にいる人は、すべての日のメンバーに自動で入り、五十音順に並びます。メンバーから外したいときは名簿から削除してください(今日以降の日程から外れます。過去の記録は残ります)。
             </div>
@@ -3006,21 +2986,6 @@
         <!-- ===== メンバー(入力+確認 統合) ===== -->
         <div id="memberView">
 
-            <div class="copy-panel admin-only" id="shotPanel">
-                <h3>LINEの投票スクショから追加</h3>
-                <div class="shot-actions">
-                    <button type="button" onclick="pasteShotFromClipboard()">貼り付け</button>
-                    <button type="button" onclick="document.getElementById('shotFile').click()">画像を選ぶ</button>
-                </div>
-                <input type="file" id="shotFile" accept="image/*" multiple hidden onchange="handleShotFile(this)">
-                <img id="shotPreview" class="shot-preview" alt="">
-                <div class="shot-progress" id="shotProgress"></div>
-                <div id="shotResult"></div>
-                <div class="copy-actions">
-                    <button class="copy-close-btn" onclick="toggleShotPanel()">閉じる</button>
-                </div>
-            </div>
-
             <div class="mv-head">
             <div class="mv-top">
                 <div class="mv-state" id="mvState">
@@ -3030,7 +2995,6 @@
             <div class="add-row admin-only">
                     <input type="text" id="newName" maxlength="4" placeholder="新メンバー" onkeydown="if(event.key==='Enter') addMember()">
                     <button class="add-btn" onclick="addMember()" aria-label="追加"><i class="ic ic-plus"></i></button>
-                    <button class="qa-btn" onclick="toggleShotPanel()" aria-label="スクショ取込"><i class="ic ic-camera"></i></button>
                 </div>
             </div>
             <div class="confirm-count-grid" id="confirmCountGrid" style="display:none;"></div>
@@ -3516,27 +3480,27 @@
         const ROSTER_NEXTID_KEY = "attendance_roster_nextid_v1";
 
         // 初期名簿(保存データがないときに使う)
-        // [表示名, 性別, 希望ポジション, LINE名[], [サーブ, レシーブ, セット, スパイク, 機動力]]
+        // [表示名, 性別, 希望ポジション, [サーブ, レシーブ, セット, スパイク, 機動力]]
         const DEFAULT_ROSTER_ROWS = [
-            ["ゆうご","male","",["寺澤祐吾"],[3,2,3,3,2]],
-            ["にしば","male","セッター",["西林到真"],[3,4,5,3,4]],
-            ["さあや","female","",["桜彩"],[3,5,3,2,3]],
-            ["かんた","male","",["高野貫太","高野綢太"],[3,4,4,4,4]],
-            ["ふうか","female","",["やまざきふうか","やまさざきふうか"],[3,2,1,2,2]],
-            ["はるか","female","",["大谷はるか"],[3,3,2,2,2]],
-            ["うさ","male","",["うさ"],[3,4,5,3,3]],
-            ["ゆうた","male","",["ゆうた"],[3,4,3,3,4]],
-            ["おかじ","male","",["岡嶋大輔"],[3,4,4,3,4]],
-            ["あらぽん","male","",["涼"],[3,4,4,5,3]],
-            ["竜たろう","male","",["竜太郎"],[3,4,4,5,4]],
-            ["ゆうな","female","",["優奈"],[3,3,3,2,2]],
-            ["ひろや","male","",["啓矢"],[3,4,4,4,4]],
-            ["あやの","female","",["あやの"],[3,2,1,1,2]],
-            ["ひろき","male","",["伊藤洋輝"],[3,3,3,3,2]],
-            ["はると","male","",["こせきはると"],[3,4,4,3,4]],
-            ["さかきま","male","",["りゅう"],[3,3,3,4,2]],
-            ["れん","male","",["蓮"],[3,3,3,3,3]],
-            ["ひじり","male","",["佐藤聖"],[3,5,5,5,1]]
+            ["ゆうご","male","",[3,2,3,3,2]],
+            ["にしば","male","セッター",[3,4,5,3,4]],
+            ["さあや","female","",[3,5,3,2,3]],
+            ["かんた","male","",[3,4,4,4,4]],
+            ["ふうか","female","",[3,2,1,2,2]],
+            ["はるか","female","",[3,3,2,2,2]],
+            ["うさ","male","",[3,4,5,3,3]],
+            ["ゆうた","male","",[3,4,3,3,4]],
+            ["おかじ","male","",[3,4,4,3,4]],
+            ["あらぽん","male","",[3,4,4,5,3]],
+            ["竜たろう","male","",[3,4,4,5,4]],
+            ["ゆうな","female","",[3,3,3,2,2]],
+            ["ひろや","male","",[3,4,4,4,4]],
+            ["あやの","female","",[3,2,1,1,2]],
+            ["ひろき","male","",[3,3,3,3,2]],
+            ["はると","male","",[3,4,4,3,4]],
+            ["さかきま","male","",[3,3,3,4,2]],
+            ["れん","male","",[3,3,3,3,3]],
+            ["ひじり","male","",[3,5,5,5,1]]
         ];
         function buildDefaultRoster() {
             return DEFAULT_ROSTER_ROWS.map((r, i) => ({
@@ -3544,9 +3508,8 @@
                 name: r[0],
                 gender: r[1],
                 position: r[2],
-                lineNames: [...r[3]],
                 reading: "",
-                params: { serve: r[4][0], receive: r[4][1], set: r[4][2], spike: r[4][3], mobility: r[4][4] }
+                params: { serve: r[3][0], receive: r[3][1], set: r[3][2], spike: r[3][3], mobility: r[3][4] }
             }));
         }
 
@@ -3770,6 +3733,7 @@
                 const r = localStorage.getItem(ROSTER_KEY);
                 if (r) {
                     roster = JSON.parse(r);
+                    roster.forEach(m => { if (m && "lineNames" in m) delete m.lineNames; });   // LINE名(本名)はもう使わないので持たない
                     const nid = localStorage.getItem(ROSTER_NEXTID_KEY);
                     rosterNextId = nid ? parseInt(nid, 10) : (roster.reduce((mx, m) => Math.max(mx, m.id), 0) + 1);
                     return;
@@ -3837,14 +3801,14 @@
 
         // ------- 設定パネル -------
         // 名簿・ロジック・設定・開発は、どれか1つを開くと他は閉じる
-        const HEADER_PANEL_IDS = ["devPanel", "settingsPanel"];
+        const HEADER_PANEL_IDS = ["settingsPanel"];
         function closeOtherPanels(keepId) {
             let closed = false;
             HEADER_PANEL_IDS.forEach(id => {
                 if (id === keepId) return;
                 const el = document.getElementById(id);
                 if (!el || !el.classList.contains("open")) return;
-                if (id === "devPanel") closeDevPanel(); else el.classList.remove("open");
+                el.classList.remove("open");
                 closed = true;
             });
             // 閉じてページが縮むので、開いたパネルが見えるよう先頭へ戻す
@@ -4157,14 +4121,14 @@
 
         // ------- 名簿の検索 -------
         // 空白区切りで複数語はAND検索。ひらがな/カタカナ・全角/半角・大文字/小文字の違いは無視する。
-        // 検索対象: 名前 / LINE名 / 希望ポジション / 性別
+        // 検索対象: 名前 / 希望ポジション / 性別
         let rosterSearchQuery = "";
 
         function rosterMatchesQuery(m, query) {
             const tokens = String(query || "").split(/[\s\u3000]+/).map(normName).filter(t => t !== "");
             if (tokens.length === 0) return true;
             const genderLabel = (GENDER_OPTIONS.find(g => g.value === (m.gender || "unspecified")) || {}).label || "";
-            const haystacks = [m.name, m.reading || "", ...(m.lineNames || []), m.position || "", genderLabel].map(normName);
+            const haystacks = [m.name, m.reading || "", m.position || "", genderLabel].map(normName);
             return tokens.every(t => haystacks.some(h => h.includes(t)));
         }
 
@@ -4287,9 +4251,6 @@
                                 </select>
                                 <button class="remove-btn" onclick="removeRosterMember(${m.id})" aria-label="削除">✕</button>
                             </div>
-                            <input type="text" class="rc-line" value="${escapeHtml((m.lineNames || []).join(", "))}"
-                                placeholder="LINE名(スクショ照合用・カンマ区切り。名前と同じなら空でOK)"
-                                onchange="updateRosterLineNames(${m.id}, this.value)">
                             <input type="text" class="rc-line" value="${escapeHtml(m.reading || "").replace(/"/g, "&quot;")}"
                                 placeholder="よみ(ひらがな。五十音順の並び替え用。漢字の名前は入れてください)"
                                 onchange="updateRosterField(${m.id}, 'reading', this.value.trim())">
@@ -4527,19 +4488,15 @@
 
 
 
-        // ------- LINE投票スクショ取り込み(OCR → 名簿照合) -------
+        // ------- 画像の文字読み取り(OCR)。予約スクショの取り込みで使う -------
         const TESS_SRC = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
         const TESS_LANG_PATH = "https://cdn.jsdelivr.net/npm/@tesseract.js-data/jpn/4.0.0_best_int";
-        const SHOT_STATUS_CHOICES = ["来る", "来ない", "未定"];
         const KANJI_VARIANTS = {
             "澤": "沢", "嶋": "島", "嶌": "島", "髙": "高", "﨑": "崎", "齋": "斎", "齊": "斉", "邊": "辺", "邉": "辺",
             "濱": "浜", "國": "国", "德": "徳", "廣": "広", "櫻": "桜", "與": "与", "龍": "竜", "眞": "真", "實": "実",
             "冨": "富", "桒": "桑", "槇": "槙"
         };
         let tesseractLoading = null;
-        let shotBusy = false;
-        let shotState = null; // { status, statusAuto, headerCount, rows:[{raw, sel, level, score, remember}] }
-        let shotPreviewUrl = null;
 
         // 比較用の正規化(全半角・カナ/かな・空白記号・旧字体を揃える)
         function normName(s) {
@@ -4549,75 +4506,11 @@
             return t.replace(/./gu, c => KANJI_VARIANTS[c] || c);
         }
 
-        function editDistance(a, b) {
-            const A = Array.from(a), B = Array.from(b);
-            let prev = Array.from({ length: B.length + 1 }, (_, j) => j);
-            for (let i = 1; i <= A.length; i++) {
-                const cur = [i];
-                for (let j = 1; j <= B.length; j++) {
-                    cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (A[i - 1] === B[j - 1] ? 0 : 1));
-                }
-                prev = cur;
-            }
-            return prev[B.length];
-        }
 
-        function nameSimilarity(a, b) {
-            if (!a || !b) return 0;
-            if (a === b) return 1;
-            const la = Array.from(a).length, lb = Array.from(b).length;
-            let s = 1 - editDistance(a, b) / Math.max(la, lb);
-            const mn = Math.min(la, lb), mx = Math.max(la, lb);
-            if (mn >= 2 && (a.includes(b) || b.includes(a))) s = Math.max(s, 0.6 + 0.3 * mn / mx);
-            return Math.min(s, 0.99);
-        }
 
-        function rosterKeys(m) {
-            return [m.name, ...(m.lineNames || [])].map(normName).filter(Boolean);
-        }
 
-        // 読み取った名前 → 名簿の最有力候補
-        function matchRoster(raw) {
-            const n = normName(raw);
-            const scored = roster
-                .map(m => ({ id: m.id, score: Math.max(0, ...rosterKeys(m).map(k => nameSimilarity(n, k))) }))
-                .sort((a, b) => b.score - a.score);
-            const best = scored[0] || { id: null, score: 0 };
-            const second = scored[1] ? scored[1].score : 0;
-            let level = "none";
-            if (best.score >= 0.5) level = (best.score >= 0.9 && best.score - second >= 0.1) ? "ok" : "check";
-            return { id: level === "none" ? null : best.id, score: best.score, level };
-        }
 
-        function detectShotStatus(t) {
-            if (/来れない|来ない|不参加|欠席|行けない|いけない/.test(t)) return "来ない";
-            if (/未定|微妙|未回答|検討/.test(t)) return "未定";
-            if (/来れる|来る|参加|出席|行ける|いける/.test(t)) return "来る";
-            return null;
-        }
 
-        // OCR結果の行 → 見出し(ステータス・人数)と名前候補に仕分け
-        function parseShotLines(lines) {
-            let statusAuto = null, headerCount = null;
-            const names = [];
-            lines.forEach(l => {
-                const t = String(l.text || "").normalize("NFKC").replace(/\s+/g, "");
-                if (!t) return;
-                const cm = t.match(/\(\s*(\d{1,3})\s*\)/);
-                const st = detectShotStatus(t);
-                if (st && t.length <= 14 && (cm || /[\d()]/.test(t) || t.length <= 4)) {
-                    if (!statusAuto) statusAuto = st;
-                    if (cm && headerCount == null) headerCount = parseInt(cm[1], 10);
-                    return;
-                }
-                const raw = t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
-                if (!raw) return;
-                const hasJa = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(raw);
-                if (!hasJa && !/[A-Za-z]{2,}/.test(raw)) return;
-                names.push({ raw, conf: l.conf == null ? 100 : l.conf });
-            });
-            return { statusAuto, headerCount, names };
-        }
 
         function ocrLinesOf(data) {
             if (data.lines && data.lines.length) return data.lines.map(l => ({ text: l.text, conf: l.confidence }));
@@ -4650,334 +4543,19 @@
             });
         }
 
-        // 画像から名前の列だけを切り出し、文字のある行ごとの帯(y0,y1,x0,x1)を返す(純粋関数)
-        function findLineBands(gray, sw, sh, fullH) {
-            const T = 150;
-            const rowInk = new Int32Array(sh);
-            for (let y = 0; y < sh; y++) {
-                let n = 0;
-                const off = y * sw;
-                for (let x = 0; x < sw; x++) if (gray[off + x] < T) n++;
-                rowInk[y] = n;
-            }
-            const gap = Math.max(6, Math.round(fullH * 0.004));
-            const minH = Math.max(8, Math.round(fullH * 0.01));
-            const maxH = Math.round(fullH * 0.06);
-            const bands = [];
-            let start = -1, last = -1;
-            const close = () => {
-                const h = last - start + 1;
-                if (h >= minH && h <= maxH) {
-                    let x0 = sw, x1 = -1;
-                    for (let y = start; y <= last; y++) {
-                        const off = y * sw;
-                        for (let x = 0; x < sw; x++) if (gray[off + x] < T) { if (x < x0) x0 = x; if (x > x1) x1 = x; }
-                    }
-                    if (x1 >= x0) bands.push({ y0: start, y1: last, x0, x1 });
-                }
-                start = -1;
-            };
-            for (let y = 0; y < sh; y++) {
-                if (rowInk[y] >= 3) { if (start < 0) start = y; last = y; }
-                else if (start >= 0 && y - last > gap) close();
-            }
-            if (start >= 0) close();
-            return bands;
-        }
 
-        // アバター・ステータスバーを除き、名前の行ごとに切り出した画像(キャンバス)の配列を返す
-        function segmentShotLines(img) {
-            const W = img.naturalWidth, H = img.naturalHeight;
-            const sx = Math.round(W * 0.13), sy = Math.round(H * 0.06);
-            const sw = W - sx, sh = H - sy;
-            const c = document.createElement("canvas");
-            c.width = sw; c.height = sh;
-            const ctx = c.getContext("2d", { willReadFrequently: true });
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(0, 0, sw, sh);
-            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-            const imgData = ctx.getImageData(0, 0, sw, sh);
-            const px = imgData.data;
-            const gray = new Uint8Array(sw * sh);
-            let sum = 0;
-            for (let i = 0; i < gray.length; i++) {
-                const g = (px[4 * i] * 0.299 + px[4 * i + 1] * 0.587 + px[4 * i + 2] * 0.114) | 0;
-                gray[i] = g; sum += g;
-            }
-            if (sum / gray.length < 128) { // ダークモードは反転して「白地に黒文字」に揃える
-                for (let i = 0; i < gray.length; i++) gray[i] = 255 - gray[i];
-            }
-            for (let i = 0; i < gray.length; i++) {
-                px[4 * i] = px[4 * i + 1] = px[4 * i + 2] = gray[i]; px[4 * i + 3] = 255;
-            }
-            ctx.putImageData(imgData, 0, 0);
 
-            return findLineBands(gray, sw, sh, H).map(b => {
-                const pad = 14, margin = 20;
-                const bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1;
-                const scale = Math.min(2, Math.max(1, 64 / bh));
-                const sx0 = Math.max(0, b.x0 - pad), sy0 = Math.max(0, b.y0 - pad);
-                const sw0 = Math.min(sw - sx0, bw + pad * 2), sh0 = Math.min(sh - sy0, bh + pad * 2);
-                const o = document.createElement("canvas");
-                o.width = Math.round(sw0 * scale) + margin * 2;
-                o.height = Math.round(sh0 * scale) + margin * 2;
-                const octx = o.getContext("2d");
-                octx.fillStyle = "#fff";
-                octx.fillRect(0, 0, o.width, o.height);
-                octx.drawImage(c, sx0, sy0, sw0, sh0, margin, margin, Math.round(sw0 * scale), Math.round(sh0 * scale));
-                return o;
-            });
-        }
 
-        function showShotPreview(blob) {
-            if (shotPreviewUrl) URL.revokeObjectURL(shotPreviewUrl);
-            shotPreviewUrl = URL.createObjectURL(blob);
-            const el = document.getElementById("shotPreview");
-            el.src = shotPreviewUrl;
-            el.style.display = "block";
-        }
 
-        async function runShotOcr(blobs) {
-            if (shotBusy) return;
-            shotBusy = true;
-            const prog = document.getElementById("shotProgress");
-            const setProg = t => { prog.textContent = t; };
-            try {
-                shotState = null;
-                renderShotResult();
-                showShotPreview(blobs[0]);
-                setProg("OCRを準備中…(初回は日本語データのダウンロードがあります)");
-                await loadTesseract();
-                const worker = await Tesseract.createWorker("jpn", 1, {
-                    langPath: TESS_LANG_PATH,
-                    logger: m => {
-                        if (/loading/.test(m.status || "")) setProg("日本語データを読み込み中…(初回のみ時間がかかります)");
-                    }
-                });
-                let statusAuto = null, headerCount = null;
-                const names = [];
-                try {
-                    await worker.setParameters({ tessedit_pageseg_mode: "7" }); // 1行ずつ読む
-                    for (const blob of blobs) {
-                        const img = await blobToImage(blob);
-                        const segs = segmentShotLines(img);
-                        const lines = [];
-                        for (let k = 0; k < segs.length; k++) {
-                            setProg(`読み取り中… ${k + 1}/${segs.length}行`);
-                            const { data } = await worker.recognize(segs[k]);
-                            lines.push({ text: data.text, conf: data.confidence });
-                        }
-                        const parsed = parseShotLines(lines);
-                        if (!statusAuto) statusAuto = parsed.statusAuto;
-                        if (headerCount == null) headerCount = parsed.headerCount;
-                        names.push(...parsed.names);
-                    }
-                } finally {
-                    await worker.terminate();
-                }
 
-                const seen = new Set();
-                const rows = [];
-                names.forEach(n => {
-                    const key = normName(n.raw);
-                    if (!key || seen.has(key)) return;
-                    const m = matchRoster(n.raw);
-                    if (m.level === "none" && n.conf < 25) return; // 低信頼のノイズは捨てる
-                    seen.add(key);
-                    rows.push({ raw: n.raw, sel: m.id == null ? "" : String(m.id), level: m.level, score: m.score, remember: false });
-                });
-                shotState = { status: statusAuto || "来る", statusAuto, headerCount, rows };
-                setProg(rows.length ? "" : "名前を読み取れませんでした。名前の一覧が写ったスクショか確認してください。");
-                renderShotResult();
-            } catch (e) {
-                console.warn(e);
-                setProg("読み取りに失敗しました: " + (e && e.message ? e.message : e));
-            } finally {
-                shotBusy = false;
-            }
-        }
 
-        function renderShotResult() {
-            const box = document.getElementById("shotResult");
-            if (!shotState) { box.innerHTML = ""; return; }
-            const st = shotState;
-            const picked = st.rows.filter(r => r.sel).length;
-            const levelLabel = { ok: "一致", check: "要確認", none: "未対応", manual: "手動選択" };
 
-            const statusOpts = SHOT_STATUS_CHOICES.map(s => `<option value="${s}" ${s === st.status ? "selected" : ""}>${STATUS_META[s].sym} ${s}</option>`).join("");
-            const autoNote = st.statusAuto ? "(見出しから自動判定)" : "(見出しを判定できませんでした)";
 
-            let warn = "";
-            if (st.headerCount != null && picked !== st.headerCount) {
-                warn = `<div class="shot-warn">画面の人数は${st.headerCount}名ですが、反映対象は${picked}名です。「未対応」「要確認」の行を確認してください。</div>`;
-            }
 
-            const rowsHtml = st.rows.map((r, i) => {
-                const opts = `<option value="">スキップ</option>`
-                    + roster.map(m => `<option value="${m.id}" ${String(m.id) === r.sel ? "selected" : ""}>${escapeHtml(m.name)}</option>`).join("")
-                    + `<option value="__new" ${r.sel === "__new" ? "selected" : ""}>＋名簿に新規登録(読み取り名で)</option>`;
-                let remember = "";
-                if (r.sel && r.sel !== "__new") {
-                    const m = roster.find(x => String(x.id) === r.sel);
-                    if (m && !rosterKeys(m).includes(normName(r.raw))) {
-                        remember = `<label class="shot-remember"><input type="checkbox" ${r.remember ? "checked" : ""} onchange="setShotRemember(${i}, this.checked)">「${escapeHtml(r.raw)}」をこの人のLINE名として記憶</label>`;
-                    }
-                }
-                return `
-                    <div class="shot-row lv-${r.level}">
-                        <div class="shot-raw">読み取り: <b>${escapeHtml(r.raw)}</b><span class="shot-badge">${levelLabel[r.level]}</span></div>
-                        <select onchange="setShotRow(${i}, this.value)">${opts}</select>
-                        ${remember}
-                    </div>`;
-            }).join("");
 
-            box.innerHTML = `
-                <div class="shot-head-row">
-                    <span>反映するステータス</span>
-                    <select onchange="setShotStatus(this.value)">${statusOpts}</select>
-                </div>
-                <div class="shot-count">${autoNote} 読み取り${st.rows.length}行 / 反映${picked}名${st.headerCount != null ? ` / 画面の人数${st.headerCount}名` : ""}</div>
-                ${warn}
-                ${rowsHtml}
-                <button class="copy-exec-btn shot-apply" onclick="applyShotImport()">選択中の日に反映(${picked}名)</button>
-            `;
-        }
 
-        function setShotStatus(v) { if (shotState) shotState.status = v; }
 
-        function setShotRow(i, v) {
-            if (!shotState || !shotState.rows[i]) return;
-            const r = shotState.rows[i];
-            r.sel = v;
-            r.level = v ? "manual" : "none";
-            r.remember = !!v && v !== "__new"; // 手動で選んだものはLINE名として記憶(初期ON)
-            renderShotResult();
-        }
 
-        function setShotRemember(i, checked) {
-            if (shotState && shotState.rows[i]) shotState.rows[i].remember = checked;
-        }
-
-        function applyShotImport() {
-            if (!shotState) return;
-            const st = shotState;
-            const chosen = st.rows.filter(r => r.sel);
-            if (chosen.length === 0) { alert("反映するメンバーがいません。"); return; }
-
-            if (!attendanceByDate[selectedDate]) attendanceByDate[selectedDate] = [];
-            const day = attendanceByDate[selectedDate];
-            let added = 0, updated = 0, same = 0, alias = 0, newReg = 0;
-            const done = new Set();
-
-            chosen.forEach(r => {
-                let m;
-                if (r.sel === "__new") {
-                    const clipped = clipRosterName(r.raw);   // 名簿は4文字まで。元のLINE名は照合用に残す
-                    m = findRosterByName(r.raw) || findRosterByName(clipped);
-                    if (!m) {
-                        m = { id: rosterNextId++, name: clipped, gender: "unspecified", position: NO_POSITION, params: defaultParams(), lineNames: clipped !== r.raw ? [r.raw] : [] };
-                        roster.push(m);
-                        newReg++;
-                    }
-                } else {
-                    m = roster.find(x => String(x.id) === r.sel);
-                }
-                if (!m || done.has(m.id)) return;
-                done.add(m.id);
-
-                if (r.sel !== "__new" && r.remember) {
-                    const k = normName(r.raw);
-                    if (k && !rosterKeys(m).includes(k)) { m.lineNames = [...(m.lineNames || []), r.raw]; alias++; }
-                }
-
-                const ex = day.find(x => x.name === m.name);
-                if (!ex) { day.push({ id: nextId++, name: m.name, status: st.status, updated: nowStamp() }); added++; }
-                else if (ex.status !== st.status) { ex.status = st.status; ex.updated = nowStamp(); updated++; }
-                else same++;
-            });
-
-            events[selectedDate] = true;
-            saveRoster();
-            saveData();
-            shotState = null;
-            toggleShotPanel();
-            renderRoster();
-            renderCalendar();
-            renderRosterPanel();
-            renderPairSelectOptions();
-
-            const parts = [`「${st.status}」に反映しました`];
-            if (added) parts.push(`追加 ${added}名`);
-            if (updated) parts.push(`更新 ${updated}名`);
-            if (same) parts.push(`変更なし ${same}名`);
-            if (newReg) parts.push(`名簿に新規登録 ${newReg}名`);
-            if (alias) parts.push(`LINE名を記憶 ${alias}件`);
-            alert(parts.join(" / "));
-        }
-
-        function toggleShotPanel() {
-            const panel = document.getElementById("shotPanel");
-            panel.classList.toggle("open");
-            if (!panel.classList.contains("open")) {
-                shotState = null;
-                renderShotResult();
-                document.getElementById("shotProgress").textContent = "";
-                const pv = document.getElementById("shotPreview");
-                pv.style.display = "none";
-                pv.removeAttribute("src");
-                if (shotPreviewUrl) { URL.revokeObjectURL(shotPreviewUrl); shotPreviewUrl = null; }
-            }
-        }
-
-        function handleShotFile(input) {
-            const files = Array.from(input.files || []).filter(f => f.type.startsWith("image/"));
-            input.value = "";
-            if (files.length) runShotOcr(files);
-        }
-
-        async function pasteShotFromClipboard() {
-            const prog = document.getElementById("shotProgress");
-            try {
-                if (!navigator.clipboard || !navigator.clipboard.read) throw new Error("unsupported");
-                const items = await navigator.clipboard.read();
-                for (const it of items) {
-                    const type = it.types.find(t => t.startsWith("image/"));
-                    if (type) { runShotOcr([await it.getType(type)]); return; }
-                }
-                prog.textContent = "クリップボードに画像がありません。スクショをコピーしてからもう一度押してください。";
-            } catch (e) {
-                prog.textContent = "貼り付けできませんでした。「画像を選ぶ」から写真を選んでください。";
-            }
-        }
-
-        // PCなどで Ctrl/Cmd+V したときにも取り込む
-        document.addEventListener("paste", e => {
-            const panel = document.getElementById("shotPanel");
-            if (!panel || !panel.classList.contains("open")) return;
-            const cd = e.clipboardData;
-            if (!cd) return;
-            let file = null;
-            for (const it of (cd.items || [])) {
-                if (it.type && it.type.startsWith("image/")) { file = it.getAsFile(); break; }
-            }
-            if (!file && cd.files && cd.files[0] && cd.files[0].type.startsWith("image/")) file = cd.files[0];
-            if (!file) return;
-            e.preventDefault();
-            runShotOcr([file]);
-        });
-
-        function updateRosterLineNames(id, value) {
-            const mem = roster.find(m => m.id === id);
-            if (!mem) return;
-            const seen = new Set();
-            mem.lineNames = String(value || "").split(/[,、，\n]/).map(s => s.trim()).filter(s => {
-                const k = normName(s);
-                if (!k || seen.has(k)) return false;
-                seen.add(k);
-                return true;
-            });
-            saveRoster();
-        }
 
         // ヘッダーの高さを測って、パネル内の固定バーがその下に付くようにする
         (function trackHeaderHeight() {
@@ -7888,14 +7466,13 @@
         // OFF: 名簿のパラメータ欄/補正後/👑、チーム結果の数値・キー印・平均、チームロジックのパラメータ項目を隠す。
         //      チーム分けの計算自体は内部の値でそのまま動く。
         const DEV_MODE_KEY = "attendance_dev_mode_v1";
-        const DEV_MODE_PASS = "248";
         const VIEW_PREVIEW_KEY = "attendance_view_preview_v1";   // 管理者が「閲覧」モードで見ているか(端末ごと。共有しない)
         let viewPreview = false;
         try { viewPreview = localStorage.getItem(VIEW_PREVIEW_KEY) === "1"; } catch (e) { viewPreview = false; }
         let devMode = false;
         let devModePref = false;     // 管理者が選んだ開発モード(閲覧者は常にOFF)
         let firebaseAvailable = false;
-        let firestoreEditor = false; // 管理者(EDITOR_EMAILS)でログイン中
+        let firestoreEditor = false; // 管理者(EDITOR_HASHES)でログイン中
         let authEmail = "";          // ログイン中のGoogleアカウント(小文字)
         let myEmailHash = "";        // 上のメールのハッシュ(名簿との紐付け用)
         let authUid = "";            // ログイン中(Google・ゲスト共通)のユーザーID。未ログインは空
@@ -8147,24 +7724,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (currentView === "settle") renderSettleView();
             if (typeof surveyOpen !== "undefined" && surveyOpen) renderSurvey();   // 更新後にアンケートを開き直したとき、ログイン確認後に中身を描き直す
         }
-        function closeDevPanel() {
-            document.getElementById("devPanel").classList.remove("open");
-            document.getElementById("devPassInput").value = "";
-            document.getElementById("devPassMsg").textContent = "";
-        }
-        function submitDevPass() {
-            const input = document.getElementById("devPassInput");
-            if (input.value.trim() !== DEV_MODE_PASS) {
-                document.getElementById("devPassMsg").textContent = "パスが違います。";
-                input.value = "";
-                input.focus();
-                return;
-            }
-            devMode = true;
-            saveDevMode();
-            closeDevPanel();
-            applyDevMode();
-        }
+        function closeDevPanel() { /* 開発モードのパス入力は廃止(管理者モードに統合済み) */ }
 
         // ------- 名簿の並び替え(登録順 / パラメータ順 / 五十音順) -------
         // パラメータ順: 選んだ項目(サーブ・レシーブ・セット・スパイク・機動力)の高い順。
@@ -9777,7 +9337,20 @@ const namesBtn = isAdmin() && dates.length > 0
         // Firebase Hosting上だけで有効です。閲覧は公開、保存は下記Googleアカウント(管理者)だけに限定します。
         // 管理者以外は「閲覧モード」(開発ボタン・予測・端数単位は非表示)。ログインすると名簿と紐付いた「自分」が分かります。
         const FIRESTORE_DOCUMENT_PATH = ["sharedApps", "volleyball-schedule"];
-        const EDITOR_EMAILS = new Set(["h12327u5@gmail.com", "248toma@gmail.com"]);
+        // 管理者のGmailは、そのままではなくハッシュ(SHA-256("vb-admin:"+メール))で持つ。コードを見てもアドレスは分からない
+        // 管理者を増やすときは、そのGmailのハッシュをここに足す(Firestoreのルール側にも追加が必要)
+        const EDITOR_HASHES = new Set([
+            "9b5635894cf75acdf322b1c8dde0d3f1528a8c4b682490b54a81916de999fb38",
+            "552be75d4621b2c79644225a37855e49555a4ef872d72848c5406a035d0f9623"
+        ]);
+        async function isEditorEmail(email) {
+            const e = String(email || "").trim().toLowerCase();
+            if (!e || !(window.crypto && crypto.subtle)) return false;
+            try {
+                const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("vb-admin:" + e));
+                return EDITOR_HASHES.has(Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""));
+            } catch (x) { return false; }
+        }
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
         const HIDE_TP_KEY = "attendance_hide_tparams_v1";
         const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
@@ -10281,6 +9854,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 firestoreSyncActive = true;
                 if (remoteCoveredByLocal(remoteValues, localValues)) {
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
+                    // 共有データの名簿に昔のLINE名(本名)が残っていたら、管理者の端末から消して保存し直す
+                    if (firestoreEditor && !firestoreApplyingRemote && /"lineNames"/.test(remoteValues[ROSTER_KEY] || "")) { saveRoster(); return; }
                     // 取り込み時に足した「他の人の変更」のログなど、この端末にだけあるログは共有データへ送る
                     if (firestoreEditor && !firestoreApplyingRemote && clLocalHasExtra(remoteValues[CHANGELOG_KEY], localValues[CHANGELOG_KEY])) {
                         clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 400);
@@ -10292,11 +9867,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 markRemoteUpdate();
             }, error => { console.error("Firestoreの読み込みに失敗しました。", error); setFirestoreSyncStatus("共有エラー", true); });
 
-            firebase.auth().onAuthStateChanged(user => {
+            firebase.auth().onAuthStateChanged(async user => {
                 authEmail = user && user.email ? user.email.toLowerCase() : "";
                 authUid = user ? user.uid : "";
                 authIsGuest = !!(user && user.isAnonymous);
-                firestoreEditor = EDITOR_EMAILS.has(authEmail);
+                firestoreEditor = false;
+                const editor = await isEditorEmail(authEmail);
+                if ((user ? user.uid : "") !== authUid) return;   // 待っている間に別のアカウントに切り替わった
+                firestoreEditor = editor;
                 if (firestoreEditor) {
                     setFirestoreSyncStatus("管理者");
                     if (!firestoreHasDocument) saveToFirestore();
