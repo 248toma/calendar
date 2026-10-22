@@ -2532,6 +2532,18 @@
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
+        /* 設定: 各項目は「タイトル → 説明 → 操作 → 詳しく」の順にそろえる */
+        #settingsPanel .acc-desc { font-size: 12px; line-height: 1.6; color: var(--ink-3); margin: 2px 0 12px; }
+        #settingsPanel .acc-body > .note-details:last-child, #settingsPanel .acc-body .note-details { margin-top: 10px; }
+        #settingsPanel .set-err { display: none; margin: 0 0 10px; padding: 8px 10px; border-radius: 10px; background: var(--notcome-soft, rgba(229,72,77,.12)); color: var(--notcome-ink, #c0392b); font-size: 12px; font-weight: 700; }
+        #settingsPanel .set-err.show { display: block; }
+        #settingsPanel .set-saved { transition: color .2s; }
+        #settingsPanel .set-saved.ok { color: var(--accent); }
+        #settingsPanel .set-saved.err { color: var(--notcome-ink, #c0392b); }
+        #settingsPanel #rosterPanel .panel-sticky { position: static; box-shadow: none; padding-top: 0; }   /* 設定の見出しと重ならないように */
+        #settingsPanel .mob-in-roster { margin: 0 0 14px; }
+        #settingsPanel .mob-in-roster .mob-wrap { padding: 0 12px 10px; }
+        #settingsPanel .panel-group-label { margin-top: 22px; }
         /* カレンダー下のボタン列はなし(時間・予約日はピンチ、Todayは右下、一括追加は上) */
         #calLegend { display: none !important; }
         #calCard, #calGrid * { touch-action: pan-y; }   /* 2本指はページの拡大ではなく表示切り替えに使う */
@@ -2733,7 +2745,7 @@
             <div class="panel-head">
                 <h3>設定</h3>
                 <div class="panel-actions">
-                    <button type="button" class="panel-save" onclick="saveSettings()">保存</button>
+                    <span class="panel-auto set-saved" id="setSaved">変更はすぐ保存</span>
                     <button type="button" class="panel-x" onclick="toggleSettings()">閉じる</button>
                 </div>
             </div>
@@ -2749,27 +2761,31 @@
                 </select></div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
         </div>
-        <div class="panel-group-label">管理</div>
+        <div class="panel-group-label">記録</div>
         <details class="acc" id="changeLogAcc">
             <summary>変更ログ</summary>
             <div class="acc-body">
-                <div class="settings-note" style="margin-top:0;">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
+                <div class="acc-desc">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
+
                 <div id="changeLogList" class="cl-list"></div>
+            
             </div>
         </details>
-
         <div class="panel-group-label">メンバー</div>
         <details class="acc" id="rosterAcc">
             <summary>名簿</summary>
             <div class="acc-body">
+                <div class="acc-desc">名前・性別・希望ポジション・パラメータを登録します。名簿の人は今後のバレーの日に自動で入ります。変更はすぐ保存されます。</div>
+<details class="note-details mob-in-roster" open><summary>パラメータの補正(機動力)</summary><div class="mob-wrap"><div class="acc-desc" style="margin:8px 12px 6px;">項目ごとの倍率(0〜1)。変えるとすぐ下の名簿の補正後の値に反映されます。</div>
+                <div class="mob-grid" id="mobilityWeightList"></div>
+                <details class="note-details">
+                    <summary>詳しく(計算式)</summary>
+                    <div class="settings-note">補正後の値 = 元の値 ×(1−倍率)+ 機動力 × 倍率。0=機動力を反映しない、1=機動力の値そのもの。初期値はサーブ0 / レシーブ0.5 / セット0.6 / スパイク0.2。補正後の値を、チーム分けと配置で使います(機動力そのものはチーム分けの対象にしません)。</div>
+                </details>
+
+                </div></details>
     <div class="roster-panel open" id="rosterPanel">
         <div class="panel-sticky">
-            <div class="panel-head">
-                <span class="panel-auto">メンバー名簿</span>
-                <div class="panel-actions">
-                    <span class="panel-auto">変更は自動保存</span>
-                </div>
-            </div>
             <div class="roster-search-row">
                 <input type="text" id="rosterSearchInput" placeholder="名前・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
                 <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
@@ -2794,7 +2810,7 @@
         </div>
         <div id="rosterList"></div>
         <details class="note-details">
-            <summary>名簿の使い方</summary>
+            <summary>詳しく</summary>
             <div class="settings-note">
                 チーム分け用に、名前・性別・希望ポジション・パラメータを登録します。
                 名前は出欠入力と同じにしてください。
@@ -2803,12 +2819,30 @@
             </div>
         </details>
     </div>
+            
             </div>
         </details>
-        <div class="panel-group-label">カレンダー・連絡</div>
+        <details class="acc">
+            <summary>ペア(同じチーム)</summary>
+            <div class="acc-body">
+                <div class="acc-desc">選んだ2人は必ず同じチームになります(希望ポジションより優先)。</div>
+
+                <div class="pair-add-row">
+                    <select id="pairSelectA"></select>
+                    <span>と</span>
+                    <select id="pairSelectB"></select>
+                    <button onclick="addPair()">追加</button>
+                </div>
+                <div id="pairList"></div>
+            
+            </div>
+        </details>
+        <div class="panel-group-label">出欠・連絡</div>
         <details class="acc">
             <summary>色分けのしきい値</summary>
             <div class="acc-body">
+                <div class="acc-desc">カレンダーの人数の色。少なすぎても多すぎても赤になります。</div>
+<div class="set-err" id="threshErr"></div>
         <div class="settings-row">
             <label>この人数未満は「不足」(赤)</label>
             <input type="number" id="inputYellowMin" min="1" inputmode="numeric">
@@ -2821,23 +2855,16 @@
             <label>この人数を超えたら人数過多で「不足」(赤)</label>
             <input type="number" id="inputCyanMax" min="1" inputmode="numeric">
         </div>
-        <div class="settings-note">少なすぎても多すぎても赤色になります。</div>
+        
 
+            
             </div>
         </details>
-
         <details class="acc">
             <summary>フォロー文のテンプレート</summary>
             <div class="acc-body">
-        <details class="note-details">
-            <summary>使えるプレースホルダー</summary>
-            <div class="settings-note">
-                {date} → 日付(例: 9/17)<br>
-                {pending_list} → 未定メンバーの一覧<br>
-                {unconfirmed_list} → 未確認メンバーの一覧<br>
-                {pending_count} / {unconfirmed_count} → それぞれの人数のみ
-            </div>
-        </details>
+                <div class="acc-desc">未定・未確認の人に送る文章のひな形です。</div>
+
         <textarea class="follow-template-input" id="inputFollowTemplate"></textarea>
         <button class="template-reset-btn" onclick="resetFollowTemplate()">初期のテンプレートに戻す</button>
 
@@ -2849,69 +2876,72 @@
             <label>フォロー文に「未確認」メンバーを記載する</label>
             <input type="checkbox" id="inputIncludeUnconfirmed">
         </div>
+            
+        <details class="note-details">
+            <summary>詳しく(使える置き換え文字)</summary>
+            <div class="settings-note">
+                {date} → 日付(例: 9/17)<br>
+                {pending_list} → 未定メンバーの一覧<br>
+                {unconfirmed_list} → 未確認メンバーの一覧<br>
+                {pending_count} / {unconfirmed_count} → それぞれの人数のみ
             </div>
         </details>
-
+            </div>
+        </details>
         <div class="panel-group-label">予約</div>
         <details class="acc">
             <summary>予約情報プリセット</summary>
             <div class="acc-body">
-                <div class="settings-note" style="margin-top:0;">場所は最大5つ、時間・値段は場所ごとに1〜4つ。変更するとすぐ保存され、「予約」タブの選択肢に反映されます。</div>
+                <div class="acc-desc">予約の画面で選ぶ場所・時間・値段です。場所は最大5つ、時間・値段は場所ごとに1〜4つ。</div>
+
                 <div id="rvPresetEditor"></div>
+            
             </div>
         </details>
-
         <details class="acc admin-only">
-            <summary>予約の料金計算(一人当たり)</summary>
+            <summary>料金の計算(一人当たり)</summary>
             <div class="acc-body">
+                <div class="acc-desc">料金を「来る」の人数で割って、この単位で切り上げます(例: 100円なら250→300円)。</div>
+
                 <div class="settings-row">
                     <label for="inputRoundUnit">端数の切り上げ単位(円)</label>
                     <input type="number" id="inputRoundUnit" min="1" step="1" inputmode="numeric" onchange="setRoundUnit(this.value)">
                 </div>
-                <div class="settings-note">料金を「来る」の人数で割った値を、この単位で切り上げて一人当たりの金額にします(例: 100円なら250→300円)。変更するとすぐ保存されます。</div>
+            
             </div>
         </details>
-
         <div class="panel-group-label">チーム分け</div>
-        <details class="acc" id="teamSettingsAcc">
-            <summary>ロジック</summary>
-            <div class="acc-body">
-        <div class="panel-group-label">設定項目</div>
-
         <details class="acc">
-            <summary>希望ポジションの一覧</summary>
+            <summary>希望ポジション</summary>
             <div class="acc-body">
+                <div class="acc-desc">カンマ区切りで入力します。チーム分けはポジションごとに均等に分けます。</div>
+
                 <div class="roles-edit-row">
                     <input type="text" id="inputRolesText" placeholder="例: セッター, リベロ, スパイカー, 初心者">
                 </div>
-                <div class="settings-note">カンマ区切りで編集できます(右上の「保存」で反映)。チーム分けはこのポジションごとに均等に分けます。</div>
+            
             </div>
         </details>
-
         <details class="acc">
-            <summary>コート位置(希望ポジションごと)</summary>
+            <summary>コート位置</summary>
             <div class="acc-body">
-                <div class="settings-note" style="margin-top:0;">自動配置で置きたい位置をタップで選びます(複数なら、その中の1か所。未選択はおまかせ)。上段が前衛(4・3・2)、下段が後衛(5・6・1)です。配置は結果画面で手動で並べ替えできます。</div>
+                <div class="acc-desc">自動配置で置きたい位置をタップで選びます(複数ならその中の1か所。未選択はおまかせ)。上段が前衛(4・3・2)、下段が後衛(5・6・1)。</div>
+
                 <div id="roleSlotList"></div>
+            
             </div>
         </details>
-
         <details class="acc dev-only">
-            <summary>パラメータ</summary>
-            <div class="acc-body param-role-section">
-                <h4>機動力の補正(項目ごとの倍率 0〜1)</h4>
-                <div class="mob-grid" id="mobilityWeightList"></div>
-                <details class="note-details">
-                    <summary>補正の計算式</summary>
-                    <div class="settings-note">補正後の値 = 元の値 ×(1−倍率)+ 機動力 × 倍率。0=機動力を反映しない、1=機動力の値そのもの。初期値はサーブ0 / レシーブ0.5 / セット0.6 / スパイク0.2。補正後の値を、チーム分けと配置で使います(機動力そのものはチーム分けの対象にしません)。</div>
-                </details>
-
+            <summary>分け方の計算</summary>
+            <div class="acc-body">
+                <div class="acc-desc">キー・平均値パラメータと、平均を高くする差・背反の設定です。</div>
+<div class="set-err" id="paramErr"></div>
                 <h4>キーパラメータ(1〜3つ)</h4>
                 <div class="param-checkbox-grid" id="keyParamCheckboxes"></div>
                 <h4>平均値パラメータ(1〜3つ)</h4>
                 <div class="param-checkbox-grid" id="avgParamCheckboxes"></div>
                 <details class="note-details">
-                    <summary>パラメータの選び方</summary>
+                    <summary>詳しく(選び方)</summary>
                     <div class="settings-note">各1〜3つ選びます。同じ項目をキーと平均値の両方に選べます。選ばなかった項目は表示のみです。キーパラメータは結果画面で ◎・◉・◆ で区別します。</div>
                 </details>
 
@@ -2931,39 +2961,21 @@
                 <div id="conflictRuleList"></div>
                 <button class="conflict-add-btn" onclick="addConflictRule()">＋ 背反ペアを追加</button>
                 <details class="note-details">
-                    <summary>背反パラメータの使い方</summary>
+                    <summary>詳しく(背反)</summary>
                     <div class="settings-note">左=パラメータ、右=対応する希望ポジション。例: セット(セッター)⇔レシーブ(リベロ) → セッターはレシーブの平均から、リベロはセットの平均から除外します。</div>
                 </details>
 
+            
             </div>
         </details>
-
         <details class="acc">
-            <summary>ペア設定(同じチームにする)</summary>
+            <summary>仕組みと使い方</summary>
             <div class="acc-body">
-                <div class="settings-note" style="margin-top:0;">選んだ2人は必ず同じチームになります(希望ポジションより優先)。</div>
-                <div class="pair-add-row">
-                    <select id="pairSelectA"></select>
-                    <span>と</span>
-                    <select id="pairSelectB"></select>
-                    <button onclick="addPair()">追加</button>
-                </div>
-                <div id="pairList"></div>
-            </div>
-        </details>
+                <div class="acc-desc">チーム分けの優先順と、結果画面での入れ替え方です。</div>
 
-        <div class="panel-group-label">説明</div>
-        <details class="acc">
-            <summary>説明:使い方・入れ替え操作</summary>
-            <div class="acc-body">
                 <div class="settings-note" style="margin-top:0;">メンバーの性別・希望ポジション・パラメータは「名簿」で登録します。</div>
                 <div class="settings-note">結果画面で、選手をタップ → 入れ替え先をタップすると入れ替えできます。</div>
-            </div>
-        </details>
-
-        <details class="acc">
-            <summary>説明:チーム分けのロジック(優先順)</summary>
-            <div class="acc-body">
+            
 
             
             <div class="team-split-note">
@@ -2982,8 +2994,7 @@
                 </ol>
                 「ランダム」をONにすると、キー・平均値・配置の数値調整をせず、ペア・希望ポジション・性別・人数だけで分けます。
             </div>
-                        </div>
-        </details>
+                        
             </div>
         </details>
 
@@ -3413,7 +3424,7 @@
             const tops = rosterTopValues();
             roster.forEach(m => {
                 const el = document.getElementById(`rosterEff_${m.id}`);
-                if (el) el.textContent = rosterEffectiveText(m, tops);
+                if (el) el.innerHTML = rosterEffectiveText(m, tops);   // 👑はアイコン(HTML)なので文字としてではなく表示する
                 const ps = document.getElementById(`rcParams_${m.id}`);
                 if (ps) ps.innerHTML = rosterParamsSummaryHtml(m, tops);
             });
@@ -3953,6 +3964,8 @@
         function toggleSettings() {
             const panel = document.getElementById("settingsPanel");
             const opening = !panel.classList.contains("open");
+            if (!opening) panel.querySelectorAll("details.acc[open]").forEach(d => { d.open = false; });   // 閉じるときは、開いていた項目も閉じる
+            if (!opening) panel.scrollTop = 0;
             if (opening) closeOtherPanels("settingsPanel");
             panel.classList.toggle("open");
             if (opening) {
@@ -3971,7 +3984,81 @@
 
         function resetFollowTemplate() {
             document.getElementById("inputFollowTemplate").value = DEFAULT_FOLLOW_TEMPLATE;
+            autoFollow();
         }
+
+        // ------- 設定はすべて自動保存(保存ボタンなし・閉じない) -------
+        function setSavedMsg(msg, err) {
+            const el = document.getElementById("setSaved");
+            if (!el) return;
+            el.textContent = msg; el.classList.toggle("err", !!err); el.classList.toggle("ok", !err);
+            clearTimeout(el._t);
+            if (!err) el._t = setTimeout(() => { el.textContent = "変更はすぐ保存"; el.classList.remove("ok"); }, 1600);
+        }
+        function setErr(id, msg) { const e = document.getElementById(id); if (e) { e.textContent = msg || ""; e.classList.toggle("show", !!msg); } }
+        // alert を出す古い保存処理を、画面内の表示に置き換えて呼ぶ
+        function quietly(fn) {
+            const msgs = [], orig = window.alert;
+            window.alert = (m) => msgs.push(String(m));
+            let ok = false;
+            try { ok = fn(); } finally { window.alert = orig; }
+            return { ok: ok !== false && !msgs.length, msg: msgs[0] || "" };
+        }
+        function autoThresholds() {
+            const v = (id) => parseInt(document.getElementById(id).value, 10);
+            const yellowMin = v("inputYellowMin"), cyanMin = v("inputCyanMin"), cyanMax = v("inputCyanMax");
+            const ok = [yellowMin, cyanMin, cyanMax].every(Number.isFinite) && yellowMin >= 1 && cyanMin > yellowMin && cyanMax >= cyanMin;
+            if (!ok) { setErr("threshErr", "「不足」＜「十分」≦「人数過多」の順になるようにしてください。"); setSavedMsg("保存できません", true); return; }
+            setErr("threshErr", "");
+            thresholds = { yellowMin, cyanMin, cyanMax }; saveThresholds();
+            renderCalendar(); renderRoster(); setSavedMsg("保存しました ✓");
+        }
+        function autoFollow() {
+            const template = document.getElementById("inputFollowTemplate").value;
+            if (!template.trim()) { setSavedMsg("テンプレートが空です", true); return; }
+            followSettings = { template, includePending: document.getElementById("inputIncludePending").checked, includeUnconfirmed: document.getElementById("inputIncludeUnconfirmed").checked };
+            saveFollowSettings(); setSavedMsg("保存しました ✓");
+        }
+        function autoRoles() {
+            const r = quietly(() => saveRoles());
+            if (!r.ok) { setSavedMsg(r.msg || "保存できません", true); return; }
+            renderParamRoleCheckboxes(); setSavedMsg("保存しました ✓");
+        }
+        function autoMobility() {
+            const w = {};
+            for (const d of ROLE_PARAM_DEFS) {
+                const el = document.getElementById(`mobW_${d.key}`), v = parseFloat(el && el.value);
+                if (!Number.isFinite(v) || v < 0 || v > 1) { setSavedMsg(`${d.label}の倍率は0〜1で`, true); return; }
+                w[d.key] = Math.round(v * 100) / 100;
+            }
+            if (JSON.stringify(w) === JSON.stringify(mobilityWeights)) return;
+            mobilityWeights = w; saveMobilityWeights();
+            lastTeamSplitResult = null;
+            refreshRosterEffective();   // 名簿の補正後の値をその場で更新(開いたまま)
+            if (currentView === "teams") renderTeamSplitTab();
+            setSavedMsg("保存しました ✓");
+        }
+        function autoParams() {
+            const r = quietly(() => saveParamRoles(true));
+            setErr("paramErr", r.ok ? "" : r.msg);
+            if (r.ok) setSavedMsg("保存しました ✓"); else setSavedMsg("保存できません", true);
+        }
+        (function initSettingsAutoSave() {
+            const panel = document.getElementById("settingsPanel");
+            if (!panel) return;
+            let ft = 0;
+            const route = (e, typing) => {
+                const t = e.target, id = t && t.id || "";
+                if (/^input(YellowMin|CyanMin|CyanMax)$/.test(id)) autoThresholds();
+                else if (id === "inputFollowTemplate") { clearTimeout(ft); ft = setTimeout(autoFollow, typing ? 600 : 0); }
+                else if (id === "inputIncludePending" || id === "inputIncludeUnconfirmed") autoFollow();
+                else if (id === "inputRolesText") { if (!typing) autoRoles(); }
+                else if (/^mobW_/.test(id)) autoMobility();
+                else if (/^(keyParam|avgParam)_/.test(id) || id === "inputHolderlessMargin" || id === "inputSmallTeamMargin") { if (!typing || t.type === "number") autoParams(); }
+            };
+            panel.addEventListener("input", e => route(e, true));
+            panel.addEventListener("change", e => route(e, false));
+        })();
 
         function saveSettings() {
             const yellowMin = parseInt(document.getElementById("inputYellowMin").value, 10);
@@ -4113,17 +4200,20 @@
                 b: "receive", bPos: roles.includes("リベロ") ? "リベロ" : ""
             });
             renderConflictRuleList();
+            autoParams();
         }
 
         function updateConflictRule(i, field, value) {
             if (!conflictDraft[i]) return;
             conflictDraft[i][field] = value;
             renderConflictRuleList();
+            autoParams();
         }
 
         function removeConflictRule(i) {
             conflictDraft.splice(i, 1);
             renderConflictRuleList();
+            autoParams();
         }
 
         function saveParamRoles(silent) {
@@ -4383,7 +4473,7 @@
                                 ${m.emailHash ? `<button type="button" onclick="clearRosterAccount(${m.id})">解除</button>` : ""}
                             </div>
                             <div class="roster-params-grid dev-only">${paramInputs}</div>
-                            <div class="roster-eff dev-only" id="rosterEff_${m.id}">${escapeHtml(rosterEffectiveText(m, tops))}</div>
+                            <div class="roster-eff dev-only" id="rosterEff_${m.id}">${rosterEffectiveText(m, tops)}</div>
                         </div>
                     </div>
                 `;
