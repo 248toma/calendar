@@ -6009,7 +6009,8 @@
             const chip = (on, label, arg) => `<button type="button" class="op-sc${on ? " on" : ""}" onclick="togglePlanShare(${arg})">${escapeHtml(label)}</button>`;
             const must = pairActive() ? pairIds() : [], me = myRosterId();
             const allChip = isAdmin() && !must.length ? chip(planShare.length === 0, "全員", "null") : "";   // ペア中・閲覧者は「全員」なし
-            el.innerHTML = allChip + roster.filter(r => isAdmin() || r.id !== me).map(r => must.includes(r.id)
+            // 閲覧者はペアの相手だけ(それ以外の人は足せない)
+            el.innerHTML = allChip + roster.filter(r => isAdmin() ? true : must.includes(r.id)).map(r => must.includes(r.id)
                 ? `<button type="button" class="op-sc on locked" disabled title="ペアの相手">${escapeHtml(r.name)}</button>`
                 : chip(planShare.includes(r.id), r.name, JSON.stringify(r.id))).join("");
         }
@@ -6023,6 +6024,7 @@
         function togglePlanRsvp() { setPlanRsvp(!planRsvp); }
         function togglePlanShare(id) {
             if (pairActive() && pairIds().includes(id)) return;   // ペアの相手は外せない
+            if (!isAdmin()) return;   // 閲覧者はペアの相手以外とは共有できない
             if (id === null) planShare = [];
             else planShare = planShare.includes(id) ? planShare.filter(x => x !== id) : planShare.concat(id);
             renderPlanShare();
@@ -6149,7 +6151,7 @@
             const prev = planEditId != null ? planList.find(x => x.id === planEditId) : null;
             if (toLocal) p.local = true;
             else {
-                let to = planShare.slice();
+                let to = isAdmin() ? planShare.slice() : [];   // 閲覧者はペアの相手とだけ
                 if (pairActive()) { pairIds().forEach(id => { if (!to.includes(id)) to.push(id); }); }   // ペアの相手は必ず共有
                 const me = myRosterId();
                 if (to.length && me != null && !to.includes(me)) to.push(me);   // 自分にも見えるように
@@ -6161,7 +6163,7 @@
                 if (prev && !prev.local && !prev.pp && !isAdmin()) return;
                 p.id = prev && prev.pp ? prev.id : Date.now();
                 p.owner = prev && prev.pp ? prev.owner : planAuthorKey();
-                p.by = p.owner;
+                p.by = p.owner; p.pair = true;
                 if (prev && !prev.pp) planList = planList.filter(x => x.id !== prev.id);   // ローカルから移した
                 putPairPlan(p);
                 planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = "";
@@ -6175,6 +6177,7 @@
             }
             if (p.to) p.by = (planEditId != null && (planList.find(x => x.id === planEditId) || {}).by) || planAuthorKey();
             if (!toLocal && planRsvp) p.rsvp = true;
+            if (!toLocal && (pairActive() || (prev && prev.pair))) p.pair = true;   // ペアモードで入れた予定(変更ログに出さない)
             const i = planEditId != null ? planList.findIndex(x => x.id === planEditId) : -1;
             if (i >= 0 && !!planList[i].local === toLocal) { p.id = planEditId; planList[i] = p; }
             else {
@@ -10182,7 +10185,8 @@ const namesBtn = isAdmin() && dates.length > 0
             });
             r0.forEach((r, id) => { if (!r1.has(id)) out.push(`名簿から ${r.name} を削除した`); });
             // 他の予定
-            const p0 = new Map((a[PLANS_KEY] || []).map(p => [p.id, p])), p1 = new Map((b[PLANS_KEY] || []).map(p => [p.id, p]));
+            // ペアモードの予定はログに出さない
+            const p0 = new Map((a[PLANS_KEY] || []).filter(p => !p.pair).map(p => [p.id, p])), p1 = new Map((b[PLANS_KEY] || []).filter(p => !p.pair).map(p => [p.id, p]));
             const pl = p => `「${p.title || "予定"}」(${clMd(p.startDate)}${p.endDate ? "〜" + clMd(p.endDate) : ""})`;
             p1.forEach((p, id) => {
                 if (!p0.has(id)) out.push(`予定 ${pl(p)} を追加した`);
