@@ -9944,8 +9944,17 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!sh || !grip) return;
             let d = null;
             // 灰色の棒はタップだけ(縮める/戻す)。高さの段階はカレンダー下の上下ボタンで変える
-            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, moved: false }; });
-            grip.addEventListener("pointermove", e => { if (d && Math.abs(d.y - e.clientY) > 10) d.moved = true; });
+            // タップ: 広げる/畳む。上へスライド: 広げる。下へスライド: 畳む
+            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, dy: 0, moved: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
+            grip.addEventListener("pointermove", e => {
+                if (!d) return;
+                d.dy = d.y - e.clientY;
+                if (Math.abs(d.dy) > 10) d.moved = true;
+                if (d.moved && Math.abs(d.dy) > 24) {   // 指を離す前でも、十分に動いたらすぐ切り替える
+                    const want = d.dy > 0;
+                    if (want !== !!sheetCompact) { sheetCompact = want; layoutSheet(); }
+                }
+            });
             const end = () => {
                 if (!d) return;
                 const tap = !d.moved; d = null;
