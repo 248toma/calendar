@@ -2538,6 +2538,7 @@
         .pd-head { display: flex; align-items: center; gap: 10px; }
         .pd-bar { width: 3px; height: 18px; border-radius: 2px; background: var(--plan-ink, var(--ink-3)); flex: none; }
         .pd-ttl { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pd-ttl .ic { width: 13px; height: 13px; vertical-align: -1px; margin-right: 5px; opacity: .6; }
         .pd-cnt { flex: none; font-size: 12px; font-weight: 700; color: var(--come); }
         .pd-when { margin: 4px 0 0 13px; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
         .pd-memo { margin: 6px 0 0 13px; font-size: 12px; color: var(--ink-3); white-space: pre-wrap; word-break: break-word; }
@@ -2555,7 +2556,7 @@
         .pd-names .me { font-weight: 700; color: var(--ink); }
         .pd-acts { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
         .pd-acts .op-cancel, .pd-acts .op-add { height: 34px; min-height: 34px; padding: 0 16px; border: none; border-radius: 10px; font-size: 12.5px; font-weight: 700; }
-        .pd-acts .op-delbtn { font-size: 12px; }
+        .pd-acts .op-delbtn { display: inline-block; font-size: 12px; }
         .op-sc.op-rsvp-tg { margin-left: auto; }
         .cal-grid.nv .nv-chip .nv-n { font-weight: 800; margin-right: 3px; }
         #nvDayPanel .nv-cnt { flex: none; font-size: 11px; font-weight: 700; color: var(--come); letter-spacing: 0; }
@@ -4998,7 +4999,7 @@
         function nvTap(id) {
             const p = planList.find(x => x.id === id);
             if (!p) return;
-            if (p.local) nvEdit(id); else openPlanDetail(id);
+            openPlanDetail(id);   // ローカルの予定も、まず詳細(編集はそこから)
         }
         // 調査画面などから、その予定の詳細へ移る
         function goPlanRsvp(id) {
@@ -5040,7 +5041,7 @@
             }
             const btns = canAnswer ? `<div class="pd-ans">${["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${myst === s ? " sel" : ""}" onclick="planRsvpSet(${p.id},'${s}')" aria-label="${s}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("")}</div>` : "";
             return `<div class="nv-detail${pcCls(p)}" id="planDetail" data-pid="${p.id}">
-                <div class="pd-head"><span class="pd-bar"></span><div class="pd-ttl">${escapeHtml(p.title || "予定")}</div>${rsvp ? `<span class="pd-cnt">○ ${planComing(p)}</span>` : ""}</div>
+                <div class="pd-head"><span class="pd-bar"></span><div class="pd-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</div>${rsvp ? `<span class="pd-cnt">○ ${planComing(p)}</span>` : ""}</div>
                 <div class="pd-when">${escapeHtml(planWhenText(p))}</div>
                 ${p.memo ? `<div class="pd-memo">${escapeHtml(p.memo)}</div>` : ""}
                 ${btns}${mem}
@@ -9474,7 +9475,11 @@ const namesBtn = isAdmin() && dates.length > 0
                 wrap.style.cssText = "display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--ink-3);margin-left:auto;letter-spacing:0;";
                 title.appendChild(wrap);
             }
-            wrap.textContent = text;
+            // ふだんの状態(共有中・閲覧中・管理者・ゲスト)は出さない。同期中・エラー・端末のみ など知らせたいときだけ文字を出す
+            const normal = !isError && ["共有中", "閲覧中", "管理者", "ゲスト"].includes(text);
+            wrap.textContent = "";
+            if (!normal) { const t = document.createElement("span"); t.textContent = text; wrap.appendChild(t); }
+            wrap.title = text;
             wrap.style.color = isError ? "var(--notcome-ink)" : "var(--ink-3)";
             if (window.firebase && firebase.auth) {
                 const mk = (label, fn) => {
