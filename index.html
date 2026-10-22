@@ -2532,6 +2532,15 @@
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
+        /* カレンダー下のボタン列はなし(時間・予約日はピンチ、Todayは右下、一括追加は上) */
+        #calLegend { display: none !important; }
+        #calCard, #calGrid * { touch-action: pan-y; }   /* 2本指はページの拡大ではなく表示切り替えに使う */
+        #todayFab { position: fixed; right: 90px; bottom: calc(31px + env(safe-area-inset-bottom)); z-index: 60; height: 40px; padding: 0 16px; border: none; border-radius: 20px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise), 0 8px 18px rgba(0,0,0,.08); cursor: pointer; }
+        #todayFab:active { box-shadow: var(--sink); }
+        body.nv-full #todayFab { display: none !important; }
+        .st-seg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 17px; background: var(--bg); box-shadow: var(--sink); }
+        .st-seg button { height: 28px; min-width: 44px; padding: 0 10px; border: none; border-radius: 14px; background: transparent; color: var(--ink-3); font-size: 12px; font-weight: 700; cursor: pointer; }
+        .st-seg button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
         /* バレーの画面の日付行: 予定のオン・オフは置かない。日付の横に削除 */
         .day-bar .day-toggles { display: none !important; }
         body.nv-full .day-bar { justify-content: flex-start; gap: 12px; margin-top: 14px; }
@@ -2731,6 +2740,7 @@
         </div>
         <!-- 誰でも使う設定(いちばん上) -->
         <div id="setTop">
+            <div class="st-row"><span class="st-lbl">カレンダーの予定</span><span class="st-seg" id="lvSeg"><button type="button" data-lv="1" onclick="setSheetLevelTo(1)">1つ</button><button type="button" data-lv="2" onclick="setSheetLevelTo(2)">2つ</button><button type="button" data-lv="3" onclick="setSheetLevelTo(3)">3つ</button></span></div>
             <div class="st-row"><span class="st-lbl">表示</span><button type="button" class="st-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="ic ic-sun"></i></button></div>
             <div class="st-row real-admin-only"><span class="st-lbl">モード</span>
                 <select class="st-sel mode-select" id="modeSelect" onchange="setViewMode(this.value)" aria-label="モード(管理・閲覧)">
@@ -2989,6 +2999,7 @@
             </div>
             <div class="ch-mid"><span class="month-label" id="monthLabel"></span><button type="button" class="upd-dot" id="updDot" onclick="refreshApp()" aria-label="更新があります(タップで反映)" title="更新があります(タップで反映)"></button></div>
             <div class="ch-right header-btns">
+                <button class="settings-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
                 <button class="settings-btn" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定"><i class="ic ic-sliders"></i></button>
                 <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge" id="surveyBadge"></span></button>
             </div>
@@ -3001,12 +3012,12 @@
                 <button class="today-btn" id="calTimeBtn" onclick="toggleCalTimeMode()" aria-pressed="false" aria-label="時間表示" title="時間表示"><i class="ic ic-clock"></i></button>
                 <button class="today-btn" id="rvListBtn" onclick="toggleReserveDateList()" aria-pressed="false" aria-label="予約日" title="予約日"><i class="ic ic-ball"></i></button>
                 <button class="today-btn" onclick="jumpToToday()">Today</button>
-                <button class="today-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
             </div>
         </div>
     </section>
 
     <!-- 予定の追加(右下の丸い＋) -->
+    <button type="button" id="todayFab" onclick="jumpToToday()">Today</button>
     <button type="button" id="addFab" onclick="onAddFab()" aria-label="予定を追加"><i class="ic ic-plus"></i></button>
     <div id="addChooser" onclick="if(event.target===this) closeAddChooser()">
         <div class="ac-box" role="menu" aria-label="追加するもの">
@@ -4739,6 +4750,7 @@
             }, { passive: true });
             grid.addEventListener("touchmove", e => {
                 if (!on) return;
+                if (e.touches.length > 1) { if (lock) { setT("translateX(0)"); clean(); } on = false; return; }   // 2本指はピンチ用
                 const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
                 if (!lock) {
                     if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.3) {
@@ -4772,6 +4784,42 @@
             grid.addEventListener("touchcancel", () => { if (on && lock) { setT("translateX(0)", "transform .2s ease-out"); setTimeout(clean, 210); } on = false; }, { passive: true });
         })();
 
+        // ------- 2本指: 広げる=細かく(予約日一覧 → 月 → 時間) / つまむ=広く(時間 → 月 → 予約日一覧) -------
+        function calViewNow() { return calListMode ? "list" : calTimeMode ? "time" : "month"; }
+        function setCalView(v) {
+            if (v === calViewNow()) return;
+            if (calListMode && v !== "list") toggleReserveDateList();       // 一覧を閉じる
+            if (!!calTimeMode !== (v === "time")) toggleCalTimeMode();      // 時間表示の入/切
+            if (v === "list" && !calListMode) toggleReserveDateList();
+        }
+        function calZoom(dir) {
+            const order = ["list", "month", "time"], i = order.indexOf(calViewNow());
+            const j = Math.max(0, Math.min(order.length - 1, i + dir));
+            if (j !== i) setCalView(order[j]);
+        }
+        (function initCalPinch() {
+            const card = document.getElementById("calCard");
+            if (!card) return;
+            let d0 = 0, fired = false;
+            const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+            card.addEventListener("touchstart", e => { if (e.touches.length === 2) { d0 = dist(e.touches); fired = false; } }, { passive: true });
+            card.addEventListener("touchmove", e => {
+                if (e.touches.length !== 2 || !d0) return;
+                e.preventDefault();   // 画面ごとの拡大・スクロールはさせない
+                if (fired) return;
+                const r = dist(e.touches) / d0;
+                if (r > 1.3) { fired = true; calZoom(1); } else if (r < 0.75) { fired = true; calZoom(-1); }
+            }, { passive: false });
+            card.addEventListener("touchend", e => { if (e.touches.length < 2) d0 = 0; }, { passive: true });
+            ["gesturestart", "gesturechange"].forEach(t => card.addEventListener(t, e => e.preventDefault(), { passive: false }));   // iPhoneのピンチ拡大を止める
+            let wt = 0;   // パソコン: トラックパッドのピンチ(ctrl+ホイール)
+            card.addEventListener("wheel", e => {
+                if (!e.ctrlKey) return;
+                e.preventDefault();
+                const now = Date.now(); if (now - wt < 500) return; wt = now;
+                calZoom(e.deltaY < 0 ? 1 : -1);
+            }, { passive: false });
+        })();
         function jumpToToday() {
             const today = new Date();
             viewMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -7807,7 +7855,7 @@
 
         function applyTheme() {
             // 管理モードのときは、テーマ設定を反転して表示する(ライト設定→ダーク / ダーク設定→ライト)
-            const dark = (typeof isAdmin === "function" && isAdmin()) ? !themeDark : themeDark;
+            const dark = themeDark;   // 管理者でも反転しない(選んだ表示のまま)
             document.body.classList.toggle("dark", dark);
             document.documentElement.style.colorScheme = dark ? "dark" : "light";
             const meta = document.querySelector('meta[name="theme-color"]');
@@ -7815,7 +7863,7 @@
             const btn = document.getElementById("themeToggleBtn");
             if (btn) {
                 btn.innerHTML = IC(dark ? "moon" : "sun") + `<span>${dark ? "ダーク" : "ライト"}</span>`;
-                btn.title = (dark ? "ダーク表示" : "ライト表示") + "(管理モードは反転) / タップで切替";
+                btn.title = (dark ? "ダーク表示" : "ライト表示") + " / タップで切替";
             }
         }
         function toggleTheme() {
@@ -9975,6 +10023,7 @@ const namesBtn = isAdmin() && dates.length > 0
             sheetLevel = Math.max(1, Math.min(3, sheetLevel + dir));
             saveSheetLevel(); layoutSheet();
         }
+        function setSheetLevelTo(n) { sheetCompact = false; sheetLevel = Math.max(1, Math.min(3, n)); saveSheetLevel(); layoutSheet(); }
         function saveSheetLevel() { try { localStorage.setItem(SHEET_LV_KEY, String(sheetLevel)); } catch (e) { /* ignore */ } }
         // [文字3つ, 2つ, 1つ] それぞれの予定欄の高さ
         function sheetLevelHs() {
@@ -10006,6 +10055,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const up = document.getElementById("lvUp"), dn = document.getElementById("lvDown");
             if (up) up.disabled = sheetLevel <= 1 || sheetCompact;
             if (dn) dn.disabled = sheetLevel >= 3 && !sheetCompact;
+            document.querySelectorAll("#lvSeg button").forEach(b => b.classList.toggle("on", +b.dataset.lv === sheetLevel));
             if (sheetCompact) h = Math.max(h, compactSheetH());   // 縮めている間だけの高さ(自分で決めた高さは上書きしない)
             sh.style.setProperty("--sheet-h", h + "px");
             document.body.classList.toggle("cal-compact", !!sheetCompact);
