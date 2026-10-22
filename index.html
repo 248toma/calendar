@@ -2532,6 +2532,18 @@
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
+        /* バレーの画面の日付行: 予定のオン・オフは置かない。日付の横に削除 */
+        .day-bar .day-toggles { display: none !important; }
+        body.nv-full .day-bar { justify-content: flex-start; gap: 12px; margin-top: 14px; }
+        body.nv-full .selected-date-label { flex: 0 1 auto; }
+        body.nv-full .selected-date-label .sd-main { font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: .02em; }
+        body.nv-full .selected-date-label .sd-caret { font-size: 10px; }
+        .vb-del { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 12px; border: none; border-radius: 14px; background: var(--bg); color: var(--notcome-ink, #c0392b); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
+        .vb-del .ic { width: 12px; height: 12px; }
+        .vb-del:active { box-shadow: var(--sink); }
+        body:not(.nv-full) .vb-del { display: none !important; }
+        /* 日付枠の中の予定の影が、枠の角で切れないように */
+        body:not(.nv-full) .cal-grid.nv:not(.list-mode):not(.tw-mode) .cal-day { overflow: visible; }
         /* ヘッダーなし: カレンダーの上の段に まとめる */
         .app-header { display: none !important; }
         #calPrevBtn, #calNextBtn { display: none !important; }
@@ -3007,6 +3019,7 @@
 
     <div class="day-bar">
         <div class="selected-date-label" id="selectedDateLabel" onclick="toggleCalendar()" role="button" tabindex="0" aria-label="カレンダーを開閉" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCalendar();}"></div>
+        <button type="button" class="vb-del admin-only" id="vbDelBtn" onclick="deleteVolleyDay()" aria-label="この日のバレーを削除" title="この日のバレーを削除"><i class="ic ic-close"></i><span>削除</span></button>
         <div class="day-toggles">
             <div class="event-toggle plan-toggle">
                 <input type="checkbox" id="planToggle" aria-label="バレー以外の予定の入力" onchange="togglePlanPanel(this.checked)">
@@ -4843,7 +4856,7 @@
         }
         const NV_TEXT = 12.6, NV_LINE = 4, NV_GAP = 2;
         // 文字の行がt個(残りは線)のときに、日付の枠に必要な高さ
-        function nvNeed(t, off) { return off + t * (NV_TEXT + NV_GAP) + (3 - t) * (NV_LINE + NV_GAP) + 2; }
+        function nvNeed(t, off) { return off + t * (NV_TEXT + NV_GAP) + (3 - t) * (NV_LINE + NV_GAP) + 5; }   // 下に影の分のゆとり
         // r行目の上端(1行目の上端からの距離)
         function nvRowTop(r) { const t = Math.min(r, nvText); return t * (NV_TEXT + NV_GAP) + (r - t) * (NV_LINE + NV_GAP); }
         // 日付の下の、予定1つ目が始まる位置(枠の余白+日付の高さ+すき間)
@@ -5039,6 +5052,14 @@
         }
         function closeAddChooser() { document.getElementById("addChooser").classList.remove("open"); document.getElementById("addFab").classList.remove("open"); }
         function addChoosePlan() { closeAddChooser(); planDetailId = null; openNewPlan(); }
+        // バレーの画面: 日付の横の「削除」で、この日をバレーなしに戻す
+        function deleteVolleyDay() {
+            if (!isAdmin() || !events[selectedDate]) return;
+            const [, m, d] = selectedDate.split("-").map(Number);
+            if (!confirm(`${m}/${d} のバレーを削除しますか？`)) return;
+            toggleEventDay(false);
+            closeVolleyFull();
+        }
         function addChooseVolley() {
             closeAddChooser();
             if (!isAdmin()) return;
