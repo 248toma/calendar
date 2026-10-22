@@ -9808,6 +9808,28 @@ const namesBtn = isAdmin() && dates.length > 0
         }
 
         // 共有データの内容が、すべてこの端末に入っているか(端末にしかないキーがあっても再読み込みを繰り返さない)
+        // 共有データとこの端末の違いが、出欠に「未確認」のメンバーが足されただけ(+並び順・次のID)か
+        function onlyRosterSyncDiff(remote, local) {
+            const keys = new Set([...Object.keys(remote || {}), ...Object.keys(local || {})].filter(isSharedKey));
+            for (const k of keys) {
+                if (k === BYDATE_KEY || k === NEXTID_KEY) continue;
+                if (k === CHANGELOG_KEY ? !clRemoteCovered(remote[k], local[k]) : (remote[k] || "") !== (local[k] || "")) return false;
+            }
+            let R, L;
+            try { R = JSON.parse(remote[BYDATE_KEY] || "{}"); L = JSON.parse(local[BYDATE_KEY] || "{}"); } catch (e) { return false; }
+            if (JSON.stringify(R) === JSON.stringify(L) && remote[NEXTID_KEY] === local[NEXTID_KEY]) return false;   // そもそも違いがない(呼ばれない想定)
+            const sig = (a) => JSON.stringify(a);
+            for (const d of new Set([...Object.keys(R), ...Object.keys(L)])) {
+                const r = R[d], l = L[d];
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { if (sig(r) !== sig(l)) return false; continue; }   // 予定の出欠・ペア予定は完全一致のみ
+                const rl = Array.isArray(r) ? r : [], ll = Array.isArray(l) ? l : [];
+                const lm = new Map(ll.map(m => [m.name, m]));
+                for (const m of rl) { const x = lm.get(m.name); if (!x || x.status !== m.status || (x.updated || "") !== (m.updated || "")) return false; }   // 消えた・変わった人がいれば本当の更新
+                const rn = new Set(rl.map(m => m.name));
+                for (const m of ll) if (!rn.has(m.name) && m.status !== DEFAULT_NEW_STATUS) return false;   // 足されたのは未確認の人だけ
+            }
+            return true;
+        }
         function remoteCoveredByLocal(remote, local) {
             return Object.keys(remote || {}).filter(isSharedKey).every(k => k === CHANGELOG_KEY ? clRemoteCovered(remote[k], local[k]) : local[k] === remote[k]);
         }
@@ -10237,6 +10259,13 @@ const namesBtn = isAdmin() && dates.length > 0
                     }
                     return;
                 }
+                // 違いが「この端末が起動時に名簿のメンバーを今後の日へ足しただけ」なら、他の人の更新ではない。
+                // 管理者はその内容を共有データへ保存し、閲覧者は無視する(赤い点を出し続けない・ログを増やさない)
+                if (onlyRosterSyncDiff(remoteValues, localValues)) {
+                    setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
+                    if (firestoreEditor && !firestoreApplyingRemote) { clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 400); }
+                    return;
+                }
                 // 他の人の更新では画面を勝手に切り替えない。保留して、↻を押す/アプリに戻ってきたときに反映する
                 firestorePendingValues = remoteValues;
                 markRemoteUpdate();
@@ -10392,10 +10421,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 m0.forEach((m, n) => { if (!m1.has(n)) (dels[n] = dels[n] || []).push(d); });
             });
             if (chg.length > 12) out.push(`出欠を${chg.length}件更新した`); else chg.forEach(t => out.push("出欠 " + t));
-            Object.keys(adds).forEach(n => out.push(`${n} を${adds[n].length}日の出欠に追加した`));
-            Object.keys(dels).forEach(n => out.push(`${n} を${dels[n].length}日の出欠から外した`));
             // 名簿
             const r0 = new Map((a[ROSTER_KEY] || []).map(r => [r.id, r])), r1 = new Map((b[ROSTER_KEY] || []).map(r => [r.id, r]));
+            // 名簿の追加・削除・名前変更に伴う、出欠への自動の追加・削除はログに出さない(名簿の行だけで分かる)
+            const rosterNames = new Set();
+            r1.forEach((r, id) => { const o = r0.get(id); if (!o) rosterNames.add(r.name); else if (o.name !== r.name) { rosterNames.add(o.name); rosterNames.add(r.name); } });
+            r0.forEach((r, id) => { if (!r1.has(id)) rosterNames.add(r.name); });
+            Object.keys(adds).filter(n => !rosterNames.has(n)).forEach(n => out.push(`${n} を${adds[n].length}日の出欠に追加した`));
+            Object.keys(dels).filter(n => !rosterNames.has(n)).forEach(n => out.push(`${n} を${dels[n].length}日の出欠から外した`));
             r1.forEach((r, id) => {
                 if (!r0.has(id)) out.push(`名簿に ${r.name} を追加した`);
                 else if (r0.get(id).name !== r.name) out.push(`名簿の名前を変更: ${r0.get(id).name}→${r.name}`);
