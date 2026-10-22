@@ -9966,7 +9966,8 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const wd = g.querySelector(".cal-weekday"), head = wd ? wd.offsetHeight : 25, off = nvOff(g);
             const hFor = (t) => sh.offsetHeight + g.clientHeight - (head + 6 * (nvNeed(t, off) + 1));
-            const h3 = cap(Math.min(112, hFor(3))), h2 = Math.max(h3, cap(hFor(2))), h1 = Math.max(h2, cap(hFor(1)));
+            // 3つ表示も、3つがちょうど入る高さにする(余った分は予定欄へ)
+            const h3 = cap(hFor(3)), h2 = Math.max(h3, cap(hFor(2))), h1 = Math.max(h2, cap(hFor(1)));
             const hs = [h3, h2, h1];
             if (!sheetHsCache || sheetHsCache.vh !== vh || hs.some((h, i) => h !== sheetHsCache.hs[i])) {
                 sheetHsCache = { vh, hs };
