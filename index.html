@@ -2534,9 +2534,13 @@
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
         /* 追加済みのお知らせ */
-        #addNotice { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 99999; width: max-content; max-width: min(88vw, 420px); display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: 16px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 600; line-height: 1.5; box-shadow: var(--raise), 0 8px 24px rgba(0,0,0,.18); opacity: 0; pointer-events: none; transform: translate(-50%, 12px); transition: opacity .2s ease, transform .2s ease; }
-        #addNotice.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
-        #addNotice .ic { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--amber, #d4a017); }
+        #addNotice { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+        #addNotice.show { opacity: 1; pointer-events: auto; }
+        #addNotice .an-box { width: min(86vw, 340px); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 20px 18px; border-radius: 20px; background: var(--bg); color: var(--ink); text-align: center; box-shadow: var(--raise), 0 12px 32px rgba(0,0,0,.25); transform: scale(.96); transition: transform .2s ease; }
+        #addNotice.show .an-box { transform: scale(1); }
+        #addNotice .ic { width: 28px; height: 28px; color: var(--amber, #d4a017); }
+        #addNotice .an-msg { font-size: 14px; font-weight: 600; line-height: 1.6; }
+        #addNotice .op-add { min-width: 120px; height: 40px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; }
         /* ペアモード */
         .cal-header { position: relative; }
         .cal-header .month-label { padding: 0 var(--pairpad, 0px); box-sizing: border-box; }
@@ -9051,15 +9055,19 @@ const namesBtn = isAdmin() && dates.length > 0
         function showAddNotice(msg) {
             addNoticePending = msg;
             const fire = () => { if (!addNoticePending || document.hidden) return; const m = addNoticePending; addNoticePending = ""; renderAddNotice(m); };
-            setTimeout(fire, 1200);
+            setTimeout(fire, 600);
         }
         document.addEventListener("visibilitychange", () => { if (!document.hidden && addNoticePending) { const m = addNoticePending; addNoticePending = ""; setTimeout(() => renderAddNotice(m), 300); } });
+        // 画面の真ん中に出し、OKを押すまで消えない(iPhoneのカレンダー画面の裏で出ても、戻ったときに見える)
         function renderAddNotice(msg) {
             let el = document.getElementById("addNotice");
-            if (!el) { el = document.createElement("div"); el.id = "addNotice"; el.setAttribute("role", "alert"); el.onclick = () => el.classList.remove("show"); document.body.appendChild(el); }
-            el.innerHTML = `<i class="ic ic-warn"></i><span>${escapeHtml(msg)}</span>`;
+            if (!el) {
+                el = document.createElement("div"); el.id = "addNotice";
+                el.addEventListener("click", (e) => { if (e.target === el) el.classList.remove("show"); });
+                document.body.appendChild(el);
+            }
+            el.innerHTML = `<div class="an-box" role="alertdialog" aria-modal="true"><i class="ic ic-warn"></i><div class="an-msg">${escapeHtml(msg)}</div><button type="button" class="op-add" onclick="document.getElementById('addNotice').classList.remove('show')">OK</button></div>`;
             el.classList.add("show");
-            clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 7000);
         }
         async function exportReservationsIcs() {
             const { text, count } = buildReservationsIcs();
