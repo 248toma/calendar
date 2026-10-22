@@ -2533,6 +2533,21 @@
         .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
+        /* ペアモード */
+        body.viewer-mode:not(.pair-on) .pair-or-admin { display: none !important; }
+        .op-sc.locked { opacity: .75; cursor: default; }
+        #pairOv { position: fixed; inset: 0; z-index: 9000; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.35); }
+        .pair-box { width: 100%; max-width: 520px; max-height: 80vh; overflow-y: auto; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.25); }
+        .pair-head { display: flex; align-items: center; justify-content: space-between; font-size: 16px; }
+        .pair-sw { width: 50px; height: 28px; border: none; border-radius: 14px; background: var(--bg); box-shadow: var(--sink); position: relative; cursor: pointer; }
+        .pair-sw span { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); box-shadow: var(--raise-xs); transition: left .18s ease, background .18s ease; }
+        .pair-sw.on { background: var(--accent); }
+        .pair-sw.on span { left: 25px; background: #fff; }
+        .pair-note { margin: 8px 0 14px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+        .pair-lbl { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--ink-3); margin-bottom: 8px; }
+        .pair-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pair-acts { display: flex; justify-content: flex-end; margin-top: 16px; }
+        .pair-acts .op-add { height: 38px; padding: 0 22px; border: none; border-radius: 10px; font-weight: 700; }
         /* 共有予定の詳細 */
         .nv-detail { margin: 0 4px 12px; padding: 14px 16px 12px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise); }
         .pd-head { display: flex; align-items: center; gap: 10px; }
@@ -2949,13 +2964,13 @@
                 <button type="button" class="op-dot" data-c="8" role="radio" aria-label="黄" onclick="setPlanColor(8)"></button>
             </div>
         </div>
-        <div class="op-scope admin-only" id="opScope" role="radiogroup" aria-label="保存先">
+        <div class="op-scope pair-or-admin" id="opScope" role="radiogroup" aria-label="保存先">
             <span class="op-colors-lbl">保存</span>
-            <button type="button" class="op-sc on admin-only" data-s="shared" role="radio" onclick="setPlanScope('shared')">Shared</button>
+            <button type="button" class="op-sc on pair-or-admin" data-s="shared" id="opScopeShared" role="radio" onclick="setPlanScope('shared')">Shared</button>
             <button type="button" class="op-sc" data-s="local" role="radio" onclick="setPlanScope('local')">Local <i class="ic ic-phone"></i></button>
             <button type="button" class="op-sc op-rsvp-tg" id="opRsvp" aria-pressed="false" onclick="togglePlanRsvp()" title="来る・来ない・未定のアンケートを取る">出欠をとる</button>
         </div>
-        <div class="op-share admin-only" id="opShare">
+        <div class="op-share pair-or-admin" id="opShare">
             <button type="button" class="op-share-tg" id="opShareTg" onclick="togglePlanShareOpen()" aria-expanded="false"></button>
             <div id="opShareChips"></div>
         </div>
@@ -3666,8 +3681,9 @@
 
         function computeNextId() {
             let max = 0;
-            Object.values(attendanceByDate).forEach(list => {
-                list.forEach(m => { if (m.id > max) max = m.id; });
+            Object.keys(attendanceByDate).forEach(k => {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;   // 予定の出欠・ペア予定は対象外
+                (attendanceByDate[k] || []).forEach(m => { if (m.id > max) max = m.id; });
             });
             return max + 1;
         }
@@ -3761,7 +3777,7 @@
             try {
                 localStorage.setItem(BYDATE_KEY, JSON.stringify(attendanceByDate));
                 localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
-                localStorage.setItem(PLANS_KEY, JSON.stringify(planList.filter(p => !p.local)));
+                localStorage.setItem(PLANS_KEY, JSON.stringify(planList.filter(p => !p.local && !p.pp)));   // ペア予定は出欠データ側
                 localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify(planList.filter(p => p.local)));
                 localStorage.setItem(NEXTID_KEY, String(nextId));
             } catch (e) {
@@ -4933,6 +4949,94 @@
         }
         function nvEdit(id) { editOtherPlan(id); }
 
+        // ------- ペアモード(決まった相手とだけ共有。設定は各自の端末に保存) -------
+        const PAIR_KEY = "attendance_pair_v1";
+        let pairMode = { on: false, ids: [] };
+        try { const v = JSON.parse(localStorage.getItem(PAIR_KEY) || "null"); if (v && typeof v === "object") pairMode = { on: !!v.on, ids: Array.isArray(v.ids) ? v.ids : [] }; } catch (e) { /* ignore */ }
+        function savePairMode() { try { localStorage.setItem(PAIR_KEY, JSON.stringify(pairMode)); } catch (e) { /* ignore */ } }
+        function myRosterId() { const n = myMemberName(), r = n ? roster.find(x => x.name === n) : null; return r ? r.id : null; }
+        function pairIds() { const me = myRosterId(); return pairMode.ids.filter(id => id !== me && roster.some(r => r.id === id)); }
+        // ペアモードで使えるか(相手が1人以上いて、閲覧者は自分の名前が分かっていること)
+        function pairActive() { return pairMode.on && pairIds().length > 0 && (isAdmin() || myRosterId() != null); }
+        function pairLabel() {
+            const names = pairIds().map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
+            return pairMode.on && names.length ? "Pair: " + (names.length > 2 ? names.slice(0, 2).join("・") + " 他" + (names.length - 2) : names.join("・")) : "Pair";
+        }
+        function applyPairClass() { document.body.classList.toggle("pair-on", pairActive()); }
+        function openPairPanel() {
+            let ov = document.getElementById("pairOv");
+            if (!ov) {
+                ov = document.createElement("div");
+                ov.id = "pairOv";
+                ov.onclick = (e) => { if (e.target === ov) closePairPanel(); };
+                document.body.appendChild(ov);
+            }
+            renderPairPanel();
+            ov.style.display = "flex";
+        }
+        function closePairPanel() { const ov = document.getElementById("pairOv"); if (ov) ov.style.display = "none"; }
+        function renderPairPanel() {
+            const ov = document.getElementById("pairOv");
+            if (!ov) return;
+            const me = myRosterId(), needName = !isAdmin() && me == null;
+            const chips = roster.filter(r => r.id !== me).map(r => `<button type="button" class="op-sc${pairMode.ids.includes(r.id) ? " on" : ""}" onclick="togglePairMember(${JSON.stringify(r.id)})">${escapeHtml(r.name)}</button>`).join("");
+            ov.innerHTML = `<div class="pair-box" role="dialog" aria-label="ペアモード">
+                <div class="pair-head"><b>ペアモード</b><button type="button" class="pair-sw${pairMode.on ? " on" : ""}" onclick="setPairOn(${!pairMode.on})" aria-pressed="${pairMode.on}"><span></span></button></div>
+                <div class="pair-note">${needName ? "名簿の自分の名前が分からないため使えません(ゲストは名前を選んでください)。" : "オンの間、共有で入れた予定は下の相手に必ず共有されます。この設定はこの端末だけです。"}</div>
+                <div class="pair-lbl">共有する相手</div>
+                <div class="pair-chips">${chips}</div>
+                <div class="pair-acts"><button type="button" class="op-add" onclick="closePairPanel()">OK</button></div>
+            </div>`;
+        }
+        function setPairOn(v) { pairMode.on = !!v; savePairMode(); pairChanged(); }
+        function togglePairMember(id) {
+            pairMode.ids = pairMode.ids.includes(id) ? pairMode.ids.filter(x => x !== id) : pairMode.ids.concat(id);
+            savePairMode(); pairChanged();
+        }
+        function pairChanged() {
+            renderPairPanel(); applyPairClass();
+            if (lastSyncStatus) setFirestoreSyncStatus(lastSyncStatus.text, lastSyncStatus.isError);
+            if (planPanelIsOpen() && planEditId == null) { resetPlanForm(); renderOtherPlanBox(); }
+        }
+
+        // ------- 閲覧者のペア予定 -------
+        // 閲覧者が共有データに書けるのは出欠データ(attendanceByDate)だけなので、ペア予定は その中の "pairplans" に入れる。
+        // 消したものは deleted:true を残す(古い端末が保存し直しても生き返らないように)
+        const PAIR_PLANS = "pairplans";
+        function pairPlanStore() { const a = attendanceByDate[PAIR_PLANS]; return Array.isArray(a) ? a : (attendanceByDate[PAIR_PLANS] = []); }
+        function mergePairPlansIntoList() {
+            planList = planList.filter(p => !p.pp).concat(pairPlanStore().filter(x => x && !x.deleted && x.startDate).map(x => ({ ...x, pp: true })));
+        }
+        function pairPlanEditable(p) { return !!(p && p.pp && (isAdmin() || p.owner === planAuthorKey())); }
+        function putPairPlan(plan) {
+            const rec = { ...plan }; delete rec.pp; rec.updated = nowStamp();
+            const st = pairPlanStore(), i = st.findIndex(x => x.id === rec.id);
+            if (i >= 0) st[i] = rec; else st.push(rec);
+            saveData();
+            mergePairPlansIntoList();
+            if (!isAdmin()) savePairPlanToShared(rec);
+        }
+        function savePairPlanToShared(rec) {
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authUid) return;
+            setFirestoreSyncStatus("同期中…");
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                const list = Array.isArray(data[PAIR_PLANS]) ? data[PAIR_PLANS] : (data[PAIR_PLANS] = []);
+                const i = list.findIndex(x => x.id === rec.id);
+                if (i >= 0 && list[i].owner !== rec.owner) throw new Error("not-owner");   // 他の人の予定は書き換えない
+                if (i >= 0) list[i] = rec; else list.push(rec);
+                tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            }).then(() => setFirestoreSyncStatus("閲覧中"))
+              .catch(err => {
+                  console.error("ペア予定の共有に失敗しました。", err);
+                  setFirestoreSyncStatus("閲覧中");
+                  alert("予定を共有データに反映できませんでした(" + ((err && (err.code || err.message)) || "") + ")。");
+              });
+        }
+
         // ------- 共有予定の出欠(来る・来ない・未定) -------
         // 回答は出欠データ(attendanceByDate)の "plan:<予定ID>" に [{name, status, updated}] で入れる。
         // 閲覧者が自分の出欠を共有データへ書けるのはこの出欠データだけなので、バレーと同じ仕組みで送れる
@@ -5024,7 +5128,7 @@
             return `${a} 終日`;
         }
         function planDetailHtml(p) {
-            const editable = isAdmin() || !!p.local;
+            const editable = isAdmin() || !!p.local || pairPlanEditable(p);
             const inv = planInvitees(p), rsvp = planRsvpOn(p);
             const me = surveyWho(), canAnswer = rsvp && me && inv.includes(me);
             const myst = canAnswer ? planStatusOf(p, me) : "";
@@ -5071,7 +5175,7 @@
                 const multi = !!p.endDate && p.endDate !== p.startDate;
                 const t1 = first ? (p.start || "終日") : md(p.startDate);
                 const t2 = multi ? (last ? (p.end || md(p.endDate)) : md(p.endDate)) : (p.end || "");
-                const editable = isAdmin() || !!p.local;
+                const editable = isAdmin() || !!p.local || pairPlanEditable(p);
                 const editing = planPanelIsOpen() && planEditId === p.id;
                 if (planDetailId === p.id) { rows.push({ ad: !(first && last) ? 0 : planTimed(p) ? 3 : 2, s: s == null ? -2 : s, html: planDetailHtml(p) }); return; }
                 const tappable = editable || !p.local;   // 共有予定は閲覧者も押せる(詳細を見る)
@@ -5893,17 +5997,21 @@
         function renderPlanShare() {
             const box = document.getElementById("opShare"), el = document.getElementById("opShareChips");
             if (!box || !el) return;
-            box.classList.toggle("show", isAdmin() && planScope === "shared");
+            box.classList.toggle("show", (isAdmin() || pairActive()) && planScope === "shared");
             box.classList.toggle("open", planShareOpen);
             const tg = document.getElementById("opShareTg");
             if (tg) {
                 const names = planShare.map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
-                const sm = names.length ? (names.length > 3 ? names.slice(0, 3).join("・") + ` 他${names.length - 3}人` : names.join("・")) : "全員";
+                const sm = names.length ? (names.length > 3 ? names.slice(0, 3).join("・") + ` 他${names.length - 3}人` : names.join("・")) : "全員";   // ペアの相手は必ず入る
                 tg.innerHTML = `共有先: <span class="sm">${escapeHtml(sm)}</span> ${planShareOpen ? "▾" : "▸"}`;
                 tg.setAttribute("aria-expanded", String(planShareOpen));
             }
             const chip = (on, label, arg) => `<button type="button" class="op-sc${on ? " on" : ""}" onclick="togglePlanShare(${arg})">${escapeHtml(label)}</button>`;
-            el.innerHTML = chip(planShare.length === 0, "全員", "null") + roster.map(r => chip(planShare.includes(r.id), r.name, JSON.stringify(r.id))).join("");
+            const must = pairActive() ? pairIds() : [], me = myRosterId();
+            const allChip = isAdmin() && !must.length ? chip(planShare.length === 0, "全員", "null") : "";   // ペア中・閲覧者は「全員」なし
+            el.innerHTML = allChip + roster.filter(r => isAdmin() || r.id !== me).map(r => must.includes(r.id)
+                ? `<button type="button" class="op-sc on locked" disabled title="ペアの相手">${escapeHtml(r.name)}</button>`
+                : chip(planShare.includes(r.id), r.name, JSON.stringify(r.id))).join("");
         }
         // 管理者: 共有する予定で「来る・来ない・未定」のアンケートを取るか
         let planRsvp = false;
@@ -5914,14 +6022,19 @@
         }
         function togglePlanRsvp() { setPlanRsvp(!planRsvp); }
         function togglePlanShare(id) {
+            if (pairActive() && pairIds().includes(id)) return;   // ペアの相手は外せない
             if (id === null) planShare = [];
             else planShare = planShare.includes(id) ? planShare.filter(x => x !== id) : planShare.concat(id);
             renderPlanShare();
         }
         let planScope = "shared";   // 入力欄の保存先("shared"=共有 / "local"=この端末のみ)。閲覧者は常にlocal
-        function defaultPlanScope() { return isAdmin() ? "shared" : "local"; }
+        // 閲覧者は、ペアモードの間だけ「共有(ペア)」を選べる(初期値もペア)
+        function defaultPlanScope() { return isAdmin() || pairActive() ? "shared" : "local"; }
         function setPlanScope(sc) {
-            planScope = isAdmin() ? sc : "local";
+            planScope = (isAdmin() || pairActive()) ? sc : "local";
+            const sb = document.getElementById("opScopeShared");
+            if (sb) sb.textContent = !isAdmin() || pairActive() ? "Pair" : "Shared";
+            if (planScope === "shared" && pairActive()) { const must = pairIds(); planShare = planShare.filter(x => !must.includes(x)).concat(must); }
             document.querySelectorAll("#opScope .op-sc").forEach(b => {
                 const on = b.dataset.s === planScope;
                 b.classList.toggle("on", on); b.setAttribute("aria-checked", on ? "true" : "false");
@@ -6004,7 +6117,7 @@
         function editOtherPlan(id) {
             const p = planList.find(x => x.id === id);
             if (!p) return;
-            if (!isAdmin() && !p.local) return;
+            if (!isAdmin() && !p.local && !pairPlanEditable(p)) return;
             if (planPanelIsOpen() && planEditId === id) { closePlanPanel(); return; }   // 開いている予定をもう一度押すと閉じる
             planDetailId = null;
             planPanel = { date: selectedDate, open: true };
@@ -6032,9 +6145,34 @@
             if (planAllDay) p.allDay = true;
             if (ed) p.endDate = ed;
             if (planColor) p.color = planColor;
-            const toLocal = isAdmin() ? planScope === "local" : true;
+            const toLocal = (isAdmin() || pairActive()) ? planScope === "local" : true;
+            const prev = planEditId != null ? planList.find(x => x.id === planEditId) : null;
             if (toLocal) p.local = true;
-            else if (planShare.length) p.to = planShare.slice();
+            else {
+                let to = planShare.slice();
+                if (pairActive()) { pairIds().forEach(id => { if (!to.includes(id)) to.push(id); }); }   // ペアの相手は必ず共有
+                const me = myRosterId();
+                if (to.length && me != null && !to.includes(me)) to.push(me);   // 自分にも見えるように
+                if (to.length) p.to = to;
+            }
+            // 閲覧者の共有予定(=ペア予定)、もとからペア予定だったものは、出欠データ側(pairplans)に保存する
+            if (!toLocal && (!isAdmin() || (prev && prev.pp))) {
+                if (!p.to || !p.to.length) { alert("共有する相手を選んでください。"); return; }
+                if (prev && !prev.local && !prev.pp && !isAdmin()) return;
+                p.id = prev && prev.pp ? prev.id : Date.now();
+                p.owner = prev && prev.pp ? prev.owner : planAuthorKey();
+                p.by = p.owner;
+                if (prev && !prev.pp) planList = planList.filter(x => x.id !== prev.id);   // ローカルから移した
+                putPairPlan(p);
+                planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = "";
+                saveData(); renderCalendar(); renderOtherPlanBox();
+                return;
+            }
+            if (prev && prev.pp) {   // ペア予定をローカルへ移した: 共有側は消した印を残す
+                putPairPlan({ ...prev, deleted: true });
+                planList = planList.filter(x => x.id !== prev.id);
+                planEditId = null;
+            }
             if (p.to) p.by = (planEditId != null && (planList.find(x => x.id === planEditId) || {}).by) || planAuthorKey();
             if (!toLocal && planRsvp) p.rsvp = true;
             const i = planEditId != null ? planList.findIndex(x => x.id === planEditId) : -1;
@@ -6052,8 +6190,9 @@
         }
         function deleteOtherPlan(id) {
             const target = planList.find(x => x.id === id);
-            if (!target || (!isAdmin() && !target.local)) return;
+            if (!target || (!isAdmin() && !target.local && !pairPlanEditable(target))) return;
             if (!confirm("この予定を消しますか？")) return;
+            if (target.pp) putPairPlan({ ...target, deleted: true });
             planList = planList.filter(x => x.id !== id);
             delete attendanceByDate[planRsvpKey(id)];   // その予定の出欠も消す
             if (planDetailId === id) planDetailId = null;
@@ -7718,6 +7857,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 自動でアンケート画面へ移る処理はやめた(30分ごと・起動/更新時)
         function applyRole() {
             devMode = isAdmin();
+            applyPairClass();
             applyDevMode();
             renderRoster();
             renderCalendar();
@@ -9354,7 +9494,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
         const HIDE_TP_KEY = "attendance_hide_tparams_v1";
-        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
+        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", "attendance_pair_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
             SURVEY_SORT_KEY, CAL_TIME_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, SURVEY_NAMES_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
@@ -9392,6 +9532,11 @@ const namesBtn = isAdmin() && dates.length > 0
             try {
                 const loc = JSON.parse(values[BYDATE_KEY]), rem = JSON.parse(firestorePendingValues[BYDATE_KEY]);
                 Object.keys(rem).forEach(date => {
+                    if (date === PAIR_PLANS) {   // ペア予定: idごとに新しい方
+                        const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
+                        (rem[date] || []).forEach(rp => { const i = L.findIndex(x => x.id === rp.id); if (i < 0) L.push(rp); else if (stampNum(rp.updated) > stampNum(L[i].updated)) L[i] = rp; });
+                        return;
+                    }
                     if (/^plan:/.test(date)) {   // 共有予定の出欠: 新しい回答は足す
                         if (!loc[date]) loc[date] = [];
                         (rem[date] || []).forEach(rm => { const lm = loc[date].find(m => m.name === rm.name); if (!lm) loc[date].push(rm); else if (stampNum(rm.updated) > stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; } });
@@ -9465,7 +9610,9 @@ const namesBtn = isAdmin() && dates.length > 0
             myEmailHash = authEmail ? await hashEmail(authEmail) : "";
         }
 
+        var lastSyncStatus = null;
         function setFirestoreSyncStatus(text, isError) {
+            lastSyncStatus = { text, isError };
             const title = document.querySelector(".app-title");
             if (!title) return;
             let wrap = document.getElementById("firestoreSyncStatus");
@@ -9496,6 +9643,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 } else {
                     if (authIsGuest) mk(myMemberName() || "Name", openGuestNamePicker);
                     mk("Sign out", signOutFromFirestore);
+                    mk(pairLabel(), openPairPanel);   // ペアモード(各自の設定)
+                    const pb = wrap.lastChild;
+                    if (pairActive() && pb) { pb.style.background = "var(--accent)"; pb.style.color = "#fff"; pb.style.borderColor = "var(--accent)"; }
                 }
             }
         }
@@ -9896,6 +10046,8 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 初期化 -------
         detectFirebase();
         loadData();
+        mergePairPlansIntoList();
+        applyPairClass();
         loadDevMode();
         loadRosterSort();
         loadVideos();
@@ -10011,7 +10163,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const at0 = a[BYDATE_KEY] || {}, at1 = b[BYDATE_KEY] || {};
             const adds = {}, dels = {}, chg = [];
             Object.keys(at1).sort().forEach(d => {
-                if (!at0[d]) return;
+                if (!at0[d] || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
                 const m0 = new Map((at0[d] || []).map(m => [m.name, m])), m1 = new Map((at1[d] || []).map(m => [m.name, m]));
                 m1.forEach((m, n) => {
                     if (!m0.has(n)) (adds[n] = adds[n] || []).push(d);
