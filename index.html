@@ -2499,6 +2499,24 @@
         .cal-grid.nv .nv-chip.nv-line:not(.nv-vb) { background: var(--plan-ink, var(--ink-3)) !important; opacity: .75; }
         .cal-grid.nv .nv-chip.nv-line.ring:not(.nv-vb) { background: transparent !important; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)) !important; opacity: 1; }
         #daySheet { transition: height .2s ease; }
+        /* 時間表示: 月表示と同じやわらかい見た目にそろえる。週の見出し(日付)は上に貼りつく */
+        .cal-grid.tw-mode .tw-head { position: sticky; top: 0; z-index: 7; background: var(--surface); gap: 2px; margin: 0; padding: 4px 0 6px; }
+        .cal-grid.tw-mode .tw-wrap + .tw-head { margin-top: 6px; }
+        .cal-grid.tw-mode .tw-month { font-size: 9px; font-weight: 600; }
+        .cal-grid.tw-mode .tw-body { gap: 2px; background-image: linear-gradient(to bottom, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px); }
+        .cal-grid.tw-mode .tw-gutter span { font-size: 8.5px; font-weight: 500; opacity: .8; }
+        .cal-grid.tw-mode .tw-col { border-left: none; border-radius: 10px; }
+        .cal-grid.tw-mode .tw-col.today { background: transparent; }
+        .cal-grid.tw-mode .tw-col.selected { box-shadow: none; background: color-mix(in srgb, var(--ink-3) 9%, transparent); }
+        /* 時間軸の上の予定は浮き上がった(凸)ブロックで出す */
+        .cal-grid.tw-mode .tw-blk { border: none; border-radius: 7px; padding: 3px 4px; font-weight: 600; box-shadow: -1.5px -1.5px 3px var(--hl), 2px 2.5px 5px var(--sh); z-index: 2; }
+        .cal-grid.tw-mode .tw-blk.cont-l, .cal-grid.tw-mode .tw-blk.cont-r { box-shadow: 2px 2.5px 5px var(--sh); }
+        .cal-grid.tw-mode .tw-notime { box-shadow: -1px -1px 2px var(--hl), 1.5px 2px 4px var(--sh); }
+        .cal-grid.tw-mode .tw-blk b { font-size: 9px; font-weight: 700; }
+        .cal-grid.tw-mode .tw-blk span { font-size: 8px; font-weight: 500; opacity: .75; }
+        .cal-grid.tw-mode .tw-notime { border-radius: 6px; font-weight: 600; }
+        /* 時間表示・予約日ボタンがオンのときも、黒塗りではなく他のボタンと同じ押し込み表現 */
+        #calTimeBtn.on, #rvListBtn.on { background: var(--bg); color: var(--accent); border-color: transparent; box-shadow: var(--sink); }
         /* カレンダーの大きさ(3段階)を上下ボタンで切り替える */
         .today-btn.lv-btns { flex: none; display: inline-flex; flex-direction: row; align-items: stretch; padding: 0; overflow: hidden; }
         .lv-btns button { width: 26px; padding: 0; border: none; background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 0; box-shadow: none; min-height: 0; }
@@ -2516,19 +2534,21 @@
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
         /* 予定リスト: 情報を絞ったシンプルな見た目 */
-        #nvDayPanel .nv-row { align-items: center; gap: 14px; padding: 14px 18px 14px 16px; margin: 0 4px 12px; }
-        #nvDayPanel .nv-time { width: 42px; align-self: stretch; justify-content: center; gap: 3px; font-size: 13px; font-weight: 600; line-height: 1.2; letter-spacing: .01em; }
-        #nvDayPanel .nv-time span:last-child { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+        #nvDayPanel .nv-row { align-items: center; gap: 12px; padding: 11px 16px 11px 14px; margin: 0 4px 10px; }
+        #nvDayPanel .nv-time { width: 36px; align-self: stretch; justify-content: center; gap: 2px; font-size: 11.5px; font-weight: 600; line-height: 1.2; }
+        #nvDayPanel .nv-time span:last-child { font-size: 11px; font-weight: 500; color: var(--ink-3); }
         #nvDayPanel .nv-time span:empty { display: none; }
-        #nvDayPanel .nv-bar { width: 3px; align-self: stretch; min-height: 30px; border-radius: 2px; background: var(--plan-ink, var(--ink-3)); box-shadow: none; opacity: .85; }
-        #nvDayPanel .nv-body { display: flex; flex-direction: column; justify-content: center; gap: 3px; }
-        #nvDayPanel .nv-ttl { display: flex; align-items: baseline; gap: 10px; min-width: 0; font-size: 16px; font-weight: 700; line-height: 1.3; letter-spacing: .02em; }
-        #nvDayPanel .nv-tt { flex: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #nvDayPanel .nv-tt .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 5px; opacity: .7; }
-        #nvDayPanel .nv-to { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--ink-3); }
+        #nvDayPanel .nv-bar { width: 2.5px; align-self: stretch; min-height: 26px; border-radius: 2px; background: var(--plan-ink, var(--ink-3)); box-shadow: none; opacity: .85; }
+        #nvDayPanel .nv-body { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+        #nvDayPanel .nv-ttl { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 14px; font-weight: 700; line-height: 1.3; letter-spacing: .02em; }
+        #nvDayPanel .nv-tt { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #nvDayPanel .nv-tt .ic { width: 12px; height: 12px; vertical-align: -1px; margin-right: 4px; opacity: .6; }
+        #nvDayPanel .nv-to { flex: none; display: inline-flex; align-items: center; margin-left: auto; }
+        #nvDayPanel .nv-to i { width: 18px; height: 18px; margin-left: -5px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: 0; color: var(--ink-2); background: var(--bg); box-shadow: 0 0 0 1.5px var(--bg), var(--raise-xs); }
+        #nvDayPanel .nv-to i:first-child { margin-left: 0; }
+        #nvDayPanel .nv-to b { margin-left: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0; color: var(--ink-3); }
         #nvDayPanel .nv-go .nv-ttl::after { content: "›"; margin-left: auto; padding-left: 8px; font-weight: 400; color: var(--ink-3); }
-        #nvDayPanel .nv-sub { font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #nvDayPanel .nv-memo { margin-top: 0; font-size: 12px; color: var(--ink-3); }
+        #nvDayPanel .nv-sub, #nvDayPanel .nv-memo { margin-top: 0; font-size: 11px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #daySheet.dragging { transition: none; }
         #sheetBody #nvDayPanel { margin: 0; }
         .nv-top.has-dot::after { content: ""; position: absolute; right: 5px; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
@@ -5283,6 +5303,14 @@
             const names = p.to.map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
             return names.length > 3 ? names.slice(0, 3).join("・") + ` 他${names.length - 3}人` : names.join("・");
         }
+        // 共有相手(管理者だけ): 名前の頭文字の小さな丸を重ねて出す。4人目からは「+N」
+        function shareAvatars(p) {
+            if (!isAdmin() || !p || p.local || !p.to || !p.to.length) return "";
+            const names = p.to.map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
+            if (!names.length) return "";
+            const av = names.slice(0, 3).map(n => `<i>${escapeHtml(Array.from(n)[0])}</i>`).join("");
+            return `<span class="nv-to" title="${escapeHtml(names.join("・"))}">${av}${names.length > 3 ? `<b>+${names.length - 3}</b>` : ""}</span>`;
+        }
         function nvEdit(id) { editOtherPlan(id); }
         function renderNvPanel() {
             const el = document.getElementById("nvDayPanel");
@@ -5308,7 +5336,7 @@
                 const t2 = multi ? (last ? (p.end || md(p.endDate)) : md(p.endDate)) : (p.end || "");
                 const editable = isAdmin() || !!p.local;
                 const editing = planPanelIsOpen() && planEditId === p.id;
-                rows.push({ ad: !(first && last) ? 0 : planTimed(p) ? 3 : 2, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</span>${shareText(p) ? `<span class="nv-to">${escapeHtml(shareText(p))}</span>` : ""}</div>${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+                rows.push({ ad: !(first && last) ? 0 : planTimed(p) ? 3 : 2, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${editable ? ` data-pid="${p.id}" onclick="nvEdit(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</span>${shareAvatars(p)}</div>${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
             });
             rows.sort((a, b) => a.ad - b.ad || a.s - b.s);   // 連続した予定 → バレー → 終日 → その他
             const box = document.getElementById("otherPlanBox");
@@ -5446,15 +5474,17 @@
         }
         // 時間表示(通常のカレンダー側): 2週間分を縦に並べる。各週は上段が日付枠、下段が縦軸=時間(1時間ごとに薄い線)
         // 今いちばん上に見えている週を調べて、見出し(期間)を合わせる
+        // 週の見出しは上に貼りつく(sticky)ので、位置は見出しではなく各週の時間軸(tw-wrap)で測る
+        function twWrapOf(grid, key) { const h = key && grid.querySelector('.tw-head[data-wk="' + key + '"]'); return h ? h.nextElementSibling : null; }
         function twUpdateTop(grid) {
             const gt = grid.getBoundingClientRect().top;
             let top = null;
-            grid.querySelectorAll(".tw-head[data-wk]").forEach(h => { if (h.getBoundingClientRect().bottom > gt + 2 && !top) top = h; });
+            grid.querySelectorAll(".tw-head[data-wk]").forEach(h => { const w = h.nextElementSibling; if (!top && w && w.getBoundingClientRect().bottom > gt + h.offsetHeight + 2) top = h; });
             if (!top) return;
             const [y, m, d] = top.dataset.wk.split("-").map(Number);
             twTopWeek = new Date(y, m - 1, d);
             const label = document.getElementById("monthLabel");
-            if (label && calTimeMode && !calListMode) label.textContent = weekLabel(twTopWeek, 14);
+            if (label && calTimeMode && !calListMode) label.textContent = weekLabel(twTopWeek, 7);   // 見えている1週間だけ
         }
         (function initTwScroll() {
             const grid = document.getElementById("calGrid");
@@ -5467,12 +5497,12 @@
                 if (!nearTop && !nearEnd) return;
                 // 端に近づいたら週を足す。見ていた週が動かないよう、足したあとで位置を合わせ直す
                 const anchorKey = twTopWeek ? formatDateKey(twTopWeek) : null;
-                const aEl = anchorKey && grid.querySelector('.tw-head[data-wk="' + anchorKey + '"]');
+                const aEl = twWrapOf(grid, anchorKey);
                 const delta = aEl ? aEl.getBoundingClientRect().top - grid.getBoundingClientRect().top : 0;
                 if (nearTop) twFrom -= 8; else twTo += 8;
                 busy = true;
                 renderCalendar();
-                const n = anchorKey && grid.querySelector('.tw-head[data-wk="' + anchorKey + '"]');
+                const n = twWrapOf(grid, anchorKey);
                 if (n) grid.scrollTop = n.getBoundingClientRect().top - grid.getBoundingClientRect().top + grid.scrollTop - delta;
                 twUpdateTop(grid);
                 requestAnimationFrame(() => { busy = false; });
@@ -5867,7 +5897,7 @@
             videoDateSet = buildVideoDateSet();
             applyCalListMode();
             document.getElementById("monthLabel").textContent = calListMode ? "Booked" :
-                calTimeMode ? weekLabel(viewWeekStart, 14) :
+                calTimeMode ? weekLabel(viewWeekStart, 7) :
                 `${viewMonth.getFullYear()}.${String(viewMonth.getMonth() + 1).padStart(2, "0")}`;
 
             const grid = document.getElementById("calGrid");
@@ -5906,8 +5936,8 @@
                 renderCalendarWeek(grid, todayKey);
                 applyBaseHeight(grid);
                 if (twNeedInit) {   // 入った直後・週の移動後は、基準の週の頭に合わせる。それ以外は位置を保つ
-                    const h = grid.querySelector('.tw-head[data-wk="' + formatDateKey(twBase) + '"]');
-                    grid.scrollTop = h ? h.getBoundingClientRect().top - grid.getBoundingClientRect().top + grid.scrollTop : 0;
+                    const h = grid.querySelector('.tw-head[data-wk="' + formatDateKey(twBase) + '"]'), w = h && h.nextElementSibling;
+                    grid.scrollTop = w ? w.getBoundingClientRect().top - grid.getBoundingClientRect().top + grid.scrollTop - h.offsetHeight - 4 : 0;
                 } else grid.scrollTop = keepScroll;
                 twNeedInit = false;
                 twUpdateTop(grid);
