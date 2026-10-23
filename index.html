@@ -2967,7 +2967,7 @@
         <details class="acc" id="notifyExAcc">
             <summary>通知に載せない人</summary>
             <div class="acc-body">
-                <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません。個人あての通知も届きません(アプリの出欠はそのまま)。</div>
+                <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
                 <div class="ntf-chips" id="ntfExclude"></div>
             </div>
         </details>
@@ -5591,7 +5591,8 @@
             const exNames = cfg.exclude.map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
             const g = { come: [], no: [], pend: [], un: [] };
             (list || []).forEach(m => {
-                if (!m || NTF_GUEST_RE.test(m.name || "") || exNames.includes(m.name) || (m.status !== "来る" && isGuestName(m.name))) return;   // ゲストは「来る」のときだけ
+                if (!m) return;
+                if (m.status !== "来る" && (isGuestName(m.name) || NTF_GUEST_RE.test(m.name || "") || exNames.includes(m.name))) return;   // 来るの人は全員載せる   // ゲストは「来る」のときだけ
                 (m.status === "来る" ? g.come : m.status === "来ない" ? g.no : m.status === "未定" ? g.pend : g.un).push(m.name);
             });
             return g;
@@ -11072,7 +11073,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 refreshMyMember().then(() => {
                     applyRole();
                     setTimeout(syncLocalNtf, 1500);
-                    setTimeout(() => syncGuestExclude(), 2000);   // ゲストを通知の除外に入れる(前から名簿にいるゲストの分)   // この端末だけの予定の通知用コピーを最新にする
+                    setTimeout(() => syncGuestExclude(), 2000);   // 前の版で除外リストに入れたゲストを外す
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
                     guestJustSignedIn = false;
