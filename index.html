@@ -2832,6 +2832,8 @@
                 <div class="acc-desc">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
 
                 <div id="changeLogList" class="cl-list"></div>
+                <div class="acc-desc admin-only" style="margin-top:10px;">共有の予定が消えたときは、その予定を入れた端末でこのボタンを押すと、この端末に残っている予定のうち共有データに無いものを戻せます(戻す前に一覧を確認できます)。<b>先に↻(更新)を押すと、端末の予定も消えるので押さないでください。</b></div>
+                <button type="button" class="st-btn admin-only" style="margin-top:6px;" onclick="restorePlansFromDevice()">この端末の予定を共有に戻す</button>
             
             </div>
         </details>
@@ -7156,6 +7158,7 @@
             if (i >= 0 && !!planList[i].local === toLocal) { p.id = planEditId; planList[i] = p; }
             else {
                 if (i >= 0) planList.splice(i, 1);   // 保存先を変えたときは移し替える
+                if (!toLocal) nextPlanId = Math.max(nextPlanId, Date.now());   // 端末ごとに同じ番号にならないよう時刻から
                 p.id = toLocal ? nextLocalPlanId-- : nextPlanId++;
                 planList.push(p);
             }
@@ -10743,16 +10746,70 @@ const namesBtn = isAdmin() && dates.length > 0
             document.body.appendChild(ov);
         }
 
+        // この端末の内容の基準(共有データと一致していた時・最後に保存した時のこの端末の値)。これと違う項目=この端末で変えた項目
+        let firestoreBase = null;
+        // 他の人の更新を反映していない端末が保存するとき、この端末で変えていない項目は共有データの最新を残す。
+        // 予定は1件ずつ見て、この端末で足した・変えた・消した分だけを最新に重ねる(古い端末が予定を消してしまうのを防ぐ)
+        function mergePendingShared(vals) {
+            const rv = firestorePendingValues, base = firestoreBase;
+            if (!rv || !base) return;
+            Object.keys(rv).forEach(k => {
+                if (!isSharedKey(k) || k === BYDATE_KEY || k === CHANGELOG_KEY || k === NOTIFY_KEY) return;
+                if (vals[k] === base[k] || vals[k] == null) { vals[k] = rv[k]; return; }   // この端末では変えていない
+                if (k === PLANS_KEY) vals[k] = mergePlans3(base[k], vals[k], rv[k]);
+            });
+        }
+        function mergePlans3(b, l, r) {
+            try {
+                const P = x => { const a = JSON.parse(x || "[]"); return Array.isArray(a) ? a : []; };
+                const B = new Map(P(b).map(p => [p.id, p])), L = new Map(P(l).map(p => [p.id, p])), R = P(r);
+                const j = x => JSON.stringify(x);
+                const out = [];
+                R.forEach(p => {
+                    const lb = B.get(p.id), ll = L.get(p.id);
+                    if (ll) out.push(lb && j(ll) === j(lb) ? p : ll);   // この端末で変えた分だけ上書き
+                    else if (lb && j(lb) === j(p)) return;               // この端末で消した(相手は変えていない)
+                    else out.push(p);                                     // 他の人が足した・変えた
+                });
+                const rid = new Set(R.map(p => p.id));
+                L.forEach((p, id) => { if (!rid.has(id) && !B.has(id)) out.push(p); });   // この端末で足した
+                return JSON.stringify(out);
+            } catch (e) { return r; }
+        }
+        // この端末に残っている共有予定のうち、共有データに無いものを戻す(共有データの最新に足すだけ。ほかは変えない)
+        async function restorePlansFromDevice() {
+            if (!isAdmin() || !firestoreRef || !firestoreEditor) { alert("管理者でログインしているときだけ使えます。"); return; }
+            const mine = planList.filter(p => !p.local && !p.pp && planHas(p));
+            try {
+                const snap = await firestoreRef.get();
+                const rv = (snap.data() && snap.data().values) || {};
+                const remote = JSON.parse(rv[PLANS_KEY] || "[]"), ids = new Set(remote.map(p => p.id));
+                const miss = mine.filter(p => !ids.has(p.id));
+                if (!miss.length) { alert("戻す予定はありません(この端末の共有予定は、すべて共有データにあります)。"); return; }
+                const md = d => { const [, m, dd] = String(d).split("-").map(Number); return m + "/" + dd; };
+                const list = miss.slice().sort((a, b) => (a.startDate < b.startDate ? -1 : 1)).map(p => `・${md(p.startDate)}${p.endDate ? "〜" + md(p.endDate) : ""} ${p.title || "予定"}`).join("\n");
+                if (!confirm(`共有データに無い予定が${miss.length}件あります。共有に戻しますか?\n(わざと消した予定が入っていたら、戻したあとで消してください)\n\n${list}`)) return;
+                await firebase.firestore().runTransaction(async tx => {
+                    const sn = await tx.get(firestoreRef);
+                    const v = (sn.data() && sn.data().values) || {};
+                    const cur = JSON.parse(v[PLANS_KEY] || "[]"), have = new Set(cur.map(p => p.id));
+                    miss.forEach(p => { if (!have.has(p.id)) cur.push(p); });
+                    tx.update(firestoreRef, { ["values." + PLANS_KEY]: JSON.stringify(cur), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                });
+                alert(`${miss.length}件を共有に戻しました。↻(更新)を押すと最新の状態になります。`);
+            } catch (e) { console.error(e); alert("戻せませんでした(" + ((e && (e.code || e.message)) || "") + ")"); }
+        }
         function saveToFirestore() {
             if (!firestoreSyncActive || !firestoreEditor || firestoreApplyingRemote || !firestoreRef) return;
             setFirestoreSyncStatus("同期中…");
-            const vals = getShareableLocalValues();
+            const vals = getShareableLocalValues(), mine = { ...vals };
+            mergePendingShared(vals);
             mergePendingLog(vals);
             mergePendingAttendance(vals);   // 反映待ちの閲覧者の回答・ペア予定・通知用の予定を上書きしない
             // 通知の設定は別に保存しているので、反映待ちの共有データがあればそちらを残す(ほかの管理者の登録・設定を消さない)
             if (firestorePendingValues && firestorePendingValues[NOTIFY_KEY]) vals[NOTIFY_KEY] = firestorePendingValues[NOTIFY_KEY];
             firestoreRef.set({ values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
-                .then(() => { if (firestorePendingValues) markRemoteUpdate(); else setFirestoreSyncStatus("共有中"); })
+                .then(() => { firestoreBase = mine; if (firestorePendingValues) { firestorePendingValues = { ...firestorePendingValues, ...vals }; markRemoteUpdate(); } else setFirestoreSyncStatus("共有中"); })
                 .catch(error => { console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true); });
         }
 
@@ -11030,6 +11087,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
             };
 
+            firestoreBase = getShareableLocalValues();   // 起動時の内容を基準にする
             firestoreRef.onSnapshot(snapshot => {
                 firestoreHasDocument = snapshot.exists;
                 if (!snapshot.exists) {
@@ -11042,6 +11100,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const localValues = getShareableLocalValues();
                 firestoreSyncActive = true;
                 if (remoteCoveredByLocal(remoteValues, localValues)) {
+                    firestoreBase = remoteValues;
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     // 共有データの名簿に昔のLINE名(本名)が残っていたら、管理者の端末から消して保存し直す
                     if (firestoreEditor && !firestoreApplyingRemote && /"lineNames"/.test(remoteValues[ROSTER_KEY] || "")) { saveRoster(); return; }
@@ -11054,6 +11113,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 違いが「この端末が起動時に名簿のメンバーを今後の日へ足しただけ」なら、他の人の更新ではない。
                 // 管理者はその内容を共有データへ保存し、閲覧者は無視する(赤い点を出し続けない・ログを増やさない)
                 if (onlyRosterSyncDiff(remoteValues, localValues)) {
+                    firestoreBase = { ...remoteValues, [BYDATE_KEY]: localValues[BYDATE_KEY] };
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     if (firestoreEditor && !firestoreApplyingRemote) { clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 400); }
                     return;
