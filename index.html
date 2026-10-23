@@ -2137,10 +2137,12 @@
         .settings-btn.survey-btn { position: relative; font-size: 16px; line-height: 1; padding: 0 8px; }
         .settings-btn.survey-btn .sv-badge { display: none; position: absolute; top: -2px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
             border-radius: 999px; background: #e5484d; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; }
-        .settings-btn.survey-btn.alert { background: var(--unconf-soft); border-radius: 999px; animation: svPulse 1.8s ease-in-out infinite; }
+        .settings-btn.survey-btn.alert { background: var(--unconf-soft); border-radius: 999px; }
+        /* 月末7日前から: 次の月のバレーに答えていないと強調(赤い輪が点滅) */
+        .settings-btn.survey-btn.alert.urgent, .ch-right .settings-btn.survey-btn.alert.urgent { background: rgba(229, 72, 77, .16); color: #e5484d; animation: svPulse 1.4s ease-in-out infinite; }
         .settings-btn.survey-btn.alert .sv-badge { display: block; }
         @keyframes svPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .5); } 50% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); } }
-        @media (prefers-reduced-motion: reduce) { .settings-btn.survey-btn.alert { animation: none; box-shadow: 0 0 0 2px #e5484d; } }
+        @media (prefers-reduced-motion: reduce) { .settings-btn.survey-btn.alert.urgent { animation: none; box-shadow: 0 0 0 2px #e5484d; } }
         .settings-btn.mode-select { -webkit-appearance: none; appearance: none; font: inherit; font-size: 13px; color: var(--ink-3); background-color: transparent; border: none;
             padding: 0 16px 0 6px; min-height: 38px; cursor: pointer;
             background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
@@ -2289,6 +2291,8 @@
         .sv-who { display: inline-flex; align-items: center; gap: 4px; margin: 0 2px 14px; padding: 6px 14px; border-radius: 999px; box-shadow: var(--sink); font-size: 15px; }
         .sv-who .ic { width: 15px; height: 15px; color: var(--ink-3); }
         .sv-tools { display: flex; gap: 10px; margin: 0 2px 14px; }
+        .sv-later { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin: 4px 0 12px; height: 40px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
+        .sv-later.on { color: var(--ink-3); }
         .sv-tools .sv-sort { flex: 1; margin: 0; min-width: 0; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
         .sv-tools .sv-sort .ic { width: 15px; height: 15px; }
         .sv-tag { width: 9px; height: 9px; padding: 0; border-radius: 50%; background: var(--pending); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pending) 25%, transparent); font-size: 0; }
@@ -8726,7 +8730,7 @@
             return Object.keys(reservations || {}).filter(d => d >= todayKey && (reservations[d] || []).length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
         }
         function openSurvey() {
-            surveyOpen = true;
+            surveyOpen = true; surveyLater = false;
             renderSurvey();
             const ov = document.getElementById("surveyOv");
             ov.style.display = "block"; ov.scrollTop = 0;
@@ -8739,11 +8743,25 @@
             document.body.style.overflow = "";
         }
         // 未回答の日の数(ヘッダーの📝を強調するために使う)
+        // アンケートに出す範囲: ふだんは来月の末まで。「さらに先」を押すと、それより後も出す
+        let surveyLater = false;
+        function surveyRangeEnd() { const t = new Date(); return formatDateKey(new Date(t.getFullYear(), t.getMonth() + 2, 0)); }
+        function surveyDatesShown() { const e = surveyRangeEnd(); return surveyDates().filter(d => d <= e); }
+        function surveyToggleLater() { surveyLater = !surveyLater; renderSurvey(); }
+        // 月末の7日前から月末まで: 次の月のバレーで答えていない日があるか
+        function surveyUrgent() {
+            const name = surveyWho(); if (!name) return false;
+            const t = new Date(), last = new Date(t.getFullYear(), t.getMonth() + 1, 0);
+            const from = new Date(last.getFullYear(), last.getMonth(), last.getDate() - 7);
+            if (new Date(t.getFullYear(), t.getMonth(), t.getDate()) < from) return false;
+            const ym = formatDateKey(new Date(t.getFullYear(), t.getMonth() + 1, 1)).slice(0, 7);
+            return surveyDates().some(d => d.slice(0, 7) === ym && (() => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); return !!mem && !(mem.status === "来る" || mem.status === "来ない"); })());
+        }
         function surveyUnansweredCount() {
             const name = surveyWho();
             if (!name) return 0;
             const plans = myRsvpPlans(name).filter(p => { const st = planStatusOf(p, name); return !(st === "来る" || st === "来ない"); }).length;   // 共有予定のアンケートも数える
-            return plans + surveyDates().filter(d => {
+            return plans + surveyDatesShown().filter(d => {   // 来月末より先は数えない
                 const mem = (attendanceByDate[d] || []).find(m => m.name === name);
                 return !!mem && !(mem.status === "来る" || mem.status === "来ない");
             }).length;
@@ -8753,6 +8771,7 @@
             if (!b || !bd) return;
             const n = surveyUnansweredCount();
             b.classList.toggle("alert", n > 0);
+            b.classList.toggle("urgent", n > 0 && surveyUrgent());
             bd.textContent = n > 0 ? String(n) : "";
             b.title = n > 0 ? `出欠の回答(未回答${n}件)` : "出欠の回答";
         }
@@ -8793,7 +8812,9 @@
             } else {
                 who = `<div class="sv-who"><i class="ic ic-user"></i> <b>${escapeHtml(name)}</b></div>`;
             }
-            let dates = (name || isAdmin()) ? surveyDates() : [];   // 管理者は、答える人を選ばなくても日付ごとの状況を見られる
+            const allDates = (name || isAdmin()) ? surveyDates() : [];   // 管理者は、答える人を選ばなくても日付ごとの状況を見られる
+            const rEnd = surveyRangeEnd(), later = allDates.filter(d => d > rEnd);
+            let dates = surveyLater ? allDates : allDates.filter(d => d <= rEnd);   // ふだんは来月末まで
             if (surveyUnansFirst && name) {   // 未回答 → △ → ○/✖(同じ区分の中は日付順のまま)
                 const rank = d => {
                     const mem = (attendanceByDate[d] || []).find(m => m.name === name);
@@ -8844,7 +8865,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const planTab = name ? `<button type="button" class="sv-plantab${surveyPlanTab ? " on" : ""}" onclick="surveyTogglePlans()" aria-pressed="${surveyPlanTab}">予定${pUn ? `<span class="sv-pbadge">${pUn}</span>` : ""}</button>` : "";
             const head = `<div class="sv-whorow">${who}${planTab}</div>`;
             if (surveyPlanTab && name) box.innerHTML = head + (pcards || `<div class="sv-empty">—</div>`);
-            else box.innerHTML = head + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards;
+            else {
+                // 来月末より先の日程: ボタンで出し入れ(未回答の数つき)
+                const lUn = name ? later.filter(d => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); return !!mem && !(mem.status === "来る" || mem.status === "来ない"); }).length : 0;
+                const [, em] = rEnd.split("-").map(Number);
+                const laterBtn = later.length ? `<button type="button" class="sv-later${surveyLater ? " on" : ""}" onclick="surveyToggleLater()">${surveyLater ? `${em}月までに戻す` : `${em + 1 > 12 ? 1 : em + 1}月以降も表示(${later.length}日)`}${!surveyLater && lUn ? `<span class="sv-pbadge">${lUn}</span>` : ""}</button>` : "";
+                box.innerHTML = head + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards + laterBtn;
+            }
         }
 
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
