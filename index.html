@@ -3690,6 +3690,11 @@
         const ROLES_KEY = "attendance_roles_v1";
         const DEFAULT_ROLES = ["セッター", "リベロ", "スパイカー", "初心者"];
         const NO_POSITION = ""; // 希望ポジション未設定
+        // ゲスト: アンケートに答えない・LINE通知に名前を出さない人。チーム分けでは「初心者」と同じ扱い
+        const GUEST_POS = "ゲスト";
+        function isGuestName(name) { const r = roster.find(x => x.name === name); return !!(r && r.position === GUEST_POS); }
+        function guestTeamPos() { return roles.find(r => r === "初心者") || roles.find(r => String(r).includes("初心者")) || GUEST_POS; }
+        function teamPosOf(rm) { return rm.position === GUEST_POS ? guestTeamPos() : rm.position; }
 
         const GENDER_OPTIONS = [
             { value: "unspecified", label: "未設定" },
@@ -4386,7 +4391,7 @@
                 return false;
             }
             // 削除された役割を使っているメンバーは「未設定」に戻す
-            roster.forEach(m => { if (!parsed.includes(m.position)) m.position = NO_POSITION; });
+            roster.forEach(m => { if (m.position !== GUEST_POS && !parsed.includes(m.position)) m.position = NO_POSITION; });
             roles = parsed;
             saveRolesToStorage();
             // 削除された希望ポジションのローテ場所設定は破棄する
@@ -4405,6 +4410,7 @@
             roles.forEach(r => {
                 html += `<option value="${escapeHtml(r)}" ${selected === r ? "selected" : ""}>${escapeHtml(r)}</option>`;
             });
+            html += `<option value="${GUEST_POS}" ${selected === GUEST_POS ? "selected" : ""}>${GUEST_POS}(アンケート・通知なし)</option>`;
             return html;
         }
 
@@ -4661,8 +4667,10 @@
         function updateRosterField(id, field, value) {
             const mem = roster.find(m => m.id === id);
             if (!mem) return;
+            const wasGuest = mem.position === GUEST_POS;
             mem[field] = value;
             saveRoster();
+            if (field === "position" && value === GUEST_POS) syncGuestExclude();
             if (field === "gender" || field === "position" || (field === "reading" && rosterSort === "gojuon")) renderRosterPanel();
             if (field === "reading") renderRoster();
             if (currentView === "teams") renderTeamSplitTab();
@@ -5450,7 +5458,7 @@
             box.innerHTML += myNtfBlock(cfg);
             renderNotifyText(cfg);
             const names = sortedRosterForNtf();
-            ex.innerHTML = names.length ? names.map(r => `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
+            ex.innerHTML = names.length ? names.map(r => r.position === GUEST_POS ? `<button type="button" class="ntf-chip ex" disabled title="ゲストは「来る」のときだけ載ります">${escapeHtml(r.name)}</button>` : `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
         }
         // その他の予定の通知は、管理者ごとの「自分あて」の設定だけ(全体の設定はない)
         function myNtfBlock(cfg) {
@@ -5497,6 +5505,15 @@
             if (!next.length) { setSavedMsg("1つ以上えらんでください", true); return; }
             cfg[k].days = ntfDaysOk(next);
             saveNotify(cfg); renderNotifySettings(); renderPlanNtf(); updateVbNtf(); setSavedMsg("保存しました ✓");
+        }
+        // ゲストは「来る」のときだけ通知に載せる(GAS側で判定)。前の版で除外リストに自動で入れた分は外す
+        function syncGuestExclude() {
+            if (!isAdmin()) return;
+            const cfg = notifyCfg(), g = roster.filter(r => r.position === GUEST_POS).map(r => r.id);
+            const ex = cfg.exclude.filter(id => !g.includes(id));
+            if (ex.length === cfg.exclude.length) return;
+            cfg.exclude = ex; saveNotify(cfg);
+            if (typeof renderNotifySettings === "function") renderNotifySettings();
         }
         function ntfToggleExclude(id) {
             const cfg = notifyCfg();
@@ -5574,7 +5591,7 @@
             const exNames = cfg.exclude.map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
             const g = { come: [], no: [], pend: [], un: [] };
             (list || []).forEach(m => {
-                if (!m || NTF_GUEST_RE.test(m.name || "") || exNames.includes(m.name)) return;
+                if (!m || NTF_GUEST_RE.test(m.name || "") || exNames.includes(m.name) || (m.status !== "来る" && isGuestName(m.name))) return;   // ゲストは「来る」のときだけ
                 (m.status === "来る" ? g.come : m.status === "来ない" ? g.no : m.status === "未定" ? g.pend : g.un).push(m.name);
             });
             return g;
@@ -5874,7 +5891,7 @@
         function planRsvpKey(id) { return "plan:" + id; }
         function planInvitees(p) {
             if (!p) return [];
-            const no = Array.isArray(p.noRsvp) ? p.noRsvp : [];
+            const no = (Array.isArray(p.noRsvp) ? p.noRsvp : []).concat(roster.filter(r => r.position === GUEST_POS).map(r => r.id));   // ゲストには聞かない
             if (p.to && p.to.length) return p.to.filter(id => !no.includes(id)).map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
             return roster.filter(r => !no.includes(r.id)).map(r => r.name);
         }
@@ -7250,8 +7267,8 @@
             const [y, m, d] = selectedDate.split("-").map(Number);
             const dateStr = `${m}/${d}`;
             const dayMembers = attendanceByDate[selectedDate] || [];
-            const pendingList = dayMembers.filter(mm => mm.status === "未定");
-            const unconfirmedList = dayMembers.filter(mm => mm.status === "未確認");
+            const pendingList = dayMembers.filter(mm => mm.status === "未定" && !isGuestName(mm.name));   // ゲストはフォロー文に出さない
+            const unconfirmedList = dayMembers.filter(mm => mm.status === "未確認" && !isGuestName(mm.name));
 
             const pendingBlock = followSettings.includePending
                 ? formatFollowGroupBlock("⚪", "未定", pendingList) : "";
@@ -7998,7 +8015,7 @@
                     }
                 } else {
                     const genderDot = `<span class="gender-dot gender-${p.gender || "unspecified"}"></span>`;
-                    const posTag = p.position ? `<div class="court-pos">${escapeHtml(p.position)}</div>` : "";
+                    const posTag = (p.guest || p.position) ? `<div class="court-pos">${escapeHtml(p.guest ? GUEST_POS : p.position)}</div>` : "";
                     const params = paramsVisible() ? courtParamsHtml(p) : "";
                     inner = `<div class="court-name">${genderDot}${escapeHtml(p.name)}${memberKeyBadgesHtml(p)}</div>${posTag}${params}`;
                     pk = pickOf(p);
@@ -8104,7 +8121,7 @@
             for (const mm of comingMembers) {
                 const rm = findRosterByName(mm.name);
                 if (!rm) return { error: "名簿未登録のメンバーがいます。" };
-                participants.push({ name: rm.name, gender: rm.gender, position: rm.position, params: effectiveParams(rm.params) });
+                participants.push({ name: rm.name, gender: rm.gender, position: teamPosOf(rm), guest: rm.position === GUEST_POS, params: effectiveParams(rm.params) });
             }
             const raw = parseInt(document.getElementById("teamCountInput").value, 10);
             const teamCount = Math.max(2, Math.min(8, Number.isFinite(raw) ? raw : 2));
@@ -8232,7 +8249,7 @@
                     renderTeamSplitTab();
                     return;
                 }
-                participants.push({ name: rm.name, gender: rm.gender, position: rm.position, params: effectiveParams(rm.params) });
+                participants.push({ name: rm.name, gender: rm.gender, position: teamPosOf(rm), guest: rm.position === GUEST_POS, params: effectiveParams(rm.params) });
             }
 
             const teamCountRaw = parseInt(document.getElementById("teamCountInput").value, 10);
@@ -8744,7 +8761,7 @@
             if (!name) {
                 if (isAdmin()) {
                     who = `<div class="sv-who"><label>答える人
-                        <select onchange="surveySetWho(this.value)"><option value="">選んでください</option>${roster.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>`).join("")}</select></label></div>`;
+                        <select onchange="surveySetWho(this.value)"><option value="">選んでください</option>${roster.filter(r => r.position !== GUEST_POS).map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>`).join("")}</select></label></div>`;
                 } else if (firebaseAvailable && !authUid && !firestoreSyncActive) {
                     box.innerHTML = `<div class="sv-empty">読み込み中…</div>`;
                     return;
@@ -8778,7 +8795,7 @@
                 let ppl = "";
                 if (isAdmin()) {
                     const day = attendanceByDate[d] || [];
-                    const un = day.filter(x => x.status === "未確認").map(x => escapeHtml(x.name)), pd = day.filter(x => x.status === "未定").map(x => escapeHtml(x.name));
+                    const un = day.filter(x => x.status === "未確認" && !isGuestName(x.name)).map(x => escapeHtml(x.name)), pd = day.filter(x => x.status === "未定" && !isGuestName(x.name)).map(x => escapeHtml(x.name));   // ゲストは出さない
                     const txt = (a) => surveyShowNames ? a.join("・") : `${a.length}`;
                     ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>?</b> ${txt(un)}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${txt(pd)}</span>` : ""}</span>`;
                 }
@@ -10689,7 +10706,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const grid = document.createElement("div");
             grid.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;";
             const cur = myMemberName();
-            roster.filter(r => !r.emailHash).map(r => r.name).forEach(name => {   // Googleアカウント紐づき済みの人は選べない
+            roster.filter(r => !r.emailHash && r.position !== GUEST_POS).map(r => r.name).forEach(name => {   // Googleアカウント紐づき済みの人は選べない
                 const b = document.createElement("button");
                 b.type = "button";
                 b.textContent = name;
@@ -11054,7 +11071,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 } else setFirestoreSyncStatus(authIsGuest ? "ゲスト" : "閲覧中");
                 refreshMyMember().then(() => {
                     applyRole();
-                    setTimeout(syncLocalNtf, 1500);   // この端末だけの予定の通知用コピーを最新にする
+                    setTimeout(syncLocalNtf, 1500);
+                    setTimeout(() => syncGuestExclude(), 2000);   // ゲストを通知の除外に入れる(前から名簿にいるゲストの分)   // この端末だけの予定の通知用コピーを最新にする
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
                     guestJustSignedIn = false;
