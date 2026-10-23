@@ -8759,7 +8759,7 @@
         let surveyLater = false;
         function surveyRangeEnd() { const t = new Date(); return formatDateKey(new Date(t.getFullYear(), t.getMonth() + (t.getDate() >= 14 ? 2 : 1), 0)); }
         function surveyDatesShown() { const e = surveyRangeEnd(); return surveyDates().filter(d => d <= e); }
-        function surveyToggleLater() { surveyLater = !surveyLater; renderSurvey(); const ov = document.getElementById("surveyOv"); if (ov) ov.scrollTop = 0; }
+        function surveyToggleLater() { surveyLater = surveyPlanTab ? true : !surveyLater; surveyPlanTab = false; renderSurvey(); const ov = document.getElementById("surveyOv"); if (ov) ov.scrollTop = 0; }
         // ------- アンケートの強調の強さ -------
         // 0=なし 1=数だけ 2=点滅(来月分が出てから3日間) 3=赤く強く点滅(月末7日前から来月分 / 7日以内の日程が未回答)
         const SV_REL_KEY = "svrelease_v1";   // 来月分を初めて見た日・お知らせを出したか(この端末だけ。共有しない)
@@ -8826,7 +8826,7 @@
             b.title = n > 0 ? `出欠の回答(未回答${n}件)` : "出欠の回答";
         }
         let surveyPlanTab = false;   // アンケート画面: true=バレー以外の予定の一覧
-        function surveyTogglePlans() { surveyPlanTab = !surveyPlanTab; renderSurvey(); const ov = document.getElementById("surveyOv"); if (ov) ov.scrollTop = 0; }
+        function surveyTogglePlans() { surveyPlanTab = !surveyPlanTab; if (surveyPlanTab) surveyLater = false; renderSurvey(); const ov = document.getElementById("surveyOv"); if (ov) ov.scrollTop = 0; }
         function surveySetWho(name) { surveyAdminName = name; renderSurvey(); }
         function surveySet(date, status) {
             const name = surveyWho();
@@ -8914,18 +8914,15 @@ const namesBtn = isAdmin() && dates.length > 0
             // 名前の横に「予定」ボタン(未回答の件数つき)。押すとバレー以外の予定のアンケート一覧に切り替わる
             const pAll = myRsvpPlans(name), pUn = pAll.filter(p => { const st = planStatusOf(p, name); return !(st === "来る" || st === "来ない"); }).length;
             const planTab = name ? `<button type="button" class="sv-plantab${surveyPlanTab ? " on" : ""}" onclick="surveyTogglePlans()" aria-pressed="${surveyPlanTab}">予定${pUn ? `<span class="sv-pbadge">${pUn}</span>` : ""}</button>` : "";
-            const head = `<div class="sv-whorow">${who}${planTab}</div>`;
+            // 表示している範囲より先の日程: 「予定」の横のボタンで別の一覧に切り替える(未回答の数つき)
+            const lUn = name ? later.filter(d => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); return !!mem && !(mem.status === "来る" || mem.status === "来ない"); }).length : 0;
+            const nm = +surveyRangeEnd().slice(5, 7) % 12 + 1;
+            const laterTab = later.length ? `<button type="button" class="sv-plantab${surveyLater && !surveyPlanTab ? " on" : ""}" onclick="surveyToggleLater()" aria-pressed="${surveyLater && !surveyPlanTab}">${nm}月〜${lUn ? `<span class="sv-pbadge">${lUn}</span>` : ""}</button>` : "";
+            const head = `<div class="sv-whorow">${who}${planTab}${laterTab}</div>`;
             if (surveyPlanTab && name) box.innerHTML = head + (pcards || `<div class="sv-empty">—</div>`);
             else {
-                // 来月末より先の日程: ボタンで出し入れ(未回答の数つき)
-                const lUn = name ? later.filter(d => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); return !!mem && !(mem.status === "来る" || mem.status === "来ない"); }).length : 0;
-                if (surveyLater) {   // 「その先」の画面: 上に戻るボタンと見出し
-                    const back = `<button type="button" class="sv-later on" onclick="surveyToggleLater()">‹ ${+surveyRangeEnd().slice(5, 7)}月までのアンケートに戻る</button><div class="sv-lhead">${+surveyRangeEnd().slice(5, 7) % 12 + 1}月以降のアンケート</div>`;
-                    box.innerHTML = head + back + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards;
-                } else {
-                    const laterBtn = later.length ? `<button type="button" class="sv-later" onclick="surveyToggleLater()">${+surveyRangeEnd().slice(5, 7) % 12 + 1}月以降のアンケート(${later.length}日) ›${lUn ? `<span class="sv-pbadge">${lUn}</span>` : ""}</button>` : "";
-                    box.innerHTML = head + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards + laterBtn;
-                }
+                const lhead = surveyLater ? `<div class="sv-lhead">${nm}月以降のアンケート</div>` : "";
+                box.innerHTML = head + lhead + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards;
             }
         }
 
