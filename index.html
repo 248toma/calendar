@@ -363,7 +363,11 @@
         .cal-grid.nv .cal-day.selected { background: var(--surface-2); }
         .cal-grid.nv .cal-day.other-month .nv-chip, .cal-grid.nv .cal-day.other-month .nv-d { opacity: .4; }
         .nv-d { align-self: center; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; font-weight: 600; border-radius: 50%; color: var(--ink); }
-        .cal-day.dow-0 .nv-d { color: var(--notcome); }
+        .cal-day.dow-0 .nv-d, .cal-day.hol .nv-d { color: var(--notcome); }
+        .cal-grid > .cal-day.hol:not(.other-month):not([class*="event-"]), .tw-head .cal-day.hol:not([class*="event-"]), .cal-grid.list-mode > .cal-day.hol:not([class*="event-"]) { color: var(--notcome-ink); }
+        .nv-chip.nv-jp { background: transparent !important; color: var(--ink-3); box-shadow: none !important; font-weight: 500; }
+        .nv-chip.nv-jp.h { color: var(--notcome); }
+        .nv-jprow .nv-tt { font-weight: 500; }
         .cal-day.dow-6 .nv-d { color: #3b6fd0; }
         .cal-grid.nv .cal-day.today .nv-d { background: var(--ink-fill); color: #fff; }
         .nv-chip { display: block; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.4; padding: 0 3px; border-radius: 3px; background: var(--plan-gray, var(--pcbg0)); color: var(--plan-ink, var(--ink-2)); }
@@ -2809,6 +2813,7 @@
         <!-- 誰でも使う設定(いちばん上) -->
         <div id="setTop">
             <div class="st-row"><span class="st-lbl">カレンダーの予定</span><span class="st-seg" id="lvSeg"><button type="button" data-lv="1" onclick="setSheetLevelTo(1)">1つ</button><button type="button" data-lv="2" onclick="setSheetLevelTo(2)">2つ</button><button type="button" data-lv="3" onclick="setSheetLevelTo(3)">3つ</button></span></div>
+            <div class="st-row"><span class="st-lbl">祝日・行事</span><span class="st-seg" id="jpSeg"><button type="button" data-k="hol" onclick="setJpcal('hol')">祝日</button><button type="button" data-k="ev" onclick="setJpcal('ev')">行事</button></span></div>
             <div class="st-row"><span class="st-lbl">表示</span><button type="button" class="st-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="ic ic-sun"></i></button></div>
             <div class="st-row real-admin-only"><span class="st-lbl">モード</span>
                 <select class="st-sel mode-select" id="modeSelect" onchange="setViewMode(this.value)" aria-label="モード(管理・閲覧)">
@@ -5173,6 +5178,8 @@
             const key = formatDateKey(cellDate);
             const cell = document.createElement("div");
             cell.className = "cal-day dow-" + cellDate.getDay() + (inMonth ? "" : " other-month");
+            const jp = jpDay(key);
+            if (jp.hol) { cell.classList.add("hol"); cell.title = jp.hol; }
             if (key === todayKey) cell.classList.add("today");
             if (key === selectedDate) cell.classList.add("selected");
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
@@ -5184,15 +5191,18 @@
             single.filter(x => planTimed(x.p)).forEach(x => chips.push(chipOf(x)));
             // 行ごとに: 帯が通る行は空ける → 空いた行にバレー → 終日 → その他の順で入れる
             const occ = lay && lay.occ ? lay.occ : [];
-            const rest = adAll.concat(chips);
+            const nReal = adAll.length + chips.length;
+            const jpTxt = [jp.hol, jp.ev].filter(Boolean).join("・");
+            const rest = adAll.concat(chips, jpTxt ? [{ t: `<span class="nv-chip nv-jp${jp.hol ? " h" : ""}">${escapeHtml(jpTxt)}</span>`, l: "", jp: true }] : []);
             let shown = [], ri = 0;
             const lane = (r) => `<span class="nv-lane${r >= nvText ? " nv-line" : ""}"></span>`;
             for (let r = 0; r < nvSlots; r++) {
                 if (occ[r] || ri >= rest.length) shown.push(lane(r));
+                else if (rest[ri].jp && r >= nvText) { ri++; shown.push(lane(r)); }   // 祝日・行事は文字の行が空いているときだけ
                 else { const it = rest[ri++]; shown.push(r < nvText ? it.t : it.l); }   // 文字の行を超えた分は線だけ
             }
             while (shown.length && shown[shown.length - 1].startsWith('<span class="nv-lane')) shown.pop();
-            const more = rest.length - ri + (lay ? lay.hidden : 0);   // 入り切らない分は日付の横に「+N」で出す(予定の行は使わない)
+            const more = nReal - Math.min(ri, nReal) + (lay ? lay.hidden : 0);   // 祝日・行事は数えない   // 入り切らない分は日付の横に「+N」で出す(予定の行は使わない)
             if (nvMode !== "chips") shown = [];
             const vid = videoDateSet.has(key) ? `<span class="vid-mark" title="動画あり"><svg viewBox="0 0 11 8" aria-hidden="true"><rect x="0" y="0" width="7" height="8" rx="1.5"/><path d="M8 3 L11 1 V7 L8 5 Z"/></svg></span>` : "";
             const minus = isDayBalanceMinus(key) ? `<span class="minus-mark dev-only" title="収支マイナス">${IC("coin")}</span>` : "";
@@ -5993,6 +6003,8 @@
                 const places = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
                 rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${IC("ball")}Volley · ${countComing(selectedDate)}</span></div>${places ? `<div class="nv-sub">${escapeHtml(places)}</div>` : ""}</div></div>` });
             }
+            { const jp = jpDay(selectedDate);
+              [[jp.hol, "祝日", "var(--notcome)"], [jp.ev, "行事", "var(--ink-3)"]].forEach(([n, lb, c]) => { if (n) rows.push({ ad: -1, s: lb === "祝日" ? 0 : 1, html: `<div class="nv-row nv-jprow"><div class="nv-time"><span>${lb}</span><span></span></div><div class="nv-bar" style="background:${c}"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${escapeHtml(n)}</span></div></div></div>` }); }); }
             plansOn(selectedDate).forEach(({ p, first, last }) => {
                 const s = first ? parseHM(p.start) : null;
                 const md = (d) => { const [, mm, dd] = d.split("-").map(Number); return `${mm}/${dd}`; };
@@ -6087,6 +6099,56 @@
                 .filter(p => planHas(p) && planVisible(p) && p.startDate <= key && (p.endDate ? p.endDate >= key : p.startDate === key))
                 .sort((x, y) => (x.startDate < y.startDate ? -1 : x.startDate > y.startDate ? 1 : planStartKey(x) - planStartKey(y) || x.id - y.id))
                 .map(p => ({ p, origin: p.startDate, first: p.startDate === key, last: !p.endDate || p.endDate === key }));
+        }
+        // ------- 日本の祝日・行事(計算で出す。ネットにつながなくても使える) -------
+        const JPCAL_KEY = "jpcal_v1";   // この端末だけの設定(共有しない)
+        let jpcal = { hol: true, ev: true };
+        try { const v = JSON.parse(localStorage.getItem(JPCAL_KEY) || "null"); if (v && typeof v === "object") jpcal = { hol: v.hol !== false, ev: v.ev !== false }; } catch (e) { /* ignore */ }
+        function setJpcal(k) {
+            jpcal[k] = !jpcal[k];
+            try { localStorage.setItem(JPCAL_KEY, JSON.stringify(jpcal)); } catch (e) { /* ignore */ }
+            renderJpcalSeg(); renderCalendar();
+        }
+        function renderJpcalSeg() { document.querySelectorAll("#jpSeg button").forEach(b => { const on = !!jpcal[b.dataset.k]; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }); }
+        const jpCache = {};
+        function jpYear(y) {
+            if (jpCache[y]) return jpCache[y];
+            const pad = n => String(n).padStart(2, "0"), K = (m, d) => `${y}-${pad(m)}-${pad(d)}`;
+            const nth = (m, n, wd) => { const f = new Date(y, m - 1, 1).getDay(); return 1 + ((wd - f + 7) % 7) + (n - 1) * 7; };   // m月の第n「wd曜日」
+            const t = y - 1980, q = Math.floor(t / 4);
+            const hol = {};
+            [[1, 1, "元日"], [1, nth(1, 2, 1), "成人の日"], [2, 11, "建国記念の日"], [2, 23, "天皇誕生日"],
+             [3, Math.floor(20.8431 + 0.242194 * t - q), "春分の日"], [4, 29, "昭和の日"], [5, 3, "憲法記念日"], [5, 4, "みどりの日"], [5, 5, "こどもの日"],
+             [7, nth(7, 3, 1), "海の日"], [8, 11, "山の日"], [9, nth(9, 3, 1), "敬老の日"], [9, Math.floor(23.2488 + 0.242194 * t - q), "秋分の日"],
+             [10, nth(10, 2, 1), "スポーツの日"], [11, 3, "文化の日"], [11, 23, "勤労感謝の日"]].forEach(([m, d, n]) => { hol[K(m, d)] = n; });
+            const fk = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            // 振替休日: 日曜の祝日のあと、最初の祝日でない日
+            Object.keys(hol).sort().forEach(k => {
+                const d = new Date(k + "T00:00:00"); if (d.getDay() !== 0) return;
+                do d.setDate(d.getDate() + 1); while (hol[fk(d)]);
+                hol[fk(d)] = "振替休日";
+            });
+            // 国民の休日: 祝日にはさまれた平日
+            Object.keys(hol).forEach(k => {
+                const d = new Date(k + "T00:00:00"); d.setDate(d.getDate() + 2);
+                if (!hol[fk(d)]) return;
+                d.setDate(d.getDate() - 1); const mid = fk(d);
+                if (!hol[mid] && d.getDay() !== 0) hol[mid] = "国民の休日";
+            });
+            const ev = {};
+            const add = (m, d, n) => { const k = K(m, d); ev[k] = ev[k] ? ev[k] + "・" + n : n; };
+            add(2, (y >= 2021 && y <= 2057 && (y - 2021) % 4 === 0) ? 2 : 3, "節分");
+            add(2, 14, "バレンタインデー"); add(3, 3, "ひな祭り"); add(3, 14, "ホワイトデー");
+            add(5, nth(5, 2, 0), "母の日"); add(6, nth(6, 3, 0), "父の日"); add(7, 7, "七夕");
+            for (let d = 13; d <= 16; d++) add(8, d, "お盆");
+            add(10, 31, "ハロウィン"); add(11, 15, "七五三"); add(12, 24, "クリスマスイブ"); add(12, 25, "クリスマス"); add(12, 31, "大晦日");
+            return (jpCache[y] = { hol, ev });
+        }
+        // その日の祝日・行事(表示がオフのものは出さない)
+        function jpDay(key) {
+            const y = +String(key).slice(0, 4); if (!y) return { hol: "", ev: "" };
+            const c = jpYear(y);
+            return { hol: jpcal.hol ? (c.hol[key] || "") : "", ev: jpcal.ev ? (c.ev[key] || "") : "" };
         }
         // 並べる時の時間(終日・時間なしは先頭、開始がなければ終了の時間)
         function planStartKey(p) { if (!planTimed(p)) return -1; const s = parseHM(p.start); return s != null ? s : (parseHM(p.end) ?? 9999); }
@@ -6478,6 +6540,7 @@
             const cellKey = formatDateKey(cellDate);
             const cell = document.createElement("div");
             cell.className = "cal-day" + (inMonth ? "" : " other-month");
+            { const jp = jpDay(cellKey); if (jp.hol) cell.classList.add("hol"); }
             if (cellKey === todayKey) cell.classList.add("today");
             if (cellKey === selectedDate) cell.classList.add("selected");
 
@@ -10783,6 +10846,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (up) up.disabled = sheetLevel <= 1 || sheetCompact;
             if (dn) dn.disabled = sheetLevel >= 3 && !sheetCompact;
             document.querySelectorAll("#lvSeg button").forEach(b => b.classList.toggle("on", +b.dataset.lv === sheetLevel));
+            renderJpcalSeg();
             if (sheetCompact) h = Math.max(h, compactSheetH());   // 縮めている間だけの高さ(自分で決めた高さは上書きしない)
             sh.style.setProperty("--sheet-h", h + "px");
             document.body.classList.toggle("cal-compact", !!sheetCompact);
