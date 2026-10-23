@@ -2817,7 +2817,7 @@
         <div id="setTop">
             <div class="st-row"><span class="st-lbl">カレンダーの予定</span><span class="st-seg" id="lvSeg"><button type="button" data-lv="1" onclick="setSheetLevelTo(1)">1つ</button><button type="button" data-lv="2" onclick="setSheetLevelTo(2)">2つ</button><button type="button" data-lv="3" onclick="setSheetLevelTo(3)">3つ</button></span></div>
             <div class="st-row"><span class="st-lbl">祝日・行事</span><span class="st-seg" id="jpSeg"><button type="button" data-k="hol" onclick="setJpcal('hol')">祝日</button><button type="button" data-k="ev" onclick="setJpcal('ev')">行事</button></span></div>
-            <div class="st-row"><span class="st-lbl">表示</span><button type="button" class="st-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="ic ic-sun"></i></button></div>
+            <div class="st-row"><span class="st-lbl" id="themeLbl">表示</span><button type="button" class="st-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="ic ic-sun"></i></button></div>
             <div class="st-row real-admin-only"><span class="st-lbl">モード</span>
                 <select class="st-sel mode-select" id="modeSelect" onchange="setViewMode(this.value)" aria-label="モード(管理・閲覧)">
                     <option value="admin">Admin</option>
@@ -8636,16 +8636,23 @@
         // ------- ☀️🌙 テーマ(ライト/ダーク)。開発モード中は逆の見た目になる -------
         // 通常: ☀️=ライト / 🌙=ダーク。開発モードON: ☀️=ダーク / 🌙=ライト(常に逆)
         const THEME_KEY = "attendance_theme_v1";
-        let themeDark = false;
+        const THEME_VIEW_KEY = "attendance_theme_view_v1";   // 管理者がViewモードのときの表示(この端末だけ)
+        let themeDark = false, themeDarkView = null;   // null = Viewモード用は未設定(Adminと同じ)
         try { themeDark = localStorage.getItem(THEME_KEY) === "dark"; } catch (e) { themeDark = false; }
+        try { const v = localStorage.getItem(THEME_VIEW_KEY); themeDarkView = v ? v === "dark" : null; } catch (e) { themeDarkView = null; }
+        // 管理者アカウントでViewモードのときだけ、別のテーマを使う
+        function themeIsViewSlot() { return typeof viewPreview !== "undefined" && viewPreview; }   // Viewモードは管理者アカウントだけが選べる(起動直後から反映してちらつかないよう、ログイン確認を待たない)
+        function currentThemeDark() { return themeIsViewSlot() ? (themeDarkView == null ? themeDark : themeDarkView) : themeDark; }
 
         function applyTheme() {
             // 管理モードのときは、テーマ設定を反転して表示する(ライト設定→ダーク / ダーク設定→ライト)
-            const dark = themeDark;   // 管理者でも反転しない(選んだ表示のまま)
+            const dark = currentThemeDark();   // 管理者は Admin / View で別々に選べる
             document.body.classList.toggle("dark", dark);
             document.documentElement.style.colorScheme = dark ? "dark" : "light";
             const meta = document.querySelector('meta[name="theme-color"]');
             if (meta) meta.setAttribute("content", dark ? "#313746" : "#eceff4");
+            const lb = document.getElementById("themeLbl");
+            if (lb) lb.textContent = typeof realAdmin === "function" && realAdmin() ? (themeIsViewSlot() ? "表示(Viewのとき)" : "表示(Adminのとき)") : "表示";
             const btn = document.getElementById("themeToggleBtn");
             if (btn) {
                 btn.innerHTML = IC(dark ? "moon" : "sun") + `<span>${dark ? "ダーク" : "ライト"}</span>`;
@@ -8653,8 +8660,13 @@
             }
         }
         function toggleTheme() {
-            themeDark = !themeDark;
-            try { localStorage.setItem(THEME_KEY, themeDark ? "dark" : "light"); } catch (e) {}
+            if (themeIsViewSlot()) {
+                themeDarkView = !currentThemeDark();
+                try { localStorage.setItem(THEME_VIEW_KEY, themeDarkView ? "dark" : "light"); } catch (e) {}
+            } else {
+                themeDark = !themeDark;
+                try { localStorage.setItem(THEME_KEY, themeDark ? "dark" : "light"); } catch (e) {}
+            }
             document.documentElement.classList.add("theme-anim");
             applyTheme();
             setTimeout(() => document.documentElement.classList.remove("theme-anim"), 400);
@@ -10499,7 +10511,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
         const HIDE_TP_KEY = "attendance_hide_tparams_v1";
-        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", "attendance_pair_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
+        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", "attendance_pair_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, "attendance_theme_view_v1", LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
             SURVEY_SORT_KEY, CAL_TIME_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, SURVEY_NAMES_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
