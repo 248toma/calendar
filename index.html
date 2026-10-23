@@ -5295,6 +5295,9 @@
         function notifyCfg() {
             let v = null;
             try { v = JSON.parse(localStorage.getItem(NOTIFY_KEY) || "null"); } catch (e) { v = null; }
+            return notifyCfgFrom(v);
+        }
+        function notifyCfgFrom(v) {
             v = v && typeof v === "object" ? v : {};
             const part = (k) => {
                 const d = NTF_DEFAULT[k], x = v[k] && typeof v[k] === "object" ? v[k] : {};
@@ -5331,12 +5334,49 @@
             if (!isAdmin()) return;
             saveNotifyRaw(cfg);
         }
+        // 通知の設定は、管理者が複数いても上書きし合わないように、共有データの最新に「変えたところだけ」を重ねて保存する。
+        // (共有データ全体の保存は使わない。端末に古いデータが残っていても、ほかの管理者の設定や登録を消さない)
         function saveNotifyRaw(cfg) {
             if (!realAdmin()) return;
             // 過ぎた日の個別設定は捨てる
             const today = formatDateKey(new Date());
             Object.keys(cfg.vday).forEach(k => { if (k < today) delete cfg.vday[k]; });
-            try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(cfg)); } catch (e) { console.warn("通知設定の保存に失敗しました。", e); }
+            const prev = notifyCfg();
+            if (!sharedTxReady()) { try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(cfg)); } catch (e) { console.warn("通知設定の保存に失敗しました。", e); } return; }
+            setLocalQuiet(NOTIFY_KEY, JSON.stringify(cfg));   // 画面はすぐ変える
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                let remote = null; try { remote = JSON.parse(values[NOTIFY_KEY] || "null"); } catch (e) { remote = null; }
+                const merged = mergeNotify(prev, cfg, notifyCfgFrom(remote));
+                tx.update(firestoreRef, { ["values." + NOTIFY_KEY]: JSON.stringify(merged), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                return merged;
+            }).then(merged => { setLocalQuiet(NOTIFY_KEY, JSON.stringify(merged)); if (document.getElementById("settingsPanel").classList.contains("open")) renderNotifySettings(); })
+              .catch(err => { console.error("通知設定を共有データに保存できませんでした。", err); setSavedMsg("保存できませんでした", true); });
+        }
+        // prev(変える前)→ mine(変えた後)で変わったところだけを remote(共有データの最新)に重ねる
+        function mergeNotify(prev, mine, remote) {
+            const out = JSON.parse(JSON.stringify(remote)), J = (x) => JSON.stringify(x === undefined ? null : x);
+            Object.keys(mine).forEach(k => {
+                if (k === "admins") out.admins = [...new Set((remote.admins || []).concat(mine.admins || []))];
+                else if (k === "personal") {
+                    const p0 = prev.personal || {}, p1 = mine.personal || {};
+                    out.personal = { ...(remote.personal || {}) };
+                    new Set(Object.keys(p0).concat(Object.keys(p1))).forEach(id => { if (J(p0[id]) !== J(p1[id])) { if (p1[id]) out.personal[id] = p1[id]; else delete out.personal[id]; } });
+                } else if (k === "vday") {
+                    const v0 = prev.vday || {}, v1 = mine.vday || {};
+                    out.vday = { ...(remote.vday || {}) };
+                    new Set(Object.keys(v0).concat(Object.keys(v1))).forEach(d => { if (J(v0[d]) !== J(v1[d])) { if (v1[d]) out.vday[d] = v1[d]; else delete out.vday[d]; } });
+                } else if (J(prev[k]) !== J(mine[k])) out[k] = mine[k];
+            });
+            return out;
+        }
+        function sharedTxReady() { return !!(typeof firebase !== "undefined" && firebaseAvailable && firestoreEditor && firestoreRef && firestoreSyncActive); }
+        // 共有データ全体の保存を起こさずに、端末のデータだけ書き換える
+        function setLocalQuiet(key, val) {
+            const f = firestoreApplyingRemote; firestoreApplyingRemote = true;
+            try { localStorage.setItem(key, val); } catch (e) { /* ignore */ } finally { firestoreApplyingRemote = f; }
         }
         function ntfShortDays(days) {
             const a = ntfDaysOk(days) || [], n = a.filter(x => x > 0);
@@ -5644,19 +5684,35 @@
         function syncLocalNtf() {
             if (!realAdmin()) return;
             const owner = planAuthorKey(), who = myRosterId();
-            if (who != null) {
+            if (who != null) {   // 届く人に登録(共有データの最新に足すだけ。ほかの管理者は消さない)
                 const cfg = notifyCfg();
-                if (!cfg.admins.includes(who)) { cfg.admins.push(who); saveNotifyRaw(cfg); }
+                if (!cfg.admins.includes(who) || sharedTxReady()) { cfg.admins = [...new Set(cfg.admins.concat(who))]; saveNotifyRaw(cfg); }
             }
             if (!owner || owner === "n:") return;
             const list = who == null ? [] : localNtfList();
-            const store = Array.isArray(attendanceByDate[LOCAL_NTF]) ? attendanceByDate[LOCAL_NTF] : [];
-            const cur = store.find(x => x.owner === owner);
-            if (cur ? (cur.who === who && JSON.stringify(cur.list) === JSON.stringify(list)) : !list.length) return;   // 変わっていない
-            const next = store.filter(x => x.owner !== owner);
-            if (list.length) next.push({ owner, who, list, ts: Date.now() });
-            attendanceByDate[LOCAL_NTF] = next;
-            saveData();
+            const rec = list.length ? { owner, who, list, ts: Date.now() } : null;
+            const put = (data) => {
+                const store = Array.isArray(data[LOCAL_NTF]) ? data[LOCAL_NTF] : [];
+                const cur = store.find(x => x.owner === owner);
+                if (cur ? (cur.who === who && JSON.stringify(cur.list) === JSON.stringify(list)) : !rec) return false;   // 変わっていない
+                data[LOCAL_NTF] = store.filter(x => x.owner !== owner).concat(rec ? [rec] : []);
+                return true;
+            };
+            if (!sharedTxReady()) { if (put(attendanceByDate)) saveData(); return; }
+            // 共有データの最新の出欠データに、自分の分だけを入れ替えて保存する(全体は上書きしない)
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                if (!put(data)) return null;
+                tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                return data[LOCAL_NTF];
+            }).then(arr => {
+                if (!arr) return;
+                attendanceByDate[LOCAL_NTF] = arr;
+                setLocalQuiet(BYDATE_KEY, JSON.stringify(attendanceByDate));
+            }).catch(err => console.error("通知用の予定を共有データに反映できませんでした。", err));
         }
         // バレーの日
         function updateVbNtf() {
@@ -10540,6 +10596,9 @@ const namesBtn = isAdmin() && dates.length > 0
             setFirestoreSyncStatus("同期中…");
             const vals = getShareableLocalValues();
             mergePendingLog(vals);
+            mergePendingAttendance(vals);   // 反映待ちの閲覧者の回答・ペア予定・通知用の予定を上書きしない
+            // 通知の設定は別に保存しているので、反映待ちの共有データがあればそちらを残す(ほかの管理者の登録・設定を消さない)
+            if (firestorePendingValues && firestorePendingValues[NOTIFY_KEY]) vals[NOTIFY_KEY] = firestorePendingValues[NOTIFY_KEY];
             firestoreRef.set({ values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
                 .then(() => { if (firestorePendingValues) markRemoteUpdate(); else setFirestoreSyncStatus("共有中"); })
                 .catch(error => { console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true); });
