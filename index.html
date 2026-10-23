@@ -2294,7 +2294,8 @@
         .sv-who .ic { width: 15px; height: 15px; color: var(--ink-3); }
         .sv-tools { display: flex; gap: 10px; margin: 0 2px 14px; }
         .sv-later { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin: 4px 0 12px; height: 40px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
-        .sv-later.on { color: var(--ink-3); }
+        .sv-later.on { color: var(--ink-3); justify-content: flex-start; padding: 0 14px; margin: 0 0 10px; }
+        .sv-lhead { font-size: 15px; font-weight: 800; color: var(--ink); margin: 2px 4px 12px; }
         .sv-tools .sv-sort { flex: 1; margin: 0; min-width: 0; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
         .sv-tools .sv-sort .ic { width: 15px; height: 15px; }
         .sv-tag { width: 9px; height: 9px; padding: 0; border-radius: 50%; background: var(--pending); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pending) 25%, transparent); font-size: 0; }
@@ -8749,7 +8750,7 @@
         let surveyLater = false;
         function surveyRangeEnd() { const t = new Date(); return formatDateKey(new Date(t.getFullYear(), t.getMonth() + 2, 0)); }
         function surveyDatesShown() { const e = surveyRangeEnd(); return surveyDates().filter(d => d <= e); }
-        function surveyToggleLater() { surveyLater = !surveyLater; renderSurvey(); }
+        function surveyToggleLater() { surveyLater = !surveyLater; renderSurvey(); const ov = document.getElementById("surveyOv"); if (ov) ov.scrollTop = 0; }
         // 月末の7日前から月末まで: 次の月のバレーで答えていない日があるか
         function surveyUrgent() {
             const name = surveyWho(); if (!name) return false;
@@ -8816,7 +8817,8 @@
             }
             const allDates = (name || isAdmin()) ? surveyDates() : [];   // 管理者は、答える人を選ばなくても日付ごとの状況を見られる
             const rEnd = surveyRangeEnd(), later = allDates.filter(d => d > rEnd);
-            let dates = surveyLater ? allDates : allDates.filter(d => d <= rEnd);   // ふだんは来月末まで
+            if (surveyLater && !later.length) surveyLater = false;
+            let dates = surveyLater ? later : allDates.filter(d => d <= rEnd);   // ふだんは来月末まで。「以降」の画面はそれより先だけ
             if (surveyUnansFirst && name) {   // 未回答 → △ → ○/✖(同じ区分の中は日付順のまま)
                 const rank = d => {
                     const mem = (attendanceByDate[d] || []).find(m => m.name === name);
@@ -8871,8 +8873,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 来月末より先の日程: ボタンで出し入れ(未回答の数つき)
                 const lUn = name ? later.filter(d => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); return !!mem && !(mem.status === "来る" || mem.status === "来ない"); }).length : 0;
                 const [, em] = rEnd.split("-").map(Number);
-                const laterBtn = later.length ? `<button type="button" class="sv-later${surveyLater ? " on" : ""}" onclick="surveyToggleLater()">${surveyLater ? `${em}月までに戻す` : `${em + 1 > 12 ? 1 : em + 1}月以降も表示(${later.length}日)`}${!surveyLater && lUn ? `<span class="sv-pbadge">${lUn}</span>` : ""}</button>` : "";
-                box.innerHTML = head + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards + laterBtn;
+                const nm = em + 1 > 12 ? 1 : em + 1;
+                if (surveyLater) {   // 「◯月以降」の画面: 上に戻るボタンと見出し
+                    const back = `<button type="button" class="sv-later on" onclick="surveyToggleLater()">‹ ${em}月までのアンケートに戻る</button><div class="sv-lhead">${nm}月以降のアンケート</div>`;
+                    box.innerHTML = head + back + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards;
+                } else {
+                    const laterBtn = later.length ? `<button type="button" class="sv-later" onclick="surveyToggleLater()">${nm}月以降のアンケート(${later.length}日) ›${lUn ? `<span class="sv-pbadge">${lUn}</span>` : ""}</button>` : "";
+                    box.innerHTML = head + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards + laterBtn;
+                }
             }
         }
 
