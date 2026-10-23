@@ -2731,6 +2731,9 @@
         .ntf-chip { height: 30px; min-width: 52px; padding: 0 10px; border: none; border-radius: 15px; background: var(--bg); color: var(--ink-3); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
         .ntf-chip.on { background: var(--accent); color: #fff; }
         .ntf-chip.ex.on { background: var(--notcome-ink, #c0392b); }
+        .ntf-chip.guest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line-2, #bbb); color: var(--ink-3); opacity: .7; cursor: not-allowed; display: inline-flex; align-items: center; gap: 4px; }
+        .ntf-chip.guest small { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 6px; background: var(--ink-3); color: var(--bg); }
+        .ntf-guest-note { margin-top: 8px; }
         .ntf-chips.dis { opacity: .4; pointer-events: none; }
         .ntf-sel { height: 32px; padding: 0 10px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 700; box-shadow: var(--sink); }
         .ntf-in { width: 100%; box-sizing: border-box; height: 38px; padding: 0 12px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink); font-size: 14px; box-shadow: var(--sink); }
@@ -2969,6 +2972,7 @@
             <div class="acc-body">
                 <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
                 <div class="ntf-chips" id="ntfExclude"></div>
+                <div class="acc-desc ntf-guest-note">点線で「ゲスト」と付いている人は、名簿の希望ポジションがゲストの人です。ここでは選べず、自動で「来る」のときだけ載ります。</div>
             </div>
         </details>
         <div class="panel-group-label">予約</div>
@@ -2998,6 +3002,7 @@
             <summary>希望ポジション</summary>
             <div class="acc-body">
                 <div class="acc-desc">カンマ区切りで入力します。チーム分けはポジションごとに均等に分けます。</div>
+                <div class="acc-desc st-note">※「ゲスト」はここに書かなくても、名簿の希望ポジションでいつでも選べます。ゲストの人は、チーム分けでは初心者として扱い、アンケートの対象外になります。LINE通知では「来る」のときだけ名前が載ります。</div>
 
                 <div class="roles-edit-row">
                     <input type="text" id="inputRolesText" placeholder="例: セッター, リベロ, スパイカー, 初心者">
@@ -5458,7 +5463,7 @@
             box.innerHTML += myNtfBlock(cfg);
             renderNotifyText(cfg);
             const names = sortedRosterForNtf();
-            ex.innerHTML = names.length ? names.map(r => r.position === GUEST_POS ? `<button type="button" class="ntf-chip ex" disabled title="ゲストは「来る」のときだけ載ります">${escapeHtml(r.name)}</button>` : `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
+            ex.innerHTML = names.length ? names.map(r => r.position === GUEST_POS ? `<button type="button" class="ntf-chip ex guest" disabled title="希望ポジションがゲストなので選べません(自動で「来る」のときだけ載ります)">${escapeHtml(r.name)}<small>ゲスト</small></button>` : `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
         }
         // その他の予定の通知は、管理者ごとの「自分あて」の設定だけ(全体の設定はない)
         function myNtfBlock(cfg) {
