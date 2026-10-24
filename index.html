@@ -2148,7 +2148,7 @@
         .settings-btn.survey-btn .sv-badge2 { display: none; position: absolute; z-index: 1; top: -2px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
             border-radius: 999px; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; }
         .settings-btn.survey-btn.later .sv-badge2 { display: block; }
-        .settings-btn.survey-btn.alert.later .sv-badge2 { right: 7px; padding: 0 12px 0 5px; text-align: left; }
+        .settings-btn.survey-btn.alert.later .sv-badge2 { top: 0; right: -8px; color: transparent; box-shadow: 0 0 0 1.5px var(--bg); }   /* 赤い数字の後ろから、右に少しだけ覗かせる */
         @keyframes svPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .5); } 50% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); } }
         @media (prefers-reduced-motion: reduce) { .settings-btn.survey-btn.alert.pulse, .settings-btn.survey-btn.alert.urgent { animation: none; box-shadow: 0 0 0 2px #e5484d; } }
         .svrel-ov { position: fixed; inset: 0; z-index: 9998; background: rgba(0, 0, 0, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -8827,7 +8827,7 @@
             const who = surveyWho(), shownSet = new Set(surveyDatesShown());
             const nl = who ? surveyDates().filter(d => !shownSet.has(d) && svUnans(who, d)).length : 0;
             const b2 = document.getElementById("surveyBadge2");
-            if (b2) b2.textContent = nl > 0 ? String(nl) : "";
+            if (b2) { b2.textContent = nl > 0 ? String(nl) : ""; b2.title = nl > 0 ? `先の月の未回答 ${nl}件` : ""; }
             b.classList.toggle("later", nl > 0);
             b.classList.toggle("alert", n > 0);
             b.classList.toggle("pulse", lv === 2);
