@@ -2143,7 +2143,12 @@
         .settings-btn.survey-btn.alert.urgent, .ch-right .settings-btn.survey-btn.alert.urgent { background: #e5484d; color: #fff; animation: svPulseBig 1s ease-in-out infinite; }
         .settings-btn.survey-btn.alert.urgent .sv-badge { background: #fff; color: #e5484d; }
         @keyframes svPulseBig { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .7); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(229, 72, 77, 0); transform: scale(1.08); } }
-        .settings-btn.survey-btn.alert .sv-badge { display: block; }
+        .settings-btn.survey-btn.alert .sv-badge { display: block; z-index: 2; }
+        /* 表示範囲より先(「◯月〜」)の未回答: オレンジの数字。赤い数字があるときは、その後ろに隠れるように左へずらす */
+        .settings-btn.survey-btn .sv-badge2 { display: none; position: absolute; z-index: 1; top: -2px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
+            border-radius: 999px; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; }
+        .settings-btn.survey-btn.later .sv-badge2 { display: block; }
+        .settings-btn.survey-btn.alert.later .sv-badge2 { right: 7px; padding: 0 12px 0 5px; text-align: left; }
         @keyframes svPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .5); } 50% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); } }
         @media (prefers-reduced-motion: reduce) { .settings-btn.survey-btn.alert.pulse, .settings-btn.survey-btn.alert.urgent { animation: none; box-shadow: 0 0 0 2px #e5484d; } }
         .svrel-ov { position: fixed; inset: 0; z-index: 9998; background: rgba(0, 0, 0, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -3118,7 +3123,7 @@
             <div class="ch-right header-btns">
                 <button class="settings-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
                 <button class="settings-btn" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定"><i class="ic ic-sliders"></i></button>
-                <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge" id="surveyBadge"></span></button>
+                <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge2" id="surveyBadge2"></span><span class="sv-badge" id="surveyBadge"></span></button>
             </div>
             <button class="cal-nav-btn" id="calNextBtn" onclick="changeMonth(1)" aria-label="次の月">›</button>
         </div>
@@ -8818,6 +8823,12 @@
             if (!b || !bd) return;
             const n = surveyUnansweredCount();
             const lv = n > 0 ? surveyLevel() : 0;
+            // 先の月の未回答(オレンジ)
+            const who = surveyWho(), shownSet = new Set(surveyDatesShown());
+            const nl = who ? surveyDates().filter(d => !shownSet.has(d) && svUnans(who, d)).length : 0;
+            const b2 = document.getElementById("surveyBadge2");
+            if (b2) b2.textContent = nl > 0 ? String(nl) : "";
+            b.classList.toggle("later", nl > 0);
             b.classList.toggle("alert", n > 0);
             b.classList.toggle("pulse", lv === 2);
             b.classList.toggle("urgent", lv === 3);
