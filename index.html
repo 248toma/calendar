@@ -2773,7 +2773,7 @@
         .rs-seg2 button.on { color: var(--accent); box-shadow: var(--sink); }
         .rs-days { font-size: 11px; color: var(--ink-3); }
         .rs-tbl { display: flex; flex-direction: column; gap: 2px; }
-        .rs-row { display: grid; grid-template-columns: 4.6em 1fr 1fr 4.4em; gap: 6px; align-items: center; min-height: 26px; font-size: 12px; color: var(--ink-2); }
+        .rs-row { display: grid; grid-template-columns: 4.2em 1fr 1fr 1fr 3.8em; gap: 6px; align-items: center; min-height: 26px; font-size: 12px; color: var(--ink-2); }
         .rs-head { font-size: 11px; color: var(--ink-3); }
         .rs-h { border: none; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
         .rs-h.on { color: var(--accent); font-weight: 700; }
@@ -2781,7 +2781,32 @@
         .rs-c { position: relative; height: 18px; border-radius: 5px; background: rgba(128, 128, 128, .1); overflow: hidden; }
         .rs-c b { position: relative; z-index: 1; padding-left: 5px; font-size: 11px; line-height: 18px; color: var(--ink); }
         .rs-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; opacity: .35; }
-        .rs-bar.c { background: #2fb380; } .rs-bar.a { background: #3b82f6; }
+        .rs-bar.c { background: #2fb380; } .rs-bar.a { background: #3b82f6; } .rs-bar.w { background: #f59e0b; }
+        .rs-c b small { font-size: 9px; font-weight: 600; color: var(--ink-3); margin-left: 1px; }
+        .mt-card { margin-top: 12px; padding: 14px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-sm); }
+        .mt-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; font-weight: 800; margin-bottom: 10px; }
+        .mt-h span { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+        .mt-pick { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--ink-2); }
+        .mt-pick select { flex: 1; height: 34px; border-radius: 10px; border: none; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink); padding: 0 8px; }
+        .mt-form { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .mt-wb { flex: 1; height: 40px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); }
+        .mt-wb.on { background: var(--accent); color: #fff; }
+        .mt-form input { width: 70px; height: 38px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 15px; text-align: center; }
+        .mt-unit { font-size: 12px; color: var(--ink-3); }
+        .mt-add { margin-left: auto; height: 38px; padding: 0 20px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 800; }
+        .mt-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+        .mt-row { padding: 8px 10px; border-radius: 10px; background: rgba(128, 128, 128, .08); }
+        .mt-top { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .mt-no { color: var(--ink-3); font-size: 11px; font-weight: 700; }
+        .mt-team { font-weight: 700; color: var(--ink-2); }
+        .mt-team.win { color: var(--accent); }
+        .mt-vs { font-size: 12px; color: var(--ink-3); }
+        .mt-del { margin-left: auto; border: none; background: none; color: var(--ink-3); font-size: 14px; }
+        .mt-mem { margin-top: 3px; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
+        .mt-w, .mt-l { display: inline-block; width: 16px; height: 16px; margin-right: 4px; border-radius: 4px; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; color: #fff; background: var(--accent); }
+        .mt-l { background: var(--ink-3); }
+        .mt-day { margin: 12px 2px 6px; font-size: 12px; font-weight: 800; color: var(--ink-2); }
+        .mt-note { margin-top: 8px; }
         .rs-l { text-align: right; font-variant-numeric: tabular-nums; }
         .rs-note { margin-top: 8px; }
         .outdated-bar { position: fixed; left: 12px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 9997; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #e5484d; color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
@@ -3336,6 +3361,7 @@
 
             <div class="swap-bar" id="swapBar"></div>
             <div id="teamResults"></div>
+            <div id="matchBox"></div>
 
 
         </div>
@@ -8381,6 +8407,7 @@
         }
 
         function renderTeamResults() {
+            try { renderMatchBox(); } catch (e) { console.warn(e); }
             const resultsEl = document.getElementById("teamResults");
             if (!lastTeamSplitResult) { resultsEl.innerHTML = ""; return; }
             const { teams } = lastTeamSplitResult;
@@ -8421,6 +8448,79 @@
             document.querySelectorAll("#teamLegend [data-g]").forEach(el => {
                 el.style.display = present.has(el.getAttribute("data-g")) ? "" : "none";
             });
+        }
+
+        // ------- 試合の記録(勝ったチームと点差。まずはデータを貯める) -------
+        // 共有データ: { "日付": [{ id, teams: [[名前…],[名前…]], labels: ["チーム1","チーム2"], win: 0|1, diff: 点差 }] }
+        const MATCH_KEY = "attendance_matches_v1";
+        let matchesByDate = {};
+        function loadMatches() { try { const v = JSON.parse(localStorage.getItem(MATCH_KEY) || "{}"); matchesByDate = v && typeof v === "object" ? v : {}; } catch (e) { matchesByDate = {}; } }
+        function saveMatches() { try { localStorage.setItem(MATCH_KEY, JSON.stringify(matchesByDate)); } catch (e) { console.warn(e); } }
+        let matchForm = { a: 0, b: 1, win: null };
+        function matchTeamsNow() { const r = lastTeamSplitResult; return r && r.teams && r.teams.length >= 2 && (!r.dateKey || r.dateKey === selectedDate) ? r.teams : null; }
+        function setMatchForm(k, v) {
+            matchForm[k] = v;
+            if (k === "a" && matchForm.b === v) matchForm.b = matchForm.a === 0 ? 1 : 0;
+            if (k === "b" && matchForm.a === v) matchForm.a = matchForm.b === 0 ? 1 : 0;
+            if (k !== "win") matchForm.win = null;
+            renderMatchBox();
+        }
+        function addMatch() {
+            const teams = matchTeamsNow(); if (!teams || !isAdmin()) return;
+            if (matchForm.win == null) { alert("勝ったチームを選んでください。"); return; }
+            const el = document.getElementById("matchDiff"), diff = Math.max(0, Math.min(99, parseInt(el && el.value, 10) || 0));
+            const a = matchForm.a, b = matchForm.b;
+            const list = matchesByDate[selectedDate] || (matchesByDate[selectedDate] = []);
+            list.push({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: matchForm.win === a ? 0 : 1, diff });
+            saveMatches();
+            matchForm.win = null;
+            renderMatchBox();
+            if (typeof renderRosterStats === "function") renderRosterStats();
+        }
+        function deleteMatch(date, id) {
+            if (!isAdmin() || !confirm("この試合の記録を消しますか?")) return;
+            matchesByDate[date] = (matchesByDate[date] || []).filter(m => m.id !== id);
+            if (!matchesByDate[date].length) delete matchesByDate[date];
+            saveMatches(); renderMatchBox();
+            if (typeof renderRosterStats === "function") renderRosterStats();
+        }
+        function matchRowHtml(date, m, i, canDel) {
+            const w = m.win, l = 1 - w;
+            const names = k => m.teams[k].map(escapeHtml).join("・");
+            return `<div class="mt-row"><div class="mt-top"><span class="mt-no">#${i + 1}</span><span class="mt-team win">${escapeHtml(m.labels[w])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "勝ち"}</span><span class="mt-team">${escapeHtml(m.labels[l])}</span>${canDel ? `<button type="button" class="mt-del" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す">✕</button>` : ""}</div>
+                <div class="mt-mem"><span class="mt-w">勝</span>${names(w)}</div><div class="mt-mem"><span class="mt-l">負</span>${names(l)}</div></div>`;
+        }
+        function renderMatchBox() {
+            const box = document.getElementById("matchBox"); if (!box) return;
+            const list = matchesByDate[selectedDate] || [], teams = matchTeamsNow(), adm = isAdmin();
+            if (!list.length && !(adm && teams)) { box.innerHTML = ""; return; }
+            let form = "";
+            if (adm && teams) {
+                const n = teams.length;
+                if (matchForm.a >= n) matchForm.a = 0;
+                if (matchForm.b >= n || matchForm.b === matchForm.a) matchForm.b = matchForm.a === 0 ? 1 : 0;
+                const sel = (k) => `<select onchange="setMatchForm('${k}', +this.value)">${teams.map((_, i) => `<option value="${i}"${matchForm[k] === i ? " selected" : ""}>チーム${i + 1}</option>`).join("")}</select>`;
+                const pick = n > 2 ? `<div class="mt-pick">${sel("a")}<span>対</span>${sel("b")}</div>` : "";
+                const wb = i => `<button type="button" class="mt-wb${matchForm.win === i ? " on" : ""}" onclick="setMatchForm('win', ${i})">チーム${i + 1}の勝ち</button>`;
+                form = `${pick}<div class="mt-form">${wb(matchForm.a)}${wb(matchForm.b)}</div>
+                    <div class="mt-form"><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="点差"><span class="mt-unit">点差</span><button type="button" class="mt-add" onclick="addMatch()">記録</button></div>`;
+            }
+            box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}試合</span>` : ""}</div>${form}
+                ${list.length ? `<div class="mt-list">${list.map((m, i) => matchRowHtml(selectedDate, m, i, adm)).join("")}</div>` : ""}
+                ${adm && teams ? `<div class="acc-desc mt-note">勝ったチームを押して点差を入れ、「記録」を押します。メンバーは今のチーム分けから自動で入ります(試合ごとにチームを入れ替えたら、入れ替えた後に記録してください)。</div>` : ""}</div>`;
+        }
+        // 名前ごとの勝ち数・試合数(期間内)
+        function matchStatsFrom(fromKey) {
+            const st = {};
+            Object.keys(matchesByDate).filter(d => d >= fromKey).forEach(d => (matchesByDate[d] || []).forEach(m => {
+                m.teams.forEach((t, k) => t.forEach(nm => { const o = st[nm] || (st[nm] = { g: 0, w: 0 }); o.g++; if (k === m.win) o.w++; }));
+            }));
+            return st;
+        }
+        function renderMatchHistory() {
+            const el = document.getElementById("matchHistory"); if (!el) return;
+            const ds = Object.keys(matchesByDate).filter(d => (matchesByDate[d] || []).length).sort().reverse();
+            el.innerHTML = ds.length ? ds.map(d => { const [y, m, dd] = d.split("-").map(Number); return `<div class="mt-day">${y}/${m}/${dd}(${WEEKDAYS[new Date(y, m - 1, dd).getDay()]})</div>` + matchesByDate[d].map((x, i) => matchRowHtml(d, x, i, false)).join(""); }).join("") : `<div class="acc-desc">まだ試合の記録はありません。</div>`;
         }
 
         // ------- チームの手動入れ替え・並べ替え -------
@@ -9089,6 +9189,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const today = formatDateKey(new Date()), t = new Date();
             const from = rstatPeriod ? formatDateKey(new Date(t.getFullYear(), t.getMonth() - rstatPeriod, t.getDate())) : "0000";
             const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && events[d] && d < today && d >= from).sort();
+            const mst = matchStatsFrom(from);
             const rows = roster.filter(r => r.position !== GUEST_POS).map(r => {
                 let n = 0, come = 0, ans = 0, leadSum = 0, leadN = 0;
                 days.forEach(d => {
@@ -9101,7 +9202,8 @@ const namesBtn = isAdmin() && dates.length > 0
                         if (c) { const lead = Math.round((new Date(d + "T00:00:00") - c) / 864e5); if (lead >= 0) { leadSum += lead; leadN++; } }
                     }
                 });
-                return { name: r.name, n, come, ans, cr: n ? come / n : -1, ar: n ? ans / n : -1, lead: leadN ? leadSum / leadN : -1 };
+                const ms = mst[r.name] || { g: 0, w: 0 };
+                return { name: r.name, n, come, ans, cr: n ? come / n : -1, ar: n ? ans / n : -1, lead: leadN ? leadSum / leadN : -1, g: ms.g, wr: ms.g ? ms.w / ms.g : -1 };
             });
             return { days: days.length, rows };
         }
@@ -9109,16 +9211,17 @@ const namesBtn = isAdmin() && dates.length > 0
         function renderRosterStats() {
             const el = document.getElementById("rosterStats"); if (!el) return;
             const { days, rows } = rosterStatsData();
-            const key = { come: "cr", ans: "ar", lead: "lead" }[rstatSort];
+            const key = { come: "cr", ans: "ar", lead: "lead", win: "wr" }[rstatSort];
             rows.sort((a, b) => (b[key] - a[key]) || a.name.localeCompare(b.name, "ja"));
             const pct = v => v < 0 ? "—" : Math.round(v * 100) + "%";
             const bar = (v, cls) => v < 0 ? "" : `<i class="rs-bar ${cls}" style="width:${Math.round(v * 100)}%"></i>`;
             const per = [[3, "3か月"], [6, "6か月"], [0, "全部"]].map(([v, l]) => `<button type="button" class="${rstatPeriod === v ? "on" : ""}" onclick="setRstat('p',${v})">${l}</button>`).join("");
             const hd = (k, l) => `<button type="button" class="rs-h${rstatSort === k ? " on" : ""}" onclick="setRstat('s','${k}')">${l}${rstatSort === k ? " ▾" : ""}</button>`;
             el.innerHTML = `<div class="rs-top"><span class="rs-seg2">${per}</span><span class="rs-days">バレー ${days}回分</span></div>
-                <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("lead", "早さ")}</div>
-                ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-l">${r.lead < 0 ? "—" : (r.lead >= 10 ? Math.round(r.lead) : r.lead.toFixed(1)) + "日前"}</span></div>`).join("")}</div>
-                <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、早さ=答えたのがバレーの平均何日前か(最後に回答を変えた日で数えます)。終わった日だけで計算し、ゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
+                <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}${hd("lead", "早さ")}</div>
+                ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span><span class="rs-l">${r.lead < 0 ? "—" : (r.lead >= 10 ? Math.round(r.lead) : r.lead.toFixed(1)) + "日前"}</span></div>`).join("")}</div>
+                <details class="note-details" style="margin-top:10px;" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
+                <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(かっこは試合数。少ないうちは当てになりません)、早さ=答えたのがバレーの平均何日前か(最後に回答を変えた日で数えます)。終わった日だけで計算し、ゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
         }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
@@ -11551,6 +11654,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 初期化 -------
         detectFirebase();
         loadData();
+        loadMatches();
         mergePairPlansIntoList();
         applyPairClass();
         loadDevMode();
