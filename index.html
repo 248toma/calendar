@@ -8484,6 +8484,7 @@
             if (!matchesByDate[date].length) delete matchesByDate[date];
             saveMatches(); renderMatchBox();
             if (typeof renderRosterStats === "function") renderRosterStats();
+            const h = document.getElementById("matchHistory"); if (h) { h.closest("details").open = true; renderMatchHistory(); }   // 履歴から消したときは開いたまま
         }
         function matchRowHtml(date, m, i, canDel) {
             const w = m.win, l = 1 - w;
@@ -8521,7 +8522,7 @@
         function renderMatchHistory() {
             const el = document.getElementById("matchHistory"); if (!el) return;
             const ds = Object.keys(matchesByDate).filter(d => (matchesByDate[d] || []).length).sort().reverse();
-            el.innerHTML = ds.length ? ds.map(d => { const [y, m, dd] = d.split("-").map(Number); return `<div class="mt-day">${y}/${m}/${dd}(${WEEKDAYS[new Date(y, m - 1, dd).getDay()]})</div>` + matchesByDate[d].map((x, i) => matchRowHtml(d, x, i, false)).join(""); }).join("") : `<div class="acc-desc">まだ試合の記録はありません。</div>`;
+            el.innerHTML = ds.length ? ds.map(d => { const [y, m, dd] = d.split("-").map(Number); return `<div class="mt-day">${y}/${m}/${dd}(${WEEKDAYS[new Date(y, m - 1, dd).getDay()]})</div>` + matchesByDate[d].map((x, i) => matchRowHtml(d, x, i, realAdmin())).join(""); }).join("") : `<div class="acc-desc">まだ試合の記録はありません。</div>`;
         }
 
         // ------- チームの手動入れ替え・並べ替え -------
