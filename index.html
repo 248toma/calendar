@@ -8809,14 +8809,15 @@
             }
             return 1;
         }
-        // 来月分が出て初めて開いたとき、1回だけお知らせを出す
+        // 14日以降、来月分に未回答があれば、その日初めて開いたときにお知らせを出す(1日1回)
         function surveyReleasePrompt() {
             const name = surveyWho(); if (!name || surveyOpen || document.getElementById("svRelOv")) return;
             if (firebaseAvailable && !firestoreSyncActive) return;   // 共有データを読み込んでから
             if (new Date().getDate() < 14) return;
             const next = svNextUnans(name); if (!next.length) return;
-            const st = svRelState(); if (st.popped) return;
-            st.popped = true; if (!st.seen) st.seen = formatDateKey(new Date()); svRelSave(st);
+            const st = svRelState(), today = formatDateKey(new Date());
+            if (st.poppedOn === today) return;   // 1日1回まで(来月分に答えるまで毎日)
+            st.poppedOn = today; if (!st.seen) st.seen = today; svRelSave(st);
             const m = +svNextYm().slice(5, 7);
             const ov = document.createElement("div");
             ov.id = "svRelOv"; ov.className = "svrel-ov";
@@ -10270,6 +10271,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (next) bulkAddOne(next.d, next.r.id);
         }
         document.addEventListener("visibilitychange", () => { if (!document.hidden) renderBulkAdd(); });
+        // バックグラウンドから戻ったとき: 日付が変わっていてもアンケートの強調・来月分のお知らせを出し直す
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => { try { refreshSurveyBtn(); } catch (e) { /* ignore */ } }, 500); });
 
         // 戻ってきたとき(ブラウザの戻る・タブ切り替え)に画面を最新にする
         window.addEventListener("pageshow", (e) => { if (e.persisted && typeof renderRoster === "function") renderRoster(); });
