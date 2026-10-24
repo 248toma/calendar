@@ -9190,7 +9190,8 @@ const namesBtn = isAdmin() && dates.length > 0
         function rosterStatsData() {
             const today = formatDateKey(new Date()), t = new Date();
             const from = rstatPeriod ? formatDateKey(new Date(t.getFullYear(), t.getMonth() - rstatPeriod, t.getDate())) : "0000";
-            const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && events[d] && d < today && d >= from).sort();
+            // 「来る」が1人もいない日は、出欠を記録していない日として数えない
+            const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && events[d] && d < today && d >= from && (attendanceByDate[d] || []).some(m => m.status === "来る")).sort();
             const mst = matchStatsFrom(from);
             const rows = roster.filter(r => r.position !== GUEST_POS).map(r => {
                 let n = 0, come = 0, ans = 0, leadSum = 0, leadN = 0;
@@ -9223,7 +9224,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}${hd("lead", "早さ")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span><span class="rs-l">${r.lead < 0 ? "—" : (r.lead >= 10 ? Math.round(r.lead) : r.lead.toFixed(1)) + "日前"}</span></div>`).join("")}</div>
                 <details class="note-details" style="margin-top:10px;" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
-                <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(かっこは試合数。少ないうちは当てになりません)、早さ=答えたのがバレーの平均何日前か(最後に回答を変えた日で数えます)。終わった日だけで計算し、ゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
+                <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(かっこは試合数。少ないうちは当てになりません)、早さ=答えたのがバレーの平均何日前か(最後に回答を変えた日で数えます)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
         }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
