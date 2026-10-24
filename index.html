@@ -8451,6 +8451,7 @@
         }
 
         // ------- 試合の記録(勝ったチームと点差。まずはデータを貯める) -------
+        // 管理者アカウントなら、閲覧モードでも記録できる
         // 共有データ: { "日付": [{ id, teams: [[名前…],[名前…]], labels: ["チーム1","チーム2"], win: 0|1, diff: 点差 }] }
         const MATCH_KEY = "attendance_matches_v1";
         let matchesByDate = {};
@@ -8466,7 +8467,7 @@
             renderMatchBox();
         }
         function addMatch() {
-            const teams = matchTeamsNow(); if (!teams || !isAdmin()) return;
+            const teams = matchTeamsNow(); if (!teams || !realAdmin()) return;
             if (matchForm.win == null) { alert("勝ったチームを選んでください。"); return; }
             const el = document.getElementById("matchDiff"), diff = Math.max(0, Math.min(99, parseInt(el && el.value, 10) || 0));
             const a = matchForm.a, b = matchForm.b;
@@ -8478,7 +8479,7 @@
             if (typeof renderRosterStats === "function") renderRosterStats();
         }
         function deleteMatch(date, id) {
-            if (!isAdmin() || !confirm("この試合の記録を消しますか?")) return;
+            if (!realAdmin() || !confirm("この試合の記録を消しますか?")) return;
             matchesByDate[date] = (matchesByDate[date] || []).filter(m => m.id !== id);
             if (!matchesByDate[date].length) delete matchesByDate[date];
             saveMatches(); renderMatchBox();
@@ -8492,7 +8493,7 @@
         }
         function renderMatchBox() {
             const box = document.getElementById("matchBox"); if (!box) return;
-            const list = matchesByDate[selectedDate] || [], teams = matchTeamsNow(), adm = isAdmin();
+            const list = matchesByDate[selectedDate] || [], teams = matchTeamsNow(), adm = realAdmin();
             if (!list.length && !(adm && teams)) { box.innerHTML = ""; return; }
             let form = "";
             if (adm && teams) {
