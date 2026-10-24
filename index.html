@@ -8508,7 +8508,7 @@
             }
             box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}試合</span>` : ""}</div>${form}
                 ${list.length ? `<div class="mt-list">${list.map((m, i) => matchRowHtml(selectedDate, m, i, adm)).join("")}</div>` : ""}
-                ${adm && teams ? `<div class="acc-desc mt-note">勝ったチームを押して点差を入れ、「記録」を押します。メンバーは今のチーム分けから自動で入ります(試合ごとにチームを入れ替えたら、入れ替えた後に記録してください)。</div>` : ""}</div>`;
+                </div>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
         function matchStatsFrom(fromKey) {
