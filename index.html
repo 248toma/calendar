@@ -2766,6 +2766,26 @@
         .ntf-chip.on { background: var(--accent); color: #fff; }
         .ntf-chip.ex.on { background: var(--notcome-ink, #c0392b); }
         .ntf-chip.guest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line-2, #bbb); color: var(--ink-3); opacity: .7; cursor: not-allowed; display: inline-flex; align-items: center; gap: 4px; }
+        .rstat-acc { margin: 4px 0 10px; }
+        .rs-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 2px; }
+        .rs-seg2 { display: inline-flex; gap: 4px; }
+        .rs-seg2 button { height: 28px; padding: 0 10px; border: none; border-radius: 14px; background: var(--bg); color: var(--ink-3); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); }
+        .rs-seg2 button.on { color: var(--accent); box-shadow: var(--sink); }
+        .rs-days { font-size: 11px; color: var(--ink-3); }
+        .rs-tbl { display: flex; flex-direction: column; gap: 2px; }
+        .rs-row { display: grid; grid-template-columns: 4.6em 1fr 1fr 4.4em; gap: 6px; align-items: center; min-height: 26px; font-size: 12px; color: var(--ink-2); }
+        .rs-head { font-size: 11px; color: var(--ink-3); }
+        .rs-h { border: none; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+        .rs-h.on { color: var(--accent); font-weight: 700; }
+        .rs-nm { font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; }
+        .rs-c { position: relative; height: 18px; border-radius: 5px; background: rgba(128, 128, 128, .1); overflow: hidden; }
+        .rs-c b { position: relative; z-index: 1; padding-left: 5px; font-size: 11px; line-height: 18px; color: var(--ink); }
+        .rs-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; opacity: .35; }
+        .rs-bar.c { background: #2fb380; } .rs-bar.a { background: #3b82f6; }
+        .rs-l { text-align: right; font-variant-numeric: tabular-nums; }
+        .rs-note { margin-top: 8px; }
+        .outdated-bar { position: fixed; left: 12px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 9997; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #e5484d; color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+        .outdated-bar button { flex: none; margin-left: auto; height: 34px; padding: 0 14px; border: none; border-radius: 10px; background: #fff; color: #e5484d; font-weight: 800; }
         .ntf-chip.guest small { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 6px; background: var(--ink-3); color: var(--bg); }
         .ntf-guest-note { margin-top: 8px; }
         .ntf-chips.dis { opacity: .4; pointer-events: none; }
@@ -2866,8 +2886,12 @@
                 <div class="acc-desc">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
 
                 <div id="changeLogList" class="cl-list"></div>
-                <div class="acc-desc admin-only" style="margin-top:10px;">共有の予定が消えたときは、その予定を入れた端末でこのボタンを押すと、この端末に残っている予定のうち共有データに無いものを戻せます(戻す前に一覧を確認できます)。<b>先に↻(更新)を押すと、端末の予定も消えるので押さないでください。</b></div>
-                <button type="button" class="st-btn admin-only" style="margin-top:6px;" onclick="restorePlansFromDevice()">この端末の予定を共有に戻す</button>
+                <details class="note-details admin-only" style="margin-top:10px;">
+                    <summary>バックアップから予定を戻す</summary>
+                    <div class="acc-desc" style="margin:8px 2px;">GAS が毎日ドライブの「バレー日程バックアップ」フォルダに保存しているファイル(backup-日付.json)を開いて、中身を全部コピーしてここに貼り付けます。今の共有データに無い予定だけを、確認してから戻します(ほかは変えません)。</div>
+                    <textarea id="backupPaste" rows="4" style="width:100%;box-sizing:border-box;font-size:12px;border-radius:10px;padding:8px;" placeholder="バックアップの中身を貼り付け"></textarea>
+                    <button type="button" class="st-btn" style="margin-top:6px;" onclick="restorePlansFromBackup()">貼り付けたバックアップから戻す</button>
+                </details>
             
             </div>
         </details>
@@ -2908,6 +2932,10 @@
             <input type="text" id="newRosterName" maxlength="4" placeholder="新しいメンバー名(4文字まで)" onkeydown="if(event.key==='Enter') addRosterMember()">
             <button class="add-btn" onclick="addRosterMember()">追加</button>
         </div>
+        <details class="note-details admin-only rstat-acc" id="rosterStatsAcc" ontoggle="if(this.open) renderRosterStats()">
+            <summary>参加率・回答率</summary>
+            <div id="rosterStats"></div>
+        </details>
         <div id="rosterList"></div>
         <details class="note-details">
             <summary>詳しく</summary>
@@ -3796,6 +3824,8 @@
         let roles = [...DEFAULT_ROLES];
         let roster = []; // [{id, name, gender, position, params:{...}}]
         let rosterNextId = 1;
+        // 名簿の番号: 2台の端末で同時に足しても同じ番号にならないよう、時刻から作る
+        function newRosterId() { rosterNextId = Math.max(rosterNextId, Date.now()); return rosterNextId++; }
         let lastTeamSplitResult = null; // { teams: [[participant,...], ...], excludedKeys: Set, dateKey }
         let followSettings = { ...DEFAULT_FOLLOW_SETTINGS };
         let nextId = 1;
@@ -4634,7 +4664,7 @@
                 return;
             }
             roster.push({
-                id: rosterNextId++,
+                id: newRosterId(),
                 name,
                 gender: "unspecified",
                 position: NO_POSITION,
@@ -7243,7 +7273,7 @@
                 alert("同じ名前のメンバーが既に名簿にいます。");
                 return;
             }
-            roster.push({ id: rosterNextId++, name, gender: "unspecified", position: NO_POSITION, params: defaultParams() });
+            roster.push({ id: newRosterId(), name, gender: "unspecified", position: NO_POSITION, params: defaultParams() });
             saveRoster();
             input.value = "";
             afterRosterChanged();
@@ -7442,7 +7472,7 @@
                 params[d.key] = parseInt(document.getElementById(`quickParam_${d.key}_${i}`).value, 10);
             });
 
-            roster.push({ id: rosterNextId++, name, gender, position, params });
+            roster.push({ id: newRosterId(), name, gender, position, params });
             saveRoster();
             renderTeamSplitTab();
         }
@@ -9045,6 +9075,51 @@ const namesBtn = isAdmin() && dates.length > 0
             { key: "param", label: "パラメータ順" },
             { key: "gojuon", label: "五十音順" }
         ];
+        // ------- 参加率・回答率(管理者だけ) -------
+        // 終わったバレーの日の出欠から計算する。参加率=「来る」の割合、回答率=○か✖で答えていた割合、
+        // 早さ=答えた日(最後に回答を変えた日)がバレーの何日前だったかの平均
+        let rstatPeriod = 3, rstatSort = "come";
+        function rstatStampDate(stamp, dKey) {
+            const m = String(stamp || "").match(/(\d+)\/(\d+)/); if (!m) return null;
+            const d = new Date(dKey + "T00:00:00"); let c = new Date(d.getFullYear(), +m[1] - 1, +m[2]);
+            if (c - d > 40 * 864e5) c = new Date(d.getFullYear() - 1, +m[1] - 1, +m[2]);   // 年をまたいだ回答
+            return c;
+        }
+        function rosterStatsData() {
+            const today = formatDateKey(new Date()), t = new Date();
+            const from = rstatPeriod ? formatDateKey(new Date(t.getFullYear(), t.getMonth() - rstatPeriod, t.getDate())) : "0000";
+            const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && events[d] && d < today && d >= from).sort();
+            const rows = roster.filter(r => r.position !== GUEST_POS).map(r => {
+                let n = 0, come = 0, ans = 0, leadSum = 0, leadN = 0;
+                days.forEach(d => {
+                    const m = (attendanceByDate[d] || []).find(x => x.name === r.name); if (!m) return;
+                    n++;
+                    if (m.status === "来る") come++;
+                    if (m.status === "来る" || m.status === "来ない") {
+                        ans++;
+                        const c = rstatStampDate(m.updated, d);
+                        if (c) { const lead = Math.round((new Date(d + "T00:00:00") - c) / 864e5); if (lead >= 0) { leadSum += lead; leadN++; } }
+                    }
+                });
+                return { name: r.name, n, come, ans, cr: n ? come / n : -1, ar: n ? ans / n : -1, lead: leadN ? leadSum / leadN : -1 };
+            });
+            return { days: days.length, rows };
+        }
+        function setRstat(k, v) { if (k === "p") rstatPeriod = v; else rstatSort = v; renderRosterStats(); }
+        function renderRosterStats() {
+            const el = document.getElementById("rosterStats"); if (!el) return;
+            const { days, rows } = rosterStatsData();
+            const key = { come: "cr", ans: "ar", lead: "lead" }[rstatSort];
+            rows.sort((a, b) => (b[key] - a[key]) || a.name.localeCompare(b.name, "ja"));
+            const pct = v => v < 0 ? "—" : Math.round(v * 100) + "%";
+            const bar = (v, cls) => v < 0 ? "" : `<i class="rs-bar ${cls}" style="width:${Math.round(v * 100)}%"></i>`;
+            const per = [[3, "3か月"], [6, "6か月"], [0, "全部"]].map(([v, l]) => `<button type="button" class="${rstatPeriod === v ? "on" : ""}" onclick="setRstat('p',${v})">${l}</button>`).join("");
+            const hd = (k, l) => `<button type="button" class="rs-h${rstatSort === k ? " on" : ""}" onclick="setRstat('s','${k}')">${l}${rstatSort === k ? " ▾" : ""}</button>`;
+            el.innerHTML = `<div class="rs-top"><span class="rs-seg2">${per}</span><span class="rs-days">バレー ${days}回分</span></div>
+                <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("lead", "早さ")}</div>
+                ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-l">${r.lead < 0 ? "—" : (r.lead >= 10 ? Math.round(r.lead) : r.lead.toFixed(1)) + "日前"}</span></div>`).join("")}</div>
+                <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、早さ=答えたのがバレーの平均何日前か(最後に回答を変えた日で数えます)。終わった日だけで計算し、ゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
+        }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
         const jaCollator = new Intl.Collator("ja");
@@ -10812,7 +10887,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return true;
         }
         function remoteCoveredByLocal(remote, local) {
-            return Object.keys(remote || {}).filter(isSharedKey).every(k => k === CHANGELOG_KEY ? clRemoteCovered(remote[k], local[k]) : local[k] === remote[k]);
+            return Object.keys(remote || {}).filter(isSharedKey).every(k => k === APPVER_KEY || (k === CHANGELOG_KEY ? clRemoteCovered(remote[k], local[k]) : local[k] === remote[k]));
         }
 
         // メールはそのまま保存せず、ハッシュにして名簿と照合する
@@ -10944,63 +11019,196 @@ const namesBtn = isAdmin() && dates.length > 0
             const rv = firestorePendingValues, base = firestoreBase;
             if (!rv || !base) return;
             Object.keys(rv).forEach(k => {
-                if (!isSharedKey(k) || k === BYDATE_KEY || k === CHANGELOG_KEY || k === NOTIFY_KEY) return;
-                if (vals[k] === base[k] || vals[k] == null) { vals[k] = rv[k]; return; }   // この端末では変えていない
-                if (k === PLANS_KEY) vals[k] = mergePlans3(base[k], vals[k], rv[k]);
+                if (!isSharedKey(k) || k === CHANGELOG_KEY || k === NOTIFY_KEY) return;
+                if (vals[k] == null || vals[k] === base[k]) { vals[k] = rv[k]; return; }   // この端末では変えていない → 最新のまま
+                if (vals[k] === rv[k]) return;
+                vals[k] = merge3Json(base[k], vals[k], rv[k]);   // 両方で変わった → 中身を1件ずつ合わせる
             });
         }
-        function mergePlans3(b, l, r) {
+        // 3者の合わせ込み(b=この端末の元の内容, l=この端末の今, r=共有データの最新)。
+        // 日付などをキーにした入れ物は1件ずつ、idのある一覧は1件ずつ。この端末で変えたものだけ上書きし、ほかは最新を残す
+        function merge3Json(b, l, r) {
             try {
-                const P = x => { const a = JSON.parse(x || "[]"); return Array.isArray(a) ? a : []; };
-                const B = new Map(P(b).map(p => [p.id, p])), L = new Map(P(l).map(p => [p.id, p])), R = P(r);
-                const j = x => JSON.stringify(x);
-                const out = [];
-                R.forEach(p => {
-                    const lb = B.get(p.id), ll = L.get(p.id);
-                    if (ll) out.push(lb && j(ll) === j(lb) ? p : ll);   // この端末で変えた分だけ上書き
-                    else if (lb && j(lb) === j(p)) return;               // この端末で消した(相手は変えていない)
-                    else out.push(p);                                     // 他の人が足した・変えた
-                });
-                const rid = new Set(R.map(p => p.id));
-                L.forEach((p, id) => { if (!rid.has(id) && !B.has(id)) out.push(p); });   // この端末で足した
-                return JSON.stringify(out);
-            } catch (e) { return r; }
+                const B = JSON.parse(b == null ? "null" : b), L = JSON.parse(l), R = JSON.parse(r);
+                return JSON.stringify(merge3Val(B, L, R));
+            } catch (e) { return l; }
         }
+        function merge3Val(B, L, R) {
+            const j = x => JSON.stringify(x === undefined ? null : x);
+            if (j(L) === j(B)) return R;
+            if (j(R) === j(B) || j(L) === j(R)) return L;
+            const isObj = x => x && typeof x === "object" && !Array.isArray(x);
+            const idList = x => Array.isArray(x) && x.length > 0 && x.every(o => o && typeof o === "object" && o.id != null);
+            if (isObj(L) && isObj(R)) {
+                const b = isObj(B) ? B : {}, out = {};
+                new Set([...Object.keys(R), ...Object.keys(L)]).forEach(k => {
+                    const inL = k in L, inR = k in R, inB = k in b;
+                    if (inL && inR) out[k] = merge3Val(b[k], L[k], R[k]);
+                    else if (inR) { if (!(inB && j(b[k]) === j(R[k]))) out[k] = R[k]; }   // この端末で消した(相手は変えていない)なら消す
+                    else if (!inB || j(b[k]) !== j(L[k])) out[k] = L[k];                     // この端末で足した・変えた
+                });
+                return out;
+            }
+            if ((idList(L) || !L.length) && (idList(R) || !R.length) && Array.isArray(L) && Array.isArray(R) && (idList(L) || idList(R))) {
+                const bm = new Map((Array.isArray(B) ? B : []).filter(o => o && o.id != null).map(o => [o.id, o])), lm = new Map(L.map(o => [o.id, o]));
+                const out = [];
+                R.forEach(o => {
+                    const lb = bm.get(o.id), ll = lm.get(o.id);
+                    if (ll) out.push(lb && j(ll) === j(lb) ? o : ll);
+                    else if (lb && j(lb) === j(o)) return;
+                    else out.push(o);
+                });
+                const rid = new Set(R.map(o => o.id));
+                L.forEach(o => { if (!rid.has(o.id) && !bm.has(o.id)) out.push(o); });
+                return out;
+            }
+            return L;   // それ以外で両方が変えたときは、この端末の内容
+        }
+        function mergePlans3(b, l, r) { return merge3Json(b, l, r); }
         // この端末に残っている共有予定のうち、共有データに無いものを戻す(共有データの最新に足すだけ。ほかは変えない)
         async function restorePlansFromDevice() {
+            await restoreMissingPlans(planList.filter(p => !p.local && !p.pp && planHas(p)), pairPlanStore().filter(x => x && !x.deleted && x.startDate), "この端末");
+        }
+        // バックアップ(GASが保存したJSON)から戻す
+        async function restorePlansFromBackup() {
+            const el = document.getElementById("backupPaste");
+            let vals = null;
+            try { const o = JSON.parse((el && el.value) || ""); vals = o && o.values ? o.values : o; } catch (e) { /* 下で知らせる */ }
+            if (!vals || typeof vals !== "object" || !vals[PLANS_KEY]) { alert("バックアップの中身を読み取れませんでした。ファイルの中身を全部コピーして貼り付けてください。"); return; }
+            let plans = [], pps = [];
+            try { plans = JSON.parse(vals[PLANS_KEY] || "[]"); } catch (e) { plans = []; }
+            try { pps = (JSON.parse(vals[BYDATE_KEY] || "{}")[PAIR_PLANS] || []).filter(x => x && !x.deleted && x.startDate); } catch (e) { pps = []; }
+            await restoreMissingPlans(plans.filter(p => p && p.startDate && !p.local), pps, "バックアップ");
+        }
+        // 共有データに無い予定(共有予定・ペア予定)を、確認してから足す。今ある予定は変えない
+        async function restoreMissingPlans(mine, myPairs, label) {
             if (!isAdmin() || !firestoreRef || !firestoreEditor) { alert("管理者でログインしているときだけ使えます。"); return; }
-            const mine = planList.filter(p => !p.local && !p.pp && planHas(p));
             try {
-                const snap = await firestoreRef.get();
+                const snap = await firestoreRef.get({ source: "server" });
                 const rv = (snap.data() && snap.data().values) || {};
-                const remote = JSON.parse(rv[PLANS_KEY] || "[]"), ids = new Set(remote.map(p => p.id));
-                const miss = mine.filter(p => !ids.has(p.id));
-                if (!miss.length) { alert("戻す予定はありません(この端末の共有予定は、すべて共有データにあります)。"); return; }
+                const ids = new Set(JSON.parse(rv[PLANS_KEY] || "[]").map(p => p.id));
+                const pids = new Set(((JSON.parse(rv[BYDATE_KEY] || "{}")[PAIR_PLANS]) || []).filter(x => x && !x.deleted).map(x => x.id));
+                const miss = mine.filter(p => !ids.has(p.id)), missP = myPairs.filter(p => !pids.has(p.id));
+                const all = miss.concat(missP);
+                if (!all.length) { alert(`戻す予定はありません(${label}の予定は、すべて共有データにあります)。`); return; }
                 const md = d => { const [, m, dd] = String(d).split("-").map(Number); return m + "/" + dd; };
-                const list = miss.slice().sort((a, b) => (a.startDate < b.startDate ? -1 : 1)).map(p => `・${md(p.startDate)}${p.endDate ? "〜" + md(p.endDate) : ""} ${p.title || "予定"}`).join("\n");
-                if (!confirm(`共有データに無い予定が${miss.length}件あります。共有に戻しますか?\n(わざと消した予定が入っていたら、戻したあとで消してください)\n\n${list}`)) return;
+                const list = all.slice().sort((a, b) => (a.startDate < b.startDate ? -1 : 1)).map(p => `・${md(p.startDate)}${p.endDate ? "〜" + md(p.endDate) : ""} ${p.title || "予定"}${p.pair || pids.has(p.id) || missP.includes(p) ? "(ペア)" : ""}`).join("\n");
+                if (!confirm(`共有データに無い予定が${all.length}件あります(${label})。共有に戻しますか?\n(わざと消した予定が入っていたら、戻したあとで消してください)\n\n${list}`)) return;
                 await firebase.firestore().runTransaction(async tx => {
                     const sn = await tx.get(firestoreRef);
                     const v = (sn.data() && sn.data().values) || {};
                     const cur = JSON.parse(v[PLANS_KEY] || "[]"), have = new Set(cur.map(p => p.id));
                     miss.forEach(p => { if (!have.has(p.id)) cur.push(p); });
-                    tx.update(firestoreRef, { ["values." + PLANS_KEY]: JSON.stringify(cur), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    const bd = JSON.parse(v[BYDATE_KEY] || "{}"), pl = Array.isArray(bd[PAIR_PLANS]) ? bd[PAIR_PLANS] : (bd[PAIR_PLANS] = []);
+                    missP.forEach(p => { const i = pl.findIndex(x => x.id === p.id); if (i >= 0) pl[i] = p; else pl.push(p); });
+                    const upd = { ["values." + PLANS_KEY]: JSON.stringify(cur), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+                    if (missP.length) upd["values." + BYDATE_KEY] = JSON.stringify(bd);
+                    tx.update(firestoreRef, upd);
                 });
-                alert(`${miss.length}件を共有に戻しました。↻(更新)を押すと最新の状態になります。`);
+                alert(`${all.length}件を共有に戻しました。最新を読み込みます。`);
+                saveUiStateForReload(); window.location.reload();
             } catch (e) { console.error(e); alert("戻せませんでした(" + ((e && (e.code || e.message)) || "") + ")"); }
         }
+        // ------- 開いたとき・戻ってきたときは、必ず1回最新にする -------
+        let syncCheckPending = true;   // 起動直後は最初の共有データで確認する
+        const AUTO_SYNC_AT = "autosync_at";
+        // 入力中・チーム分けの結果を見ている間は自動で切り替えない(赤い点で知らせる)
+        function userBusy() {
+            const a = document.activeElement;
+            if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "button") return true;
+            if (typeof planPanelIsOpen === "function" && planPanelIsOpen()) return true;
+            if (typeof currentView !== "undefined" && currentView === "teams" && lastTeamSplitResult) return true;
+            return false;
+        }
+        function autoApplyRemote() {
+            if (!firestorePendingValues) return;
+            let last = 0; try { last = +sessionStorage.getItem(AUTO_SYNC_AT) || 0; } catch (e) { /* ignore */ }
+            if (userBusy() || Date.now() - last < 15000) { markRemoteUpdate(); return; }   // 何度も読み直さない
+            try { sessionStorage.setItem(AUTO_SYNC_AT, String(Date.now())); } catch (e) { /* ignore */ }
+            // 管理者は、この端末の変更を先に合わせて保存してから最新を読み込む(この端末の変更も消さない)
+            (firestoreEditor ? saveToFirestore() : Promise.resolve()).then(() => { if (firestorePendingValues && !appOutdated) flushPendingRemote(); });
+        }
+        function reloadForNewVersion() {
+            let last = 0; try { last = +sessionStorage.getItem("verreload_at") || 0; } catch (e) { /* ignore */ }
+            if (userBusy() || Date.now() - last < 60000) return;   // 読み直しても古いまま(キャッシュ)のときは、帯で知らせるだけ
+            try { sessionStorage.setItem("verreload_at", String(Date.now())); } catch (e) { /* ignore */ }
+            saveUiStateForReload(); window.location.reload();
+        }
+        // バックグラウンドから戻ったとき: 共有データの最新をサーバーから取り直して確認する
+        function syncOnResume() {
+            if (!firestoreRef || !firestoreSyncActive) return;
+            firestoreRef.get({ source: "server" }).then(snap => {
+                if (!snap.exists) return;
+                const rv = snap.data().values || {}, lv = getShareableLocalValues();
+                if (remoteAppVer(rv) > APP_VERSION) { showOutdated(); reloadForNewVersion(); return; }
+                if (remoteCoveredByLocal(rv, lv) || onlyRosterSyncDiff(rv, lv)) return;
+                firestorePendingValues = rv;
+                autoApplyRemote();
+            }).catch(e => console.warn("最新の確認に失敗しました。", e));
+        }
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(syncOnResume, 300); });
+        // ------- アプリの版 -------
+        // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
+        const APP_VERSION = 3;
+        const APPVER_KEY = "attendance_appver_v1";
+        let appOutdated = false;
+        function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
+        function showOutdated() {
+            appOutdated = true;
+            setFirestoreSyncStatus("古いアプリ", true);
+            if (document.getElementById("outdatedBar")) return;
+            const bar = document.createElement("div");
+            bar.id = "outdatedBar"; bar.className = "outdated-bar";
+            bar.innerHTML = `新しいアプリが出ています。このままでは変更が保存されません。<button type="button" onclick="saveUiStateForReload();location.reload()">更新する</button>`;
+            document.body.appendChild(bar);
+        }
+        // 共有データへの保存: 最新を読み直して、この端末で変えたところだけを重ねる(トランザクション)。
+        // 古い端末・反映待ちの端末が保存しても、ほかの人が入れた予定や設定を消さない
+        let saveBusy = false, saveAgain = false;
         function saveToFirestore() {
-            if (!firestoreSyncActive || !firestoreEditor || firestoreApplyingRemote || !firestoreRef) return;
+            if (!firestoreSyncActive || !firestoreEditor || firestoreApplyingRemote || !firestoreRef) return Promise.resolve();
+            if (appOutdated) { showOutdated(); return Promise.resolve(); }
+            if (saveBusy) { saveAgain = true; return Promise.resolve(); }
+            saveBusy = true;
             setFirestoreSyncStatus("同期中…");
-            const vals = getShareableLocalValues(), mine = { ...vals };
-            mergePendingShared(vals);
-            mergePendingLog(vals);
-            mergePendingAttendance(vals);   // 反映待ちの閲覧者の回答・ペア予定・通知用の予定を上書きしない
-            // 通知の設定は別に保存しているので、反映待ちの共有データがあればそちらを残す(ほかの管理者の登録・設定を消さない)
-            if (firestorePendingValues && firestorePendingValues[NOTIFY_KEY]) vals[NOTIFY_KEY] = firestorePendingValues[NOTIFY_KEY];
-            firestoreRef.set({ values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
-                .then(() => { firestoreBase = mine; if (firestorePendingValues) { firestorePendingValues = { ...firestorePendingValues, ...vals }; markRemoteUpdate(); } else setFirestoreSyncStatus("共有中"); })
-                .catch(error => { console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true); });
+            const mine = getShareableLocalValues();
+            let written = null;
+            return firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                const remote = (snap.exists && snap.data() && snap.data().values) || {};
+                if (remoteAppVer(remote) > APP_VERSION) throw new Error("outdated");
+                const vals = { ...mine };
+                if (snap.exists) {
+                    const keep = firestorePendingValues;
+                    firestorePendingValues = remote;   // 下の合わせ込みは「反映待ち」の代わりに最新を使う
+                    try {
+                        mergePendingShared(vals);
+                        mergePendingLog(vals);
+                        mergePendingAttendance(vals);   // 閲覧者の回答・ペア予定・通知用の予定・ひとことは新しい方
+                        if (remote[NOTIFY_KEY] != null) vals[NOTIFY_KEY] = remote[NOTIFY_KEY];   // 通知の設定は別に保存している
+                    } finally { firestorePendingValues = keep; }
+                }
+                vals[APPVER_KEY] = String(Math.max(APP_VERSION, remoteAppVer(remote)));
+                if (!snap.exists) { tx.set(firestoreRef, { values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); written = vals; return; }
+                const upd = {}; let n = 0;
+                Object.keys(vals).forEach(k => { if (isSharedKey(k) && vals[k] !== remote[k]) { upd["values." + k] = vals[k]; n++; } });
+                written = { ...remote, ...vals };
+                if (!n) return;
+                upd.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                tx.update(firestoreRef, upd);
+            }).then(() => {
+                firestoreBase = mine;
+                if (written && firestorePendingValues) firestorePendingValues = { ...firestorePendingValues, ...written };
+                const behind = written && !remoteCoveredByLocal(written, getShareableLocalValues());
+                if (behind) { if (!firestorePendingValues) firestorePendingValues = written; markRemoteUpdate(); }
+                else setFirestoreSyncStatus("共有中");
+            }).catch(error => {
+                if (error && error.message === "outdated") { showOutdated(); return; }
+                console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true);
+            }).finally(() => {
+                saveBusy = false;
+                if (saveAgain) { saveAgain = false; saveToFirestore(); }
+            });
         }
 
         // 閲覧者が自分の出欠を共有データへ反映する。共有データの最新を読み直し、自分の1件(日付+名前)だけ書き換えて保存する
@@ -11289,7 +11497,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 const remoteValues = snapshot.data().values || {};
                 const localValues = getShareableLocalValues();
                 firestoreSyncActive = true;
+                if (remoteAppVer(remoteValues) > APP_VERSION) { showOutdated(); reloadForNewVersion(); return; }   // 新しい版が出ている
                 if (remoteCoveredByLocal(remoteValues, localValues)) {
+                    syncCheckPending = false;
                     firestoreBase = remoteValues;
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     // 共有データの名簿に昔のLINE名(本名)が残っていたら、管理者の端末から消して保存し直す
@@ -11303,6 +11513,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 違いが「この端末が起動時に名簿のメンバーを今後の日へ足しただけ」なら、他の人の更新ではない。
                 // 管理者はその内容を共有データへ保存し、閲覧者は無視する(赤い点を出し続けない・ログを増やさない)
                 if (onlyRosterSyncDiff(remoteValues, localValues)) {
+                    syncCheckPending = false;
                     firestoreBase = { ...remoteValues, [BYDATE_KEY]: localValues[BYDATE_KEY] };
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     if (firestoreEditor && !firestoreApplyingRemote) { clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 400); }
@@ -11310,7 +11521,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
                 // 他の人の更新では画面を勝手に切り替えない。保留して、↻を押す/アプリに戻ってきたときに反映する
                 firestorePendingValues = remoteValues;
-                markRemoteUpdate();
+                if (syncCheckPending) { syncCheckPending = false; autoApplyRemote(); }   // 開いた直後・戻ってきた直後は自動で最新にする
+                else markRemoteUpdate();
             }, error => { console.error("Firestoreの読み込みに失敗しました。", error); setFirestoreSyncStatus("共有エラー", true); });
 
             firebase.auth().onAuthStateChanged(async user => {
