@@ -2115,6 +2115,15 @@
         .sv-tag { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--unconf-soft); color: var(--unconf-ink); }
         .sv-info { font-size: 13.5px; color: var(--ink-2); margin: 4px 0 12px; line-height: 1.5; }
         .sv-btns { display: flex; gap: 12px; }
+        .sv-note { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .sv-note .ic { width: 16px; height: 16px; color: var(--ink-3); flex: none; }
+        .sv-note input { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 13px; }
+        .sv-note input:focus { outline: none; box-shadow: var(--sink), 0 0 0 1.5px var(--accent); }
+        .sv-notes { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2, rgba(128,128,128,.08)); }
+        .sv-nrow { display: flex; gap: 6px; align-items: baseline; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+        .sv-nrow b { flex: none; color: var(--ink); }
+        .sv-nrow .sv-nst { flex: none; font-size: 11px; color: var(--ink-3); }
+        .sv-nrow.new b::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #16a34a; margin-right: 4px; vertical-align: 1px; }
         .sv-btn { flex: 1; min-height: 58px; border: none; border-radius: 16px; background: var(--bg); color: var(--ink-3); box-shadow: var(--raise-sm); cursor: pointer;
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: inherit; }
         .sv-btn:disabled { opacity: .4; cursor: default; }
@@ -2148,6 +2157,10 @@
         .settings-btn.survey-btn .sv-badge2 { display: none; position: absolute; z-index: 1; top: -2px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
             border-radius: 999px; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; }
         .settings-btn.survey-btn.later .sv-badge2 { display: block; }
+        /* 管理者: 新しいひとこと(左上に緑) */
+        .settings-btn.survey-btn .sv-badge3 { display: none; position: absolute; z-index: 2; top: -2px; left: -3px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
+            border-radius: 999px; background: #16a34a; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; }
+        .settings-btn.survey-btn.notes .sv-badge3 { display: block; }
         .settings-btn.survey-btn.alert.later .sv-badge2 { top: 0; right: -8px; color: transparent; box-shadow: 0 0 0 1.5px var(--bg); }   /* 赤い数字の後ろから、右に少しだけ覗かせる */
         @keyframes svPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .5); } 50% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); } }
         @media (prefers-reduced-motion: reduce) { .settings-btn.survey-btn.alert.pulse, .settings-btn.survey-btn.alert.urgent { animation: none; box-shadow: 0 0 0 2px #e5484d; } }
@@ -2188,7 +2201,7 @@
         #nvBack .nv-step { display: inline-flex; gap: 6px; margin-left: 0; }
 
         /* ===== v48: デザイン刷新(アイコン・フォント・カレンダーの凹凸) ===== */
-        :root { --i-ball:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='1.3'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M6.750%206.600C5%208.500%204.500%2010.500%204.500%2012S5%2015.500%206.750%2017.400M17.250%206.600C19%208.500%2019.500%2010.500%2019.500%2012S19%2015.500%2017.250%2017.400'/%3E%3Cpath%20d='M6.750%206.600H17.250M6.750%2017.400H17.250'/%3E%3Cpath%20d='M4.600%2010.750Q12%208.750%2019.400%2010.750M4.600%2013.500Q12%2015.300%2019.400%2013.500'/%3E%3Cpath%20d='M9.900%203.400%2010.600%206.500M14.100%203.400%2013.400%206.500M9.900%2020.600%2010.600%2017.500M14.100%2020.600%2013.400%2017.500'/%3E%3Cpath%20d='M6.750%204.900V6.600M17.250%204.900V6.600M6.750%2017.400V19.100M17.250%2017.400V19.100'/%3E%3C/svg%3E");--i-warn:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%204%203%2020h18z'/%3E%3Cpath%20d='M12%2010v4.5M12%2017.3v.4'/%3E%3C/svg%3E");--i-coin:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M9%208l3%204.2L15%208M12%2012v5M9.6%2013.2h4.8M9.6%2015.2h4.8'/%3E%3C/svg%3E");--i-user:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='8'%20r='4'/%3E%3Cpath%20d='M4.5%2020.5c.9-4.5%204.6-5.8%207.5-5.8s6.600%201.300%207.500%205.800'/%3E%3C/svg%3E");--i-users:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='9'%20cy='8.500'%20r='3.500'/%3E%3Cpath%20d='M2.500%2020c.8-4%203.500-5%206.500-5s5.700%201%206.500%205M16%205.200a3.500%203.500%200%200%201%200%206.600M18%2015.200c2%20.6%203%202%203.500%204.800'/%3E%3C/svg%3E");--i-crown:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3.500%208.500%208%2012.500l4-7%204%207%204.500-4-1.800%2010.500H5.300z'/%3E%3C/svg%3E");--i-moon:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2014.500A8%208%200%201%201%209.500%204%206.500%206.500%200%200%200%2020%2014.500z'/%3E%3C/svg%3E");--i-sun:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='4'/%3E%3Cpath%20d='M12%202.500v2.500M12%2019v2.500M2.500%2012H5M19%2012h2.500M5.300%205.300l1.800%201.800M16.900%2016.900l1.800%201.800M5.300%2018.700l1.800-1.800M16.900%207.100l1.800-1.800'/%3E%3C/svg%3E");--i-phone:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='7'%20y='3'%20width='10'%20height='18'%20rx='2.500'/%3E%3Cpath%20d='M11%2018h2'/%3E%3C/svg%3E");--i-camera:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%208h3l2-3h6l2%203h3v11H4z'/%3E%3Ccircle%20cx='12'%20cy='13'%20r='3.500'/%3E%3C/svg%3E");--i-survey:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='5'%20y='4.500'%20width='14'%20height='16.500'%20rx='2.500'/%3E%3Cpath%20d='M9%203h6v3.500H9zM9%2014l2.200%202.200L15.500%2012'/%3E%3C/svg%3E");--i-clock:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M12%207v5.200l3.200%202'/%3E%3C/svg%3E");--i-refresh:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2011A8%208%200%200%200%205.800%207M4%204v4h4M4%2013a8%208%200%200%200%2014.200%204M20%2020v-4h-4'/%3E%3C/svg%3E");--i-sliders:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%207h9M19%207h1M4%2017h1M11%2017h9'/%3E%3Ccircle%20cx='16'%20cy='7'%20r='2.300'/%3E%3Ccircle%20cx='8'%20cy='17'%20r='2.300'/%3E%3C/svg%3E");--i-cal:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='4'%20y='5.500'%20width='16'%20height='15'%20rx='2.500'/%3E%3Cpath%20d='M4%2010h16M8.500%203.500v4M15.500%203.500v4'/%3E%3C/svg%3E");
+        :root { --i-chat:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='1.6'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%205h16v11H9l-5%204z'/%3E%3C/svg%3E"); --i-ball:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='1.3'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M6.750%206.600C5%208.500%204.500%2010.500%204.500%2012S5%2015.500%206.750%2017.400M17.250%206.600C19%208.500%2019.500%2010.500%2019.500%2012S19%2015.500%2017.250%2017.400'/%3E%3Cpath%20d='M6.750%206.600H17.250M6.750%2017.400H17.250'/%3E%3Cpath%20d='M4.600%2010.750Q12%208.750%2019.400%2010.750M4.600%2013.500Q12%2015.300%2019.400%2013.500'/%3E%3Cpath%20d='M9.900%203.400%2010.600%206.500M14.100%203.400%2013.400%206.500M9.900%2020.600%2010.600%2017.500M14.100%2020.600%2013.400%2017.500'/%3E%3Cpath%20d='M6.750%204.900V6.600M17.250%204.900V6.600M6.750%2017.400V19.100M17.250%2017.400V19.100'/%3E%3C/svg%3E");--i-warn:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%204%203%2020h18z'/%3E%3Cpath%20d='M12%2010v4.5M12%2017.3v.4'/%3E%3C/svg%3E");--i-coin:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M9%208l3%204.2L15%208M12%2012v5M9.6%2013.2h4.8M9.6%2015.2h4.8'/%3E%3C/svg%3E");--i-user:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='8'%20r='4'/%3E%3Cpath%20d='M4.5%2020.5c.9-4.5%204.6-5.8%207.5-5.8s6.600%201.300%207.500%205.800'/%3E%3C/svg%3E");--i-users:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='9'%20cy='8.500'%20r='3.500'/%3E%3Cpath%20d='M2.500%2020c.8-4%203.500-5%206.500-5s5.700%201%206.500%205M16%205.200a3.500%203.500%200%200%201%200%206.600M18%2015.200c2%20.6%203%202%203.500%204.800'/%3E%3C/svg%3E");--i-crown:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3.500%208.500%208%2012.500l4-7%204%207%204.500-4-1.800%2010.500H5.300z'/%3E%3C/svg%3E");--i-moon:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2014.500A8%208%200%201%201%209.500%204%206.500%206.500%200%200%200%2020%2014.500z'/%3E%3C/svg%3E");--i-sun:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='4'/%3E%3Cpath%20d='M12%202.500v2.500M12%2019v2.500M2.500%2012H5M19%2012h2.500M5.300%205.300l1.800%201.800M16.900%2016.900l1.800%201.800M5.300%2018.700l1.800-1.800M16.900%207.100l1.800-1.800'/%3E%3C/svg%3E");--i-phone:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='7'%20y='3'%20width='10'%20height='18'%20rx='2.500'/%3E%3Cpath%20d='M11%2018h2'/%3E%3C/svg%3E");--i-camera:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%208h3l2-3h6l2%203h3v11H4z'/%3E%3Ccircle%20cx='12'%20cy='13'%20r='3.500'/%3E%3C/svg%3E");--i-survey:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='5'%20y='4.500'%20width='14'%20height='16.500'%20rx='2.500'/%3E%3Cpath%20d='M9%203h6v3.500H9zM9%2014l2.200%202.200L15.500%2012'/%3E%3C/svg%3E");--i-clock:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='9'/%3E%3Cpath%20d='M12%207v5.200l3.200%202'/%3E%3C/svg%3E");--i-refresh:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2011A8%208%200%200%200%205.800%207M4%204v4h4M4%2013a8%208%200%200%200%2014.200%204M20%2020v-4h-4'/%3E%3C/svg%3E");--i-sliders:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%207h9M19%207h1M4%2017h1M11%2017h9'/%3E%3Ccircle%20cx='16'%20cy='7'%20r='2.300'/%3E%3Ccircle%20cx='8'%20cy='17'%20r='2.300'/%3E%3C/svg%3E");--i-cal:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='4'%20y='5.500'%20width='16'%20height='15'%20rx='2.500'/%3E%3Cpath%20d='M4%2010h16M8.500%203.500v4M15.500%203.500v4'/%3E%3C/svg%3E");
             --i-plus:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.4'%20stroke-linecap='round'%3E%3Cpath%20d='M12%205v14M5%2012h14'/%3E%3C/svg%3E");
             --i-dice:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='4'%20y='4'%20width='16'%20height='16'%20rx='4.500'/%3E%3Ccircle%20cx='9'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='9'%20cy='15'%20r='1.200'%20fill='black'/%3E%3C/svg%3E");--i-shuffle:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%207h3c4.500%200%205.500%2010%2010%2010h2M3%2017h3c1.800%200%203-1.200%204-2.800M14%208.800C15%207.800%2015.800%207%2017%207h1M18%204l3%203-3%203M18%2014l3%203-3%203'/%3E%3C/svg%3E");--i-undo:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M9%2014%204%209l5-5M4%209h10.500a5.500%205.500%200%200%201%200%2011H11'/%3E%3C/svg%3E");--i-close:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%206l12%2012M18%206%206%2018'/%3E%3C/svg%3E");
             --i-eye:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3.600-7%2010-7%2010%207%2010%207-3.600%207-10%207S2%2012%202%2012z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3C/svg%3E");--i-eyeoff:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3.600-7%2010-7%2010%207%2010%207-3.600%207-10%207S2%2012%202%2012z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3Cpath%20d='M4%204l16%2016'/%3E%3C/svg%3E");
@@ -2198,7 +2211,7 @@
         body.dark { --amber: #f0b44a; }
         body, button, input, select, textarea { font-family: "Outfit", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; letter-spacing: .01em; }
         .ic { display: inline-block; width: 1em; height: 1em; flex: none; background: currentColor; vertical-align: -.15em; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
-        .ic-dice{-webkit-mask-image:var(--i-dice);mask-image:var(--i-dice);}.ic-shuffle{-webkit-mask-image:var(--i-shuffle);mask-image:var(--i-shuffle);}.ic-undo{-webkit-mask-image:var(--i-undo);mask-image:var(--i-undo);}.ic-close{-webkit-mask-image:var(--i-close);mask-image:var(--i-close);}.ic-eye{-webkit-mask-image:var(--i-eye);mask-image:var(--i-eye);}.ic-eyeoff{-webkit-mask-image:var(--i-eyeoff);mask-image:var(--i-eyeoff);}.ic-caldown{-webkit-mask-image:var(--i-caldown);mask-image:var(--i-caldown);}.ic-plus{-webkit-mask-image:var(--i-plus);mask-image:var(--i-plus);}.ic-ball{-webkit-mask-image:var(--i-ball);mask-image:var(--i-ball);}.ic-warn{-webkit-mask-image:var(--i-warn);mask-image:var(--i-warn);}.ic-coin{-webkit-mask-image:var(--i-coin);mask-image:var(--i-coin);}.ic-user{-webkit-mask-image:var(--i-user);mask-image:var(--i-user);}.ic-users{-webkit-mask-image:var(--i-users);mask-image:var(--i-users);}.ic-crown{-webkit-mask-image:var(--i-crown);mask-image:var(--i-crown);}.ic-moon{-webkit-mask-image:var(--i-moon);mask-image:var(--i-moon);}.ic-sun{-webkit-mask-image:var(--i-sun);mask-image:var(--i-sun);}.ic-phone{-webkit-mask-image:var(--i-phone);mask-image:var(--i-phone);}.ic-camera{-webkit-mask-image:var(--i-camera);mask-image:var(--i-camera);}.ic-survey{-webkit-mask-image:var(--i-survey);mask-image:var(--i-survey);}.ic-clock{-webkit-mask-image:var(--i-clock);mask-image:var(--i-clock);}.ic-refresh{-webkit-mask-image:var(--i-refresh);mask-image:var(--i-refresh);}.ic-sliders{-webkit-mask-image:var(--i-sliders);mask-image:var(--i-sliders);}.ic-cal{-webkit-mask-image:var(--i-cal);mask-image:var(--i-cal);}
+        .ic-dice{-webkit-mask-image:var(--i-dice);mask-image:var(--i-dice);}.ic-shuffle{-webkit-mask-image:var(--i-shuffle);mask-image:var(--i-shuffle);}.ic-undo{-webkit-mask-image:var(--i-undo);mask-image:var(--i-undo);}.ic-close{-webkit-mask-image:var(--i-close);mask-image:var(--i-close);}.ic-eye{-webkit-mask-image:var(--i-eye);mask-image:var(--i-eye);}.ic-eyeoff{-webkit-mask-image:var(--i-eyeoff);mask-image:var(--i-eyeoff);}.ic-caldown{-webkit-mask-image:var(--i-caldown);mask-image:var(--i-caldown);}.ic-plus{-webkit-mask-image:var(--i-plus);mask-image:var(--i-plus);}.ic-ball{-webkit-mask-image:var(--i-ball);mask-image:var(--i-ball);}.ic-warn{-webkit-mask-image:var(--i-warn);mask-image:var(--i-warn);}.ic-coin{-webkit-mask-image:var(--i-coin);mask-image:var(--i-coin);}.ic-user{-webkit-mask-image:var(--i-user);mask-image:var(--i-user);}.ic-chat{-webkit-mask-image:var(--i-chat);mask-image:var(--i-chat);}.ic-users{-webkit-mask-image:var(--i-users);mask-image:var(--i-users);}.ic-crown{-webkit-mask-image:var(--i-crown);mask-image:var(--i-crown);}.ic-moon{-webkit-mask-image:var(--i-moon);mask-image:var(--i-moon);}.ic-sun{-webkit-mask-image:var(--i-sun);mask-image:var(--i-sun);}.ic-phone{-webkit-mask-image:var(--i-phone);mask-image:var(--i-phone);}.ic-camera{-webkit-mask-image:var(--i-camera);mask-image:var(--i-camera);}.ic-survey{-webkit-mask-image:var(--i-survey);mask-image:var(--i-survey);}.ic-clock{-webkit-mask-image:var(--i-clock);mask-image:var(--i-clock);}.ic-refresh{-webkit-mask-image:var(--i-refresh);mask-image:var(--i-refresh);}.ic-sliders{-webkit-mask-image:var(--i-sliders);mask-image:var(--i-sliders);}.ic-cal{-webkit-mask-image:var(--i-cal);mask-image:var(--i-cal);}
         .settings-btn .ic { width: 19px; height: 19px; vertical-align: middle; }
         .settings-btn.survey-btn .ic { width: 19px; height: 19px; }
         .today-btn .ic { width: 17px; height: 17px; vertical-align: middle; }
@@ -3123,7 +3136,7 @@
             <div class="ch-right header-btns">
                 <button class="settings-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
                 <button class="settings-btn" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定"><i class="ic ic-sliders"></i></button>
-                <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge2" id="surveyBadge2"></span><span class="sv-badge" id="surveyBadge"></span></button>
+                <button class="settings-btn survey-btn" id="surveyBtn" onclick="openSurvey()" title="出欠の回答" aria-label="出欠の回答"><i class="ic ic-survey"></i><span class="sv-badge3" id="surveyBadge3"></span><span class="sv-badge2" id="surveyBadge2"></span><span class="sv-badge" id="surveyBadge"></span></button>
             </div>
             <button class="cal-nav-btn" id="calNextBtn" onclick="changeMonth(1)" aria-label="次の月">›</button>
         </div>
@@ -8746,8 +8759,11 @@
             const todayKey = formatDateKey(new Date());
             return Object.keys(reservations || {}).filter(d => d >= todayKey && (reservations[d] || []).length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
         }
+        let svNoteFresh = new Set();   // 開いた時点でまだ見ていなかったひとこと(緑の印を付ける)
         function openSurvey() {
             surveyOpen = true; surveyLater = false;
+            svNoteFresh = new Set(svNoteUnseen()); svNoteMarkSeen([...svNoteFresh]);
+            setTimeout(refreshSurveyBtn, 0);
             renderSurvey();
             const ov = document.getElementById("surveyOv");
             ov.style.display = "block"; ov.scrollTop = 0;
@@ -8829,6 +8845,10 @@
             const b2 = document.getElementById("surveyBadge2");
             if (b2) { b2.textContent = nl > 0 ? String(nl) : ""; b2.title = nl > 0 ? `先の月の未回答 ${nl}件` : ""; }
             b.classList.toggle("later", nl > 0);
+            // 管理者: まだ見ていないひとこと(左上に緑)
+            const nn = svNoteUnseen().length, b3 = document.getElementById("surveyBadge3");
+            if (b3) { b3.textContent = nn > 0 ? String(nn) : ""; b3.title = nn > 0 ? `新しいひとこと ${nn}件` : ""; }
+            b.classList.toggle("notes", nn > 0);
             b.classList.toggle("alert", n > 0);
             b.classList.toggle("pulse", lv === 2);
             b.classList.toggle("urgent", lv === 3);
@@ -8839,6 +8859,61 @@
         let surveyPlanTab = false;   // アンケート画面: true=バレー以外の予定の一覧
         function surveyTogglePlans() { surveyPlanTab = !surveyPlanTab; if (surveyPlanTab) surveyLater = false; renderSurvey(); const ov = document.getElementById("surveyOv"); if (ov) ov.scrollTop = 0; }
         function surveySetWho(name) { surveyAdminName = name; renderSurvey(); }
+        // ------- 管理者へのひとこと(遅刻する・9割行ける など) -------
+        // 出欠データのその人の行に note(文字)と noteAt(書いた時刻)を入れる。閲覧者は自分の1件だけ共有データへ送る
+        const SV_NOTE_MAX = 40;
+        const SV_NOTE_SEEN_KEY = "svnoteseen_v1";   // 管理者が見たひとこと(この端末だけ。共有しない)
+        function svNoteKey(d, m) { return d + "|" + m.name + "|" + (m.noteAt || ""); }
+        // その日のひとこと(反映待ちの共有データに新しいものがあれば、そちらを使う)
+        function svNotesOn(d) {
+            const out = new Map();
+            (attendanceByDate[d] || []).forEach(m => { if (m.note) out.set(m.name, m); });
+            try {
+                if (firestorePendingValues && firestorePendingValues[BYDATE_KEY]) {
+                    const rem = JSON.parse(firestorePendingValues[BYDATE_KEY])[d] || [];
+                    rem.forEach(m => { const l = (attendanceByDate[d] || []).find(x => x.name === m.name); if (stampNum(m.noteAt) > stampNum(l && l.noteAt)) { if (m.note) out.set(m.name, m); else out.delete(m.name); } });
+                }
+            } catch (e) { /* ignore */ }
+            return [...out.values()];
+        }
+        function svNoteSeen() { try { const v = JSON.parse(localStorage.getItem(SV_NOTE_SEEN_KEY) || "[]"); return new Set(Array.isArray(v) ? v : []); } catch (e) { return new Set(); } }
+        function svNoteMarkSeen(keys) { const s0 = svNoteSeen(); keys.forEach(k => s0.add(k)); try { localStorage.setItem(SV_NOTE_SEEN_KEY, JSON.stringify([...s0].slice(-500))); } catch (e) { /* ignore */ } }
+        // 管理者がまだ見ていないひとこと(今日以降の日程)
+        function svNoteUnseen() {
+            if (!isAdmin()) return [];
+            const seen = svNoteSeen(), me = surveyWho();
+            return surveyDates().flatMap(d => svNotesOn(d).filter(m => m.name !== me && !seen.has(svNoteKey(d, m))).map(m => svNoteKey(d, m)));
+        }
+        function surveyNote(date, text) {
+            const name = surveyWho();
+            if (!name) return;
+            const mem = (attendanceByDate[date] || []).find(m => m.name === name);
+            if (!mem) return;
+            const v = Array.from(String(text || "").trim()).slice(0, SV_NOTE_MAX).join("");
+            if ((mem.note || "") === v) return;
+            if (v) mem.note = v; else delete mem.note;
+            mem.noteAt = nowStamp();
+            saveData();
+            if (!isAdmin()) saveMyNoteToShared(date, name, v, mem.noteAt);
+            renderSurvey();
+        }
+        function saveMyNoteToShared(date, name, note, stamp) {
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authUid) return;
+            if (!name || name !== myMemberName()) return;
+            setFirestoreSyncStatus("同期中…");
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                const mem = (data[date] || []).find(m => m.name === name);
+                if (!mem) throw new Error("no-member");
+                if (note) mem.note = note; else delete mem.note;
+                mem.noteAt = stamp;
+                tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            }).then(() => setFirestoreSyncStatus("閲覧中"))
+              .catch(err => { console.error("ひとことの共有に失敗しました。", err); setFirestoreSyncStatus("閲覧中"); alert("ひとことを共有データに反映できませんでした(" + ((err && (err.code || err.message)) || "") + ")。"); });
+        }
         function surveySet(date, status) {
             const name = surveyWho();
             if (!name || !STATUS_META[status]) return;
@@ -8904,7 +8979,15 @@
                     ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>?</b> ${txt(un)}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${txt(pd)}</span>` : ""}</span>`;
                 }
                 const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${st === s ? " sel" : ""}" ${mem ? "" : "disabled"} onclick="surveySet('${d}','${s}')" aria-label="${s}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("");
-                return `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tag}${ppl}</div><div class="sv-info">${info}</div>${name ? `<div class="sv-btns">${btns}</div>` : ""}</div>`;
+                // 管理者へのひとこと(自分の分)
+                const noteIn = name && mem ? `<div class="sv-note"><i class="ic ic-chat"></i><input type="text" maxlength="${SV_NOTE_MAX}" value="${escapeHtml(mem.note || "")}" placeholder="管理者へひとこと(遅刻・9割行ける など)" onchange="surveyNote('${d}', this.value)" onkeydown="if(event.key==='Enter'){this.blur();}"></div>` : "";
+                // 管理者: みんなのひとこと(新しいものに緑の印)
+                let notes = "";
+                if (isAdmin()) {
+                    const ns = svNotesOn(d).filter(x => x.name !== name);
+                    if (ns.length) notes = `<div class="sv-notes">${ns.map(x => `<div class="sv-nrow${svNoteFresh.has(svNoteKey(d, x)) ? " new" : ""}"><b>${escapeHtml(x.name)}</b><span class="sv-nst">${STATUS_META[x.status] ? STATUS_META[x.status].sym : ""}</span><span>${escapeHtml(x.note)}</span></div>`).join("")}</div>`;
+                }
+                return `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tag}${ppl}</div><div class="sv-info">${info}</div>${notes}${name ? `<div class="sv-btns">${btns}</div>` : ""}${noteIn}</div>`;
             }).join("");
             const note = !name ? "" : dates.length === 0 ? `<div class="sv-empty">—</div>`
                 : "";
@@ -10625,6 +10708,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function markRemoteUpdate() {
             const d = document.getElementById("updDot");   // 年月の横の赤い点(タップで反映)
             if (d) d.classList.add("show");
+            try { refreshSurveyBtn(); } catch (e) { /* ignore */ }   // 届いたひとことを緑の数字に出す
         }
         function remoteUpdateSafeToApply() {
             const a = document.activeElement;
@@ -10658,6 +10742,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     (rem[date] || []).forEach(rm => {
                         const lm = loc[date].find(m => m.name === rm.name);
                         if (lm && stampNum(rm.updated) > stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; }
+                        if (lm && stampNum(rm.noteAt) > stampNum(lm.noteAt)) { if (rm.note) lm.note = rm.note; else delete lm.note; lm.noteAt = rm.noteAt; }   // ひとこと
                     });
                 });
                 values[BYDATE_KEY] = JSON.stringify(loc);
