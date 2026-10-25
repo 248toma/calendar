@@ -1122,6 +1122,11 @@
         .rc-name { display: flex; align-items: center; min-width: 0; font-weight: 700; font-size: 14.5px; }
         .rc-name .gender-dot { flex: none; }
         .rc-name .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rc-linked { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-left: 3px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 9px; font-weight: 900; line-height: 1; }
+        .rc-linkcount { color: var(--accent); font-weight: 700; }
+        /* 紐付け済みの人: 性別の丸を少し大きくして ✓ を入れる(名前の幅は変えない) */
+        .rc-name .gender-dot.linked { width: 14px !important; height: 14px !important; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1.5px var(--accent); }
+        .rc-name .gender-dot.linked::after { content: "✓"; color: #fff; font-size: 9px; font-weight: 900; line-height: 1; }
         .rc-pos { font-size: 10.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .rc-params { font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
         .rc-params span { position: relative; }
@@ -4090,6 +4095,7 @@
 
         // 名簿の番号(id)が重なっている人がいたら、後の人に新しい番号を付け直す。
         // 番号が重なっていると、名簿で別の人を操作したつもりが先の人(例: 自分)が変わってしまう
+        let rosterIdFixedCount = 0;
         function fixDuplicateRosterIds() {
             const seen = new Set(); let fixed = 0;
             roster.forEach(m => {
@@ -4100,7 +4106,7 @@
             if (fixed) {
                 console.warn(`名簿の番号の重なりを${fixed}件直しました。`); saveRoster();
                 // 管理者には知らせる(共有データにも直した名簿が保存される)
-                setTimeout(() => { try { if (realAdmin()) alert(`名簿で番号が重なっている人が${fixed}人いたので、付け直しました。\n紐付けがおかしかった人は、一度「解除」してから紐付け直してください。`); } catch (e) { /* ignore */ } }, 4000);
+                rosterIdFixedCount += fixed;   // ログインの確認が済んでから知らせる(applyRole)
             }
             return fixed;
         }
@@ -4646,7 +4652,8 @@
             const visible = sortRosterList(roster.filter(m => rosterMatchesQuery(m, rosterSearchQuery)));
             renderRosterSortControls(visible);
             rosterVisibleIds = visible.map(m => m.id);
-            if (countEl) countEl.textContent = searching ? `${visible.length}件ヒット(全${roster.length}名)` : `全${roster.length}名`;
+            const linkedN = roster.filter(x => x.emailHash).length;
+            if (countEl) countEl.innerHTML = (searching ? `${visible.length}件ヒット(全${roster.length}名)` : `全${roster.length}名`) + `<span class="admin-only rc-linkcount">・<span class="rc-linked">✓</span> 紐付け済 ${linkedN}名</span>`;
             updateRosterToggleAllBtn();
             if (visible.length === 0) {
                 list.innerHTML = `<div class="roster-empty">「${escapeHtml(rosterSearchQuery.trim())}」に一致するメンバーがいません。</div>`;
@@ -4675,7 +4682,7 @@
                     <div class="roster-card gender-${g}${open ? " open" : ""}" data-id="${m.id}">
                         <div class="rc-head" role="button" tabindex="0" onclick="toggleRosterCard(${m.id})"
                             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRosterCard(${m.id});}">
-                            <span class="rc-name"><span class="gender-dot gender-${g}"></span><span class="txt">${escapeHtml(m.name)}</span></span>
+                            <span class="rc-name"><span class="gender-dot gender-${g}${m.emailHash ? " linked" : ""}"${m.emailHash ? ' title="アカウント紐付け済み"' : ""}></span><span class="txt">${escapeHtml(m.name)}</span></span>
                             <span class="rc-pos">${escapeHtml(m.position || "—")}</span>
                             <span class="rc-params dev-only" id="rcParams_${m.id}">${rosterParamsSummaryHtml(m, tops)}</span>
                             <span class="rc-chev">›</span>
@@ -9217,6 +9224,10 @@ const namesBtn = isAdmin() && dates.length > 0
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
         // 自動でアンケート画面へ移る処理はやめた(30分ごと・起動/更新時)
         function applyRole() {
+            if (rosterIdFixedCount && realAdmin()) {
+                const n = rosterIdFixedCount; rosterIdFixedCount = 0;
+                setTimeout(() => alert(`名簿で番号が重なっている人が${n}人いたので、付け直しました。\n紐付けがおかしかった人は、一度「解除」してから紐付け直してください。`), 800);
+            }
             devMode = isAdmin();
             applyPairClass();
             applyDevMode();
