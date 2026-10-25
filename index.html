@@ -2806,6 +2806,9 @@
         .mt-w, .mt-l { display: inline-block; width: 16px; height: 16px; margin-right: 4px; border-radius: 4px; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; color: #fff; background: var(--accent); }
         .mt-l { background: var(--ink-3); }
         .mt-day { margin: 12px 2px 6px; font-size: 12px; font-weight: 800; color: var(--ink-2); }
+        .adm-mark { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: #7c3aed; color: #fff; font-size: 9.5px; font-weight: 800; line-height: 1.6; vertical-align: 1px; letter-spacing: .02em; }
+        .mt-admrow { margin: -4px 0 8px; } .mt-admrow .adm-mark { margin-left: 0; }
+        .mt-del.adm { color: #7c3aed; }
         .mt-empty { font-size: 12px; color: var(--ink-3); margin: 2px 2px 4px; }
         .mt-sub { margin-top: 12px; }
         .mt-sub > summary { font-size: 12.5px; font-weight: 700; color: var(--ink-2); cursor: pointer; }
@@ -8494,10 +8497,12 @@
             if (typeof renderRosterStats === "function") renderRosterStats();
             const h = document.getElementById("matchHistory"); if (h) { h.closest("details").open = true; renderMatchHistory(); }   // 履歴から消したときは開いたまま
         }
+        // 閲覧モードでも、管理者アカウントだから見えているもの(閲覧者には見えない)に付ける印
+        function admMark() { return realAdmin() && !isAdmin() ? `<span class="adm-mark" title="管理者アカウントだけに見えています(閲覧者には見えません)">管理者のみ</span>` : ""; }
         function matchRowHtml(date, m, i, canDel) {
             const w = m.win, l = 1 - w;
             const names = k => m.teams[k].map(escapeHtml).join("・");
-            return `<div class="mt-row"><div class="mt-top"><span class="mt-no">#${i + 1}</span><span class="mt-team win">${escapeHtml(m.labels[w])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "勝ち"}</span><span class="mt-team">${escapeHtml(m.labels[l])}</span>${canDel ? `<button type="button" class="mt-del" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す">✕</button>` : ""}</div>
+            return `<div class="mt-row"><div class="mt-top"><span class="mt-no">#${i + 1}</span><span class="mt-team win">${escapeHtml(m.labels[w])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "勝ち"}</span><span class="mt-team">${escapeHtml(m.labels[l])}</span>${canDel ? `<button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>
                 <div class="mt-mem"><span class="mt-w">勝</span>${names(w)}</div><div class="mt-mem"><span class="mt-l">負</span>${names(l)}</div></div>`;
         }
         function renderMatchBox() {
@@ -8513,16 +8518,16 @@
                 const sel = (k) => `<select onchange="setMatchForm('${k}', +this.value)">${teams.map((_, i) => `<option value="${i}"${matchForm[k] === i ? " selected" : ""}>チーム${i + 1}</option>`).join("")}</select>`;
                 const pick = n > 2 ? `<div class="mt-pick">${sel("a")}<span>対</span>${sel("b")}</div>` : "";
                 const wb = i => `<button type="button" class="mt-wb${matchForm.win === i ? " on" : ""}" onclick="setMatchForm('win', ${i})">チーム${i + 1}の勝ち</button>`;
-                form = `${pick}<div class="mt-form">${wb(matchForm.a)}${wb(matchForm.b)}</div>
+                form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-form">${wb(matchForm.a)}${wb(matchForm.b)}</div>
                     <div class="mt-form"><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="点差"><span class="mt-unit">点差</span><button type="button" class="mt-add" onclick="addMatch()">記録</button></div>`;
             }
-            // 管理者: この日の「来る」メンバーの勝率(全期間)
+            // 管理者アカウント: この日の「来る」メンバーの勝率(全期間)
             let rates = "";
             if (adm) {
                 const st = matchStatsFrom("0000");
                 const mem = (attendanceByDate[selectedDate] || []).filter(m => m.status === "来る").map(m => ({ n: m.name, ...(st[m.name] || { g: 0, w: 0 }) }));
                 mem.sort((a, b) => ((b.g ? b.w / b.g : -1) - (a.g ? a.w / a.g : -1)) || b.g - a.g);
-                if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>この日のメンバーの勝率</summary><div class="mt-rates">${mem.map(x => `<span class="mt-rate"><b>${escapeHtml(x.n)}</b>${x.g ? `${Math.round(x.w / x.g * 100)}%<small>(${x.g})</small>` : `<small>記録なし</small>`}</span>`).join("")}</div></details>`;
+                if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>この日のメンバーの勝率${admMark()}</summary><div class="mt-rates">${mem.map(x => `<span class="mt-rate"><b>${escapeHtml(x.n)}</b>${x.g ? `${Math.round(x.w / x.g * 100)}%<small>(${x.g})</small>` : `<small>記録なし</small>`}</span>`).join("")}</div></details>`;
             }
             const past = Object.keys(matchesByDate).filter(d => d !== selectedDate && (matchesByDate[d] || []).length).sort().reverse();
             const hist = past.length ? `<details class="mt-sub"${matchPastOpen ? " open" : ""} ontoggle="matchPastOpen=this.open"><summary>これまでの試合(${past.reduce((n, d) => n + matchesByDate[d].length, 0)}試合)</summary>${past.map(d => { const [y, m, dd] = d.split("-").map(Number); return `<div class="mt-day">${m}/${dd}(${WEEKDAYS[new Date(y, m - 1, dd).getDay()]})</div>` + matchesByDate[d].map((x, i) => matchRowHtml(d, x, i, adm)).join(""); }).join("")}</details>` : "";
