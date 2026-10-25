@@ -5417,6 +5417,13 @@
             nvLastTap = { key: dbl ? "" : key, t: 0 };
             selectDate(key);
             if (!dbl) { scrollToDayList(); return; }
+            if (!events[key] && isAdmin()) {   // 管理者: バレーのない日はバレーありにして、予約タスク画面へ
+                const hadAtt = !!attendanceByDate[key];
+                events[key] = true; seedRosterForDay(key); beginVolleyDraft(key, hadAtt); saveData();
+                renderRoster(); renderCalendar();
+                volleyFull = true; switchView("reserve"); renderOtherPlanBox(); renderNvPanel(); window.scrollTo(0, 0);
+                return;
+            }
             if (!sheetFS) {   // 1つ〜3つ: 今までどおり、バレーの日はバレーの画面
                 if (events[key]) openVolleyFull();
                 else if (plansOn(key).length) scrollBelowHeader(document.querySelector(".day-bar"), 4);
@@ -11472,7 +11479,7 @@ const namesBtn = isAdmin() && dates.length > 0
         const SHEET_MODE_KEY = "attendance_sheet_mode_v1";
         // sheetFS: 「全画面」モード。下スライドで一覧を全部畳み、上スライド/日付の2回押しで出す(1つ〜3つのときは今までどおり)
         var sheetFS = false;
-        try { const m = JSON.parse(localStorage.getItem(SHEET_MODE_KEY) || "null"); if (m) { sheetFS = !!m.fs; sheetHidden = sheetFS && !!m.h; sheetCompact = !sheetHidden && !!m.c; } } catch (e) { /* ignore */ }
+        try { const m = JSON.parse(localStorage.getItem(SHEET_MODE_KEY) || "null"); if (m) { sheetFS = !!m.fs; sheetHidden = sheetFS && !!m.h; sheetCompact = !sheetHidden && (sheetFS || !!m.c); } } catch (e) { /* ignore */ }
         function saveSheetMode() { if (!sheetFS) sheetHidden = false; try { localStorage.setItem(SHEET_MODE_KEY, JSON.stringify({ fs: sheetFS, h: sheetHidden, c: sheetCompact })); } catch (e) { /* ignore */ } }
         function setSheetFull() { sheetFS = true; sheetHidden = true; sheetCompact = false; saveSheetMode(); layoutSheet(); }
         // 入力欄が予定欄の真ん中に来るようにスクロールする(入り切らないときは上端をそろえる)
@@ -11500,6 +11507,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 上ボタン(-1): 予定欄を上げてカレンダーを小さく / 下ボタン(+1): カレンダーを大きく
         function stepSheetLevel(dir) {
             if (sheetLevel == null) sheetLevel = loadSheetLevel();
+            if (sheetFS) { sheetHidden = dir > 0; sheetCompact = !sheetHidden; saveSheetMode(); layoutSheet(); return; }   // 全画面: 上=最大 / 下=畳む
             if (sheetHidden) { sheetHidden = false; saveSheetMode(); layoutSheet(); return; }   // 畳んでいるときは、どちらのボタンでもまず一覧を出す
             if (sheetCompact) { if (dir > 0) { sheetCompact = false; saveSheetMode(); layoutSheet(); } return; }   // 縮めている状態からは「下」で元に戻す
             sheetLevel = Math.max(1, Math.min(3, sheetLevel + dir));
@@ -11579,7 +11587,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // つまみのタップ: 畳んでいれば出す。出ていれば 最大 ⇔ 普通 を切り替える
             const swipe = (up) => {
                 if (!sheetFS) sheetCompact = up;   // 1つ〜3つ: 上で広げる/下で戻す(今までどおり)
-                else if (up) { if (sheetHidden) sheetHidden = false; else sheetCompact = true; }
+                else if (up) { sheetHidden = false; sheetCompact = true; }   // 全画面: 畳む ⇔ 最大 の2つだけ
                 else { sheetHidden = true; sheetCompact = false; }
                 saveSheetMode(); layoutSheet();
             };
@@ -11594,7 +11602,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const end = () => {
                 if (!d) return;
                 const tap = !d.moved; d = null;
-                if (tap) { if (sheetHidden) sheetHidden = false; else sheetCompact = !sheetCompact; saveSheetMode(); layoutSheet(); }
+                if (tap) { if (sheetFS) { sheetHidden = !sheetHidden; sheetCompact = !sheetHidden; } else if (sheetHidden) sheetHidden = false; else sheetCompact = !sheetCompact; saveSheetMode(); layoutSheet(); }
             };
             grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
             // 一覧の中でも、いちばん上までスクロールした状態から下へスライドすると畳む / 上へスライド(スクロールできないとき)で最大へ
