@@ -11622,6 +11622,25 @@ const namesBtn = isAdmin() && dates.length > 0
                 }, { passive: true });
                 body.addEventListener("touchcancel", () => { t = null; }, { passive: true });
             }
+            // 一覧の空きを押す: 予定の詳細を開いていれば閉じる。全画面モードで最大のときは、空きを2回押すと(速さは関係なし)畳んでカレンダー全画面に戻る
+            // 詳細を開いているときは、その予定(ボタンや名前以外のところ)をもう一度押しても閉じる
+            if (body) {
+                let blankTaps = 0;
+                body.addEventListener("click", e => {
+                    const tg = e.target;
+                    if (!tg || !tg.closest) return;
+                    const pd = tg.closest("#planDetail");
+                    if (pd) {
+                        blankTaps = 0;
+                        if (!tg.closest("button, input, select, textarea, a, label, .pd-ans, .pd-mem, .pd-acts")) closePlanDetail();
+                        return;
+                    }
+                    if (tg.closest(".nv-row, #otherPlanBox, .day-bar, button, input, select, textarea, a, label")) { blankTaps = 0; return; }
+                    if (planDetailId != null) { blankTaps = 0; closePlanDetail(); return; }
+                    if (!sheetFS || sheetHidden || !sheetCompact) { blankTaps = 0; return; }
+                    if (++blankTaps >= 2) { blankTaps = 0; sheetHidden = true; sheetCompact = false; saveSheetMode(); layoutSheet(); }
+                });
+            }
             window.addEventListener("resize", () => layoutSheet());
         })();
         // 画面を下に引っぱって離すと更新する(更新ボタンと同じ動き)
