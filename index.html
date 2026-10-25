@@ -5417,7 +5417,7 @@
             nvLastTap = { key: dbl ? "" : key, t: 0 };
             selectDate(key);
             if (!dbl) { scrollToDayList(); return; }
-            if (!events[key] && isAdmin()) {   // 管理者: バレーのない日はバレーありにして、予約タスク画面へ
+            if (!events[key] && isAdmin() && !sheetFS) {   // 管理者(1つ〜3つのとき): バレーのない日はバレーありにして、予約タスク画面へ。全画面モードは一覧を出す
                 const hadAtt = !!attendanceByDate[key];
                 events[key] = true; seedRosterForDay(key); beginVolleyDraft(key, hadAtt); saveData();
                 renderRoster(); renderCalendar();
