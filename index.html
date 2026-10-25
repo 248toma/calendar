@@ -1555,6 +1555,8 @@
         #opNoRsvpChips .op-sc.off { text-decoration: line-through; opacity: .55; }
         .nv-share { margin-top: 2px; font-size: 11px; color: var(--ink-3); }
         .rc-acct { display: flex; gap: 6px; align-items: center; }
+        .rc-acctnow { font-size: 12px; color: var(--ink-2); margin: 2px 0 6px; word-break: break-all; }
+        .rc-acctnow b { color: var(--ink); }
         .rc-acct .rc-line { flex: 1; min-width: 0; }
         .rc-acct button { flex: none; border: 1px solid var(--line-2); background: var(--surface); border-radius: 8px; padding: 6px 8px; font-size: 11px; color: var(--ink-2); }
 
@@ -4703,6 +4705,7 @@
                             <input type="text" class="rc-line" value="${escapeHtml(m.reading || "").replace(/"/g, "&quot;")}"
                                 placeholder="よみ(ひらがな。五十音順の並び替え用。漢字の名前は入れてください)"
                                 onchange="updateRosterField(${m.id}, 'reading', this.value.trim())">
+                            ${m.emailHash ? `<div class="rc-acctnow dev-only"><span class="rc-linked">✓</span> 紐付け中: <b>${escapeHtml(rosterAcctLabel(m))}</b></div>` : ""}
                             <div class="rc-acct dev-only">
                                 <input type="email" class="rc-line" autocomplete="off"
                                     placeholder="${m.emailHash ? "✓ アカウント紐付け済み(変更はGmailを入力)" : "ログイン用Gmail(メンバー欄で自分を見つける用)"}"
@@ -4817,6 +4820,18 @@
         }
 
         // アカウント紐付け: 公開データにメールが残らないよう、ハッシュだけを名簿に保存する
+        // 紐付けたアカウントの表示: 共有データにはメールそのものは置かない(誰でも読めるため)。
+        // 代わりに「先頭2文字+***+@ドメイン」の目印を名簿に置き、全部のアドレスは紐付けた端末にだけ覚える
+        const ACCT_MAIL_KEY = "acctmail_v1";   // この端末だけ(共有しない)
+        function acctMailMap() { try { return JSON.parse(localStorage.getItem(ACCT_MAIL_KEY) || "{}") || {}; } catch (e) { return {}; } }
+        function maskEmail(e) { const [u, d] = String(e).split("@"); return (u.length <= 2 ? u[0] + "*" : u.slice(0, 2) + "***") + "@" + (d || ""); }
+        function rosterAcctLabel(m) {
+            if (!m.emailHash) return "";
+            if (authEmail && m.emailHash === myEmailHash) return authEmail + "(あなた)";
+            const full = acctMailMap()[m.emailHash];
+            if (full) return full;
+            return m.emailHint || "アドレス不明(紐付け直すと表示されます)";
+        }
         async function setRosterAccount(id, email) {
             const mem = roster.find(m => m.id === id);
             if (!mem) return;
@@ -4825,8 +4840,10 @@
             // ほかの人に紐付いているアカウントを付け替えるときは確認する(押し間違いで自分のアカウントが他人に移らないように)
             const other = roster.find(r => r.emailHash === h && r.id !== id);
             if (other && !confirm(`このアカウントは「${other.name}」に紐付いています。\n「${mem.name}」に付け替えますか?(「${other.name}」の紐付けは外れます)`)) { renderRosterPanel(); return; }
-            roster.forEach(r => { if (r.emailHash === h) delete r.emailHash; });   // 1アカウント=1メンバー
+            roster.forEach(r => { if (r.emailHash === h) { delete r.emailHash; delete r.emailHint; } });   // 1アカウント=1メンバー
             mem.emailHash = h;
+            mem.emailHint = maskEmail(String(email).toLowerCase());
+            try { const mm = acctMailMap(); mm[h] = String(email).toLowerCase(); localStorage.setItem(ACCT_MAIL_KEY, JSON.stringify(mm)); } catch (e) { /* ignore */ }
             saveRoster();
             await refreshMyMember();
             renderRosterPanel();
@@ -4847,7 +4864,7 @@
         function clearRosterAccount(id) {
             const mem = roster.find(m => m.id === id);
             if (!mem) return;
-            delete mem.emailHash;
+            delete mem.emailHash; delete mem.emailHint;
             saveRoster();
             refreshMyMember().then(() => { renderRosterPanel(); renderRoster(); });
         }
