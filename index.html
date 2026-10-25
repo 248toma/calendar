@@ -4078,7 +4078,9 @@
                     roster = JSON.parse(r);
                     roster.forEach(m => { if (m && "lineNames" in m) delete m.lineNames; });   // LINE名(本名)はもう使わないので持たない
                     const nid = localStorage.getItem(ROSTER_NEXTID_KEY);
-                    rosterNextId = nid ? parseInt(nid, 10) : (roster.reduce((mx, m) => Math.max(mx, m.id), 0) + 1);
+                    // 次の番号は、保存されている値と「今いる人の最大の番号+1」の大きい方(端末ごとの古い値で番号がかぶらないように)
+                    rosterNextId = Math.max(parseInt(nid || "0", 10) || 0, roster.reduce((mx, m) => Math.max(mx, +m.id || 0), 0) + 1);
+                    fixDuplicateRosterIds();
                     return;
                 }
             } catch (e) { /* fall through */ }
@@ -4086,6 +4088,22 @@
             rosterNextId = roster.length + 1;
         }
 
+        // 名簿の番号(id)が重なっている人がいたら、後の人に新しい番号を付け直す。
+        // 番号が重なっていると、名簿で別の人を操作したつもりが先の人(例: 自分)が変わってしまう
+        function fixDuplicateRosterIds() {
+            const seen = new Set(); let fixed = 0;
+            roster.forEach(m => {
+                if (!m) return;
+                if (m.id == null || seen.has(m.id)) { m.id = newRosterId(); fixed++; }
+                seen.add(m.id);
+            });
+            if (fixed) {
+                console.warn(`名簿の番号の重なりを${fixed}件直しました。`); saveRoster();
+                // 管理者には知らせる(共有データにも直した名簿が保存される)
+                setTimeout(() => { try { if (realAdmin()) alert(`名簿で番号が重なっている人が${fixed}人いたので、付け直しました。\n紐付けがおかしかった人は、一度「解除」してから紐付け直してください。`); } catch (e) { /* ignore */ } }, 4000);
+            }
+            return fixed;
+        }
         function saveRoster() {
             try {
                 localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
@@ -4682,7 +4700,7 @@
                                 <input type="email" class="rc-line" autocomplete="off"
                                     placeholder="${m.emailHash ? "✓ アカウント紐付け済み(変更はGmailを入力)" : "ログイン用Gmail(メンバー欄で自分を見つける用)"}"
                                     onchange="updateRosterAccount(${m.id}, this.value)">
-                                ${authEmail ? `<button type="button" onclick="linkRosterToLogin(${m.id})">ログイン中を紐付け</button>` : ""}
+                                ${authEmail && !roster.some(x => x.emailHash && x.emailHash === myEmailHash) ? `<button type="button" onclick="linkRosterToLogin(${m.id})">自分のアカウントを紐付け</button>` : ""}
                                 ${m.emailHash ? `<button type="button" onclick="clearRosterAccount(${m.id})">解除</button>` : ""}
                             </div>
                             <div class="roster-params-grid dev-only">${paramInputs}</div>
@@ -4796,6 +4814,10 @@
             const mem = roster.find(m => m.id === id);
             if (!mem) return;
             const h = await hashEmail(email);
+            if (mem.emailHash === h) return;
+            // ほかの人に紐付いているアカウントを付け替えるときは確認する(押し間違いで自分のアカウントが他人に移らないように)
+            const other = roster.find(r => r.emailHash === h && r.id !== id);
+            if (other && !confirm(`このアカウントは「${other.name}」に紐付いています。\n「${mem.name}」に付け替えますか?(「${other.name}」の紐付けは外れます)`)) { renderRosterPanel(); return; }
             roster.forEach(r => { if (r.emailHash === h) delete r.emailHash; });   // 1アカウント=1メンバー
             mem.emailHash = h;
             saveRoster();
@@ -4809,7 +4831,12 @@
             if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { alert("メールアドレスの形式で入力してください。"); renderRosterPanel(); return; }
             setRosterAccount(id, email);
         }
-        function linkRosterToLogin(id) { if (authEmail) setRosterAccount(id, authEmail); }
+        function linkRosterToLogin(id) {
+            const mem = roster.find(m => m.id === id);
+            if (!authEmail || !mem) return;
+            if (!confirm(`今ログインしているあなたのアカウントを「${mem.name}」に紐付けます。\nあなた自身が「${mem.name}」として扱われます。よろしいですか?`)) return;
+            setRosterAccount(id, authEmail);
+        }
         function clearRosterAccount(id) {
             const mem = roster.find(m => m.id === id);
             if (!mem) return;
