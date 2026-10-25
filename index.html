@@ -5420,7 +5420,7 @@
             expandSheetMax();
         }
         function expandSheetMax() {
-            sheetHidden = false; sheetCompact = true; layoutSheet();
+            sheetHidden = false; sheetCompact = true; saveSheetMode(); layoutSheet();
             const sb = document.getElementById("sheetBody"); if (sb) sb.scrollTop = 0;
             scrollToDayList();
         }
@@ -11462,6 +11462,10 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 下の予定シート(引き上げ式)と、バレー/予定ボタンの置き場所 -------
         var sheetUserH = null, sheetPrevOpen = false, sheetCompact = false, sheetCompactBeforeEdit = false, sheetPrevEditId;
         var sheetHidden = false, sheetHiddenBeforeEdit = false;   // sheetHidden: 予定一覧を全部畳んで、つまみだけ出している状態
+        // 畳む/最大 の状態はこの端末に保存し、更新しても同じ高さで開く(入力欄を開いたときの一時的な最大は保存しない)
+        const SHEET_MODE_KEY = "attendance_sheet_mode_v1";
+        try { const m = JSON.parse(localStorage.getItem(SHEET_MODE_KEY) || "null"); if (m) { sheetHidden = !!m.h; sheetCompact = !m.h && !!m.c; } } catch (e) { /* ignore */ }
+        function saveSheetMode() { try { localStorage.setItem(SHEET_MODE_KEY, JSON.stringify({ h: sheetHidden, c: sheetCompact })); } catch (e) { /* ignore */ } }
         // 入力欄が予定欄の真ん中に来るようにスクロールする(入り切らないときは上端をそろえる)
         var sheetPrevForm = false;
         function centerPlanBox(target) {
@@ -11487,12 +11491,12 @@ const namesBtn = isAdmin() && dates.length > 0
         // 上ボタン(-1): 予定欄を上げてカレンダーを小さく / 下ボタン(+1): カレンダーを大きく
         function stepSheetLevel(dir) {
             if (sheetLevel == null) sheetLevel = loadSheetLevel();
-            if (sheetHidden) { sheetHidden = false; layoutSheet(); return; }   // 畳んでいるときは、どちらのボタンでもまず一覧を出す
-            if (sheetCompact) { if (dir > 0) { sheetCompact = false; layoutSheet(); } return; }   // 縮めている状態からは「下」で元に戻す
+            if (sheetHidden) { sheetHidden = false; saveSheetMode(); layoutSheet(); return; }   // 畳んでいるときは、どちらのボタンでもまず一覧を出す
+            if (sheetCompact) { if (dir > 0) { sheetCompact = false; saveSheetMode(); layoutSheet(); } return; }   // 縮めている状態からは「下」で元に戻す
             sheetLevel = Math.max(1, Math.min(3, sheetLevel + dir));
             saveSheetLevel(); layoutSheet();
         }
-        function setSheetLevelTo(n) { sheetCompact = false; sheetHidden = false; sheetLevel = Math.max(1, Math.min(3, n)); saveSheetLevel(); layoutSheet(); }
+        function setSheetLevelTo(n) { sheetCompact = false; sheetHidden = false; saveSheetMode(); sheetLevel = Math.max(1, Math.min(3, n)); saveSheetLevel(); layoutSheet(); }
         function saveSheetLevel() { try { localStorage.setItem(SHEET_LV_KEY, String(sheetLevel)); } catch (e) { /* ignore */ } }
         // [文字3つ, 2つ, 1つ] それぞれの予定欄の高さ
         function sheetLevelHs() {
@@ -11567,7 +11571,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const swipe = (up) => {
                 if (up) { if (sheetHidden) sheetHidden = false; else sheetCompact = true; }
                 else { sheetHidden = true; sheetCompact = false; }
-                layoutSheet();
+                saveSheetMode(); layoutSheet();
             };
             let d = null;
             grip.addEventListener("pointerdown", e => { d = { y: e.clientY, moved: false, done: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
@@ -11580,7 +11584,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const end = () => {
                 if (!d) return;
                 const tap = !d.moved; d = null;
-                if (tap) { if (sheetHidden) sheetHidden = false; else sheetCompact = !sheetCompact; layoutSheet(); }
+                if (tap) { if (sheetHidden) sheetHidden = false; else sheetCompact = !sheetCompact; saveSheetMode(); layoutSheet(); }
             };
             grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
             // 一覧の中でも、いちばん上までスクロールした状態から下へスライドすると畳む / 上へスライド(スクロールできないとき)で最大へ
