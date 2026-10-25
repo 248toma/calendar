@@ -8468,7 +8468,7 @@
         function loadMatches() { try { const v = JSON.parse(localStorage.getItem(MATCH_KEY) || "{}"); matchesByDate = v && typeof v === "object" ? v : {}; } catch (e) { matchesByDate = {}; } }
         function saveMatches() { try { localStorage.setItem(MATCH_KEY, JSON.stringify(matchesByDate)); } catch (e) { console.warn(e); } }
         let matchForm = { a: 0, b: 1, win: null };
-        let matchRatesOpen = true, matchPastOpen = false;
+        let matchRatesOpen = true;
         function matchTeamsNow() { const r = lastTeamSplitResult; return r && r.teams && r.teams.length >= 2 && (!r.dateKey || r.dateKey === selectedDate) ? r.teams : null; }
         function setMatchForm(k, v) {
             matchForm[k] = v;
@@ -8508,8 +8508,7 @@
         function renderMatchBox() {
             const box = document.getElementById("matchBox"); if (!box) return;
             const list = matchesByDate[selectedDate] || [], teams = matchTeamsNow(), adm = realAdmin();
-            const hasAny = Object.keys(matchesByDate).some(d => (matchesByDate[d] || []).length);
-            if (!list.length && !(adm && teams) && !hasAny && !adm) { box.innerHTML = ""; return; }
+            if (!list.length && !adm) { box.innerHTML = ""; return; }   // 閲覧者: その日の試合が無ければ出さない
             let form = "";
             if (adm && teams) {
                 const n = teams.length;
@@ -8529,11 +8528,9 @@
                 mem.sort((a, b) => ((b.g ? b.w / b.g : -1) - (a.g ? a.w / a.g : -1)) || b.g - a.g);
                 if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>この日のメンバーの勝率${admMark()}</summary><div class="mt-rates">${mem.map(x => `<span class="mt-rate"><b>${escapeHtml(x.n)}</b>${x.g ? `${Math.round(x.w / x.g * 100)}%<small>(${x.g})</small>` : `<small>記録なし</small>`}</span>`).join("")}</div></details>`;
             }
-            const past = Object.keys(matchesByDate).filter(d => d !== selectedDate && (matchesByDate[d] || []).length).sort().reverse();
-            const hist = past.length ? `<details class="mt-sub"${matchPastOpen ? " open" : ""} ontoggle="matchPastOpen=this.open"><summary>これまでの試合(${past.reduce((n, d) => n + matchesByDate[d].length, 0)}試合)</summary>${past.map(d => { const [y, m, dd] = d.split("-").map(Number); return `<div class="mt-day">${m}/${dd}(${WEEKDAYS[new Date(y, m - 1, dd).getDay()]})</div>` + matchesByDate[d].map((x, i) => matchRowHtml(d, x, i, adm)).join(""); }).join("")}</details>` : "";
             box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}試合</span>` : ""}</div>${form}
                 ${list.length ? `<div class="mt-list">${list.map((m, i) => matchRowHtml(selectedDate, m, i, adm)).join("")}</div>` : (teams ? "" : `<div class="mt-empty">この日の試合はまだありません</div>`)}
-                ${rates}${hist}</div>`;
+                ${rates}</div>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
         function matchStatsFrom(fromKey) {
