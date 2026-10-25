@@ -2603,6 +2603,7 @@
         #todayFab, #addFab { transition: opacity .18s ease, transform .18s ease, box-shadow .18s ease; }
         .st-seg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 17px; background: var(--bg); box-shadow: var(--sink); }
         .st-seg button { height: 28px; min-width: 44px; padding: 0 10px; border: none; border-radius: 14px; background: transparent; color: var(--ink-3); font-size: 12px; font-weight: 700; cursor: pointer; }
+        #lvSeg button { min-width: 34px; padding: 0 8px; }
         .st-seg button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
         /* バレーの画面の日付行: 予定のオン・オフは置かない。日付の横に削除 */
         .day-bar .day-toggles { display: none !important; }
@@ -2920,7 +2921,7 @@
         </div>
         <!-- 誰でも使う設定(いちばん上) -->
         <div id="setTop">
-            <div class="st-row"><span class="st-lbl">カレンダーの予定</span><span class="st-seg" id="lvSeg"><button type="button" data-lv="1" onclick="setSheetLevelTo(1)">1つ</button><button type="button" data-lv="2" onclick="setSheetLevelTo(2)">2つ</button><button type="button" data-lv="3" onclick="setSheetLevelTo(3)">3つ</button></span></div>
+            <div class="st-row"><span class="st-lbl">カレンダーの予定</span><span class="st-seg" id="lvSeg"><button type="button" data-lv="1" onclick="setSheetLevelTo(1)">1つ</button><button type="button" data-lv="2" onclick="setSheetLevelTo(2)">2つ</button><button type="button" data-lv="3" onclick="setSheetLevelTo(3)">3つ</button><button type="button" data-lv="0" onclick="setSheetFull()">全画面</button></span></div>
             <div class="st-row"><span class="st-lbl">祝日・行事</span><span class="st-seg" id="jpSeg"><button type="button" data-k="hol" onclick="setJpcal('hol')">祝日</button><button type="button" data-k="ev" onclick="setJpcal('ev')">行事</button></span></div>
             <div class="st-row"><span class="st-lbl" id="themeLbl">表示</span><button type="button" class="st-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="ic ic-sun"></i></button></div>
             <div class="st-row real-admin-only"><span class="st-lbl">モード</span>
@@ -5416,6 +5417,11 @@
             nvLastTap = { key: dbl ? "" : key, t: 0 };
             selectDate(key);
             if (!dbl) { scrollToDayList(); return; }
+            if (!sheetFS) {   // 1つ〜3つ: 今までどおり、バレーの日はバレーの画面
+                if (events[key]) openVolleyFull();
+                else if (plansOn(key).length) scrollBelowHeader(document.querySelector(".day-bar"), 4);
+                return;
+            }
             if (events[key] && !plansOn(key).length) { openVolleyFull(); return; }
             expandSheetMax();
         }
@@ -11464,8 +11470,11 @@ const namesBtn = isAdmin() && dates.length > 0
         var sheetHidden = false, sheetHiddenBeforeEdit = false;   // sheetHidden: 予定一覧を全部畳んで、つまみだけ出している状態
         // 畳む/最大 の状態はこの端末に保存し、更新しても同じ高さで開く(入力欄を開いたときの一時的な最大は保存しない)
         const SHEET_MODE_KEY = "attendance_sheet_mode_v1";
-        try { const m = JSON.parse(localStorage.getItem(SHEET_MODE_KEY) || "null"); if (m) { sheetHidden = !!m.h; sheetCompact = !m.h && !!m.c; } } catch (e) { /* ignore */ }
-        function saveSheetMode() { try { localStorage.setItem(SHEET_MODE_KEY, JSON.stringify({ h: sheetHidden, c: sheetCompact })); } catch (e) { /* ignore */ } }
+        // sheetFS: 「全画面」モード。下スライドで一覧を全部畳み、上スライド/日付の2回押しで出す(1つ〜3つのときは今までどおり)
+        var sheetFS = false;
+        try { const m = JSON.parse(localStorage.getItem(SHEET_MODE_KEY) || "null"); if (m) { sheetFS = !!m.fs; sheetHidden = sheetFS && !!m.h; sheetCompact = !sheetHidden && !!m.c; } } catch (e) { /* ignore */ }
+        function saveSheetMode() { if (!sheetFS) sheetHidden = false; try { localStorage.setItem(SHEET_MODE_KEY, JSON.stringify({ fs: sheetFS, h: sheetHidden, c: sheetCompact })); } catch (e) { /* ignore */ } }
+        function setSheetFull() { sheetFS = true; sheetHidden = true; sheetCompact = false; saveSheetMode(); layoutSheet(); }
         // 入力欄が予定欄の真ん中に来るようにスクロールする(入り切らないときは上端をそろえる)
         var sheetPrevForm = false;
         function centerPlanBox(target) {
@@ -11496,7 +11505,7 @@ const namesBtn = isAdmin() && dates.length > 0
             sheetLevel = Math.max(1, Math.min(3, sheetLevel + dir));
             saveSheetLevel(); layoutSheet();
         }
-        function setSheetLevelTo(n) { sheetCompact = false; sheetHidden = false; saveSheetMode(); sheetLevel = Math.max(1, Math.min(3, n)); saveSheetLevel(); layoutSheet(); }
+        function setSheetLevelTo(n) { sheetFS = false; sheetCompact = false; sheetHidden = false; saveSheetMode(); sheetLevel = Math.max(1, Math.min(3, n)); saveSheetLevel(); layoutSheet(); }
         function saveSheetLevel() { try { localStorage.setItem(SHEET_LV_KEY, String(sheetLevel)); } catch (e) { /* ignore */ } }
         // [文字3つ, 2つ, 1つ] それぞれの予定欄の高さ
         function sheetLevelHs() {
@@ -11528,7 +11537,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const up = document.getElementById("lvUp"), dn = document.getElementById("lvDown");
             if (up) up.disabled = sheetLevel <= 1 || sheetCompact;
             if (dn) dn.disabled = sheetLevel >= 3 && !sheetCompact;
-            document.querySelectorAll("#lvSeg button").forEach(b => b.classList.toggle("on", +b.dataset.lv === sheetLevel));
+            document.querySelectorAll("#lvSeg button").forEach(b => b.classList.toggle("on", sheetFS ? b.dataset.lv === "0" : +b.dataset.lv === sheetLevel));
             renderJpcalSeg();
             if (sheetCompact) h = Math.max(h, compactSheetH());   // 縮めている間だけの高さ(自分で決めた高さは上書きしない)
             if (sheetHidden) h = SHEET_HIDDEN_H;
@@ -11569,7 +11578,8 @@ const namesBtn = isAdmin() && dates.length > 0
             // 上へスライド: 畳んだ状態 → 普通の高さ → 最大  /  下へスライド: 一覧を全部畳む
             // つまみのタップ: 畳んでいれば出す。出ていれば 最大 ⇔ 普通 を切り替える
             const swipe = (up) => {
-                if (up) { if (sheetHidden) sheetHidden = false; else sheetCompact = true; }
+                if (!sheetFS) sheetCompact = up;   // 1つ〜3つ: 上で広げる/下で戻す(今までどおり)
+                else if (up) { if (sheetHidden) sheetHidden = false; else sheetCompact = true; }
                 else { sheetHidden = true; sheetCompact = false; }
                 saveSheetMode(); layoutSheet();
             };
@@ -11595,7 +11605,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     t = { x: e.touches[0].clientX, y: e.touches[0].clientY, top: body.scrollTop <= 0, bottom: body.scrollTop + body.clientHeight >= body.scrollHeight - 2, at: Date.now() };
                 }, { passive: true });
                 body.addEventListener("touchend", e => {
-                    if (!t) return;
+                    if (!t || !sheetFS) { t = null; return; }
                     const c = e.changedTouches[0], dy = c.clientY - t.y, dx = c.clientX - t.x, st = t; t = null;
                     if (Math.abs(dy) < 60 || Math.abs(dy) < Math.abs(dx) * 1.5) return;
                     if (e.target.closest && e.target.closest("input, textarea, select")) return;
