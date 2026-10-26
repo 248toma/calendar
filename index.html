@@ -2906,6 +2906,24 @@
         #tutOv .tut-skip { border: none; background: none; color: var(--ink-3); font-size: 13px; padding: 6px 4px; }
         #tutOv .tut-next { border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 800; border-radius: 999px; padding: 8px 18px; }
         body.tut-on #pairBtn { display: inline-flex !important; }
+        /* ===== ホーム画面に追加・ウィジェットの説明 ===== */
+        .st-guide button { min-width: 0 !important; padding: 0 9px !important; }
+        #guideOv { display: none; position: fixed; inset: 0; z-index: 905; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;
+            padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+        #guideOv .gd-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 17px; background: var(--bg); box-shadow: var(--sink); margin-bottom: 14px; }
+        #guideOv .gd-tabs button { flex: 1; height: 32px; border: none; border-radius: 14px; background: transparent; color: var(--ink-3); font-size: 13px; font-weight: 800; }
+        #guideOv .gd-tabs button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
+        #guideOv .gd-step { display: flex; gap: 12px; align-items: flex-start; background: var(--bg); border-radius: 16px; box-shadow: var(--raise-sm); padding: 12px 14px; margin-bottom: 12px; }
+        #guideOv .gd-no { flex: none; width: 26px; height: 26px; border-radius: 13px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        #guideOv .gd-tx { flex: 1; min-width: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+        #guideOv .gd-tx b { color: var(--ink); }
+        #guideOv .gd-key { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 7px; background: var(--surface); border: 1px solid var(--line-2); color: var(--ink); font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+        #guideOv .gd-key svg { width: 13px; height: 13px; }
+        #guideOv .gd-note { font-size: 12.5px; color: var(--ink-3); margin: 2px 4px 14px; line-height: 1.6; }
+        #guideOv .gd-copy { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 44px; margin-top: 8px; border: none; border-radius: 14px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 800; }
+        #guideOv .gd-copy.done { background: var(--ink-3); }
+        #guideOv .gd-code { margin: 8px 0 0; max-height: 120px; overflow: auto; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-2); font: 10.5px/1.45 ui-monospace, Menlo, monospace; color: var(--ink-2); white-space: pre; -webkit-user-select: text; user-select: text; }
+        #guideOv .gd-done { text-align: center; font-size: 14px; font-weight: 800; color: var(--accent); margin: 4px 0 14px; }
     </style>
 </head>
 <body>
@@ -2916,6 +2934,300 @@
     </header>
 
     <!-- ===== 回答画面(来る・来ない・未定だけ答える) ===== -->
+    <!-- WIDGET_SRC_BEGIN -->
+    <script type="text/plain" id="widgetSrc">// バレー日程アプリ: 今日の予定ウィジェット(Scriptable 用)
+// 使い方: Scriptable にこのコードを貼って保存 → ホーム画面かロック画面に Scriptable のウィジェットを置く →
+//         ウィジェットを長押し「ウィジェットを編集」→ Script でこのスクリプトを選び、Parameter に名簿の自分の名前を入れる
+// (名前を入れると、自分あての共有予定・自分の出欠・管理者のLocal予定(通知用に共有している分)も出ます)
+
+const APP_URL = "https://248toma.github.io/calendar/";
+const API_KEY = "AIzaSyCupZ4RbR9eLzz991by5DFu9lxOsVbjrNg";
+const PROJECT = "calendar24884";
+const DOC_PATH = "sharedApps/volleyball-schedule";
+const KEYS = {
+  events: "attendance_events_v3", reservations: "attendance_reservations_v1", byDate: "attendance_bydate_v4",
+  plans: "attendance_plans_v2", roster: "attendance_roster_v1", thresholds: "attendance_thresholds_v4"
+};
+const TOKEN_KEY = "vb_widget_token_v1";
+const WD = ["日", "月", "火", "水", "木", "金", "土"];
+// 予定の色(アプリの色番号 0〜8)。[ライト, ダーク] はアプリの予定の線の色と同じ
+const PCOL = [["#8a93a3", "#a6aebd"], ["#3a608f", "#a9c3e6"], ["#5a40a8", "#d6caf8"], ["#965828", "#f0c4a0"], ["#23744a", "#a6e0bb"],
+  ["#b0312f", "#f5b3b3"], ["#b0407a", "#f5bcd8"], ["#1b7882", "#9fdde3"], ["#8a6a05", "#f2dc92"]];
+// バレーの人数の色(アプリのカレンダーと同じ: 十分=緑 / やや不足=黄 / 不足・多すぎ=赤)
+const LV = { sufficient: ["#5d9487", "#7fb5a8"], warning: ["#ad9e72", "#cbbb8c"], danger: ["#b27c85", "#d29aa3"] };
+
+// ===== 共有データを読む(アプリのゲストと同じ匿名ログイン。ログイン情報はキーチェーンに保存して使い回す) =====
+async function idToken() {
+  let t = null;
+  try { if (Keychain.contains(TOKEN_KEY)) t = JSON.parse(Keychain.get(TOKEN_KEY)); } catch (e) { t = null; }
+  if (t && t.id && t.exp - Date.now() > 5 * 60 * 1000) return t.id;
+  if (t && t.refresh) {
+    try {
+      const r = new Request("https://securetoken.googleapis.com/v1/token?key=" + API_KEY);
+      r.method = "POST";
+      r.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+      r.body = "grant_type=refresh_token&refresh_token=" + encodeURIComponent(t.refresh);
+      const j = await r.loadJSON();
+      if (j.id_token) {
+        Keychain.set(TOKEN_KEY, JSON.stringify({ id: j.id_token, refresh: j.refresh_token, exp: Date.now() + (+j.expires_in) * 1000 }));
+        return j.id_token;
+      }
+    } catch (e) { /* 取り直す */ }
+  }
+  const r = new Request("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + API_KEY);
+  r.method = "POST";
+  r.headers = { "Content-Type": "application/json" };
+  r.body = JSON.stringify({ returnSecureToken: true });
+  const j = await r.loadJSON();
+  if (!j.idToken) throw new Error("ログインできません");
+  Keychain.set(TOKEN_KEY, JSON.stringify({ id: j.idToken, refresh: j.refreshToken, exp: Date.now() + (+j.expiresIn) * 1000 }));
+  return j.idToken;
+}
+async function loadShared() {
+  const r = new Request(`https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/${DOC_PATH}`);
+  r.headers = { Authorization: "Bearer " + await idToken() };
+  const j = await r.loadJSON();
+  const f = (((j.fields || {}).values || {}).mapValue || {}).fields || {};
+  const get = (k) => { try { return JSON.parse((f[k] && f[k].stringValue) || "null"); } catch (e) { return null; } };
+  return {
+    events: get(KEYS.events) || {}, reservations: get(KEYS.reservations) || {}, byDate: get(KEYS.byDate) || {},
+    plans: get(KEYS.plans) || [], roster: get(KEYS.roster) || [], thresholds: get(KEYS.thresholds) || {}
+  };
+}
+
+// ===== 今日の予定を作る =====
+function dkey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function md(k) { const [, m, d] = k.split("-").map(Number); return `${m}/${d}`; }
+function hm(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; }
+const SYM = { "来る": "○", "来ない": "✖", "未定": "△" };
+
+function itemsFor(data, today, myName, nowMin) {
+  const me = myName ? (data.roster || []).find(r => r.name === myName) : null, myId = me ? me.id : null;
+  const items = [];
+  // バレー
+  if (data.events[today]) {
+    const rs = data.reservations[today] || [];
+    const times = rs.map(r => String(r.time || "").match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/)).filter(Boolean);
+    const s = times.length ? times.map(x => x[1]).sort((a, b) => hm(a) - hm(b))[0] : "";
+    const e = times.length ? times.map(x => x[2]).sort((a, b) => hm(b) - hm(a))[0] : "";
+    const list = data.byDate[today] || [];
+    const come = list.filter(m => m.status === "来る").length;
+    const mine = myName ? list.find(m => m.name === myName) : null;
+    const place = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
+    const th = Object.assign({ yellowMin: 8, cyanMin: 12, cyanMax: 14 }, data.thresholds || {});
+    const lv = come > th.cyanMax ? "danger" : come >= th.cyanMin ? "sufficient" : come >= th.yellowMin ? "warning" : "danger";
+    items.push({ ad: 1, s: hm(s) ?? -1, endM: hm(e) ?? hm(s), t1: s || "終日", t2: e, title: `🏐 Volley · ${come}`, sub: [place, mine ? `自分 ${SYM[mine.status] || "?"}` : ""].filter(Boolean).join("  "), color: LV[lv] });
+  }
+  const visible = p => !p.to || !p.to.length || (myId != null && p.to.includes(myId));
+  const onDay = p => p && p.startDate && p.startDate <= today && (p.endDate ? p.endDate >= today : p.startDate === today);
+  const has = p => p.title || p.start || p.end || p.memo || p.endDate;
+  const add = (p, local) => {
+    const first = p.startDate === today, last = !p.endDate || p.endDate === today, multi = !!p.endDate && p.endDate !== p.startDate;
+    const timed = !p.allDay && (p.start || p.end);
+    const t1 = first ? (timed && p.start ? p.start : "終日") : md(p.startDate);
+    const t2 = multi ? (last ? (p.end || md(p.endDate)) : md(p.endDate)) : (timed ? (p.end || "") : "");
+    // 今日で終わる時間のある予定は、終わりの時間(なければ開始の時間)を覚えておく(過ぎたら消す)
+    const endM = last && timed ? (hm(p.end) ?? hm(p.start)) : null;
+    items.push({ ad: !(first && last) ? 0 : timed ? 3 : 2, s: first && timed ? (hm(p.start) ?? -1) : -1, endM, t1, t2, title: (local ? "📱 " : "") + (p.title || "予定"), sub: p.memo || "", color: PCOL[+p.color || 0] || PCOL[0] });   // color = [ライト, ダーク]
+  };
+  (data.plans || []).filter(p => !p.local && has(p) && onDay(p) && visible(p)).forEach(p => add(p, false));
+  ((data.byDate || {}).pairplans || []).filter(p => p && !p.deleted && has(p) && onDay(p) && visible(p)).forEach(p => add(p, false));
+  // 管理者のLocal予定(通知用に共有している分): 自分の分だけ
+  if (myId != null) ((data.byDate || {}).localntf || []).filter(x => x.who === myId).forEach(x => (x.list || []).filter(p => has(p) && onDay(p)).forEach(p => add(p, true)));
+  items.sort((a, b) => a.ad - b.ad || a.s - b.s);
+  // 終わった予定は出さない(終日・何日も続く予定は、その日のうちは出したまま)
+  const nowM = nowMin == null ? -1 : nowMin;
+  return items.filter(it => it.endM == null || it.endM > nowM);
+}
+function nextVolley(data, today) {
+  return Object.keys(data.events || {}).filter(k => data.events[k] && k > today && /^\d{4}-\d{2}-\d{2}$/.test(k)).sort()[0] || "";
+}
+
+// ===== ウィジェット =====
+// アプリと同じ色(ライト / ダーク)。予定は一覧と同じ「丸い板」に乗せる
+const dyn = (l, d) => Color.dynamic(new Color(l), new Color(d));
+const C = {
+  // ダークは黒と白(アプリの紺ではなく、iPhone の黒に合わせる)
+  // 背景はホーム画面の壁紙の色に合わせると、透けているように見える(この iPhone の壁紙は #1e1e1e)
+  bg: dyn("#eceff4", "#1e1e1e"), card: dyn("#eceff4", "#2c2c2e"),
+  ink: dyn("#12151c", "#ffffff"), ink2: dyn("#4a5262", "#d1d1d6"), ink3: dyn("#8a93a3", "#8e8e93"),
+  accent: dyn("#0a8f6a", "#3ec79c")
+};
+// ===== 凹凸(アプリと同じ「ふくらんだ板」: 左上に白い光・右下に影) =====
+// Scriptable は影を付けられないので、ぼかした影を絵として描いて、板の背景に敷く
+// 影の色はライト/ダークで変える。ウィジェットの中では iPhone の設定を読めないことがあるので、
+// Parameter の名前の後ろに「,dark」「,light」を付けると固定できる(付けないときは、どちらでも目立ちすぎない影)
+let NEU = { hl: [255, 255, 255, 0.22], sh: [0, 0, 0, 0.32] };
+function setNeuMode(mode) {
+  if (mode === "dark") NEU = { hl: [255, 255, 255, 0.09], sh: [0, 0, 0, 0.85] };
+  else if (mode === "light") NEU = { hl: [255, 255, 255, 1.0], sh: [112, 124, 150, 0.38] };
+}
+const M = 9;   // 板のまわりの影の余白
+function rgba(c, a) { return new Color("#" + c.slice(0, 3).map(v => v.toString(16).padStart(2, "0")).join(""), a); }
+const neuCache = {};
+function neuCard(w, h, rad) {
+  const key = `${w}x${h}x${rad}`;
+  if (neuCache[key]) return neuCache[key];
+  const W = w + M * 2, H = h + M * 2;
+  const ctx = new DrawContext(); ctx.size = new Size(W, H); ctx.opaque = false; ctx.respectScreenScale = true;
+  // ぼかし: 少しずつ大きい半透明の角丸を重ねる。重ね方の濃さを「なめらかな曲線(smoothstep)」にして、段がつかないようにする
+  const blob = (dx, dy, col, spread) => {
+    const steps = 32;
+    for (let k = steps; k >= 1; k--) {
+      const t = k / steps, wgt = 6 * t * (1 - t) / steps;
+      const g = spread * t;
+      const p = new Path(); p.addRoundedRect(new Rect(M + dx - g, M + dy - g, w + g * 2, h + g * 2), rad + g, rad + g);
+      ctx.addPath(p); ctx.setFillColor(rgba(col, Math.min(1, col[3] * wgt * 1.15))); ctx.fillPath();
+    }
+  };
+  blob(-3, -3, NEU.hl, 8);   // 左上の光(アプリ: -4px -4px 10px)
+  blob(4, 5, NEU.sh, 10);    // 右下の影(アプリ: 4px 5px 12px)
+  // 板の塗りは描かない(上に、ライト/ダークで自動で変わる色の板を重ねる)
+  return (neuCache[key] = ctx.getImage());
+}
+// ウィジェットの横幅(iPhone の画面幅からの目安)
+function widgetWidth(fam) {
+  const sw = (() => { try { return Device.screenSize().width; } catch (e) { return 390; } })();
+  const T = { 440: [170, 364], 430: [170, 364], 428: [170, 364], 414: [169, 360], 402: [162, 344], 393: [158, 338], 390: [158, 338], 375: [155, 329], 360: [155, 329], 320: [141, 292] };
+  const k = Object.keys(T).map(Number).sort((a, b) => Math.abs(a - sw) - Math.abs(b - sw))[0];
+  return T[k][fam === "small" ? 0 : 1];
+}
+// 次に予定が終わる時刻か30分後(日付が変わるときも)の早い方で描き直してもらう。実際の時刻は iPhone が決めるので、数分ずれることがある
+function setRefresh(w, items, now) {
+  const ends = items.map(it => it.endM).filter(v => v != null).map(v => new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(v / 60), v % 60, 30).getTime());
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 1).getTime();
+  w.refreshAfterDate = new Date(Math.min(Date.now() + 30 * 60 * 1000, midnight, ...ends));
+}
+// ロック画面用(長方形・1行)
+function buildAccessory(data, now, myName, fam) {
+  const w = new ListWidget(); w.url = APP_URL;
+  const items = itemsFor(data, dkey(now), myName, now.getHours() * 60 + now.getMinutes());
+  const line = it => it.ad === 0 ? `${it.title}(〜${it.t2})` : `${it.t1 === "終日" ? "" : it.t1 + " "}${it.title}`;
+  if (fam === "accessoryCircular") {   // 丸: 今日の予定の数
+    w.addSpacer(); const n = w.addText(String(items.length)); n.font = Font.heavySystemFont(22); n.centerAlignText();
+    const l = w.addText("今日"); l.font = Font.systemFont(9); l.centerAlignText(); w.addSpacer(); setRefresh(w, items, now); return w;
+  }
+  if (fam === "accessoryInline") { w.addText(items.length ? line(items[0]) + (items.length > 1 ? ` ほか${items.length - 1}` : "") : "今日の予定なし"); setRefresh(w, items, now); return w; }
+  if (!items.length) { const t = w.addText("今日の予定なし"); t.font = Font.mediumSystemFont(13); const nv = nextVolley(data, dkey(now)); if (nv) { const n = w.addText(`次のバレー ${md(nv)}`); n.font = Font.systemFont(11); } setRefresh(w, items, now); return w; }
+  items.slice(0, 3).forEach(it => { const t = w.addText(line(it)); t.font = Font.semiboldSystemFont(12); t.lineLimit = 1; });
+  if (items.length > 3) { const m = w.addText(`ほか${items.length - 3}件`); m.font = Font.systemFont(10); }
+  setRefresh(w, items, now);
+  return w;
+}
+function build(data, now, myName) {
+  const today = dkey(now), fam = config.widgetFamily || "medium";
+  if (String(fam).startsWith("accessory")) return buildAccessory(data, now, myName, fam);
+  const max = fam === "small" ? 2 : fam === "large" ? 5 : 2;
+  const cardW = widgetWidth(fam) - 24, cardH = fam === "large" ? 40 : 38;
+  const w = new ListWidget();
+  w.backgroundColor = C.bg;
+  w.url = APP_URL;
+  w.setPadding(10, 12 - M, 8, 12 - M);
+  // 見出し: 「10月25日(日)」
+  const head = w.addStack(); head.centerAlignContent(); head.setPadding(0, M + 4, 0, M + 4);
+  const h = head.addText(`${now.getMonth() + 1}月${now.getDate()}日(${WD[now.getDay()]})`);
+  h.font = Font.heavySystemFont(fam === "small" ? 14 : 16); h.textColor = C.ink;
+  head.addSpacer();
+  w.addSpacer(2);
+  const items = itemsFor(data, today, myName, now.getHours() * 60 + now.getMinutes());
+  const allToday = itemsFor(data, today, myName, null);
+  if (!items.length) {
+    const shell = w.addStack(); shell.backgroundImage = neuCard(cardW, 44, 14); shell.size = new Size(cardW + M * 2, 44 + M * 2); shell.setPadding(M, M, M, M);
+    const card = shell.addStack(); card.layoutVertically(); card.backgroundColor = C.card; card.cornerRadius = 14; card.size = new Size(cardW, 44); card.setPadding(7, 12, 7, 12);
+    const t = card.addText(allToday.length ? "今日の予定は終わりました" : "No plans"); t.font = Font.mediumSystemFont(13); t.textColor = C.ink3;
+    const nv = nextVolley(data, today);
+    if (nv) { card.addSpacer(3); const n = card.addText(`次のバレー ${md(nv)}(${WD[new Date(nv + "T00:00:00").getDay()]})`); n.font = Font.systemFont(11); n.textColor = C.ink3; }
+  }
+  // 時間の短い書き方(2列の板用): 「18:00–21:00」「終日」「〜10/26」
+  const whenOf = it => it.ad === 0 ? `〜${it.t2}` : it.t1 === "終日" ? "終日" : it.t1 + (it.t2 ? "–" + it.t2 : "");
+  const grid = fam !== "small" && items.length > max;
+  if (!grid) {
+    items.slice(0, max).forEach(it => {
+      // 1件 = ふくらんだ丸い板: [時間2行] [色の線] [題名 / メモ]
+      const shell = w.addStack(); shell.backgroundImage = neuCard(cardW, cardH, 14); shell.size = new Size(cardW + M * 2, cardH + M * 2); shell.setPadding(M, M, M, M);
+      const row = shell.addStack(); row.centerAlignContent(); row.backgroundColor = C.card; row.cornerRadius = 14; row.size = new Size(cardW, cardH); row.setPadding(0, 10, 0, 10);
+      if (fam !== "small") {
+        const tc = row.addStack(); tc.layoutVertically(); tc.size = new Size(38, 0);
+        const a = tc.addText(it.t1); a.font = Font.semiboldMonospacedSystemFont(11); a.textColor = C.ink2; a.lineLimit = 1; a.minimumScaleFactor = 0.7;
+        if (it.t2) { const b = tc.addText(it.t2); b.font = Font.regularMonospacedSystemFont(10); b.textColor = C.ink3; b.lineLimit = 1; b.minimumScaleFactor = 0.7; }
+        row.addSpacer(6);
+      }
+      const bar = row.addStack(); bar.size = new Size(3, 26); bar.backgroundColor = dyn(it.color[0], it.color[1]); bar.cornerRadius = 1.5;
+      row.addSpacer(8);
+      const body = row.addStack(); body.layoutVertically();
+      const tt = body.addText(it.title); tt.font = Font.boldSystemFont(fam === "small" ? 12 : 14); tt.textColor = C.ink; tt.lineLimit = 1;
+      const sub = fam === "small" ? [whenOf(it), it.sub].filter(Boolean).join("  ") : it.sub;
+      if (sub) { const sb = body.addText(sub); sb.font = Font.systemFont(10.5); sb.textColor = C.ink3; sb.lineLimit = 1; }
+      row.addSpacer();
+    });
+    if (items.length > max) { const m = w.addText(`    ほか${items.length - max}件`); m.font = Font.systemFont(10); m.textColor = C.ink3; }
+  } else {
+    // 多い日は2列に並べる(中: 2×2=4件 / 大: 2×5=10件)。入りきらないときは最後の板に「ほか◯件」
+    const cap = max * 2, cellW = (cardW - M * 2) / 2;
+    const shown = items.length > cap ? items.slice(0, cap - 1) : items.slice(0, cap);
+    const rest = items.length - shown.length;
+    const cells = shown.map(it => ({ it }));
+    if (rest > 0) cells.push({ more: rest });
+    for (let r = 0; r < cells.length; r += 2) {
+      const line = w.addStack();
+      cells.slice(r, r + 2).forEach(c => {
+        const shell = line.addStack(); shell.backgroundImage = neuCard(cellW, cardH, 14); shell.size = new Size(cellW + M * 2, cardH + M * 2); shell.setPadding(M, M, M, M);
+        const cell = shell.addStack(); cell.centerAlignContent(); cell.backgroundColor = C.card; cell.cornerRadius = 14; cell.size = new Size(cellW, cardH); cell.setPadding(0, 9, 0, 8);
+        if (c.more) {
+          cell.addSpacer(); const m = cell.addText(`ほか${c.more}件`); m.font = Font.semiboldSystemFont(12); m.textColor = C.ink3; cell.addSpacer();
+          return;
+        }
+        const it = c.it;
+        const bar = cell.addStack(); bar.size = new Size(3, 24); bar.backgroundColor = dyn(it.color[0], it.color[1]); bar.cornerRadius = 1.5;
+        cell.addSpacer(7);
+        const body = cell.addStack(); body.layoutVertically();
+        const tt = body.addText(it.title); tt.font = Font.boldSystemFont(12.5); tt.textColor = C.ink; tt.lineLimit = 1; tt.minimumScaleFactor = 0.8;
+        const sb = body.addText(whenOf(it)); sb.font = Font.semiboldMonospacedSystemFont(10); sb.textColor = C.ink3; sb.lineLimit = 1; sb.minimumScaleFactor = 0.8;
+        cell.addSpacer();
+      });
+    }
+  }
+  w.addSpacer();
+  setRefresh(w, items, now);
+  return w;
+}
+
+async function main() {
+  // 名前: ウィジェットの Parameter。アプリ内で実行するときは、前にウィジェットで使った名前(またはここで入れた名前)を使う
+  // Parameter: 「名前」または「名前,dark」「名前,light」
+  const prm = String(args.widgetParameter || "").split(/[,、，]/).map(x => x.trim());
+  let myName = prm[0] || "";
+  if (/^(dark|light)$/i.test(prm[1] || "")) setNeuMode(prm[1].toLowerCase());
+  if (/^#?[0-9a-f]{6}$/i.test(prm[2] || "")) C.bg = new Color(prm[2].replace(/^#?/, "#"));   // 3つ目: 背景の色(壁紙の色)
+  if (myName) Keychain.set("vb_widget_name", myName);
+  else if (!config.runsInWidget) {
+    const saved = Keychain.contains("vb_widget_name") ? Keychain.get("vb_widget_name") : "";
+    const a = new Alert(); a.title = "名簿の自分の名前"; a.message = "自分あての予定と出欠を出すのに使います"; a.addTextField("例: ゆうご", saved); a.addAction("OK"); a.addCancelAction("名前なし");
+    if (await a.present() === 0) { myName = a.textFieldValue(0).trim(); if (myName) Keychain.set("vb_widget_name", myName); }
+  } else myName = Keychain.contains("vb_widget_name") ? Keychain.get("vb_widget_name") : "";
+  let w;
+  try {
+    const data = await loadShared();
+    w = build(data, new Date(), myName);
+  } catch (e) {
+    w = new ListWidget(); w.backgroundColor = C.bg; w.url = APP_URL;
+    const t = w.addText("予定を読み込めませんでした"); t.font = Font.mediumSystemFont(12); t.textColor = C.ink2;
+    const d = w.addText(String(e && e.message || e)); d.font = Font.systemFont(9); d.textColor = C.ink3;
+  }
+  if (config.runsInWidget) Script.setWidget(w);
+  else await w.presentMedium();   // アプリの中で実行したときは見本を表示
+  Script.complete();
+}
+await main();
+</script>
+    <!-- WIDGET_SRC_END -->
+    <div id="guideOv" role="dialog" aria-label="使い方">
+        <div class="sv-wrap">
+            <div class="sv-head"><h2 id="guideTtl">使い方</h2><button type="button" class="sv-close" onclick="closeGuide()" aria-label="閉じる"><i class="ic ic-close"></i></button></div>
+            <div class="gd-tabs"><button type="button" data-g="home" onclick="openGuide('home')">ホーム画面に追加</button><button type="button" data-g="widget" onclick="openGuide('widget')">ウィジェット</button></div>
+            <div id="guideBody"></div>
+        </div>
+    </div>
     <div id="surveyOv" role="dialog" aria-label="出欠の回答">
         <div class="sv-wrap">
             <div class="sv-head">
@@ -2959,7 +3271,7 @@
                     <option value="view">View</option>
                 </select></div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
-            <div class="st-row"><span class="st-lbl">使い方</span><button type="button" class="st-btn" onclick="startTutorial()">見る</button></div>
+            <div class="st-row"><span class="st-lbl">使い方</span><span class="st-seg st-guide"><button type="button" onclick="startTutorial()">説明</button><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
         </div>
         <div class="panel-group-label">記録</div>
         <details class="acc" id="changeLogAcc">
@@ -12228,19 +12540,23 @@ const namesBtn = isAdmin() && dates.length > 0
             const q = (sel) => () => document.querySelector(sel);
             const dq = (k) => () => tutOvEl && tutOvEl.querySelector(`[data-tut="${k}"]`);
             const loginEl = () => document.getElementById("firestoreSyncStatus");
+            const openSet = () => { const pn = document.getElementById("settingsPanel"); if (pn && !pn.classList.contains("open")) toggleSettings(); if (pn) pn.scrollTop = 0; };
+            const dot = (c, n) => `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:${c};color:#fff;font-size:11px;font-weight:800;vertical-align:1px">${n}</span>`;
             return [
-                { title: "ようこそ！🏐", text: "バレー日程アプリの使い方を、30秒で紹介します。\n光っている所を押して進んでください。", next: "はじめる" },
-                { target: q("#surveyBtn"), title: "📝 アンケート", text: "バレーの日に<b>行けるかどうか</b>を、ここから回答します。\n未回答があると赤い数字が付きます。", tap: true },
-                { demo: tutDemoSurvey, target: dq("sv-come"), title: "○✖△で回答", text: "行けるなら <b>○</b>、行けないなら <b>✖</b>、まだ分からないなら <b>△</b>。\n○を押してみよう！", tap: true, onTap: () => { tutDemoState.sv = "来る"; } },
-                { demo: tutDemoSurvey, target: dq("sv-note"), title: "管理者へひとこと", text: "「遅れます」「9割行けます」など、伝えたいことはここに書けます。", next: "次へ" },
-                { target: q('.settings-btn[data-panel="settingsPanel"]'), title: "⚙️ 設定", text: "カレンダーの表示の大きさや、<b>ログイン・ログアウト</b>はここから。", tap: true },
-                { target: q("#calExportBtn"), title: "📅 カレンダーに登録", text: "バレーの予約を、<b>iPhone や Google のカレンダー</b>にまとめて登録できます。", tap: true },
-                { target: q("#pairBtn"), title: "👥 ペアモード", text: "決まった相手(家族・友だちなど)と<b>だけ</b>予定を共有するモードです。\nここを押して、共有する相手を選びます(ログインしてから使えます)。", tap: true },
-                { target: q("#addFab"), title: "＋ 予定を追加", text: "バレー以外の自分の予定も、ここから入れられます。", tap: true },
-                { demo: tutDemoPlan, target: dq("op-local"), title: "📱 Local(この端末だけ)", text: "<b>Local</b> にすると、この端末だけの予定になります。ほかの人には見えません。\n押してみよう！", tap: true, onTap: () => { tutDemoState.scope = "local"; } },
-                { demo: tutDemoPlan, target: dq("op-shared"), title: "👥 ペア予定", text: "ペアモードをONにしてから <b>Shared</b> を選ぶと、ペアの相手と共有する<b>ペア予定</b>になります。", tap: true, onTap: () => { tutDemoState.scope = "shared"; } },
-                { before: () => { const pn = document.getElementById("settingsPanel"); if (pn && !pn.classList.contains("open")) toggleSettings(); if (pn) pn.scrollTop = 0; }, target: loginEl, title: "最後にログイン！", login: true,
-                  text: "<b>Sign in</b>: Googleアカウントでログイン。機種を変えてもそのまま使えます(はじめての人は、管理者に紐付けてもらってね)。\n<b>Guest</b>: アカウントなしで、名簿から自分の名前を選んで使えます(この端末だけ)。" }
+                { title: "ようこそ！🏐", text: "使い方を30秒で紹介します。\n光っている所を押して進んでね。", next: "はじめる" },
+                { target: q("#surveyBtn"), title: "📝 アンケートの通知", text: `右上のこのボタンに出ます。\n${dot("#e5484d", 2)} 今月の未回答(14日からは来月分も)\n${dot("#f59e0b", 3)} その先の月の未回答\n<b>揺れる・濃くなる</b>: 新しい月が出た／締切が近い`, next: "次へ" },
+                { target: q("#surveyBtn"), title: "📝 アンケートを開く", text: "バレーに<b>行けるか</b>は、ここから回答します。", tap: true },
+                { demo: tutDemoSurvey, target: dq("sv-come"), title: "○✖△で回答", text: "<b>○</b> 行ける　<b>✖</b> 行けない　<b>△</b> 未定\n○を押してみよう！", tap: true, onTap: () => { tutDemoState.sv = "来る"; } },
+                { demo: tutDemoSurvey, target: dq("sv-note"), title: "💬 ひとこと", text: "遅刻などは、ここで管理者に伝えられます。", next: "次へ" },
+                { target: q('.settings-btn[data-panel="settingsPanel"]'), title: "⚙️ 設定", text: "表示の変更や<b>ログイン</b>はここ。", tap: true },
+                { target: q("#calExportBtn"), title: "📅 カレンダーに登録", text: "バレーの予約を<b>iPhone・Googleカレンダー</b>にまとめて登録。", tap: true },
+                { target: q("#pairBtn"), title: "👥 ペアモード", text: "決まった相手と<b>だけ</b>予定を共有。ここで相手を選びます(ログイン後)。", tap: true },
+                { target: q("#addFab"), title: "＋ 予定を追加", text: "自分の予定もここから入れられます。", tap: true },
+                { demo: tutDemoPlan, target: dq("op-local"), title: "📱 Local", text: "<b>この端末だけ</b>の予定。ほかの人には見えません。", tap: true, onTap: () => { tutDemoState.scope = "local"; } },
+                { demo: tutDemoPlan, target: dq("op-shared"), title: "👥 ペア予定", text: "ペアモードONで <b>Shared</b> を選ぶと、ペアの相手と共有。", tap: true, onTap: () => { tutDemoState.scope = "shared"; } },
+                { before: openSet, target: q(".st-guide"), title: "📲 ホーム画面・ウィジェット", text: "<b>ホーム画面に追加</b>や<b>iPhoneウィジェット</b>のやり方は、あとでここから見られます。", next: "次へ" },
+                { before: openSet, target: loginEl, title: "最後にログイン！", login: true,
+                  text: "<b>Sign in</b>: Googleでログイン。機種変更してもOK(初回は管理者に紐付けてもらってね)\n<b>Guest</b>: 名簿から名前を選ぶだけ(この端末のみ)" }
             ];
         }
         function tutShouldShow() {
@@ -12256,7 +12572,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (sp && sp.classList.contains("open")) toggleSettings();
                 closeOtherPanels(null); syncHeaderBtns();
                 if (typeof surveyOpen !== "undefined" && surveyOpen) closeSurvey();
-                closePairPanel(); closeAddChooser();
+                closePairPanel(); closeAddChooser(); closeGuide();
                 if (planPanelIsOpen()) closePlanPanel();
                 if (planDetailId != null) closePlanDetail();
                 if (volleyFull) closeVolleyFull();
@@ -12311,7 +12627,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!st || !ov) return;
             const n = tutSteps.length;
             const dots = tutSteps.map((_, k) => `<i class="${k === tutStep ? "on" : ""}"></i>`).join("");
-            const hint = st.tap ? `<span class="tut-go">👆 光っている所を押してね</span>` : st.login ? `<span class="tut-go">👆 どちらかを押してログイン</span>` : "";
+            const hint = st.tap ? `<span class="tut-go">👆 光っている所を押してね</span>` : st.login ? `<span class="tut-go">👆 どちらかを押してね</span>` : "";
             const nextBtn = st.next ? `<button type="button" class="tut-next" data-act="next">${st.next}</button>` : "";
             const skip = st.login ? `<button type="button" class="tut-skip" data-act="skip">あとで</button>` : `<button type="button" class="tut-skip" data-act="skip">スキップ</button>`;
             ov.innerHTML = (st.demo ? `<div class="tut-demo">${st.demo()}</div>` : "")
@@ -12373,6 +12689,70 @@ const namesBtn = isAdmin() && dates.length > 0
             tutGo(tutStep + 1);
         }
         window.addEventListener("resize", () => { if (tutOvEl) tutPlace(); });
+
+        // ------- ホーム画面に追加・iPhoneウィジェットの説明(設定の「使い方」から) -------
+        const GD_SHARE = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5 4.5 8 1.5l3 3"/><path d="M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5"/></svg>`;
+        const GD_PLUS = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>`;
+        function gdSteps(list) { return list.map((t, i) => `<div class="gd-step"><span class="gd-no">${i + 1}</span><div class="gd-tx">${t}</div></div>`).join(""); }
+        function isStandaloneApp() { try { return !!(navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches)); } catch (e) { return false; } }
+        function guideHomeHtml() {
+            const done = isStandaloneApp() ? `<div class="gd-done">✓ ホーム画面から開いています</div>` : "";
+            return done + `<div class="gd-note">アプリのように全画面で開けて、毎回探さなくてよくなります。</div>`
+                + `<div class="gd-note"><b>iPhone(Safari)</b></div>`
+                + gdSteps([
+                    `Safari でこのページを開き、<span class="gd-key">${GD_SHARE} 共有</span> を押す<br><span style="font-size:12.5px;color:var(--ink-3)">見つからないときは <span class="gd-key">…</span> の中にあります</span>`,
+                    `下にスクロールして <span class="gd-key">${GD_PLUS} ホーム画面に追加</span> を押す`,
+                    `<b>「Webアプリとして開く」</b>がオンになっているのを確認して <span class="gd-key">追加</span>`,
+                    `ホーム画面にできたアイコンから開く`
+                ])
+                + `<div class="gd-note"><b>Android(Chrome)</b></div>`
+                + gdSteps([`右上の <span class="gd-key">⋮</span> → <span class="gd-key">ホーム画面に追加</span>(または「アプリをインストール」)`]);
+        }
+        function guideWidgetHtml() {
+            return `<div class="gd-note">ホーム画面やロック画面に、今日の予定を出せます(iPhoneのみ)。無料アプリ「Scriptable」を使います。</div>`
+                + gdSteps([
+                    `App Store で <b>Scriptable</b> を入れる(無料)`,
+                    `下のボタンで <b>コードをコピー</b>
+                     <button type="button" class="gd-copy" id="gdCopyBtn" onclick="copyWidgetCode()">コードをコピー</button>
+                     <pre class="gd-code" id="gdCode"></pre>`,
+                    `Scriptable を開き、右上の <span class="gd-key">${GD_PLUS}</span> → 白い画面を長押しして <b>ペースト</b>。上の題名を「バレー予定」などにして <span class="gd-key">Done</span>`,
+                    `ホーム画面の何もない所を長押し → 左上の <span class="gd-key">編集</span> → <span class="gd-key">ウィジェットを追加</span> → <b>Scriptable</b> を選び、好きな大きさで追加`,
+                    `置いたウィジェットを長押し → <span class="gd-key">ウィジェットを編集</span><br>・<b>Script</b>: さっきの「バレー予定」<br>・<b>Parameter</b>: <b>名簿の自分の名前</b>(例: たろう)`,
+                    `ロック画面にも置けます: ロック画面を長押し → <span class="gd-key">カスタマイズ</span> → ロック画面 → ウィジェットの枠から Scriptable を追加し、同じように設定`
+                ])
+                + `<div class="gd-note">・ダークモードで影が合わないときは、Parameter を「たろう,dark」(ライトなら「,light」)に<br>・壁紙の色に合わせたいときは「たろう,dark,1e1e1e」のように3つ目に色を入れる<br>・表示は30分ごとと、予定が終わるたびに自動で変わります(iPhoneの都合で数分ずれることがあります)</div>`;
+        }
+        let guideTab = "home";
+        function openGuide(tab) {
+            guideTab = tab === "widget" ? "widget" : "home";
+            const sp = document.getElementById("settingsPanel");
+            if (sp && sp.classList.contains("open")) toggleSettings();
+            const ov = document.getElementById("guideOv"); if (!ov) return;
+            document.getElementById("guideTtl").textContent = guideTab === "widget" ? "iPhoneウィジェット" : "ホーム画面に追加";
+            ov.querySelectorAll(".gd-tabs button").forEach(b => b.classList.toggle("on", b.dataset.g === guideTab));
+            document.getElementById("guideBody").innerHTML = guideTab === "widget" ? guideWidgetHtml() : guideHomeHtml();
+            const pre = document.getElementById("gdCode"); if (pre) pre.textContent = widgetCode();
+            ov.style.display = "block"; ov.scrollTop = 0;
+            document.body.style.overflow = "hidden";
+        }
+        function closeGuide() { const ov = document.getElementById("guideOv"); if (ov) ov.style.display = "none"; document.body.style.overflow = ""; }
+        function widgetCode() { const el = document.getElementById("widgetSrc"); return el ? el.textContent.replace(/^\n/, "") : ""; }
+        async function copyWidgetCode() {
+            const txt = widgetCode(), btn = document.getElementById("gdCopyBtn");
+            let ok = false;
+            try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { /* 下の方法で */ }
+            if (!ok) {
+                const ta = document.createElement("textarea"); ta.value = txt; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+                document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length);
+                try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+                ta.remove();
+            }
+            if (btn) {
+                btn.textContent = ok ? "✓ コピーしました" : "コピーできませんでした(下のコードを長押しで選択)";
+                btn.classList.toggle("done", ok);
+                setTimeout(() => { btn.textContent = "コードをコピー"; btn.classList.remove("done"); }, 2500);
+            }
+        }
     </script>
 </body>
 </html>
