@@ -2877,6 +2877,31 @@
         #ntfModal .nm-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
         #ntfModal .nm-acts button { height: 38px; min-width: 88px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-xs); }
         #ntfModal .nm-acts .ok { background: var(--accent); color: #fff; }
+        /* ===== はじめての人向けチュートリアル(ログインしていないときに出る) ===== */
+        #tutOv { position: fixed; inset: 0; z-index: 10050; touch-action: none; -webkit-user-select: none; user-select: none; }
+        #tutOv .tut-dim { position: fixed; inset: 0; background: rgba(8, 10, 14, .62); }
+        #tutOv .tut-hole { position: fixed; border-radius: 14px; box-shadow: 0 0 0 3000px rgba(8, 10, 14, .66); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; z-index: 2; }
+        #tutOv .tut-ring { position: fixed; border: 2.5px solid #2fd39a; border-radius: 16px; pointer-events: none; z-index: 3; animation: tutPulse 1.3s ease-out infinite; transition: left .25s, top .25s, width .25s, height .25s; }
+        @keyframes tutPulse { 0% { box-shadow: 0 0 0 0 rgba(47, 211, 154, .55); } 100% { box-shadow: 0 0 0 14px rgba(47, 211, 154, 0); } }
+        #tutOv .tut-hand { position: fixed; z-index: 4; font-size: 34px; line-height: 1; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); animation: tutTap 1s ease-in-out infinite; }
+        @keyframes tutTap { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-4px, -8px) scale(.92); } }
+        #tutOv .tut-demo { position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; z-index: 1; pointer-events: none; }
+        #tutOv .tut-demo .op-box { display: block; margin: 0; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+        #tutOv .tut-demo .sv-card { margin: 0; }
+        #tutOv .tut-demo .sv-note input { pointer-events: none; }
+        #tutOv .tut-bub { position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; z-index: 5; background: var(--surface); color: var(--ink); border-radius: 18px; padding: 15px 16px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: tutIn .25s ease-out; }
+        @keyframes tutIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        #tutOv .tut-bub h4 { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+        #tutOv .tut-bub p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); white-space: pre-line; }
+        #tutOv .tut-bub p b { color: var(--ink); }
+        #tutOv .tut-go { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 800; color: var(--accent); }
+        #tutOv .tut-foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+        #tutOv .tut-dots { display: flex; gap: 4px; flex: 1; }
+        #tutOv .tut-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--line-2); }
+        #tutOv .tut-dots i.on { width: 16px; background: var(--accent); }
+        #tutOv .tut-skip { border: none; background: none; color: var(--ink-3); font-size: 13px; padding: 6px 4px; }
+        #tutOv .tut-next { border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 800; border-radius: 999px; padding: 8px 18px; }
+        body.tut-on #pairBtn { display: inline-flex !important; }
     </style>
 </head>
 <body>
@@ -2930,6 +2955,7 @@
                     <option value="view">View</option>
                 </select></div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
+            <div class="st-row"><span class="st-lbl">使い方</span><button type="button" class="st-btn" onclick="toggleSettings();setTimeout(startTutorial,250)">見る</button></div>
         </div>
         <div class="panel-group-label">記録</div>
         <details class="acc" id="changeLogAcc">
@@ -11827,6 +11853,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 authUid = user ? user.uid : "";
                 authIsGuest = !!(user && user.isAnonymous);
                 firestoreEditor = false;
+                if (user) { if (tutOvEl) endTutorial(false); }
+                else setTimeout(maybeStartTutorial, 700);   // ログアウト中(ゲストでもない)は、使い方の説明を出す
                 const editor = await isEditorEmail(authEmail);
                 if ((user ? user.uid : "") !== authUid) return;   // 待っている間に別のアカウントに切り替わった
                 firestoreEditor = editor;
@@ -12167,6 +12195,160 @@ const namesBtn = isAdmin() && dates.length > 0
             }).observe(document.body, { childList: true, subtree: true });
         })();
         startFirestoreSync();
+        // ------- はじめての人向けチュートリアル -------
+        // ログアウトしていて、ゲストログインもしていないときに出す。光っている所を押して進む(ゲームの説明のような形)。
+        // 回答・予定の入力は見本を押すだけで、本物のデータは変えない。最後にログインしてもらう
+        const TUT_SKIP_KEY = "tut_skipped";   // スキップしたら、この起動中は出さない(アプリを開き直すとまた出る)
+        let tutStep = -1, tutSteps = [], tutOvEl = null, tutDemoState = {};
+        function tutDemoSurvey() {
+            const today = formatDateKey(new Date());
+            const d = Object.keys(events).filter(k => events[k] && k >= today).sort()[0]
+                || formatDateKey(new Date(Date.now() + 5 * 864e5));
+            const [y, m, dd] = d.split("-").map(Number), wd = WEEKDAYS[new Date(y, m - 1, dd).getDay()];
+            const r = (reservations[d] || [])[0];
+            const info = r ? [r.time, (r.place || "") + (r.court || "")].filter(Boolean).join(" ") : "18:00-21:00 体育館";
+            const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${tutDemoState.sv === s ? " sel" : ""}" data-tut="sv-${STATUS_META[s].cls}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("");
+            return `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tutDemoState.sv ? "" : '<span class="sv-tag"></span>'}</div><div class="sv-info"><div>${escapeHtml(info)}</div></div><div class="sv-btns">${btns}</div><div class="sv-note" data-tut="sv-note"><i class="ic ic-chat"></i><input type="text" readonly tabindex="-1" placeholder="管理者へひとこと(遅刻・9割行ける など)" value="${tutDemoState.sv ? "30分くらい遅れます" : ""}"></div></div>`;
+        }
+        function tutDemoPlan() {
+            const sc = tutDemoState.scope || "";
+            return `<div class="op-box"><div class="op-row"><input type="text" class="op-title" readonly tabindex="-1" value="買い物"><input type="text" class="op-memo-in" readonly tabindex="-1" placeholder="メモ"></div>
+                <div class="op-scope" style="display:flex"><span class="op-colors-lbl">保存</span><button type="button" class="op-sc${sc === "shared" ? " on" : ""}" data-tut="op-shared">Shared</button><button type="button" class="op-sc${sc === "local" ? " on" : ""}" data-tut="op-local">Local ${IC("phone")}</button></div>
+                <div class="op-actions" style="display:flex;margin-top:8px"><span class="op-grow"></span><button type="button" class="op-add">追加</button></div></div>`;
+        }
+        function tutBuildSteps() {
+            const q = (sel) => () => document.querySelector(sel);
+            const dq = (k) => () => tutOvEl && tutOvEl.querySelector(`[data-tut="${k}"]`);
+            const loginEl = () => document.getElementById("firestoreSyncStatus");
+            return [
+                { title: "ようこそ！🏐", text: "バレー日程アプリの使い方を、30秒で紹介します。\n光っている所を押して進んでください。", next: "はじめる" },
+                { target: q("#surveyBtn"), title: "📝 アンケート", text: "バレーの日に<b>行けるかどうか</b>を、ここから回答します。\n未回答があると赤い数字が付きます。", tap: true },
+                { demo: tutDemoSurvey, target: dq("sv-come"), title: "○✖△で回答", text: "行けるなら <b>○</b>、行けないなら <b>✖</b>、まだ分からないなら <b>△</b>。\n○を押してみよう！", tap: true, onTap: () => { tutDemoState.sv = "来る"; } },
+                { demo: tutDemoSurvey, target: dq("sv-note"), title: "管理者へひとこと", text: "「遅れます」「9割行けます」など、伝えたいことはここに書けます。", next: "次へ" },
+                { target: q('.settings-btn[data-panel="settingsPanel"]'), title: "⚙️ 設定", text: "カレンダーの表示の大きさや、<b>ログイン・ログアウト</b>はここから。", tap: true },
+                { target: q("#calExportBtn"), title: "📅 カレンダーに登録", text: "バレーの予約を、<b>iPhone や Google のカレンダー</b>にまとめて登録できます。", tap: true },
+                { target: q("#pairBtn"), title: "👥 ペアモード", text: "決まった相手(家族・友だちなど)と<b>だけ</b>予定を共有するモードです。\nここを押して、共有する相手を選びます(ログインしてから使えます)。", tap: true },
+                { target: q("#addFab"), title: "＋ 予定を追加", text: "バレー以外の自分の予定も、ここから入れられます。", tap: true },
+                { demo: tutDemoPlan, target: dq("op-local"), title: "📱 Local(この端末だけ)", text: "<b>Local</b> にすると、この端末だけの予定になります。ほかの人には見えません。\n押してみよう！", tap: true, onTap: () => { tutDemoState.scope = "local"; } },
+                { demo: tutDemoPlan, target: dq("op-shared"), title: "👥 ペア予定", text: "ペアモードをONにしてから <b>Shared</b> を選ぶと、ペアの相手と共有する<b>ペア予定</b>になります。", tap: true, onTap: () => { tutDemoState.scope = "shared"; } },
+                { before: () => { const pn = document.getElementById("settingsPanel"); if (pn && !pn.classList.contains("open")) toggleSettings(); if (pn) pn.scrollTop = 0; }, target: loginEl, title: "最後にログイン！", login: true,
+                  text: "<b>Sign in</b>: Googleアカウントでログイン。機種を変えてもそのまま使えます(はじめての人は、管理者に紐付けてもらってね)。\n<b>Guest</b>: アカウントなしで、名簿から自分の名前を選んで使えます(この端末だけ)。" }
+            ];
+        }
+        function tutShouldShow() {
+            if (!firebaseAvailable || authUid || tutOvEl) return false;
+            try { if (sessionStorage.getItem(TUT_SKIP_KEY) === "1") return false; } catch (e) { /* ignore */ }
+            return true;
+        }
+        function maybeStartTutorial() { if (tutShouldShow()) startTutorial(); }
+        function startTutorial() {
+            if (tutOvEl) return;
+            if (typeof surveyOpen !== "undefined" && surveyOpen) closeSurvey();
+            const pb = document.getElementById("pairBtn"); if (pb && !pb.innerHTML.trim()) pb.innerHTML = IC("users");
+            document.body.classList.add("tut-on");
+            tutDemoState = {};
+            tutSteps = tutBuildSteps();
+            tutOvEl = document.createElement("div"); tutOvEl.id = "tutOv";
+            tutOvEl.addEventListener("click", tutClick);
+            document.body.appendChild(tutOvEl);
+            tutGo(0);
+        }
+        function endTutorial(skipped) {
+            if (skipped) { try { sessionStorage.setItem(TUT_SKIP_KEY, "1"); } catch (e) { /* ignore */ } }
+            if (tutOvEl) tutOvEl.remove();
+            tutOvEl = null; tutStep = -1;
+            document.body.classList.remove("tut-on");
+            renderPairBtn();
+        }
+        function tutGo(i) {
+            // 見つからない(画面に出ていない)所の説明は飛ばす
+            while (i < tutSteps.length) {
+                const st = tutSteps[i];
+                if (st.login && authUid) { i++; continue; }   // 「使い方を見る」から開いたとき(ログイン済み)は、ログインの説明はしない
+                if (st.before) try { st.before(); } catch (e) { /* ignore */ }
+                if (!st.target || st.demo) break;
+                const el = st.target(); const r = el && el.getBoundingClientRect();
+                if (r && r.width > 0 && r.height > 0) break;
+                i++;
+            }
+            if (i >= tutSteps.length) { endTutorial(true); return; }
+            tutStep = i;
+            tutRender();
+        }
+        function tutTargetRect() {
+            const st = tutSteps[tutStep]; if (!st || !st.target) return null;
+            const el = st.target(); if (!el) return null;
+            const r = el.getBoundingClientRect(); if (!r.width) return null;
+            const pad = 6;
+            return { left: r.left - pad, top: r.top - pad, width: r.width + pad * 2, height: r.height + pad * 2, el };
+        }
+        function tutRender() {
+            const st = tutSteps[tutStep], ov = tutOvEl;
+            if (!st || !ov) return;
+            const n = tutSteps.length;
+            const dots = tutSteps.map((_, k) => `<i class="${k === tutStep ? "on" : ""}"></i>`).join("");
+            const hint = st.tap ? `<span class="tut-go">👆 光っている所を押してね</span>` : st.login ? `<span class="tut-go">👆 どちらかを押してログイン</span>` : "";
+            const nextBtn = st.next ? `<button type="button" class="tut-next" data-act="next">${st.next}</button>` : "";
+            const skip = st.login ? `<button type="button" class="tut-skip" data-act="skip">あとで</button>` : `<button type="button" class="tut-skip" data-act="skip">スキップ</button>`;
+            ov.innerHTML = (st.demo ? `<div class="tut-demo">${st.demo()}</div>` : "")
+                + `<div class="tut-hole"></div><div class="tut-ring"></div><div class="tut-hand">👆</div>`
+                + `<div class="tut-bub" role="dialog" aria-live="polite"><h4>${st.title}</h4><p>${st.text}</p>${hint}<div class="tut-foot"><span class="tut-dots" aria-label="${tutStep + 1}/${n}">${dots}</span>${skip}${nextBtn}</div></div>`;
+            tutPlace();
+        }
+        function tutPlace() {
+            const ov = tutOvEl, st = tutSteps[tutStep];
+            if (!ov || !st) return;
+            const vh = window.innerHeight;
+            const demo = ov.querySelector(".tut-demo"), bub = ov.querySelector(".tut-bub");
+            if (demo) demo.style.top = Math.round(vh * 0.16) + "px";
+            const r = tutTargetRect();
+            const hole = ov.querySelector(".tut-hole"), ring = ov.querySelector(".tut-ring"), hand = ov.querySelector(".tut-hand");
+            if (!r) {   // 何も指さない説明: 全体を暗くして真ん中に
+                hole.style.cssText = `left:50%;top:50%;width:0;height:0;`;
+                ring.style.display = "none"; hand.style.display = "none";
+                bub.style.top = Math.max(16, Math.round(vh / 2 - bub.offsetHeight / 2)) + "px"; bub.style.bottom = "";
+                return;
+            }
+            const box = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;`;
+            hole.style.cssText = box; ring.style.cssText = box;
+            hand.style.display = st.tap ? "" : "none";
+            hand.style.left = (r.left + r.width / 2 - 8) + "px"; hand.style.top = (r.top + r.height - 6) + "px";
+            // 吹き出しは、指している所と重ならない側に出す
+            const below = r.top + r.height / 2 < vh / 2;
+            const handH = st.tap ? 36 : 0;
+            if (below) { bub.style.top = Math.min(vh - bub.offsetHeight - 12, r.top + r.height + 14 + handH) + "px"; bub.style.bottom = ""; }
+            else { bub.style.top = Math.max(12, r.top - bub.offsetHeight - 14) + "px"; bub.style.bottom = ""; }
+        }
+        function tutClick(e) {
+            e.preventDefault(); e.stopPropagation();
+            const st = tutSteps[tutStep]; if (!st) return;
+            const act = e.target.closest && e.target.closest("[data-act]");
+            if (act) {
+                if (act.dataset.act === "skip") endTutorial(true);
+                else if (act.dataset.act === "next") tutGo(tutStep + 1);
+                return;
+            }
+            const r = tutTargetRect(); if (!r) return;
+            const x = e.clientX, y = e.clientY;
+            const inside = x >= r.left && x <= r.left + r.width && y >= r.top && y <= r.top + r.height;
+            if (!inside) { const ring = tutOvEl.querySelector(".tut-ring"); if (ring) { ring.style.animation = "none"; void ring.offsetWidth; ring.style.animation = ""; } return; }
+            if (st.login) {   // Sign in / Guest のどちらを押したか
+                const btns = [...r.el.querySelectorAll("button")];
+                const hit = btns.find(b => { const q = b.getBoundingClientRect(); return x >= q.left - 6 && x <= q.right + 6 && y >= q.top - 8 && y <= q.bottom + 8; });
+                if (!hit) return;
+                endTutorial(false);
+                hit.click();
+                return;
+            }
+            if (!st.tap) return;
+            if (st.onTap) {   // 見本を押した結果を見せてから次へ
+                st.onTap(); const demo = tutOvEl.querySelector(".tut-demo"); if (demo && st.demo) demo.innerHTML = st.demo();
+                setTimeout(() => { if (tutOvEl) tutGo(tutStep + 1); }, 450);
+                return;
+            }
+            tutGo(tutStep + 1);
+        }
+        window.addEventListener("resize", () => { if (tutOvEl) tutPlace(); });
     </script>
 </body>
 </html>
