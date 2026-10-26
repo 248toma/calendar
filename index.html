@@ -2939,6 +2939,11 @@
         #guideOv .gd-sw input:checked { background: var(--accent); }
         #guideOv .gd-sw input:checked::after { transform: translateX(18px); }
         #guideOv .gd-sub { font-size: 12px; color: var(--ink-3); }
+        /* 時間表示: 連続した予定は下、ほかの予定は上に重ねる(重なっている所は縁取りで分ける) */
+        .tw-blk.under { z-index: 1; }
+        .tw-blk.over { z-index: 2; box-shadow: 0 0 0 1.5px var(--bg), 0 2px 6px rgba(0, 0, 0, .22); }
+        .tm-bar.under { z-index: 1; opacity: .75; }
+        .tm-bar.over { z-index: 2; box-shadow: 0 0 0 1px var(--bg); }
     </style>
 </head>
 <body>
@@ -6767,13 +6772,21 @@ await main();
                 } else allDay();         // 途中の日: 全時間を灰色で連続表示
             });
             blocks.sort((a, b) => a.s - b.s || a.e - b.e);
-            const ends = [];
-            blocks.forEach(b => {
-                let i = ends.findIndex(x => x <= b.s);
-                if (i < 0) { i = ends.length; ends.push(0); }
-                ends[i] = b.e; b.lane = i;
-            });
-            blocks.forEach(b => { b.lanes = ends.length; });
+            // 連続した予定(何日も続く予定)は下の段、それ以外(バレー・その日だけの予定)は上の段。
+            // 段ごとに横に並べるので、重なったときは連続した予定の上に、ほかの予定がそのまま重なる
+            const lay = (list) => {
+                const ends = [];
+                list.forEach(b => {
+                    let i = ends.findIndex(x => x <= b.s);
+                    if (i < 0) { i = ends.length; ends.push(0); }
+                    ends[i] = b.e; b.lane = i;
+                });
+                list.forEach(b => { b.lanes = ends.length; });
+            };
+            const under = blocks.filter(b => b.plan && (b.contL || b.contR)), over = blocks.filter(b => !under.includes(b));
+            under.forEach(b => { b.under = true; });
+            over.forEach(b => { b.over = under.some(u => u.s < b.e && b.s < u.e); });   // 連続した予定の上に乗っている
+            lay(under); lay(over);
             return blocks;
         }
         // 縦軸に出す時間の範囲: 常に0〜24時(縦にスクロールして見る)
@@ -6893,6 +6906,7 @@ await main();
                             if (be <= bs) { addNoTime("lv-plan" + (b.pc || ""), b.place); return; }   // 軸の範囲外ならタグで表す
                             el.className = "tw-blk " + (b.plan ? "lv-plan" + (b.pc || "") : lv);
                             if (b.plan) { if (b.contL && i > 0) el.classList.add("cont-l"); if (b.contR && i < 6) el.classList.add("cont-r"); }
+                            if (b.under) el.classList.add("under"); else if (b.over) el.classList.add("over");
                             el.style.top = ((bs - lo * 60) / 60 * HP) + "px";
                             el.style.height = Math.max((be - bs) / 60 * HP - 1, 9) + "px";
                             el.style.left = (b.lane / b.lanes * 100) + "%";
@@ -6960,7 +6974,7 @@ await main();
             }
             blocks.forEach(b => {
                 const bar = document.createElement("div");
-                bar.className = "tm-bar";
+                bar.className = "tm-bar" + (b.under ? " under" : b.over ? " over" : "");
                 const bs = Math.max(b.s, range.lo * 60), be = Math.min(b.e, range.hi * 60);
                 if (be <= bs) return;
                 bar.style.top = ((bs - range.lo * 60) / 60 * AX / hrs) + "px";
