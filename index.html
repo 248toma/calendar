@@ -2517,6 +2517,9 @@
         .cal-grid.nv .cal-day { overflow-x: visible; overflow-y: clip; }
         .cal-grid.nv .nv-chip { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         /* v61: カレンダー画面は全体スクロールなし。下の予定は引き上げ式のシートで、引き上げるとカレンダーが縮む */
+        /* カレンダー画面はページ自体を動かさない(中の一覧だけスクロール)。iOSで画面全体が上下にずれるのを防ぐ */
+        html:has(> body:not(.nv-full)) { height: 100%; overflow: hidden; overscroll-behavior: none; }
+        body:not(.nv-full) { overscroll-behavior: none; }
         body:not(.nv-full) { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
         body:not(.nv-full) > * { flex: none; }
         body:not(.nv-full) .day-bar { display: none; }
@@ -5304,7 +5307,7 @@ await main();
         // ------- タブ切替 -------
         // 指定した要素の上端を、固定ヘッダーのすぐ下まで滑らかにスクロールする(全体が見えるように)
         function scrollBelowHeader(el, extra) {
-            if (!el) return;
+            if (!el || calPageLocked()) return;
             setTimeout(() => {
                 if (!el.offsetHeight) return;   // 非表示(バレーなしの日など)の時は動かさない
                 const hdr = document.querySelector(".app-header");
@@ -5817,6 +5820,7 @@ await main();
             setTimeout(() => {
                 const bar = document.querySelector(".day-bar"), pan = document.getElementById("nvDayPanel");
                 if (!bar || document.body.classList.contains("nv-full")) return;
+                if (calPageLocked()) return;   // カレンダー画面は全部が画面内に収まる作りなので、ページは動かさない
                 const hdr = document.querySelector(".app-header"), hh = hdr ? hdr.offsetHeight : 0;
                 const top = bar.getBoundingClientRect().top;
                 const bottom = (pan && pan.offsetHeight ? pan : bar).getBoundingClientRect().bottom;
@@ -12887,6 +12891,49 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!ok) { const ta = document.createElement("textarea"); ta.value = txt; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;"; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); try { ok = document.execCommand("copy"); } catch (e) { ok = false; } ta.remove(); }
             if (btn) { const t = btn.textContent; btn.textContent = ok ? "✓" : "×"; setTimeout(() => { btn.textContent = t; }, 1500); }
         }
+
+        // ------- カレンダー画面ではページの位置を一番上に固定する -------
+        // (一覧の自動スクロール・入力欄・iPhoneのはずみ などでページ全体がずれたら、すぐ戻す)
+        function calPageLocked() {
+            if (document.body.classList.contains("nv-full")) return false;
+            return ![...document.querySelectorAll(".settings-panel.open, .roster-panel.open, .copy-panel.open")].some(e => e.offsetHeight > 0);   // 見えているパネルがあるときは固定しない
+        }
+        (function lockCalPage() {
+            let raf = 0;
+            const fix = () => {
+                raf = 0;
+                if (!calPageLocked()) return;
+                const a = document.activeElement;
+                if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;   // 入力中(キーボード)は iPhone に任せる
+                if ((window.scrollY || document.documentElement.scrollTop || 0) !== 0) window.scrollTo(0, 0);
+            };
+            const req = () => { if (!raf) raf = requestAnimationFrame(fix); };
+            window.addEventListener("scroll", req, { passive: true });
+            document.addEventListener("focusout", () => setTimeout(req, 120));   // キーボードを閉じたあと
+            if (window.visualViewport) visualViewport.addEventListener("resize", () => setTimeout(req, 120));
+            document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(req, 50); });
+            // 一覧の端でさらに引っぱったときに、ページ全体が動かないようにする(一覧の中のスクロールはそのまま)
+            let sy = 0, sx = 0, el = null;
+            document.addEventListener("touchstart", e => { if (e.touches.length !== 1) return; sy = e.touches[0].clientY; sx = e.touches[0].clientX; el = e.target; }, { passive: true });
+            document.addEventListener("touchmove", e => {
+                if (!calPageLocked() || e.touches.length !== 1 || !e.cancelable) return;
+                const dy = e.touches[0].clientY - sy, dx = e.touches[0].clientX - sx;
+                if (Math.abs(dx) > Math.abs(dy)) return;   // 横の動き(月めくり・横スクロール)はそのまま
+                if (el && el.closest && el.closest("input, textarea, select, #surveyOv, #guideOv, .dv-ov, #pairOv, #guestPickOv, #tutOv")) return;   // 別の画面はそれぞれに任せる
+                // 指の下にある、スクロールできる入れ物を探す
+                let n = el && el.nodeType === 1 ? el : el && el.parentElement;
+                while (n && n !== document.body) {
+                    const cs = getComputedStyle(n);
+                    if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight + 1) {
+                        const atTop = n.scrollTop <= 0, atBottom = n.scrollTop + n.clientHeight >= n.scrollHeight - 1;
+                        if ((dy > 0 && atTop) || (dy < 0 && atBottom)) break;   // 端に来たら下の判定へ
+                        return;   // 中身をスクロールしている
+                    }
+                    n = n.parentElement;
+                }
+                e.preventDefault();   // ページ全体のはずみを止める(下に引っぱる更新は、指の動きを読むのでそのまま使える)
+            }, { passive: false });
+        })();
     </script>
 </body>
 </html>
