@@ -2924,6 +2924,18 @@
         #guideOv .gd-copy.done { background: var(--ink-3); }
         #guideOv .gd-code { margin: 8px 0 0; max-height: 120px; overflow: auto; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-2); font: 10.5px/1.45 ui-monospace, Menlo, monospace; color: var(--ink-2); white-space: pre; -webkit-user-select: text; user-select: text; }
         #guideOv .gd-done { text-align: center; font-size: 14px; font-weight: 800; color: var(--accent); margin: 4px 0 14px; }
+        #guideOv .gd-me { background: var(--bg); border-radius: 16px; box-shadow: var(--raise-sm); padding: 12px 14px; margin-bottom: 14px; font-size: 13.5px; color: var(--ink-2); line-height: 1.6; }
+        #guideOv .gd-me h3 { margin: 0 0 6px; font-size: 14px; color: var(--ink); }
+        #guideOv .gd-prm { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; }
+        #guideOv .gd-prm code { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-2); font: 700 14px/1.3 ui-monospace, Menlo, monospace; color: var(--ink); overflow-wrap: anywhere; -webkit-user-select: all; user-select: all; }
+        #guideOv .gd-small { border: none; background: var(--bg); box-shadow: var(--raise-xs); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 800; color: var(--accent); white-space: nowrap; }
+        #guideOv .gd-sw { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+        #guideOv .gd-sw span { flex: 1; }
+        #guideOv .gd-sw input { -webkit-appearance: none; appearance: none; position: relative; flex: none; margin: 0; width: 46px; height: 28px; border-radius: 999px; background: var(--line-2); transition: background-color .2s; }
+        #guideOv .gd-sw input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+        #guideOv .gd-sw input:checked { background: var(--accent); }
+        #guideOv .gd-sw input:checked::after { transform: translateX(18px); }
+        #guideOv .gd-sub { font-size: 12px; color: var(--ink-3); }
     </style>
 </head>
 <body>
@@ -2937,8 +2949,10 @@
     <!-- WIDGET_SRC_BEGIN -->
     <script type="text/plain" id="widgetSrc">// バレー日程アプリ: 今日の予定ウィジェット(Scriptable 用)
 // 使い方: Scriptable にこのコードを貼って保存 → ホーム画面かロック画面に Scriptable のウィジェットを置く →
-//         ウィジェットを長押し「ウィジェットを編集」→ Script でこのスクリプトを選び、Parameter に名簿の自分の名前を入れる
-// (名前を入れると、自分あての共有予定・自分の出欠・管理者のLocal予定(通知用に共有している分)も出ます)
+//         ウィジェットを長押し「ウィジェットを編集」→ Script でこのスクリプトを選び、Parameter に
+//         アプリの「使い方 → ウィジェット」に出る「あなたの Parameter」を入れる(名前、または 名前#合言葉)
+// (自分あての共有予定・自分の出欠・共有をオンにした自分のLocal予定も出ます)
+// アカウントを紐付けている名前は、合言葉がないと使えません(名前だけで他の人に成りすませないように)
 
 const APP_URL = "https://248toma.github.io/calendar/";
 const API_KEY = "AIzaSyCupZ4RbR9eLzz991by5DFu9lxOsVbjrNg";
@@ -3001,6 +3015,19 @@ function md(k) { const [, m, d] = k.split("-").map(Number); return `${m}/${d}`; 
 function hm(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; }
 const SYM = { "来る": "○", "来ない": "✖", "未定": "△" };
 
+// 「名前」または「名前#合言葉」。紐付け済みの名前は合言葉が合わないと使わない(blocked)
+let WBLOCK = false;
+function resolveMe(data, raw) {
+  const m = String(raw || "").match(/^(.*?)(?:#([a-z0-9]+))?$/i);
+  const name = (m ? m[1] : "").trim(), key = m && m[2] ? m[2].toLowerCase() : "";
+  if (!name) return "";
+  const me = (data.roster || []).find(r => r.name === name);
+  if (me && me.emailHash) {
+    const rec = ((data.byDate || {}).widget || []).find(x => x && x.who === me.id);
+    if (!key || !rec || rec.k !== key) { WBLOCK = true; return ""; }
+  }
+  return name;
+}
 function itemsFor(data, today, myName, nowMin) {
   const me = myName ? (data.roster || []).find(r => r.name === myName) : null, myId = me ? me.id : null;
   const items = [];
@@ -3033,7 +3060,12 @@ function itemsFor(data, today, myName, nowMin) {
   (data.plans || []).filter(p => !p.local && has(p) && onDay(p) && visible(p)).forEach(p => add(p, false));
   ((data.byDate || {}).pairplans || []).filter(p => p && !p.deleted && has(p) && onDay(p) && visible(p)).forEach(p => add(p, false));
   // 管理者のLocal予定(通知用に共有している分): 自分の分だけ
-  if (myId != null) ((data.byDate || {}).localntf || []).filter(x => x.who === myId).forEach(x => (x.list || []).filter(p => has(p) && onDay(p)).forEach(p => add(p, true)));
+  // 自分のLocal予定: 管理者の通知用の写し+ウィジェット用に共有をオンにした写し(同じ予定は1つだけ)
+  if (myId != null) {
+    const seen = new Set();
+    const locals = ((data.byDate || {}).localntf || []).filter(x => x.who === myId).concat(((data.byDate || {}).widget || []).filter(x => x && x.who === myId));
+    locals.forEach(x => (x.list || []).filter(p => has(p) && onDay(p) && !seen.has(p.id)).forEach(p => { seen.add(p.id); add(p, true); }));
+  }
   items.sort((a, b) => a.ad - b.ad || a.s - b.s);
   // 終わった予定は出さない(終日・何日も続く予定は、その日のうちは出したまま)
   const nowM = nowMin == null ? -1 : nowMin;
@@ -3187,6 +3219,7 @@ function build(data, now, myName) {
       });
     }
   }
+  if (WBLOCK) { w.addSpacer(4); const bl = w.addText("    ⚠︎ この名前は合言葉が必要です(アプリの 使い方→ウィジェット)"); bl.font = Font.systemFont(9); bl.textColor = C.ink3; bl.lineLimit = 1; bl.minimumScaleFactor = 0.7; }
   w.addSpacer();
   setRefresh(w, items, now);
   return w;
@@ -3202,13 +3235,13 @@ async function main() {
   if (myName) Keychain.set("vb_widget_name", myName);
   else if (!config.runsInWidget) {
     const saved = Keychain.contains("vb_widget_name") ? Keychain.get("vb_widget_name") : "";
-    const a = new Alert(); a.title = "名簿の自分の名前"; a.message = "自分あての予定と出欠を出すのに使います"; a.addTextField("例: ゆうご", saved); a.addAction("OK"); a.addCancelAction("名前なし");
+    const a = new Alert(); a.title = "名簿の自分の名前"; a.message = "アプリの「使い方→ウィジェット」に出る Parameter(名前、または 名前#合言葉)"; a.addTextField("例: たろう", saved); a.addAction("OK"); a.addCancelAction("名前なし");
     if (await a.present() === 0) { myName = a.textFieldValue(0).trim(); if (myName) Keychain.set("vb_widget_name", myName); }
   } else myName = Keychain.contains("vb_widget_name") ? Keychain.get("vb_widget_name") : "";
   let w;
   try {
     const data = await loadShared();
-    w = build(data, new Date(), myName);
+    w = build(data, new Date(), resolveMe(data, myName));
   } catch (e) {
     w = new ListWidget(); w.backgroundColor = C.bg; w.url = APP_URL;
     const t = w.addText("予定を読み込めませんでした"); t.font = Font.mediumSystemFont(12); t.textColor = C.ink2;
@@ -6241,6 +6274,7 @@ await main();
         // 今は管理者だけ: 管理者のLocal予定だけを通知用に共有し、管理者を「個人LINEに届く人」に登録する。
         // 管理者でない人のLocal予定はこれまでどおり端末の中だけ(共有しない)
         function syncLocalNtf() {
+            try { syncWidgetLocal(); } catch (e) { console.warn(e); }   // ウィジェット用のLocal予定の写し(オンにした人だけ)
             if (!realAdmin()) return;
             const owner = planAuthorKey(), who = myRosterId();
             if (who != null) {   // 届く人に登録(共有データの最新に足すだけ。ほかの管理者は消さない)
@@ -11360,6 +11394,11 @@ const namesBtn = isAdmin() && dates.length > 0
                         (rem[date] || []).forEach(rp => { const i = L.findIndex(x => x.id === rp.id); if (i < 0) L.push(rp); else if (stampNum(rp.updated) > stampNum(L[i].updated)) L[i] = rp; });
                         return;
                     }
+                    if (date === WIDGET_ST) {   // ウィジェット用: 人ごとに新しい方
+                        const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
+                        (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.who === rp.who); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
+                        return;
+                    }
                     if (date === LOCAL_NTF) {   // ローカル予定の通知用コピー: 持ち主ごとに新しい方
                         const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
                         (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.owner === rp.owner); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
@@ -12710,6 +12749,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function guideWidgetHtml() {
             return `<div class="gd-note">ホーム画面やロック画面に、今日の予定を出せます(iPhoneのみ)。無料アプリ「Scriptable」を使います。</div>`
+                + `<div id="gdMe">${gdMeHtml()}</div>`
                 + gdSteps([
                     `App Store で <b>Scriptable</b> を入れる(無料)`,
                     `下のボタンで <b>コードをコピー</b>
@@ -12717,7 +12757,7 @@ const namesBtn = isAdmin() && dates.length > 0
                      <pre class="gd-code" id="gdCode"></pre>`,
                     `Scriptable を開き、右上の <span class="gd-key">${GD_PLUS}</span> → 白い画面を長押しして <b>ペースト</b>。上の題名を「バレー予定」などにして <span class="gd-key">Done</span>`,
                     `ホーム画面の何もない所を長押し → 左上の <span class="gd-key">編集</span> → <span class="gd-key">ウィジェットを追加</span> → <b>Scriptable</b> を選び、好きな大きさで追加`,
-                    `置いたウィジェットを長押し → <span class="gd-key">ウィジェットを編集</span><br>・<b>Script</b>: さっきの「バレー予定」<br>・<b>Parameter</b>: <b>名簿の自分の名前</b>(例: たろう)`,
+                    `置いたウィジェットを長押し → <span class="gd-key">ウィジェットを編集</span><br>・<b>Script</b>: さっきの「バレー予定」<br>・<b>Parameter</b>: 上の「<b>あなたの Parameter</b>」をそのまま入れる(例: たろう)<br><span class="gd-sub">アカウントを紐付けている人は「名前#合言葉」の形です。名前だけでは使えません</span>`,
                     `ロック画面にも置けます: ロック画面を長押し → <span class="gd-key">カスタマイズ</span> → ロック画面 → ウィジェットの枠から Scriptable を追加し、同じように設定`
                 ])
                 + `<div class="gd-note">・ダークモードで影が合わないときは、Parameter を「たろう,dark」(ライトなら「,light」)に<br>・壁紙の色に合わせたいときは「たろう,dark,1e1e1e」のように3つ目に色を入れる<br>・表示は30分ごとと、予定が終わるたびに自動で変わります(iPhoneの都合で数分ずれることがあります)</div>`;
@@ -12732,6 +12772,7 @@ const namesBtn = isAdmin() && dates.length > 0
             ov.querySelectorAll(".gd-tabs button").forEach(b => b.classList.toggle("on", b.dataset.g === guideTab));
             document.getElementById("guideBody").innerHTML = guideTab === "widget" ? guideWidgetHtml() : guideHomeHtml();
             const pre = document.getElementById("gdCode"); if (pre) pre.textContent = widgetCode();
+            if (guideTab === "widget") wgtEnsureKey(false);
             ov.style.display = "block"; ov.scrollTop = 0;
             document.body.style.overflow = "hidden";
         }
@@ -12752,6 +12793,99 @@ const namesBtn = isAdmin() && dates.length > 0
                 btn.classList.toggle("done", ok);
                 setTimeout(() => { btn.textContent = "コードをコピー"; btn.classList.remove("done"); }, 2500);
             }
+        }
+
+        // ------- ウィジェット用の共有(出欠データの "widget" に、1人1つ) -------
+        // { who: 名簿ID, k: 合言葉(アカウント紐付け済みの人だけ), list: Local予定の写し(共有をオンにした人だけ), ts }
+        // アカウントを紐付けている名前は、ウィジェットで「名前#合言葉」でないと使えない(他の人が名前だけで成りすませないように)
+        const WIDGET_ST = "widget", WGT_LOCAL_KEY = "wgt_local_v1";
+        function wgtLocalOn() { try { return localStorage.getItem(WGT_LOCAL_KEY) === "1"; } catch (e) { return false; } }
+        function wgtStore() { const a = attendanceByDate[WIDGET_ST]; return Array.isArray(a) ? a : []; }
+        function wgtMyRec() { const id = myRosterId(); return id == null ? null : wgtStore().find(x => x.who === id) || null; }
+        function wgtMyLinked() { const id = myRosterId(), r = id == null ? null : roster.find(x => x.id === id); return !!(r && r.emailHash); }
+        function wgtLocalList() {
+            const today = formatDateKey(new Date()), lim = formatDateKey(new Date(Date.now() + 62 * 864e5));
+            return planList.filter(p => p.local && p.startDate && (p.endDate || p.startDate) >= today && p.startDate <= lim)
+                .map(p => { const o = { id: p.id, title: p.title || "", startDate: p.startDate, color: +p.color || 0 }; ["start", "end", "endDate", "memo", "allDay"].forEach(k => { if (p[k]) o[k] = p[k]; }); return o; })
+                .sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
+        }
+        function wgtCanWrite() { return !!(firebaseAvailable && firestoreRef && firestoreSyncActive && authUid && myRosterId() != null); }
+        // 自分の分だけを、共有データの最新に入れ替えて保存する(全体は上書きしない)
+        function wgtPut(change) {
+            if (!wgtCanWrite()) return Promise.resolve(false);
+            const who = myRosterId();
+            return firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                const store = Array.isArray(data[WIDGET_ST]) ? data[WIDGET_ST] : [];
+                const cur = store.find(x => x.who === who) || { who };
+                const next = change({ ...cur });
+                if (!next) return null;
+                next.ts = Date.now();
+                const keep = next.k || (next.list && next.list.length);
+                data[WIDGET_ST] = store.filter(x => x.who !== who).concat(keep ? [next] : []);
+                tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                return data[WIDGET_ST];
+            }).then(arr => {
+                if (!arr) return false;
+                attendanceByDate[WIDGET_ST] = arr;
+                setLocalQuiet(BYDATE_KEY, JSON.stringify(attendanceByDate));
+                return true;
+            }).catch(err => { console.error("ウィジェット用の共有に失敗しました。", err); return false; });
+        }
+        // Local予定が変わったら、共有をオンにしている人だけ写しを送り直す
+        function syncWidgetLocal() {
+            if (!wgtLocalOn() || !wgtCanWrite()) return;
+            const list = wgtLocalList();
+            const cur = wgtMyRec();
+            if (cur && JSON.stringify(cur.list || []) === JSON.stringify(list)) return;
+            wgtPut(rec => { if (JSON.stringify(rec.list || []) === JSON.stringify(list)) return null; rec.list = list; return rec; });
+        }
+        function wgtNewKey() { const c = "abcdefghjkmnpqrstuvwxyz23456789"; let k = ""; const a = new Uint32Array(6); try { crypto.getRandomValues(a); } catch (e) { a.forEach((_, i) => { a[i] = Math.random() * 1e9; }); } a.forEach(v => { k += c[v % c.length]; }); return k; }
+        // 紐付け済みの人: 合言葉がなければ作る(remake: 作り直す=前のウィジェットは使えなくなる)
+        function wgtEnsureKey(remake) {
+            if (!wgtMyLinked()) return Promise.resolve(false);
+            const cur = wgtMyRec();
+            if (cur && cur.k && !remake) return Promise.resolve(true);
+            if (remake && !confirm("合言葉を作り直しますか？\n今のウィジェットは、新しい Parameter に入れ替えるまで自分の予定が出なくなります。")) return Promise.resolve(false);
+            const k = wgtNewKey();
+            return wgtPut(rec => { if (rec.k && !remake) return null; rec.k = k; return rec; }).then(ok => { gdMeRefresh(); return ok; });
+        }
+        function wgtParam() {
+            const n = myMemberName(); if (!n) return "";
+            if (!wgtMyLinked()) return n;
+            const rec = wgtMyRec();
+            return rec && rec.k ? `${n}#${rec.k}` : "";
+        }
+        function setWgtLocal(on, el) {
+            if (on) {
+                if (!confirm("ウィジェットに Local 予定を出すため、Local 予定(今日から2か月分)をサーバーに共有しますか？\n\nアプリの画面では、ほかの人には見えません。")) { if (el) el.checked = false; return; }
+                try { localStorage.setItem(WGT_LOCAL_KEY, "1"); } catch (e) { /* ignore */ }
+                syncWidgetLocal();
+            } else {
+                try { localStorage.removeItem(WGT_LOCAL_KEY); } catch (e) { /* ignore */ }
+                wgtPut(rec => { if (!rec.list) return null; delete rec.list; return rec; });   // サーバーの写しも消す
+            }
+            setTimeout(gdMeRefresh, 50);
+        }
+        function gdMeHtml() {
+            const n = myMemberName();
+            if (!n || !wgtCanWrite()) return `<div class="gd-me"><h3>あなたの Parameter</h3>ログインして名簿の自分の名前とつながると、ここに出ます。</div>`;
+            const prm = wgtParam();
+            const prmRow = prm ? `<div class="gd-prm"><code id="gdPrm">${escapeHtml(prm)}</code><button type="button" class="gd-small" onclick="copyText(document.getElementById('gdPrm').textContent, this)">コピー</button></div>`
+                : `<div class="gd-prm"><code>作成中…</code></div>`;
+            const remake = wgtMyLinked() && prm ? `<div class="gd-sub">アカウント紐付け済みなので、名前の後ろに合言葉が付きます。人に見せないでね。<button type="button" class="gd-small" style="margin-left:6px;padding:3px 9px" onclick="wgtEnsureKey(true)">作り直す</button></div>` : "";
+            return `<div class="gd-me"><h3>あなたの Parameter</h3>${prmRow}${remake}
+                <label class="gd-sw"><span><b>Local 予定もウィジェットに出す</b><br><span class="gd-sub">オンにすると、Local 予定をサーバーに共有します</span></span><input type="checkbox" ${wgtLocalOn() ? "checked" : ""} onchange="setWgtLocal(this.checked, this)"></label></div>`;
+        }
+        function gdMeRefresh() { const el = document.getElementById("gdMe"); if (el) el.innerHTML = gdMeHtml(); }
+        async function copyText(txt, btn) {
+            let ok = false;
+            try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { /* 下の方法で */ }
+            if (!ok) { const ta = document.createElement("textarea"); ta.value = txt; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;"; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); try { ok = document.execCommand("copy"); } catch (e) { ok = false; } ta.remove(); }
+            if (btn) { const t = btn.textContent; btn.textContent = ok ? "✓" : "×"; setTimeout(() => { btn.textContent = t; }, 1500); }
         }
     </script>
 </body>
