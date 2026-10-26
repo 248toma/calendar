@@ -2885,8 +2885,12 @@
         @keyframes tutPulse { 0% { box-shadow: 0 0 0 0 rgba(47, 211, 154, .55); } 100% { box-shadow: 0 0 0 14px rgba(47, 211, 154, 0); } }
         #tutOv .tut-hand { position: fixed; z-index: 4; font-size: 34px; line-height: 1; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); animation: tutTap 1s ease-in-out infinite; }
         @keyframes tutTap { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-4px, -8px) scale(.92); } }
-        #tutOv .tut-demo { position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; z-index: 1; pointer-events: none; }
-        #tutOv .tut-demo .op-box { display: block; margin: 0; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+        /* 見本の画面は、本物の画面と同じように全体を覆う(後ろのカレンダーが見えないように) */
+        #tutOv .tut-demo { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; background: var(--bg); box-sizing: border-box;
+            padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 0; }
+        #tutOv .tut-demo .op-box { display: block; margin: 0; }
+        #tutOv .tut-demo .sv-card.dim { opacity: .55; }
+        #tutOv .tut-demo .day-bar-demo { font-size: 16px; font-weight: 800; margin: 4px 2px 12px; }
         #tutOv .tut-demo .sv-card { margin: 0; }
         #tutOv .tut-demo .sv-note input { pointer-events: none; }
         #tutOv .tut-bub { position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; z-index: 5; background: var(--surface); color: var(--ink); border-radius: 18px; padding: 15px 16px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: tutIn .25s ease-out; }
@@ -12208,13 +12212,17 @@ const namesBtn = isAdmin() && dates.length > 0
             const r = (reservations[d] || [])[0];
             const info = r ? [r.time, (r.place || "") + (r.court || "")].filter(Boolean).join(" ") : "18:00-21:00 体育館";
             const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${tutDemoState.sv === s ? " sel" : ""}" data-tut="sv-${STATUS_META[s].cls}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("");
-            return `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tutDemoState.sv ? "" : '<span class="sv-tag"></span>'}</div><div class="sv-info"><div>${escapeHtml(info)}</div></div><div class="sv-btns">${btns}</div><div class="sv-note" data-tut="sv-note"><i class="ic ic-chat"></i><input type="text" readonly tabindex="-1" placeholder="管理者へひとこと(遅刻・9割行ける など)" value="${tutDemoState.sv ? "30分くらい遅れます" : ""}"></div></div>`;
+            const card = `<div class="sv-card"><div class="sv-date"><span class="sv-dt">${m}/${dd}(${wd})</span>${tutDemoState.sv ? "" : '<span class="sv-tag"></span>'}</div><div class="sv-info"><div>${escapeHtml(info)}</div></div><div class="sv-btns">${btns}</div><div class="sv-note" data-tut="sv-note"><i class="ic ic-chat"></i><input type="text" readonly tabindex="-1" placeholder="管理者へひとこと(遅刻・9割行ける など)" value="${tutDemoState.sv ? "30分くらい遅れます" : ""}"></div></div>`;
+            const d2 = new Date(y, m - 1, dd + 7), wd2 = WEEKDAYS[d2.getDay()];
+            const dim = `<div class="sv-card dim"><div class="sv-date"><span class="sv-dt">${d2.getMonth() + 1}/${d2.getDate()}(${wd2})</span><span class="sv-tag"></span></div><div class="sv-info"><div>${escapeHtml(info)}</div></div><div class="sv-btns">${["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("")}</div></div>`;
+            return `<div class="sv-wrap"><div class="sv-head"><h2>${IC("survey")} RSVP</h2><button type="button" class="sv-close">${IC("close")}</button></div><div class="sv-who">${IC("user")} <b>あなた</b></div>${card}${dim}</div>`;
         }
         function tutDemoPlan() {
             const sc = tutDemoState.scope || "";
-            return `<div class="op-box"><div class="op-row"><input type="text" class="op-title" readonly tabindex="-1" value="買い物"><input type="text" class="op-memo-in" readonly tabindex="-1" placeholder="メモ"></div>
+            const t = new Date(), wd = WEEKDAYS[t.getDay()];
+            return `<div class="sv-wrap"><div class="sv-head"><h2>${IC("cal")} 予定を追加</h2><button type="button" class="sv-close">${IC("close")}</button></div><div class="day-bar-demo">${t.getMonth() + 1}/${t.getDate()}(${wd})</div><div class="op-box"><div class="op-row"><input type="text" class="op-title" readonly tabindex="-1" value="買い物"><input type="text" class="op-memo-in" readonly tabindex="-1" placeholder="メモ"></div>
                 <div class="op-scope" style="display:flex"><span class="op-colors-lbl">保存</span><button type="button" class="op-sc${sc === "shared" ? " on" : ""}" data-tut="op-shared">Shared</button><button type="button" class="op-sc${sc === "local" ? " on" : ""}" data-tut="op-local">Local ${IC("phone")}</button></div>
-                <div class="op-actions" style="display:flex;margin-top:8px"><span class="op-grow"></span><button type="button" class="op-add">追加</button></div></div>`;
+                <div class="op-actions" style="display:flex;margin-top:8px"><span class="op-grow"></span><button type="button" class="op-add">追加</button></div></div></div>`;
         }
         function tutBuildSteps() {
             const q = (sel) => () => document.querySelector(sel);
@@ -12317,7 +12325,6 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!ov || !st) return;
             const vh = window.innerHeight;
             const demo = ov.querySelector(".tut-demo"), bub = ov.querySelector(".tut-bub");
-            if (demo) demo.style.top = Math.round(vh * 0.16) + "px";
             const r = tutTargetRect();
             const hole = ov.querySelector(".tut-hole"), ring = ov.querySelector(".tut-ring"), hand = ov.querySelector(".tut-hand");
             if (!r) {   // 何も指さない説明: 全体を暗くして真ん中に
