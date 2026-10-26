@@ -2955,7 +2955,7 @@
                     <option value="view">View</option>
                 </select></div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
-            <div class="st-row"><span class="st-lbl">使い方</span><button type="button" class="st-btn" onclick="toggleSettings();setTimeout(startTutorial,250)">見る</button></div>
+            <div class="st-row"><span class="st-lbl">使い方</span><button type="button" class="st-btn" onclick="startTutorial()">見る</button></div>
         </div>
         <div class="panel-group-label">記録</div>
         <details class="acc" id="changeLogAcc">
@@ -12241,9 +12241,25 @@ const namesBtn = isAdmin() && dates.length > 0
             return true;
         }
         function maybeStartTutorial() { if (tutShouldShow()) startTutorial(); }
+        // 始める前に、いつものカレンダー画面に戻す(設定・名簿・アンケート・入力欄などは全部閉じる)
+        function tutResetScreen() {
+            try {
+                const sp = document.getElementById("settingsPanel");
+                if (sp && sp.classList.contains("open")) toggleSettings();
+                closeOtherPanels(null); syncHeaderBtns();
+                if (typeof surveyOpen !== "undefined" && surveyOpen) closeSurvey();
+                closePairPanel(); closeAddChooser();
+                if (planPanelIsOpen()) closePlanPanel();
+                if (planDetailId != null) closePlanDetail();
+                if (volleyFull) closeVolleyFull();
+                document.querySelectorAll("#guestPickOv").forEach(e => e.remove());
+            } catch (e) { console.warn(e); }
+            document.body.style.overflow = "";
+            window.scrollTo(0, 0);
+        }
         function startTutorial() {
             if (tutOvEl) return;
-            if (typeof surveyOpen !== "undefined" && surveyOpen) closeSurvey();
+            tutResetScreen();
             const pb = document.getElementById("pairBtn"); if (pb && !pb.innerHTML.trim()) pb.innerHTML = IC("users");
             document.body.classList.add("tut-on");
             tutDemoState = {};
@@ -12251,7 +12267,7 @@ const namesBtn = isAdmin() && dates.length > 0
             tutOvEl = document.createElement("div"); tutOvEl.id = "tutOv";
             tutOvEl.addEventListener("click", tutClick);
             document.body.appendChild(tutOvEl);
-            tutGo(0);
+            setTimeout(() => { if (tutOvEl) tutGo(0); }, 350);   // 画面を閉じ終わってから位置を測る
         }
         function endTutorial(skipped) {
             if (skipped) { try { sessionStorage.setItem(TUT_SKIP_KEY, "1"); } catch (e) { /* ignore */ } }
@@ -12294,6 +12310,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 + `<div class="tut-hole"></div><div class="tut-ring"></div><div class="tut-hand">👆</div>`
                 + `<div class="tut-bub" role="dialog" aria-live="polite"><h4>${st.title}</h4><p>${st.text}</p>${hint}<div class="tut-foot"><span class="tut-dots" aria-label="${tutStep + 1}/${n}">${dots}</span>${skip}${nextBtn}</div></div>`;
             tutPlace();
+            const at = tutStep; setTimeout(() => { if (tutOvEl && tutStep === at) tutPlace(); }, 380);   // 画面が動き終わった位置に合わせ直す
         }
         function tutPlace() {
             const ov = tutOvEl, st = tutSteps[tutStep];
