@@ -11921,13 +11921,25 @@ const namesBtn = isAdmin() && dates.length > 0
             CL_TRACK.forEach(k => { let v = null; try { v = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { v = null; } o[k] = v; });
             return o;
         }
+        const clDraftPending = new Set();
+        function clIsDraft(k) { return !!volleyDraft && volleyDraft.key === k && volleyDaySig(k) === volleyDraft.sig; }
+        // 下書きだったバレー日に何か入れた(または下書きのまま残した)ら、そこで初めて「バレー日にした」を記録する
+        function clDraftCommits() {
+            const out = [];
+            [...clDraftPending].sort().forEach(k => {
+                if (!events[k]) { clDraftPending.delete(k); return; }
+                if (!clIsDraft(k)) { clDraftPending.delete(k); out.push(`${clMd(k)} をバレー日にした`); }
+            });
+            return out;
+        }
         function clDiff(a, b) {
             const out = [];
             const sym = st => (STATUS_META[st] && STATUS_META[st].sym) || st;
             // バレー日
             const ev0 = a[EVENTS_KEY] || {}, ev1 = b[EVENTS_KEY] || {};
-            Object.keys(ev1).filter(k => ev1[k] && !ev0[k]).sort().forEach(k => out.push(`${clMd(k)} をバレー日にした`));
-            Object.keys(ev0).filter(k => ev0[k] && !ev1[k]).sort().forEach(k => out.push(`${clMd(k)} のバレー日を解除した`));
+            // 2回押しなどでバレーの画面を開いただけ(まだ何も入れていない下書き)は記録しない。何か入れた時点で「バレー日にした」を出す
+            Object.keys(ev1).filter(k => ev1[k] && !ev0[k]).sort().forEach(k => { if (clIsDraft(k)) { clDraftPending.add(k); return; } out.push(`${clMd(k)} をバレー日にした`); });
+            Object.keys(ev0).filter(k => ev0[k] && !ev1[k]).sort().forEach(k => { if (clDraftPending.delete(k)) return; out.push(`${clMd(k)} のバレー日を解除した`); });
             // 出欠
             const at0 = a[BYDATE_KEY] || {}, at1 = b[BYDATE_KEY] || {};
             const adds = {}, dels = {}, chg = [];
@@ -11989,7 +12001,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const flush = () => {
                 timer = null;
                 const next = clSnapshot();
-                try { if (realAdmin() && !firestoreApplyingRemote) clAppend(clDiff(snap, next)); } catch (e) { console.warn("変更ログの記録に失敗しました。", e); }
+                try { if (realAdmin() && !firestoreApplyingRemote) { const d = clDiff(snap, next); clAppend(clDraftCommits().concat(d)); } } catch (e) { console.warn("変更ログの記録に失敗しました。", e); }
                 snap = next;
             };
             const nativeSet = Storage.prototype.setItem;
