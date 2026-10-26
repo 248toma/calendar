@@ -2948,6 +2948,12 @@
         .tw-blk.end-tm { display: flex; flex-direction: column; justify-content: flex-end; }
         .tw-blk.end-tm span { font-weight: 700; opacity: 1; }
         .tw-base { position: absolute; border-radius: 5px; background: var(--surface); pointer-events: none; }
+        /* ひとこと入力(予定の入力欄のいちばん上) */
+        .op-quick { margin: 0 0 8px; }
+        .op-box .op-quick input { width: 100%; height: 40px; font-size: 16px; border-radius: 10px; padding: 0 10px; border: 1.5px solid var(--accent); }
+        .op-qpv { min-height: 16px; margin: 5px 2px 0; font-size: 12.5px; font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .op-qpv.miss { color: var(--ink-3); font-weight: 600; }
+        .op-box.editing-existing .op-quick { display: none; }
     </style>
 </head>
 <body>
@@ -3646,6 +3652,10 @@ await main();
 
     <div id="daySheet"><div id="sheetGrip" role="separator" aria-label="予定を引き上げる"><span></span></div><div id="sheetBody">
     <div class="op-box" id="otherPlanBox">
+        <div class="op-quick" id="opQuickRow">
+            <input type="text" id="opQuick" placeholder="ひとこと入力  例: あした7じ のみ" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ひとこと入力" oninput="onQuickInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();quickAdd();}">
+            <div class="op-qpv" id="opQuickPv"></div>
+        </div>
         <div class="op-row">
             <input type="text" id="opTitle" class="op-title" maxlength="12" placeholder="題名" aria-label="タイトル">
             <input type="text" id="opMemo" class="op-memo-in" placeholder="メモ" aria-label="メモ">
@@ -6609,6 +6619,8 @@ await main();
             });
             rows.sort((a, b) => a.ad - b.ad || a.s - b.s);   // 連続した予定 → バレー → 終日 → その他
             const box = document.getElementById("otherPlanBox");
+            const focusEl = box && box.contains(document.activeElement) ? document.activeElement : null;   // 入力中の欄(作り直しで外れないように)
+            const selA = focusEl && focusEl.selectionStart, selB = focusEl && focusEl.selectionEnd;
             if (box && el.contains(box)) el.parentNode.insertBefore(box, el);   // 一覧を作り直す前に入力欄を退避
             const isOpen = planPanelIsOpen(), isNew = isOpen && planEditId == null;
             el.innerHTML = `<div class="nv-head"></div>` +
@@ -6622,6 +6634,7 @@ await main();
                     box.style.display = "block";
                 } else box.style.display = "none";
             }
+            if (focusEl && document.activeElement !== focusEl && focusEl.offsetParent) { try { focusEl.focus({ preventScroll: true }); if (selA != null) focusEl.setSelectionRange(selA, selB); } catch (e) { /* ignore */ } }
             // 入力欄を開いたらカレンダーを縮め、閉じたら開く前の状態に戻す
             const anyOpen = isOpen || (planDetailId != null && !!document.getElementById("planDetail"));
             const curId = isOpen ? planEditId : planDetailId, wasId = sheetPrevEditId;
@@ -7630,6 +7643,7 @@ await main();
             planEditId = null; planFormDate = "";   // 開くたびに新規の入力欄
             renderOtherPlanBox();
             scrollToPlanEditor();
+            { const q = $op("opQuick"); if (q) try { q.focus({ preventScroll: true }); } catch (e) { q.focus(); } }   // すぐ打てるように
         }
         function closePlanPanel() {
             planPanel = { date: selectedDate, open: false };
@@ -7670,6 +7684,8 @@ await main();
             setPlanAllDay(true);
             $op("opAddBtn").textContent = "追加";
             $op("opDelBtn").style.display = "none";
+            { const q = $op("opQuick"), pv = $op("opQuickPv"); if (q) q.value = ""; if (pv) pv.textContent = ""; }
+            $op("otherPlanBox").classList.remove("editing-existing");
         }
         function planRangeText(p) {
             const md = (d) => { const [, m, dd] = d.split("-").map(Number); return `${m}/${dd}`; };
@@ -7705,6 +7721,7 @@ await main();
             setPlanAllDay(!planTimed(p));
             $op("opAddBtn").textContent = "更新";
             $op("opDelBtn").style.display = "inline-block";
+            $op("otherPlanBox").classList.add("editing-existing");   // 直すときは、ひとこと入力は出さない
             renderOtherPlanBox();
             scrollToPlanEditor();
         }
@@ -7749,6 +7766,7 @@ await main();
                 putPairPlan(p);
                 planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = "";
                 saveData(); renderCalendar(); renderOtherPlanBox();
+                jumpToPlanDate(sd);
                 return;
             }
             if (prev && prev.pp) {   // ペア予定をローカルへ移した: 共有側は消した印を残す
@@ -7777,6 +7795,7 @@ await main();
             if (toLocal || (prev && prev.local)) syncLocalNtf();
             renderCalendar();
             renderOtherPlanBox();
+            jumpToPlanDate(sd);
         }
         function deleteOtherPlan(id) {
             const target = planList.find(x => x.id === id);
@@ -12648,7 +12667,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 { target: q('.settings-btn[data-panel="settingsPanel"]'), title: "⚙️ 設定", text: "表示の変更や<b>ログイン</b>はここ。", tap: true },
                 { target: q("#calExportBtn"), title: "📅 カレンダーに登録", text: "バレーの予約を<b>iPhone・Googleカレンダー</b>にまとめて登録。", tap: true },
                 { target: q("#pairBtn"), title: "👥 ペアモード", text: "決まった相手と<b>だけ</b>予定を共有。ここで相手を選びます(ログイン後)。", tap: true },
-                { target: q("#addFab"), title: "＋ 予定を追加", text: "自分の予定もここから入れられます。", tap: true },
+                { target: q("#addFab"), title: "＋ 予定を追加", text: "自分の予定もここから。\n「<b>あした7じ のみ</b>」みたいに、ひらがなで雑に打つだけでも入ります。", tap: true },
                 { demo: tutDemoPlan, target: dq("op-local"), title: "📱 Local", text: "<b>この端末だけ</b>の予定。ほかの人には見えません。", tap: true, onTap: () => { tutDemoState.scope = "local"; } },
                 { demo: tutDemoPlan, target: dq("op-shared"), title: "👥 ペア予定", text: "ペアモードONで <b>Shared</b> を選ぶと、ペアの相手と共有。", tap: true, onTap: () => { tutDemoState.scope = "shared"; } },
                 { before: openSet, target: q(".st-guide"), title: "📲 ホーム画面・ウィジェット", text: "<b>ホーム画面に追加</b>や<b>iPhoneウィジェット</b>のやり方は、あとでここから見られます。", next: "次へ" },
@@ -12988,6 +13007,250 @@ const namesBtn = isAdmin() && dates.length > 0
                 e.preventDefault();   // ページ全体のはずみを止める(下に引っぱる更新は、指の動きを読むのでそのまま使える)
             }, { passive: false });
         })();
+        // ------- ひとこと入力: 「あした7じ のみ」などの雑な文から、日付・時間・題名を読み取る(AIなし・ルールだけ) -------
+        const QA = (() => {
+            const toHira = s => s.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+            // 小さい字・濁点/半濁点を無視して比べる(フリックの打ち間違いに強くする)
+            const SMALL = { "ぁ": "あ", "ぃ": "い", "ぅ": "う", "ぇ": "え", "ぉ": "お", "っ": "つ", "ゃ": "や", "ゅ": "ゆ", "ょ": "よ", "ゎ": "わ" };
+            const fold = s => toHira(s).normalize("NFD").replace(/[゙゚]/g, "").normalize("NFC").replace(/[ぁぃぅぇぉっゃゅょゎ]/g, c => SMALL[c]).replace(/ー/g, "");
+            const lev = (a, b) => {
+                const m = a.length, n = b.length; if (Math.abs(m - n) > 1) return 9;
+                const d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j;
+                for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+                return d[m][n];
+            };
+            // 誤字を直す相手(日付・時間に使う決まった言葉だけ)
+            const KW = ["きょう", "あした", "あさって", "しあさって", "らいしゅう", "さらいしゅう", "こんしゅう", "らいげつ", "こんげつ", "さらいげつ", "こんど",
+                "げつようび", "かようび", "すいようび", "もくようび", "きんようび", "どようび", "にちようび", "げつよう", "かよう", "すいよう", "もくよう", "きんよう", "どよう", "にちよう",
+                "しゅうじつ", "いちにち", "しゅうまつ", "らいしゅうまつ", "げつまつ", "ゆうがた", "ごぜん", "ごご", "よる", "あさ", "ひる", "こんや", "つぎの", "らいねん"];
+            const KWF = KW.map(k => [k, fold(k)]);
+            const NO_LEV = new Set(["きょう", "ごぜん", "こんや", "つぎの", "こんど", "いちにち"]);   // 似た普通の言葉が多いものは、1文字違いでは直さない
+            // 返り値: 直した言葉(そのままで正しいときも、その言葉)。strict: 小さい字・濁点の違いだけ
+            function fixWord(tok, strict) {
+                if (!tok || /[0-9\s]/.test(tok)) return null;
+                const h = toHira(tok), f = fold(tok);
+                if (KW.includes(h)) return h;
+                let best = null, bd = 2;
+                for (const [k, kf] of KWF) {
+                    if (kf.length < 3) continue;
+                    if (kf === f) return k;
+                    if (strict || NO_LEV.has(k)) continue;
+                    if (f.length === kf.length) { const dd = lev(f, kf); if (dd < bd) { bd = dd; best = k; } }   // 1文字ちがい
+                    else if (Math.max(f.length, kf.length) >= 5) { const dd = lev(f, kf); if (dd < bd) { bd = dd; best = k; } }   // 1文字ぬけ・多い(長い言葉だけ)
+                }
+                return bd <= 1 ? best : null;
+            }
+            // 直した言葉の後ろが、数字・スペース・曜日・「の」などで続くときだけ、文の頭を直す(「さいしゅうかい」を来週と読まない)
+            const FOLLOW = /^($|[\s0-9〜]|の|[月火水木金土日](曜|よう|[\s0-9]|$)|(げつ|すい|もく|きん|にち|か|ど)(よう|[\s0-9]|$))/;
+            function fixTypos(s) {
+                const parts = s.split(/(\s+)/);
+                let first = true;
+                return parts.map(t => {
+                    if (!t.trim()) return t;
+                    const isFirst = first; first = false;
+                    if (!isFirst) return fixWord(t, true) || fixWord(t, false) || t;   // 2語目からは、1語まるごとだけ
+                    // 文の頭: くっついた文(あひた7じ・らいしゆう金)も、頭の部分だけ直す。正しい言葉・濁点違いを優先
+                    for (const strict of [true, false]) {
+                        for (let L = Math.min(8, t.length); L >= 2; L--) {
+                            const head = t.slice(0, L); if (/[0-9]/.test(head)) continue;
+                            const fw = fixWord(head, strict), rest = toHira(t.slice(L));
+                            if (fw && FOLLOW.test(rest)) return fw + t.slice(L);
+                        }
+                    }
+                    return t;
+                }).join("");
+            }
+            const pad = n => String(n).padStart(2, "0");
+            const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            const addD = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+            const WDN = { "月": 1, "火": 2, "水": 3, "木": 4, "金": 5, "土": 6, "日": 0, "げつ": 1, "か": 2, "すい": 3, "もく": 4, "きん": 5, "ど": 6, "にち": 0 };
+            const EVENING = /(のみ|飲み|呑み|夕飯|ゆうはん|晩|ばんごはん|ディナー|でぃなー|宴|合コン|ごうこん|ライブ|らいぶ|カラオケ|からおけ|よる|夜)/, MORNING = /(朝|あさ|モーニング|もーにんぐ)/;
+
+            function parse(input, baseKey) {
+                const now = new Date(); now.setHours(0, 0, 0, 0);
+                const [by, bm, bd] = String(baseKey || "").split("-").map(Number);
+                const base = by ? new Date(by, bm - 1, bd) : now;
+                let s = String(input || "").normalize("NFKC").replace(/　/g, " ").trim();
+                if (!s) return null;
+                s = s.replace(/(\d)\s*[;：.．]\s*(\d{2})/g, "$1:$2").replace(/[～〜~]/g, "〜").replace(/([\dじ時分半])\s*[-ー−–—]\s*(\d)/g, "$1〜$2");
+                s = fixTypos(s);
+                let w = s;                      // 元の文字(題名用)
+                let h = toHira(s);              // 比べる用(ひらがな)
+                const used = [];                // 読み取った部分(題名から外す)
+                const take = (re, fn) => {   // h の中で re に合う所を探し、fn が true を返したら、その部分を読み取り済みにする
+                    re.lastIndex = 0; let m; const hits = [];
+                    while ((m = re.exec(h))) { if (m[0].length === 0) { re.lastIndex++; continue; } hits.push(m); if (!re.global) break; }
+                    hits.forEach(m => { if (fn(m) !== false) { const a = m.index, b = a + m[0].length; used.push([a, b]); h = h.slice(0, a) + " ".repeat(b - a) + h.slice(b); } });
+                };
+                const dates = []; let weekRef = null, monthRef = null, allDay = false, period = null, ampm = null;
+                const pushDate = (d, at) => dates.push({ d, at });
+                // ---- 終日 ----
+                take(/(終日|しゅうじつ|いちにち中|いちにちじゅう|一日中|1日中)/g, () => { allDay = true; });
+                // ---- 日付: 2026/11/3, 11/3, 11月3日 ----
+                take(/(\d{4})\/(\d{1,2})\/(\d{1,2})/g, m => { pushDate(new Date(+m[1], +m[2] - 1, +m[3]), m.index); });
+                take(/(\d{1,2})\s*(?:\/|月|がつ)\s*(\d{1,2})\s*(?:日|にち)?/g, m => {
+                    const mo = +m[1], da = +m[2]; if (mo < 1 || mo > 12 || da < 1 || da > 31) return false;
+                    let d = new Date(base.getFullYear(), mo - 1, da);
+                    if (d < addD(now, -60)) d = new Date(base.getFullYear() + 1, mo - 1, da);   // 2か月以上前なら来年
+                    pushDate(d, m.index);
+                });
+                // ---- 月末 ----
+                take(/(らいげつまつ|来月末|げつまつ|月末)/g, m => { const n = /らい|来/.test(m[1]) ? 1 : 0; pushDate(new Date(now.getFullYear(), now.getMonth() + n + 1, 0), m.index); });
+                // ---- 来月・再来月・今月 ----
+                take(/(さらいげつ|再来月|らいげつ|来月|こんげつ|今月)/g, m => { const t = m[1]; monthRef = /さらい|再来/.test(t) ? 2 : /らい|来/.test(t) ? 1 : 0; monthRef = { n: monthRef, at: m.index }; });
+                // ---- ○日後・○週間後 ----
+                take(/(\d{1,3})\s*(日|にち)\s*(後|ご|あと)/g, m => { pushDate(addD(now, +m[1]), m.index); });
+                take(/(\d{1,2})\s*(週間|しゅうかん)\s*(後|ご|あと)/g, m => { pushDate(addD(now, +m[1] * 7), m.index); });
+                // ---- ○日(この月。過ぎていれば来月) ----
+                take(/(\d{1,2})\s*(日|にち)(?![後ご])/g, m => {
+                    const da = +m[1]; if (da < 1 || da > 31) return false;
+                    let d;
+                    if (monthRef) d = new Date(now.getFullYear(), now.getMonth() + monthRef.n, da);
+                    else { d = new Date(now.getFullYear(), now.getMonth(), da); if (d < now) d = new Date(now.getFullYear(), now.getMonth() + 1, da); }
+                    pushDate(d, m.index);
+                });
+                // ---- 週末: 土日の2日間(今週末・来週末も) ----
+                take(/(さらいしゅうまつ|再来週末|らいしゅうまつ|来週末|こんしゅうまつ|今週末|しゅうまつ|週末)/g, m => {
+                    const t = m[1], n = /さらい|再来/.test(t) ? 2 : /らい|来/.test(t) ? 1 : 0;
+                    const mon = addD(now, -((now.getDay() + 6) % 7)), sat = addD(mon, n * 7 + 5), sun = addD(mon, n * 7 + 6);
+                    if (sat >= now) pushDate(sat, m.index);
+                    pushDate(sun, m.index + 1);
+                });
+                // ---- 週: 今週・来週・再来週・今度・次の ----
+                take(/(さらいしゅう|再来週|らいしゅう|来週|こんしゅう|今週|こんど|今度|つぎの|次の)(の)?/g, m => { const t = m[1]; weekRef = { n: /さらい|再来/.test(t) ? 2 : /らい|来/.test(t) ? 1 : /こんしゅう|今週/.test(t) ? 0 : -1, at: m.index, used: false }; });
+                // ---- 曜日 ----
+                const wdDate = (wd, at) => {
+                    let d;
+                    if (weekRef && weekRef.n >= 0) {   // 月曜はじまりの週で数える
+                        const mon = addD(now, -((now.getDay() + 6) % 7));
+                        d = addD(mon, weekRef.n * 7 + ((wd + 6) % 7)); weekRef.used = true;
+                    } else {
+                        const from = dates.length ? dates[dates.length - 1].d : now;   // 2つ目の曜日は1つ目より後
+                        const startFrom = dates.length ? addD(from, 1) : now;
+                        d = addD(startFrom, (wd - startFrom.getDay() + 7) % 7);
+                        if (weekRef) weekRef.used = true;
+                    }
+                    pushDate(d, at);
+                };
+                take(/([月火水木金土日])\s*(?:曜日?|よう(?:び)?)|\(([月火水木金土日])\)/g, m => { wdDate(WDN[m[1] || m[2]], m.index); });
+                take(/(げつ|すい|もく|きん|にち|か|ど)\s*よう(?:び)?/g, m => { wdDate(WDN[m[1]], m.index); });
+                if (weekRef && !weekRef.used) {   // 「来週のきん」のように、週のあとに曜日の1文字・2文字
+                    take(/^\s*(げつ|すい|もく|きん|にち|か|ど|[月火水木金土日])(?=$|[\s0-9のにでは、])/g, m => { wdDate(WDN[m[1]], m.index); });
+                    if (!weekRef.used) {
+                        const rest = h.slice(weekRef.at).replace(/^\s+/, "");
+                        const mm = rest.match(/^(げつ|すい|もく|きん|にち|か|ど|[月火水木金土日])(?=$|[\s0-9のにでは、])/);
+                        if (mm) { const at = weekRef.at + (h.slice(weekRef.at).length - rest.length); used.push([at, at + mm[1].length]); h = h.slice(0, at) + " ".repeat(mm[1].length) + h.slice(at + mm[1].length); wdDate(WDN[mm[1]], at); }
+                    }
+                    if (!weekRef.used && weekRef.n >= 1) { const mon = addD(now, -((now.getDay() + 6) % 7)); pushDate(addD(mon, weekRef.n * 7), weekRef.at); }
+                }
+                // ---- きょう・あした など ----
+                take(/(しあさって|明々後日|あさって|明後日|あした|あす|明日|きょう|今日|こんや|今夜|こんばん|今晩)(?=$|[^ぁ-ゖ]|の|に|は|で|も|から|まで|よる|あさ|ひる|ゆう|ごご|ごぜん|しゅうじつ|いちにち)/g, m => {
+                    const t = m[1];
+                    const n = /しあさって|明々後日/.test(t) ? 3 : /あさって|明後日/.test(t) ? 2 : /あした|あす|明日/.test(t) ? 1 : 0;
+                    if (/こんや|今夜|こんばん|今晩/.test(t)) period = period || "よる";
+                    pushDate(addD(now, n), m.index);
+                });
+                if (monthRef && !dates.length) pushDate(new Date(now.getFullYear(), now.getMonth() + monthRef.n, 1), monthRef.at);
+                // ---- 時間帯 ----
+                take(/(ごぜん|午前|am)/g, () => { ampm = "am"; });
+                take(/(ごご|午後|pm)/g, () => { ampm = "pm"; });
+                take(/(?<=^|[\s0-9の])(あさ|朝|ひる|昼|ゆうがた|夕方|よる|夜|よなか|夜中|しんや|深夜)(から|まで)?(?=$|[\s0-9〜]|に|の|から|まで)/g, m => { period = toHira(m[1]).replace("朝", "あさ").replace("昼", "ひる").replace("夕方", "ゆうがた").replace("夜中", "よなか").replace("夜", "よる").replace("深夜", "しんや"); if (m[2]) period += ":" + m[2]; });
+                // ---- 時刻 ----
+                const times = [];
+                take(/(\d{1,2}):(\d{2})(から|まで)?|(\d{1,2})\s*(?:時|じ|し(?=$|[\s0-9〜はか半ま]))\s*(?:(半|はん)|(\d{1,2})\s*(?:分|ふん|ぷん)?)?(から|まで)?|(?<![\d\/])(\d{3,4})(?![\d\/日にがヶか月])(から|まで)?/g, m => {
+                    let H, M = 0, tag = m[3] || m[7] || m[9] || "";
+                    if (m[1] != null) { H = +m[1]; M = +m[2]; }
+                    else if (m[4] != null) { H = +m[4]; if (m[5]) M = 30; else if (m[6]) M = +m[6]; }
+                    else { const v = m[8]; H = +v.slice(0, v.length - 2); M = +v.slice(-2); }
+                    if (H > 24 || M > 59) return false;
+                    times.push({ H, M, tag, at: m.index });
+                });
+                // 「10〜12」のように、時・分のない数字の範囲(日付の範囲でないとき)
+                take(/(?<![\d\/])(\d{1,2})\s*〜\s*(\d{1,2})(?![\d\/日にじ時:])/g, m => {
+                    const a = +m[1], b = +m[2]; if (a > 24 || b > 24) return false;
+                    times.push({ H: a, M: 0, tag: "", at: m.index }, { H: b, M: 0, tag: "", at: m.index + 1 });
+                });
+                times.sort((x, y) => x.at - y.at);
+                // ---- 決める ----
+                dates.sort((x, y) => x.at - y.at);
+                let sd = dates.length ? dates[0].d : base, ed = null;
+                if (dates.length > 1 && dates[dates.length - 1].d > sd) ed = dates[dates.length - 1].d;
+                const pDef = { "あさ": 9, "ひる": 12, "ゆうがた": 17, "よる": 19, "よなか": 23, "しんや": 23 };
+                const evening = ampm === "pm" || /^(ゆうがた|よる|よなか|しんや)/.test(period || "") || (EVENING.test(w) && !MORNING.test(w));
+                const fixH = (H, ref) => {   // 12時間で書かれた時刻を24時間に
+                    if (H >= 13) return H;
+                    if (ampm === "am") return H === 12 ? 0 : H;
+                    if (ampm === "pm") return H === 12 ? 12 : H + 12;
+                    if (/^(あさ)/.test(period || "")) return H;
+                    if (ref != null && H + 12 > ref && H < ref) return H + 12;   // 終わりが始まりより前なら午後
+                    if (H >= 1 && H <= 6) return H + 12;   // 1〜6時はふつう午後
+                    if (H >= 7 && H <= 11 && evening) return H + 12;
+                    return H;
+                };
+                let st = null, et = null;
+                const startT = times.find(t => t.tag !== "まで"), endT = times.find(t => t !== startT && (t.tag === "まで" || startT));
+                if (startT) st = fixH(startT.H) * 60 + startT.M;
+                if (endT) { let eh = endT.H; if (st != null && eh < 13) { const c = fixH(eh, st / 60); eh = c; } else eh = fixH(eh); et = eh * 60 + endT.M; }
+                if (st == null && et == null && period) {   // 時刻がないとき、あさ・よる などから
+                    const p = period.split(":")[0];
+                    if (pDef[p] != null) { if (period.endsWith(":まで")) et = pDef[p] * 60; else st = pDef[p] * 60; }
+                }
+                if (st != null && et != null && et <= st && !ed) et += 0;   // そのまま(読み取り結果に出して直してもらう)
+                const hm = v => v == null ? "" : `${pad(Math.floor(v / 60) % 24 === 0 && v >= 1440 ? 24 : Math.floor(v / 60))}:${pad(v % 60)}`;
+                // ---- 題名: 読み取った所を除いた残り ----
+                let title = "";
+                {
+                    const ch = w.split(""), mask = ch.map(() => false);
+                    used.forEach(([a, b]) => { for (let i = a; i < b && i < mask.length; i++) mask[i] = true; });
+                    title = ch.map((c, i) => (mask[i] ? " " : c)).join("");
+                    // 助詞だけの切れはし(「の」「に」「から」など)は捨てる。言葉の一部(のみ・はいしゃ)は残す
+                    title = title.split(/\s+/).filter(t => t && !/^([のにでをはへと、,・〜\-ー−–—~:;/.]|から|まで|より)+$/.test(t)).join(" ");
+                }
+                const out = { startDate: key(sd), title };
+                if (ed) out.endDate = key(ed);
+                if (!allDay && (st != null || et != null)) { if (st != null) out.start = hm(st); if (et != null) out.end = hm(et); }
+                else out.allDay = true;
+                out.found = !!(dates.length || st != null || et != null || allDay);
+                return out;
+            }
+            return { parse, fixTypos };
+        })();
+
+        // 打つたびに読み取って、下の入力欄(日付・時間・題名)に入れる。読み取った内容は1行で見せる
+        function onQuickInput() {
+            const el = $op("opQuick"), pv = $op("opQuickPv"); if (!el || !pv) return;
+            const v = el.value.trim();
+            if (!v) { pv.textContent = ""; pv.classList.remove("miss"); return; }
+            const r = QA.parse(v, selectedDate); if (!r) return;
+            const title = Array.from(r.title || "");
+            $op("opTitle").value = title.slice(0, 12).join("");
+            const extra = title.slice(12).join("").trim();
+            if (extra) $op("opMemo").value = extra;
+            $op("opStartDate").value = r.startDate;
+            $op("opEndDate").min = r.startDate;
+            $op("opEndDate").value = r.endDate || "";
+            const timed = !r.allDay;
+            setPlanAllDay(!timed);
+            if (timed) { $op("opStart").value = r.start || ""; $op("opEnd").value = r.end || ""; }
+            const md = k => { const [y, m, d] = k.split("-").map(Number); return `${m}/${d}(${WEEKDAYS[new Date(y, m - 1, d).getDay()]})`; };
+            const when = md(r.startDate) + (r.endDate ? "〜" + md(r.endDate) : "") + " " + (timed ? `${r.start || ""}〜${r.end || ""}` : "終日");
+            pv.textContent = (r.found ? "→ " : "→ 日付なし: ") + when + (r.title ? "  " + r.title : "");
+            pv.classList.toggle("miss", !r.found);
+        }
+        function quickAdd() {
+            const el = $op("opQuick"); if (!el || !el.value.trim()) { addOtherPlan(); return; }
+            onQuickInput();
+            el.blur();
+            addOtherPlan();
+        }
+        // 選んでいる日と違う日に入れたら、その日を開く
+        function jumpToPlanDate(k) {
+            if (!k || k === selectedDate) return;
+            const [y, m, d] = k.split("-").map(Number);
+            viewMonth = new Date(y, m - 1, 1);
+            if (typeof calTimeMode !== "undefined" && calTimeMode) { viewWeekStart = startOfWeek(new Date(y, m - 1, d)); twReset(); }
+            selectDate(k);
+        }
     </script>
 </body>
 </html>
