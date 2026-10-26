@@ -12669,6 +12669,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 { target: q('.settings-btn[data-panel="settingsPanel"]'), title: "⚙️ 設定", text: "表示の変更や<b>ログイン</b>はここ。", tap: true },
                 { target: q("#calExportBtn"), title: "📅 カレンダーに登録", text: "バレーの予約を<b>iPhone・Googleカレンダー</b>にまとめて登録。", tap: true },
                 { target: q("#pairBtn"), title: "👥 ペアモード", text: "決まった相手と<b>だけ</b>予定を共有。ここで相手を選びます(ログイン後)。", tap: true },
+                { target: q("#calCard"), title: "🤏 2本指で表示を切り替え", text: "カレンダーの上で<b>指2本</b>を使います。\n<b>広げる</b>: 予約日一覧 → 月 → <b>時間表示</b>(予定の時間が見える)\n<b>つまむ</b>: 時間表示 → 月 → 予約日一覧", next: "次へ" },
                 { target: q("#addFab"), title: "＋ 予定を追加", text: "自分の予定もここから。\n「<b>のみ あした 19-21</b>」(題名 いつ 何時から何時)みたいに、ひらがなで打つだけでも入ります。", tap: true },
                 { demo: tutDemoPlan, target: dq("op-local"), title: "📱 Local", text: "<b>この端末だけ</b>の予定。ほかの人には見えません。", tap: true, onTap: () => { tutDemoState.scope = "local"; } },
                 { demo: tutDemoPlan, target: dq("op-shared"), title: "👥 ペア予定", text: "ペアモードONで <b>Shared</b> を選ぶと、ペアの相手と共有。", tap: true, onTap: () => { tutDemoState.scope = "shared"; } },
