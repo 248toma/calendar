@@ -2941,9 +2941,13 @@
         #guideOv .gd-sub { font-size: 12px; color: var(--ink-3); }
         /* 時間表示: 連続した予定は下、ほかの予定は上に重ねる(重なっている所は縁取りで分ける) */
         .tw-blk.under { z-index: 1; }
-        .tw-blk.over { z-index: 2; box-shadow: 0 0 0 1.5px var(--bg), 0 2px 6px rgba(0, 0, 0, .22); }
+        .tw-blk.over { z-index: 21; box-shadow: 0 0 0 1.5px var(--bg), 0 2px 6px rgba(0, 0, 0, .22); }
         .tm-bar.under { z-index: 1; opacity: .75; }
         .tm-bar.over { z-index: 2; box-shadow: 0 0 0 1px var(--bg); }
+        .tw-blk.under.stack { box-shadow: 0 -1px 0 1px var(--bg), 0 2px 6px rgba(0, 0, 0, .2); }
+        .tw-blk.end-tm { display: flex; flex-direction: column; justify-content: flex-end; }
+        .tw-blk.end-tm span { font-weight: 700; opacity: 1; }
+        .tw-base { position: absolute; border-radius: 5px; background: var(--surface); pointer-events: none; }
     </style>
 </head>
 <body>
@@ -6786,6 +6790,7 @@ await main();
             const under = blocks.filter(b => b.plan && (b.contL || b.contR)), over = blocks.filter(b => !under.includes(b));
             under.forEach(b => { b.under = true; });
             over.forEach(b => { b.over = under.some(u => u.s < b.e && b.s < u.e); });   // 連続した予定の上に乗っている
+            under.sort((a, b) => a.s - b.s || b.e - a.e);   // 長いものを下に、早く終わるもの(最終日など)を上に重ねる
             lay(under); lay(over);
             return blocks;
         }
@@ -6915,16 +6920,36 @@ await main();
                             el.className = "tw-blk " + (b.plan ? "lv-plan" + (b.pc || "") : lv);
                             if (b.plan) { if (b.contL && i > 0) el.classList.add("cont-l"); if (b.contR && i < 6) el.classList.add("cont-r"); }
                             if (b.under) el.classList.add("under"); else if (b.over) el.classList.add("over");
-                            el.style.top = ((bs - lo * 60) / 60 * HP) + "px";
-                            el.style.height = Math.max((be - bs) / 60 * HP - 1, 9) + "px";
-                            el.style.left = (b.lane / b.lanes * 100) + "%";
-                            el.style.width = (b.plan && b.contR && i < 6 && b.lanes === 1) ? "calc(100% + 3px)" : (100 / b.lanes) + "%";
+                            let top = (bs - lo * 60) / 60 * HP, hgt = Math.max((be - bs) / 60 * HP - 1, 9);
+                            if (b.under && b.lanes > 1) {
+                                // 連続・終日の予定どうしは横に割らずに重ねる。後のものほど少し右下にずらして、下の予定の名前が見えるようにする
+                                const sh = b.lane * 20; top += sh; hgt = Math.max(hgt - sh, 9);
+                                el.style.left = (b.lane * 12) + "%";
+                                el.style.width = (b.contR && i < 6) ? `calc(${100 - b.lane * 12}% + 3px)` : (100 - b.lane * 12) + "%";
+                                el.style.zIndex = String(2 + b.lane * 2);
+                                if (b.lane > 0) el.classList.add("stack");
+                            } else {
+                                el.style.left = (b.lane / b.lanes * 100) + "%";
+                                el.style.width = (b.plan && b.contR && i < 6 && b.lanes === 1) ? "calc(100% + 3px)" : (100 / b.lanes) + "%";
+                            }
+                            el.style.top = top + "px";
+                            el.style.height = hgt + "px";
                             el.title = b.plan ? `${b.place} ${b.time}${b.memo ? "\n" + b.memo : ""}` : `${b.place}${b.court} ${b.time}`;
                             const pl = document.createElement("b");
                             pl.textContent = b.plan ? b.place : ((b.place + b.court) || "場所未設定");
                             const tm = document.createElement("span");
                             tm.textContent = b.plan ? b.time : `${fmtMinShort(b.s)}-${fmtMinShort(b.e)}`;
+                            // 重なる予定は、下の色が透けて混ざらないよう、同じ形の下地(背景色)を後ろに敷く
+                            if ((b.under && b.lanes > 1 && b.lane > 0) || b.over) {
+                                const base = document.createElement("div");
+                                base.className = "tw-base";
+                                ["top", "left", "width", "height"].forEach(k => { base.style[k] = el.style[k]; });
+                                base.style.zIndex = b.over ? "20" : String(1 + b.lane * 2);
+                                if (b.over) el.style.zIndex = "21";
+                                col.appendChild(base);
+                            }
                             if (!(b.plan && b.contL && i > 0)) { el.appendChild(pl); el.appendChild(tm); }   // 連続の途中は文字なし
+                            else if (!b.contR && b.time) { tm.textContent = "〜" + fmtMinShort(b.e); el.appendChild(tm); el.classList.add("end-tm"); }   // 最終日: 終わりの時間を出す
                             col.appendChild(el);
                         });
                     }
