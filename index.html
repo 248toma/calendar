@@ -2952,6 +2952,8 @@
         .op-quick { margin: 0 0 8px; }
         .op-box .op-quick input { width: 100%; height: 40px; font-size: 16px; border-radius: 10px; padding: 0 10px; border: 1.5px solid var(--accent); }
         .op-qpv { min-height: 16px; margin: 5px 2px 0; font-size: 12.5px; font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .op-qlabel { margin: 0 2px 4px; font-size: 12px; font-weight: 700; color: var(--ink-3); }
+        .op-qpv:empty { display: none; }
         .op-qpv.miss { color: var(--ink-3); font-weight: 600; }
         .op-box.editing-existing .op-quick { display: none; }
     </style>
@@ -3653,6 +3655,7 @@ await main();
     <div id="daySheet"><div id="sheetGrip" role="separator" aria-label="予定を引き上げる"><span></span></div><div id="sheetBody">
     <div class="op-box" id="otherPlanBox">
         <div class="op-quick" id="opQuickRow">
+            <div class="op-qlabel">かんたん入力</div>
             <input type="text" id="opQuick" placeholder="題名 (いつ) 7-10" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ひとこと入力" oninput="onQuickInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();quickAdd();}">
             <div class="op-qpv" id="opQuickPv"></div>
         </div>
@@ -13242,7 +13245,7 @@ const namesBtn = isAdmin() && dates.length > 0
         })();
 
         // 打つたびに読み取って、下の入力欄(日付・時間・題名)に入れる。読み取った内容は1行で見せる
-        const QA_HINT = "題名 (いつ) 7-10";
+        const QA_HINT = "";
         function onQuickInput() {
             const el = $op("opQuick"), pv = $op("opQuickPv"); if (!el || !pv) return;
             const v = el.value.trim();
