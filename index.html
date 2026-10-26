@@ -7173,6 +7173,13 @@ await main();
         function applyBaseHeight(grid) {
             if (!grid) return;
             const hh = grid.getBoundingClientRect().height;
+            // 下の予定シートがある画面では、高さはシートとの取り合い(flex)で決まる。固定の高さを付けると、
+            // シートを畳んだ/広げたときにカレンダーが伸び縮みしなくなる(時間表示・予約日表示で下が空く)
+            if (!document.body.classList.contains("nv-full")) {
+                if (!calListMode && !calTimeMode && hh > 0) calBaseH = hh;
+                grid.style.height = ""; grid.style.maxHeight = ""; grid.style.overflowY = (calListMode || calTimeMode) ? "auto" : "";
+                return;
+            }
             if (!calListMode && !calTimeMode) { if (hh > 0) calBaseH = hh; grid.style.height = ""; grid.style.overflowY = ""; return; }
             if (!calBaseH) return;
             const cs = getComputedStyle(grid), extra = -((parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0));   // 一覧の余白(マイナスのマージン)分を足して、見た目の高さをそろえる
