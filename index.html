@@ -11038,6 +11038,31 @@ const namesBtn = isAdmin() && dates.length > 0
                 values[BYDATE_KEY] = JSON.stringify(loc);
             } catch (e) { /* 取り込めなければ従来どおり */ }
         }
+        // 更新するときは毎回、下に引っぱったときと同じグルグルを出す。読み直したあとも、最新を受け取るまで回し続ける
+        const PTR_SPIN_KEY = "ptr_spin_reload";
+        function showPtrSpin() {
+            const el = document.getElementById("ptr");
+            if (!el) return;
+            el.style.transition = "transform .15s, opacity .15s"; el.style.transform = "translateY(14px)"; el.style.opacity = "1"; el.classList.add("spin");
+        }
+        function hidePtrSpin() {
+            const el = document.getElementById("ptr");
+            if (!el || !el.classList.contains("spin")) return;
+            el.style.transition = "transform .25s, opacity .25s"; el.style.opacity = "0"; el.style.transform = "translateY(-48px)";
+            setTimeout(() => el.classList.remove("spin"), 260);
+        }
+        function reloadWithSpin() {
+            showPtrSpin();
+            try { sessionStorage.setItem(PTR_SPIN_KEY, "1"); } catch (e) { /* ignore */ }
+            saveUiStateForReload();
+            setTimeout(() => window.location.reload(), 120);   // グルグルが見えてから読み直す
+        }
+        var ptrAfterReloadUntil = 0;
+        function ptrSyncDone() {   // 最新を受け取ったら(読み直し直後のグルグルを)止める
+            if (!ptrAfterReloadUntil) return;
+            const wait = Math.max(0, ptrAfterReloadUntil - Date.now()); ptrAfterReloadUntil = 0;
+            setTimeout(hidePtrSpin, wait);
+        }
         function flushPendingRemote() {
             if (!firestorePendingValues) return;
             const rv = firestorePendingValues;
@@ -11046,8 +11071,7 @@ const namesBtn = isAdmin() && dates.length > 0
             firestoreApplyingRemote = true;
             try { Object.entries(rv).forEach(([k, v]) => { if (isSharedKey(k)) localStorage.setItem(k, v); }); }
             finally { firestoreApplyingRemote = false; }
-            saveUiStateForReload();
-            window.location.reload();
+            reloadWithSpin();
         }
 
         function detectFirebase() {
@@ -11332,10 +11356,10 @@ const namesBtn = isAdmin() && dates.length > 0
             if (typeof currentView !== "undefined" && currentView === "teams" && lastTeamSplitResult) return true;
             return false;
         }
-        function autoApplyRemote() {
+        function autoApplyRemote(force) {
             if (!firestorePendingValues) return;
             let last = 0; try { last = +sessionStorage.getItem(AUTO_SYNC_AT) || 0; } catch (e) { /* ignore */ }
-            if (userBusy() || Date.now() - last < 15000) { markRemoteUpdate(); return; }   // 何度も読み直さない
+            if (userBusy() || (!force && Date.now() - last < 15000)) { markRemoteUpdate(); return; }   // 何度も読み直さない(戻ってきたときは除く)
             try { sessionStorage.setItem(AUTO_SYNC_AT, String(Date.now())); } catch (e) { /* ignore */ }
             // 管理者は、この端末の変更を先に合わせて保存してから最新を読み込む(この端末の変更も消さない)
             (firestoreEditor ? saveToFirestore() : Promise.resolve()).then(() => { if (firestorePendingValues && !appOutdated) flushPendingRemote(); });
@@ -11349,16 +11373,20 @@ const namesBtn = isAdmin() && dates.length > 0
         // バックグラウンドから戻ったとき: 共有データの最新をサーバーから取り直して確認する
         function syncOnResume() {
             if (!firestoreRef || !firestoreSyncActive) return;
+            if (firestorePendingValues) { autoApplyRemote(true); return; }   // 反映していない更新が残っていれば、すぐ反映する
             firestoreRef.get({ source: "server" }).then(snap => {
                 if (!snap.exists) return;
                 const rv = snap.data().values || {}, lv = getShareableLocalValues();
                 if (remoteAppVer(rv) > APP_VERSION) { showOutdated(); reloadForNewVersion(); return; }
                 if (remoteCoveredByLocal(rv, lv) || onlyRosterSyncDiff(rv, lv)) return;
                 firestorePendingValues = rv;
-                autoApplyRemote();
+                autoApplyRemote(true);
             }).catch(e => console.warn("最新の確認に失敗しました。", e));
         }
-        document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(syncOnResume, 300); });
+        let resumeAt = 0;
+        const onResume = () => { if (document.hidden || Date.now() - resumeAt < 1500) return; resumeAt = Date.now(); setTimeout(syncOnResume, 300); };
+        document.addEventListener("visibilitychange", onResume);
+        window.addEventListener("pageshow", e => { if (e.persisted) onResume(); });
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
@@ -11647,6 +11675,12 @@ const namesBtn = isAdmin() && dates.length > 0
         (function initPullToRefresh() {
             const el = document.getElementById("ptr");
             if (!el) return;
+            let after = false; try { after = sessionStorage.getItem(PTR_SPIN_KEY) === "1"; sessionStorage.removeItem(PTR_SPIN_KEY); } catch (e) { /* ignore */ }
+            if (after) {   // 更新で読み直した直後: 最新を受け取るまで回す(短すぎると見えないので少しは回す。つながらなくても4秒で消す)
+                el.style.transition = "none"; el.style.transform = "translateY(14px)"; el.style.opacity = "1"; el.classList.add("spin");
+                ptrAfterReloadUntil = Date.now() + 600;
+                setTimeout(() => { ptrAfterReloadUntil = 0; hidePtrSpin(); }, 4000);
+            }
             const TH = 70;
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
             const blocked = (t) => !!(t.closest && t.closest("input, textarea, select, #daySheet, #surveyOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
@@ -11685,8 +11719,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const b = document.getElementById("refreshBtn");
             if (b) b.classList.add("spin");
             if (firestorePendingValues) { flushPendingRemote(); return; }
-            saveUiStateForReload();
-            window.location.reload();
+            reloadWithSpin();
         }
         function restoreUiStateAfterReload() {
             let st = null;
@@ -11750,6 +11783,7 @@ const namesBtn = isAdmin() && dates.length > 0
 
             firestoreBase = getShareableLocalValues();   // 起動時の内容を基準にする
             firestoreRef.onSnapshot(snapshot => {
+                if (!snapshot.metadata || !snapshot.metadata.fromCache) ptrSyncDone();
                 firestoreHasDocument = snapshot.exists;
                 if (!snapshot.exists) {
                     firestoreSyncActive = true;
@@ -11813,6 +11847,7 @@ const namesBtn = isAdmin() && dates.length > 0
 
         // ------- 初期化 -------
         detectFirebase();
+        if (!firebaseAvailable) ptrSyncDone();   // 共有なしで使っているときは、読み直し後のグルグルをすぐ止める
         loadData();
         loadMatches();
         mergePairPlansIntoList();
