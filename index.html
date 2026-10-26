@@ -3653,7 +3653,7 @@ await main();
     <div id="daySheet"><div id="sheetGrip" role="separator" aria-label="予定を引き上げる"><span></span></div><div id="sheetBody">
     <div class="op-box" id="otherPlanBox">
         <div class="op-quick" id="opQuickRow">
-            <input type="text" id="opQuick" placeholder="ひとこと入力  例: あした7じ のみ" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ひとこと入力" oninput="onQuickInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();quickAdd();}">
+            <input type="text" id="opQuick" placeholder="ひとこと入力  例: のみ あした 19-21" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ひとこと入力" oninput="onQuickInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();quickAdd();}">
             <div class="op-qpv" id="opQuickPv"></div>
         </div>
         <div class="op-row">
@@ -7643,7 +7643,6 @@ await main();
             planEditId = null; planFormDate = "";   // 開くたびに新規の入力欄
             renderOtherPlanBox();
             scrollToPlanEditor();
-            { const q = $op("opQuick"); if (q) try { q.focus({ preventScroll: true }); } catch (e) { q.focus(); } }   // すぐ打てるように
         }
         function closePlanPanel() {
             planPanel = { date: selectedDate, open: false };
@@ -7684,7 +7683,7 @@ await main();
             setPlanAllDay(true);
             $op("opAddBtn").textContent = "追加";
             $op("opDelBtn").style.display = "none";
-            { const q = $op("opQuick"), pv = $op("opQuickPv"); if (q) q.value = ""; if (pv) pv.textContent = ""; }
+            { const q = $op("opQuick"), pv = $op("opQuickPv"); if (q) q.value = ""; if (pv) { pv.textContent = QA_HINT; pv.classList.add("miss"); } }
             $op("otherPlanBox").classList.remove("editing-existing");
         }
         function planRangeText(p) {
@@ -12667,7 +12666,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 { target: q('.settings-btn[data-panel="settingsPanel"]'), title: "⚙️ 設定", text: "表示の変更や<b>ログイン</b>はここ。", tap: true },
                 { target: q("#calExportBtn"), title: "📅 カレンダーに登録", text: "バレーの予約を<b>iPhone・Googleカレンダー</b>にまとめて登録。", tap: true },
                 { target: q("#pairBtn"), title: "👥 ペアモード", text: "決まった相手と<b>だけ</b>予定を共有。ここで相手を選びます(ログイン後)。", tap: true },
-                { target: q("#addFab"), title: "＋ 予定を追加", text: "自分の予定もここから。\n「<b>あした7じ のみ</b>」みたいに、ひらがなで雑に打つだけでも入ります。", tap: true },
+                { target: q("#addFab"), title: "＋ 予定を追加", text: "自分の予定もここから。\n「<b>のみ あした 19-21</b>」(題名 いつ 何時から何時)みたいに、ひらがなで打つだけでも入ります。", tap: true },
                 { demo: tutDemoPlan, target: dq("op-local"), title: "📱 Local", text: "<b>この端末だけ</b>の予定。ほかの人には見えません。", tap: true, onTap: () => { tutDemoState.scope = "local"; } },
                 { demo: tutDemoPlan, target: dq("op-shared"), title: "👥 ペア予定", text: "ペアモードONで <b>Shared</b> を選ぶと、ペアの相手と共有。", tap: true, onTap: () => { tutDemoState.scope = "shared"; } },
                 { before: openSet, target: q(".st-guide"), title: "📲 ホーム画面・ウィジェット", text: "<b>ホーム画面に追加</b>や<b>iPhoneウィジェット</b>のやり方は、あとでここから見られます。", next: "次へ" },
@@ -13042,14 +13041,11 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             // 直した言葉の後ろが、数字・スペース・曜日・「の」などで続くときだけ、文の頭を直す(「さいしゅうかい」を来週と読まない)
             const FOLLOW = /^($|[\s0-9〜]|の|[月火水木金土日](曜|よう|[\s0-9]|$)|(げつ|すい|もく|きん|にち|か|ど)(よう|[\s0-9]|$))/;
+            // 題名が先に来る(「のみ あした 7じ」)ので、どの語でも頭の部分だけ直せるようにする。
+            // ただし後ろが数字・スペース・曜日・「の」などで続くときだけ(「さいしゅうかい」を来週と読まない)
             function fixTypos(s) {
-                const parts = s.split(/(\s+)/);
-                let first = true;
-                return parts.map(t => {
+                return s.split(/(\s+)/).map(t => {
                     if (!t.trim()) return t;
-                    const isFirst = first; first = false;
-                    if (!isFirst) return fixWord(t, true) || fixWord(t, false) || t;   // 2語目からは、1語まるごとだけ
-                    // 文の頭: くっついた文(あひた7じ・らいしゆう金)も、頭の部分だけ直す。正しい言葉・濁点違いを優先
                     for (const strict of [true, false]) {
                         for (let L = Math.min(8, t.length); L >= 2; L--) {
                             const head = t.slice(0, L); if (/[0-9]/.test(head)) continue;
@@ -13066,21 +13062,26 @@ const namesBtn = isAdmin() && dates.length > 0
             const WDN = { "月": 1, "火": 2, "水": 3, "木": 4, "金": 5, "土": 6, "日": 0, "げつ": 1, "か": 2, "すい": 3, "もく": 4, "きん": 5, "ど": 6, "にち": 0 };
             const EVENING = /(のみ|飲み|呑み|夕飯|ゆうはん|晩|ばんごはん|ディナー|でぃなー|宴|合コン|ごうこん|ライブ|らいぶ|カラオケ|からおけ|よる|夜)/, MORNING = /(朝|あさ|モーニング|もーにんぐ)/;
 
-            function parse(input, baseKey) {
+            function parse(input, baseKey, inner) {
                 const now = new Date(); now.setHours(0, 0, 0, 0);
                 const [by, bm, bd] = String(baseKey || "").split("-").map(Number);
                 const base = by ? new Date(by, bm - 1, bd) : now;
                 let s = String(input || "").normalize("NFKC").replace(/　/g, " ").trim();
                 if (!s) return null;
-                s = s.replace(/(\d)\s*[;：.．]\s*(\d{2})/g, "$1:$2").replace(/[～〜~]/g, "〜").replace(/([\dじ時分半])\s*[-ー−–—]\s*(\d)/g, "$1〜$2");
+                s = s.replace(/(\d)\s*[;：.．]\s*(\d{2})/g, "$1:$2").replace(/[～〜~]/g, "〜").replace(/([\dじ時分半])\s*[-ー−–—]\s*(\d)/g, "$1〜$2").replace(/(\d)\s*から\s*(\d)/g, "$1〜$2");
                 s = fixTypos(s);
                 let w = s;                      // 元の文字(題名用)
                 let h = toHira(s);              // 比べる用(ひらがな)
                 const used = [];                // 読み取った部分(題名から外す)
+                // 「題名 いつ 何時」の順: 最初の語に日付・時間以外の文字があれば、最初の語はまるごと題名(中の「きんようび」などを読まない)
+                if (!inner) {
+                    const m0 = h.match(/^(\S+)(\s+)\S/);
+                    if (m0) { const r0 = parse(m0[1], baseKey, true); if (r0 && r0.title) h = " ".repeat(m0[1].length) + h.slice(m0[1].length); }
+                }
                 const take = (re, fn) => {   // h の中で re に合う所を探し、fn が true を返したら、その部分を読み取り済みにする
                     re.lastIndex = 0; let m; const hits = [];
                     while ((m = re.exec(h))) { if (m[0].length === 0) { re.lastIndex++; continue; } hits.push(m); if (!re.global) break; }
-                    hits.forEach(m => { if (fn(m) !== false) { const a = m.index, b = a + m[0].length; used.push([a, b]); h = h.slice(0, a) + " ".repeat(b - a) + h.slice(b); } });
+                    hits.forEach(m => { if (fn(m) !== false) { const a = m.index + (m[0].length - m[0].trimStart().length), b = m.index + m[0].length; /* 前の空白は含めない */ used.push([a, b]); h = h.slice(0, a) + " ".repeat(b - a) + h.slice(b); } });
                 };
                 const dates = []; let weekRef = null, monthRef = null, allDay = false, period = null, ampm = null;
                 const pushDate = (d, at) => dates.push({ d, at });
@@ -13217,10 +13218,11 @@ const namesBtn = isAdmin() && dates.length > 0
         })();
 
         // 打つたびに読み取って、下の入力欄(日付・時間・題名)に入れる。読み取った内容は1行で見せる
+        const QA_HINT = "題名 → いつ → 何時から何時 の順で打つだけ(ひらがなでOK)";
         function onQuickInput() {
             const el = $op("opQuick"), pv = $op("opQuickPv"); if (!el || !pv) return;
             const v = el.value.trim();
-            if (!v) { pv.textContent = ""; pv.classList.remove("miss"); return; }
+            if (!v) { pv.textContent = QA_HINT; pv.classList.add("miss"); return; }
             const r = QA.parse(v, selectedDate); if (!r) return;
             const title = Array.from(r.title || "");
             $op("opTitle").value = title.slice(0, 12).join("");
