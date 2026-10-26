@@ -6816,27 +6816,35 @@ await main();
         (function initTwScroll() {
             const grid = document.getElementById("calGrid");
             if (!grid) return;
-            let busy = false;
-            grid.addEventListener("scroll", () => {
+            let busy = false, idleT = 0;
+            // 端に近づいたら週を足す。ただし iPhone の慣性スクロール中に位置を動かすと、勢いが前の位置から続いて
+            // 何か月も飛んでしまうので、スクロールが止まってから足す(足したあと、見ていた週が動かないよう位置を合わせる)
+            const extend = () => {
+                idleT = 0;
                 if (!calTimeMode || calListMode || busy || !twBase) return;
-                twUpdateTop(grid);
-                const nearTop = grid.scrollTop < 260, nearEnd = grid.scrollTop + grid.clientHeight > grid.scrollHeight - 260;
+                const nearTop = grid.scrollTop < 400, nearEnd = grid.scrollTop + grid.clientHeight > grid.scrollHeight - 400;
                 if (!nearTop && !nearEnd) return;
-                // 端に近づいたら週を足す。見ていた週が動かないよう、足したあとで位置を合わせ直す
+                twUpdateTop(grid);
                 const anchorKey = twTopWeek ? formatDateKey(twTopWeek) : null;
                 const aEl = twWrapOf(grid, anchorKey);
                 const delta = aEl ? aEl.getBoundingClientRect().top - grid.getBoundingClientRect().top : 0;
-                if (nearTop) twFrom -= 8; else twTo += 8;
+                if (nearTop) twFrom -= 12; else twTo += 12;
                 busy = true;
                 renderCalendar();
                 const n = twWrapOf(grid, anchorKey);
                 if (n) grid.scrollTop = n.getBoundingClientRect().top - grid.getBoundingClientRect().top + grid.scrollTop - delta;
                 twUpdateTop(grid);
                 requestAnimationFrame(() => { busy = false; });
+            };
+            grid.addEventListener("scroll", () => {
+                if (!calTimeMode || calListMode || busy || !twBase) return;
+                twUpdateTop(grid);
+                clearTimeout(idleT); idleT = setTimeout(extend, 160);   // 止まってから
             }, { passive: true });
+            if ("onscrollend" in window) grid.addEventListener("scrollend", () => { clearTimeout(idleT); extend(); });
         })();
         function renderCalendarWeek(grid, todayKey) {
-            if (!twBase) { twBase = new Date(viewWeekStart); twFrom = -4; twTo = 12; twNeedInit = true; }
+            if (!twBase) { twBase = new Date(viewWeekStart); twFrom = -12; twTo = 16; twNeedInit = true; }   // 前後に余裕を持たせる(端で足す回数を減らす)
             const weeks = [];
             for (let w = twFrom; w <= twTo; w++) {
                 const days = [];
