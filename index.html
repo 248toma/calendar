@@ -2961,6 +2961,7 @@
         .op-qpv:empty { display: none; }
         .op-qpv.miss { color: var(--ink-3); font-weight: 600; }
         .op-box.editing-existing .op-quick { display: none; }
+
     </style>
 </head>
 <body>
@@ -3106,7 +3107,7 @@ const dyn = (l, d) => Color.dynamic(new Color(l), new Color(d));
 const C = {
   // ダークは黒と白(アプリの紺ではなく、iPhone の黒に合わせる)
   // 背景はホーム画面の壁紙の色に合わせると、透けているように見える(この iPhone の壁紙は #1e1e1e)
-  bg: dyn("#eceff4", "#1e1e1e"), card: dyn("#eceff4", "#2c2c2e"),
+  bg: dyn("#eceff4", "#1e1e1e"), card: dyn("#ffffff", "#2c2c2e"),   // ライトは白い板(影がないので、背景との差で区切る)
   ink: dyn("#12151c", "#ffffff"), ink2: dyn("#4a5262", "#d1d1d6"), ink3: dyn("#8a93a3", "#8e8e93"),
   accent: dyn("#0a8f6a", "#3ec79c")
 };
@@ -3137,8 +3138,8 @@ function neuCard(w, h, rad) {
       ctx.addPath(p); ctx.setFillColor(rgba(col, Math.min(1, col[3] * wgt * 1.15))); ctx.fillPath();
     }
   };
-  blob(-3, -3, NEU.hl, 8);   // 左上の光(アプリ: -4px -4px 10px)
-  blob(4, 5, NEU.sh, 10);    // 右下の影(アプリ: 4px 5px 12px)
+  // 影はなし(シンプル): 光も影も描かない。板の区切りは、板の色と背景の色の差だけ
+  void blob;
   // 板の塗りは描かない(上に、ライト/ダークで自動で変わる色の板を重ねる)
   return (neuCache[key] = ctx.getImage());
 }
