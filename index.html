@@ -2127,6 +2127,11 @@
         .sv-note input { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 13px; }
         .sv-note input:focus { outline: none; box-shadow: var(--sink), 0 0 0 1.5px var(--accent); }
         .sv-notes { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2, rgba(128,128,128,.08)); }
+        .mv-nmark { margin-left: 4px; font-size: 11px; }
+        #memberView .confirm-group .mv-group-body.has-notes { flex-direction: column; align-items: stretch; gap: 6px; }
+        .mv-notes { display: flex; flex-direction: column; gap: 3px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2, rgba(128,128,128,.08)); }
+        .mv-nrow { display: flex; gap: 6px; align-items: baseline; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+        .mv-nrow b { flex: none; color: var(--ink); }
         .sv-nrow { display: flex; gap: 6px; align-items: baseline; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
         .sv-nrow b { flex: none; color: var(--ink); }
         .sv-nrow .sv-nst { flex: none; font-size: 11px; color: var(--ink-3); }
@@ -7422,6 +7427,8 @@ await main();
 
             state.style.display = stateText.textContent ? "" : "none";
 
+            // 管理者だけ: アンケートのひとことがあるメンバーに印を付け、グループの下にメッセージを出す
+            const nmap = new Map(isAdmin() ? svNotesOn(selectedDate).map(x => [x.name, x]) : []);
             document.getElementById("confirmGroups").innerHTML = STATUS_LIST.map(s => {
                 const meta = STATUS_META[s];
                 const members = dayMembers.filter(m => m.status === s);
@@ -7433,16 +7440,18 @@ await main();
                         if (!canMoveMember(m.id)) cls.push("locked");
                         if (!linked) cls.push("chip-unlinked");
                         if (bulkSelectedIds.has(m.id)) cls.push("sel");
-                        return `<button type="button" class="${cls.join(" ")}" onclick="onMemberChipClick(${m.id}, this)">${escapeHtml(m.name)}</button>`;
+                        return `<button type="button" class="${cls.join(" ")}" onclick="onMemberChipClick(${m.id}, this)">${escapeHtml(m.name)}${nmap.has(m.name) ? '<span class="mv-nmark" aria-label="ひとことあり">💬</span>' : ""}</button>`;
                     }).join("")}</div>`
                     : `<div class="confirm-empty-note">—</div>`;
+                const noteRows = members.some(m => nmap.has(m.name))
+                    ? `<div class="mv-notes">${members.filter(m => nmap.has(m.name)).map(m => `<div class="mv-nrow"><b>${escapeHtml(m.name)}</b><span>${escapeHtml(nmap.get(m.name).note)}</span></div>`).join("")}</div>` : "";
                 return `
                     <div class="confirm-group ${meta.cls}">
                         <button type="button" class="confirm-group-title gt-btn ${meta.cls}" onclick="applyBulkStatus('${s}')" aria-label="選択中のメンバーを「${s}」にする" title="${s}">
                             <span class="gt-sym">${meta.sym}</span>
                             <span class="gt-n">${members.length}</span>
                         </button>
-                        <div class="mv-group-body">${chips}</div>
+                        <div class="mv-group-body${noteRows ? " has-notes" : ""}">${chips}${noteRows}</div>
                     </div>
                 `;
             }).join("");
