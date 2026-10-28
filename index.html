@@ -2973,7 +2973,7 @@
         #protoUI .pr-wrap { max-width: 440px; margin: 0 auto; height: 100%; box-sizing: border-box; padding: calc(env(safe-area-inset-top, 0px) + 16px) 22px 0; display: flex; flex-direction: column; gap: 22px; position: relative; font-family: 'Noto Sans JP', system-ui, sans-serif; }
         #protoUI button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
         #protoUI button:active { transform: scale(.95); }
-        #protoUI .pr-cell { display: flex; align-items: center; justify-content: center; min-height: 44px; height: 100%; }
+        #protoUI .pr-cell { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 44px; height: 100%; min-width: 0; padding: 2px 0 0; overflow: hidden; }
         #protoUI .pr-dock { position: absolute; left: 22px; right: 22px; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: center; gap: 14px; }
         #protoUI #prRows::-webkit-scrollbar { display: none; }
     </style>
@@ -13487,15 +13487,29 @@ const namesBtn = isAdmin() && dates.length > 0
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
                 const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0 || planHolidayOn(k), blue = !red && d.getDay() === 6;
                 const v = inM ? volInfo(k) : null;
-                let layers = [], allDay = [];
-                if (inM) ({ layers, allDay } = isSel ? grooveDial(k, 46, 4, 1.2) : flatDial(k, 40));
-                const ppl = v ? flatPeople(v.n, 31, 2.2, v.col) : [];
-                const fs = v ? 24 : 30;
-                const face = isSel ? `${ringBox(fs)}${inset}` : isToday ? `${ringBox(fs)}${raiseS}` : "";
-                const ad = allDay.slice(0, 3).map((x, n, arr) => L(`position:absolute;left:calc(50% + ${(n - (arr.length - 1) / 2) * 5}px);top:calc(50% + 7.5px);width:3.5px;height:3.5px;margin-left:-1.75px;border-radius:50%;background:${x.col};pointer-events:none`)).join("");
+                // 予定は日付の下に「何があるか」を小さく。連続予定は日をまたいでつながる帯
+                const col7 = i % 7;
+                const items = [];
+                if (v) items.push({ t: "バレー", col: v.col, vol: true });
+                if (inM) plansOn(k).forEach(({ p, first, last }) => {
+                    const col = C[+p.color || 0] || C[0];
+                    const multi = !!p.endDate && p.endDate !== p.startDate;
+                    items.push({ t: p.title || "予定", col, multi, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6 });
+                });
+                // 文字は出さない: 連続予定=日をまたぐ細い線、ほかの予定=色の点(バレーは人数の色)
+                const lines = items.filter(x => x.multi).slice(0, 2);
+                const dots = items.filter(x => !x.multi), MAXD = 4;
+                const lineHtml = lines.map(x => `<i style="display:block;height:3px;margin:0 ${x.r ? 6 : 0}px 0 ${x.l ? 6 : 0}px;border-radius:${x.l ? 2 : 0}px ${x.r ? 2 : 0}px ${x.r ? 2 : 0}px ${x.l ? 2 : 0}px;background:${x.col}"></i>`).join("");
+                const dotHtml = dots.slice(0, MAXD).map(x => x.vol
+                    ? `<i style="width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:2px solid ${x.col}"></i>`
+                    : `<i style="width:5px;height:5px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
+                const tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
+                const moreTag = "";
+                const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
-                cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日" style="opacity:${inM ? 1 : 0.3}">
-                    <span style="position:relative;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${layers.map(L).join("")}${ppl.map(L).join("")}${face ? L(face) : ""}${ad}<span style="position:relative">${d.getDate()}</span></span></button>`;
+                cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日" style="opacity:${inM ? 1 : 0.28}">
+                    <span style="position:relative;width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${face ? L(face) : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
+                    <span style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px">${tags}</span></button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
             const sunIdx = weekStartDay === 1 ? 6 : 0;
@@ -13505,27 +13519,19 @@ const namesBtn = isAdmin() && dates.length > 0
 
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">
               <div style="border-radius:28px;padding:18px 20px;${raise}">
-                <div style="display:flex;align-items:center;gap:12px">
-                  <span style="font-family:${en};font-size:14px;font-weight:600;color:${P.ink3}">${WEN[sdt.getDay()]}</span>
-                  <span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span>
-                  <span style="font-family:${en};font-size:16px;font-weight:700">${MSH[sm - 1]} ${sd}</span>
-                  <span style="margin-left:auto;font-size:11.5px;color:${P.red}">${esc(note)}</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:18px;padding-top:14px;height:176px">
+                <div style="display:flex;align-items:center;gap:18px;height:168px">
                   <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:120px;height:120px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${hand}
-                    ${[["0", "left:50%;top:2px;transform:translateX(-50%)"], ["6", "right:2px;top:50%;transform:translateY(-50%)"], ["12", "left:50%;bottom:2px;transform:translateX(-50%)"], ["18", "left:2px;top:50%;transform:translateY(-50%)"]].map(([t, pos]) => `<span style="position:absolute;${pos};font-family:${en};font-size:8px;font-weight:700;color:${P.ink3}">${t}</span>`).join("")}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
                       <span style="font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink}">${vv ? vv.n : sd}</span>
                       <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
                     </div>
                   </div>
                   <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
-                    ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;padding-bottom:4px;cursor:pointer">
-                      <span style="font-family:${en};font-size:10px;font-weight:600;letter-spacing:.14em;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${vlabel}</span>
-                      <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700">Volley</span><span style="font-family:${en};font-size:11px;font-weight:500;color:${P.ink3}">${esc(vv.time)}</span></div>
-                      <span style="font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(vv.place)}</span>
-                      ${segHtml}</div>` : `<span style="font-size:12px;color:${P.ink3}">バレーの予定なし</span>`}
+                    <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
+                    ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;cursor:pointer">
+                      <span style="font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${sv ? "VOLLEY" : `NEXT ${nextKey.slice(5).replace("-", "/").replace(/^0/, "")}`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>
+                      ${segHtml}</div>` : ""}
                     <div style="position:relative">
                       <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:52px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 2 ? "-webkit-mask:linear-gradient(#000 70%, transparent);mask:linear-gradient(#000 70%, transparent)" : ""}">
                         ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;background:${r.col}"></i><span style="width:44px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:26px">予定なし</span>`}
