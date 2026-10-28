@@ -3368,7 +3368,7 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   ctx.drawTextInRect(vol ? `/ ${vol.cap}人` : WEN3[new Date(k + "T00:00:00").getDay()], new Rect(0, c + S * 0.07, S, S * 0.12));
   return ctx.getImage();
 }
-// リング版の描き直し: 予定のある時間帯(始まる15分前〜終わり)は10分ごと、ほかは30分ごと、夜中(0〜6時)は1時間ごと
+// リング版の描き直し: 予定の始まりの前後(15分前〜15分後)だけ5分ごと、過ぎたら30分ごと、夜中(0〜6時)は1時間ごと
 // 予定の始まり・終わりの時刻ちょうどにも描き直してもらう。iPhone には1日の描き直しの回数に上限があるので、暇な時間は減らしてその分を予定のある時間に回す
 function busySpans(data, k, myName) {
   const out = [];
@@ -3385,10 +3385,10 @@ function busySpans(data, k, myName) {
 }
 function setRefreshRing(w, now, spans) {
   const nowM = now.getHours() * 60 + now.getMinutes();
-  const busy = (spans || []).some(([s, e]) => nowM >= s - 15 && nowM < e);
-  const step = busy ? 10 : now.getHours() < 6 ? 60 : 30;
+  const busy = (spans || []).some(([s]) => nowM >= s - 15 && nowM < s + 15);
+  const step = busy ? 5 : now.getHours() < 6 ? 60 : 30;
   let next = (Math.floor(nowM / step) + 1) * step;
-  (spans || []).forEach(([s, e]) => [s - 15, s, e].forEach(t => { if (t > nowM && t < next) next = t; }));
+  (spans || []).forEach(([s, e]) => [s - 15, s, s + 15, e].forEach(t => { if (t > nowM && t < next) next = t; }));
   const t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, next, 5);
   w.refreshAfterDate = t;
 }
