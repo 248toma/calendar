@@ -3693,6 +3693,7 @@ await main();
         </div>
         <div class="op-opts">
             <button type="button" class="op-sc on" id="opAllDay" aria-pressed="true" onclick="togglePlanAllDay()">終日</button>
+            <button type="button" class="op-sc" id="opHoliday" aria-pressed="false" onclick="setPlanHoliday(!planHoliday)" title="この予定の日をカレンダーで休日(赤い数字)にする">休日</button>
             <div class="op-colors" id="opColors" role="radiogroup" aria-label="色">
                 <button type="button" class="op-dot on" data-c="0" role="radio" aria-label="グレー" onclick="setPlanColor(0)"></button>
                 <button type="button" class="op-dot" data-c="1" role="radio" aria-label="青" onclick="setPlanColor(1)"></button>
@@ -5777,6 +5778,7 @@ await main();
             cell.className = "cal-day dow-" + cellDate.getDay() + (inMonth ? "" : " other-month");
             const jp = jpDay(key);
             if (jp.hol) { cell.classList.add("hol"); cell.title = jp.hol; }
+            else if (planHolidayOn(key)) cell.classList.add("hol");   // 予定で休日にした日
             if (key === todayKey) cell.classList.add("today");
             if (key === selectedDate) cell.classList.add("selected");
             const lv = { sufficient: "--m-come-cal", warning: "--m-pend-cal", danger: "--m-no-cal" };
@@ -7205,7 +7207,7 @@ await main();
             const cellKey = formatDateKey(cellDate);
             const cell = document.createElement("div");
             cell.className = "cal-day" + (inMonth ? "" : " other-month");
-            { const jp = jpDay(cellKey); if (jp.hol) cell.classList.add("hol"); }
+            { const jp = jpDay(cellKey); if (jp.hol || planHolidayOn(cellKey)) cell.classList.add("hol"); }
             if (cellKey === todayKey) cell.classList.add("today");
             if (cellKey === selectedDate) cell.classList.add("selected");
 
@@ -7702,10 +7704,14 @@ await main();
             if (planAllDay) { const a = document.getElementById("opStart"), z = document.getElementById("opEnd"); if (a) a.value = ""; if (z) z.value = ""; }
         }
         function togglePlanAllDay() { setPlanAllDay(!planAllDay); }
+        // 予定を休日として登録(その期間の日付を赤い数字にする)
+        let planHoliday = false;
+        function setPlanHoliday(on) { planHoliday = !!on; const b = document.getElementById("opHoliday"); if (b) { b.classList.toggle("on", planHoliday); b.setAttribute("aria-pressed", String(planHoliday)); } }
+        function planHolidayOn(key) { return plansOn(key).some(({ p }) => p.holiday); }
         const $op = (id) => document.getElementById(id);
         function resetPlanForm() {
             planEditId = null; planFormDate = selectedDate; setPlanColor(0); planShare = []; planShareOpen = false; planNoRsvp = []; planNoRsvpOpen = false; planRsvp = false; planNtf = null; planScope = "local"; setPlanScope(defaultPlanScope());
-            $op("opTitle").value = ""; $op("opMemo").value = "";
+            $op("opTitle").value = ""; $op("opMemo").value = ""; setPlanHoliday(false);
             $op("opStartDate").value = selectedDate; $op("opStart").value = "";
             $op("opEndDate").value = ""; $op("opEnd").value = "";
             $op("opEndDate").min = selectedDate;
@@ -7746,7 +7752,7 @@ await main();
             $op("opStartDate").value = p.startDate; $op("opStart").value = p.start || "";
             $op("opEndDate").value = p.endDate || ""; $op("opEnd").value = p.end || "";
             $op("opEndDate").min = p.startDate;
-            setPlanAllDay(!planTimed(p));
+            setPlanAllDay(!planTimed(p)); setPlanHoliday(!!p.holiday);
             $op("opAddBtn").textContent = "更新";
             $op("opDelBtn").style.display = "inline-block";
             $op("otherPlanBox").classList.add("editing-existing");   // 直すときは、ひとこと入力は出さない
@@ -7763,6 +7769,7 @@ await main();
             if (!(title || memo || start || end || ed)) { $op("opTitle").focus(); return; }
             const p = { title, start, end, memo, startDate: sd };
             if (planAllDay) p.allDay = true;
+            if (planHoliday) p.holiday = true;
             if (ed) p.endDate = ed;
             if (planColor) p.color = planColor;
             { const cr = planCreatorId(); if (cr != null) p.byId = cr; }   // 作成者(名簿ID)
@@ -13330,8 +13337,8 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoPal() {
             const dark = document.body.classList.contains("dark");
             const P = dark
-                ? { bg: "#2b2e34", top: "#34383f", bot: "#24272c", ink: "#eceef2", ink2: "#c3c7cf", ink3: "#9aa0aa", hi: "rgba(255,255,255,.06)", lo: "rgba(0,0,0,.5)", rim: "rgba(255,255,255,.07)", rimLo: "rgba(0,0,0,.35)", red: "#e39a95", acc: "#7aa2ff" }
-                : { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", hi: "#ffffff", lo: "#c9cfd8", rim: "rgba(255,255,255,.95)", rimLo: "rgba(80,90,110,.10)", red: "#c0504a", acc: "#2f6bf2" };
+                ? { bg: "#2b2e34", top: "#34383f", bot: "#24272c", ink: "#eceef2", ink2: "#c3c7cf", ink3: "#9aa0aa", hi: "rgba(255,255,255,.06)", lo: "rgba(0,0,0,.5)", rim: "rgba(255,255,255,.07)", rimLo: "rgba(0,0,0,.35)", red: "#e39a95", acc: "#7aa2ff", blue: "#8fa8e0", today: "#6fc3a3" }
+                : { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", hi: "#ffffff", lo: "#c9cfd8", rim: "rgba(255,255,255,.95)", rimLo: "rgba(80,90,110,.10)", red: "#c0504a", acc: "#2f6bf2", blue: "#3f63b0", today: "#2f9a72" };
             // 予定の色(アプリの色番号 0〜8): 渋い寒色〜茶系。バレーの人数の色(緑・黄土・小豆色)の系統は使わない
             const C = dark
                 ? ["#a6aab0", "#9aa3c4", "#b19fbf", "#bea08d", "#8fa7bf", "#b39aa8", "#b9abc4", "#9aa7ba", "#b3a593"]
@@ -13400,7 +13407,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const out = [], allDay = [];
                 spansOf(k).forEach(x => {
                     if (x.h1 == null) { allDay.push(x); return; }
-                    if (x.h1 === 0 && x.h2 === 24) { out.unshift(`${ringBox(size)}border:1px solid ${x.col};box-sizing:border-box;opacity:.55`); return; }
+                    if (x.h1 === 0 && x.h2 === 24) { out.unshift(fillArc(size, 2.2, 0, 360, x.col)); return; }   // 1日じゅうは、ほかの弧と同じ太さの全周
                     const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.5;
                     out.push(fillArc(size, 2.2, x.h1 / 24 * 360, e / 24 * 360, x.col));
                 });
@@ -13462,9 +13469,11 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join("")}
             </div>`;
             // 予定の一覧(バレーも入れる。2件分の高さで、ほかはスクロール)
-            const rows = plansOn(sel).map(({ p, first }) => {
-                const s0 = parseHM(p.start), timed = !p.allDay && s0 != null && (first || !p.endDate);
-                return { id: p.id, t: timed ? p.start : "終日", title: p.title || "予定", col: C[+p.color || 0] || C[0], min: timed ? s0 : -1 };
+            const rows = plansOn(sel).map(({ p, first, last }) => {
+                const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = !!p.endDate && p.endDate !== p.startDate;
+                const timed = !p.allDay && s0 != null && (first || !multi);
+                const endsHere = multi && last && !first && !p.allDay && e0 != null;   // 連続の最終日: 終わりの時間
+                return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
             });
             if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
             rows.sort((a, b) => a.min - b.min);
@@ -13476,7 +13485,7 @@ const namesBtn = isAdmin() && dates.length > 0
             let cellsHtml = "";
             for (let i = 0; i < 42; i++) {
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
-                const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0;
+                const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0 || planHolidayOn(k), blue = !red && d.getDay() === 6;
                 const v = inM ? volInfo(k) : null;
                 let layers = [], allDay = [];
                 if (inM) ({ layers, allDay } = isSel ? grooveDial(k, 46, 4, 1.2) : flatDial(k, 40));
@@ -13484,7 +13493,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const fs = v ? 24 : 30;
                 const face = isSel ? `${ringBox(fs)}${inset}` : isToday ? `${ringBox(fs)}${raiseS}` : "";
                 const ad = allDay.slice(0, 3).map((x, n, arr) => L(`position:absolute;left:calc(50% + ${(n - (arr.length - 1) / 2) * 5}px);top:calc(50% + 7.5px);width:3.5px;height:3.5px;margin-left:-1.75px;border-radius:50%;background:${x.col};pointer-events:none`)).join("");
-                const numCol = isSel || isToday ? P.acc : red ? P.red : P.ink;
+                const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日" style="opacity:${inM ? 1 : 0.3}">
                     <span style="position:relative;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${layers.map(L).join("")}${ppl.map(L).join("")}${face ? L(face) : ""}${ad}<span style="position:relative">${d.getDate()}</span></span></button>`;
             }
@@ -13519,7 +13528,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       ${segHtml}</div>` : `<span style="font-size:12px;color:${P.ink3}">バレーの予定なし</span>`}
                     <div style="position:relative">
                       <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:52px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 2 ? "-webkit-mask:linear-gradient(#000 70%, transparent);mask:linear-gradient(#000 70%, transparent)" : ""}">
-                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;background:${r.col}"></i><span style="width:36px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2}">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:26px">予定なし</span>`}
+                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;background:${r.col}"></i><span style="width:44px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:26px">予定なし</span>`}
                       </div>
                       <span id="prMore" style="position:absolute;right:0;bottom:-2px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
                     </div>
@@ -13532,11 +13541,11 @@ const namesBtn = isAdmin() && dates.length > 0
                   <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${MEN[m - 1]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span></div>
 
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : P.ink3}">${t}</span>`).join("")}</div>
+                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
                 <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cellsHtml}</div>
               </div>
               <div class="pr-dock">
-                <button type="button" onclick="protoToday()" style="height:44px;padding:0 20px;border-radius:22px;font-family:${en};font-size:13px;font-weight:700;color:${sel === todayKey ? P.ink3 : P.acc};${raiseS}">Today</button>
+                <button type="button" onclick="protoToday()" style="height:44px;padding:0 20px;border-radius:22px;font-family:${en};font-size:13px;font-weight:700;color:${sel === todayKey ? P.ink3 : P.today};${raiseS}">Today</button>
                 <span style="flex:1"></span>
                 <button type="button" aria-label="アンケート" onclick="openSurvey()" style="position:relative;width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg>${unans ? `<i style="position:absolute;top:10px;right:10px;width:7px;height:7px;border-radius:4px;background:${P.red}"></i>` : ""}</button>
                 <button type="button" aria-label="設定" onclick="toggleSettings()" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle></svg></button>
