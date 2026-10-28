@@ -247,52 +247,60 @@
         body.dark .cal-day.has-plan.event-warning { background: linear-gradient(135deg, #78581f 50%, var(--plan-gray) 50%); }
         .lv-plan { background: var(--plan-gray); color: var(--plan-ink); }
         /* 他の予定の色(バレーの 緑/黄/赤 と被らない 青・紫・橙。0=灰色が従来どおり) */
-        :root { --pcbg0: #d6d9de; --pcbg1: rgba(95, 134, 179, .30); --pcbg2: rgba(128, 98, 205, .34); --pcbg3: rgba(204, 132, 88, .32); --pcbg4: rgba(70, 168, 105, .32); --pcbg5: rgba(222, 85, 85, .30); --pcbg6: rgba(226, 108, 160, .32); --pcbg7: rgba(48, 170, 180, .32); --pcbg8: rgba(214, 170, 40, .36); --pcbg9: rgba(42, 44, 49, .22); --pcbg10: rgba(128, 131, 139, .24); --pcbg11: rgba(138, 63, 102, .26); --pcbg12: rgba(192, 138, 168, .30); --pcbg13: rgba(46, 61, 99, .26); }
-        body.dark { --pcbg0: #4b4f56; --pcbg1: rgba(95, 134, 179, .42); --pcbg2: rgba(150, 122, 225, .46); --pcbg3: rgba(204, 132, 88, .42); --pcbg4: rgba(70, 168, 105, .44); --pcbg5: rgba(230, 100, 100, .44); --pcbg6: rgba(230, 120, 170, .44); --pcbg7: rgba(60, 185, 195, .42); --pcbg8: rgba(220, 180, 50, .42); --pcbg9: rgba(228, 229, 232, .30); --pcbg10: rgba(143, 147, 155, .36); --pcbg11: rgba(201, 126, 167, .40); --pcbg12: rgba(230, 191, 211, .34); --pcbg13: rgba(147, 166, 216, .40); }
-        .pc1 { --plan-gray: var(--pcbg1); --plan-ink: #3a608f; }
-        .pc2 { --plan-gray: var(--pcbg2); --plan-ink: #5a40a8; }
-        .pc3 { --plan-gray: var(--pcbg3); --plan-ink: #965828; }
-        .pc4 { --plan-gray: var(--pcbg4); --plan-ink: #23744a; }
-        .pc5 { --plan-gray: var(--pcbg5); --plan-ink: #b0312f; }
-        .pc6 { --plan-gray: var(--pcbg6); --plan-ink: #b0407a; }
-        .pc7 { --plan-gray: var(--pcbg7); --plan-ink: #1b7882; }
-        .pc8 { --plan-gray: var(--pcbg8); --plan-ink: #8a6a05; }
-        .pc9 { --plan-gray: var(--pcbg9); --plan-ink: #2a2c31; }
-        .pc10 { --plan-gray: var(--pcbg10); --plan-ink: #6b6e76; }
-        .pc11 { --plan-gray: var(--pcbg11); --plan-ink: #8a3f66; }
-        .pc12 { --plan-gray: var(--pcbg12); --plan-ink: #a8708f; }
-        .pc13 { --plan-gray: var(--pcbg13); --plan-ink: #2e3d63; }
-        body.dark .pc1 { --plan-ink: #a9c3e6; }
-        body.dark .pc2 { --plan-ink: #d6caf8; }
-        body.dark .pc3 { --plan-ink: #f0c4a0; }
-        body.dark .pc4 { --plan-ink: #a6e0bb; }
-        body.dark .pc5 { --plan-ink: #f5b3b3; }
-        body.dark .pc6 { --plan-ink: #f5bcd8; }
-        body.dark .pc7 { --plan-ink: #9fdde3; }
-        body.dark .pc8 { --plan-ink: #f2dc92; }
-        body.dark .pc9 { --plan-ink: #e4e5e8; }
-        body.dark .pc10 { --plan-ink: #a3a7af; }
-        body.dark .pc11 { --plan-ink: #d690b6; }
-        body.dark .pc12 { --plan-ink: #ecc8da; }
-        body.dark .pc13 { --plan-ink: #a3b4e0; }
+        /* 予定の色(試作UIと同じ5色: 黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い色番号も、近い5色に寄せて出す */
+        :root { --pcbg0: rgba(154, 160, 168, 0.34); --pcbg1: rgba(59, 91, 140, 0.28); --pcbg2: rgba(59, 91, 140, 0.28); --pcbg3: rgba(229, 151, 183, 0.4); --pcbg4: rgba(31, 33, 36, 0.2); --pcbg5: rgba(156, 61, 104, 0.28); --pcbg6: rgba(229, 151, 183, 0.4); --pcbg7: rgba(59, 91, 140, 0.28); --pcbg8: rgba(154, 160, 168, 0.34); --pcbg9: rgba(31, 33, 36, 0.2); --pcbg10: rgba(154, 160, 168, 0.34); --pcbg11: rgba(156, 61, 104, 0.28); --pcbg12: rgba(229, 151, 183, 0.4); --pcbg13: rgba(59, 91, 140, 0.28); }
+        body.dark { --pcbg0: rgba(127, 132, 140, 0.4); --pcbg1: rgba(134, 165, 218, 0.4); --pcbg2: rgba(134, 165, 218, 0.4); --pcbg3: rgba(244, 192, 213, 0.4); --pcbg4: rgba(241, 242, 244, 0.3); --pcbg5: rgba(208, 120, 159, 0.42); --pcbg6: rgba(244, 192, 213, 0.4); --pcbg7: rgba(134, 165, 218, 0.4); --pcbg8: rgba(127, 132, 140, 0.4); --pcbg9: rgba(241, 242, 244, 0.3); --pcbg10: rgba(127, 132, 140, 0.4); --pcbg11: rgba(208, 120, 159, 0.42); --pcbg12: rgba(244, 192, 213, 0.4); --pcbg13: rgba(134, 165, 218, 0.4); }
+        .pc0 { --plan-gray: var(--pcbg0); --plan-ink: #9aa0a8; }
+        .pc1 { --plan-gray: var(--pcbg1); --plan-ink: #3b5b8c; }
+        .pc2 { --plan-gray: var(--pcbg2); --plan-ink: #3b5b8c; }
+        .pc3 { --plan-gray: var(--pcbg3); --plan-ink: #e597b7; }
+        .pc4 { --plan-gray: var(--pcbg4); --plan-ink: #1f2124; }
+        .pc5 { --plan-gray: var(--pcbg5); --plan-ink: #9c3d68; }
+        .pc6 { --plan-gray: var(--pcbg6); --plan-ink: #e597b7; }
+        .pc7 { --plan-gray: var(--pcbg7); --plan-ink: #3b5b8c; }
+        .pc8 { --plan-gray: var(--pcbg8); --plan-ink: #9aa0a8; }
+        .pc9 { --plan-gray: var(--pcbg9); --plan-ink: #1f2124; }
+        .pc10 { --plan-gray: var(--pcbg10); --plan-ink: #9aa0a8; }
+        .pc11 { --plan-gray: var(--pcbg11); --plan-ink: #9c3d68; }
+        .pc12 { --plan-gray: var(--pcbg12); --plan-ink: #e597b7; }
+        .pc13 { --plan-gray: var(--pcbg13); --plan-ink: #3b5b8c; }
+        body.dark .pc0 { --plan-ink: #7f848c; }
+        body.dark .pc1 { --plan-ink: #86a5da; }
+        body.dark .pc2 { --plan-ink: #86a5da; }
+        body.dark .pc3 { --plan-ink: #f4c0d5; }
+        body.dark .pc4 { --plan-ink: #f1f2f4; }
+        body.dark .pc5 { --plan-ink: #d0789f; }
+        body.dark .pc6 { --plan-ink: #f4c0d5; }
+        body.dark .pc7 { --plan-ink: #86a5da; }
+        body.dark .pc8 { --plan-ink: #7f848c; }
+        body.dark .pc9 { --plan-ink: #f1f2f4; }
+        body.dark .pc10 { --plan-ink: #7f848c; }
+        body.dark .pc11 { --plan-ink: #d0789f; }
+        body.dark .pc12 { --plan-ink: #f4c0d5; }
+        body.dark .pc13 { --plan-ink: #86a5da; }
         .op-colors { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding: 0 2px; }
         .op-colors-lbl { font-size: 11px; font-weight: 600; color: var(--ink-3); }
         .op-dot { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; background: var(--dot); box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .25); position: relative; }
         .op-dot.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
-        .op-dot[data-c="0"] { --dot: #c3c8d0; }
-        .op-dot[data-c="1"] { --dot: #5f86b3; }
-        .op-dot[data-c="2"] { --dot: #7a5fd0; }
-        .op-dot[data-c="3"] { --dot: #cc8458; }
-        .op-dot[data-c="4"] { --dot: #46a869; }
-        .op-dot[data-c="5"] { --dot: #de5555; }
-        .op-dot[data-c="6"] { --dot: #e26ca0; }
-        .op-dot[data-c="7"] { --dot: #30aab4; }
-        .op-dot[data-c="8"] { --dot: #d6aa28; }
-        .op-dot[data-c="9"] { --dot: #2a2c31; }
-        .op-dot[data-c="10"] { --dot: #80838b; }
-        .op-dot[data-c="11"] { --dot: #8a3f66; }
-        .op-dot[data-c="12"] { --dot: #c08aa8; }
-        .op-dot[data-c="13"] { --dot: #2e3d63; }
+        .op-dot[data-c="0"] { --dot: #9aa0a8; }
+        .op-dot[data-c="1"] { --dot: #3b5b8c; }
+        .op-dot[data-c="2"] { --dot: #3b5b8c; }
+        .op-dot[data-c="3"] { --dot: #e597b7; }
+        .op-dot[data-c="4"] { --dot: #1f2124; }
+        .op-dot[data-c="5"] { --dot: #9c3d68; }
+        .op-dot[data-c="6"] { --dot: #e597b7; }
+        .op-dot[data-c="7"] { --dot: #3b5b8c; }
+        .op-dot[data-c="8"] { --dot: #9aa0a8; }
+        .op-dot[data-c="9"] { --dot: #1f2124; }
+        .op-dot[data-c="10"] { --dot: #9aa0a8; }
+        .op-dot[data-c="11"] { --dot: #9c3d68; }
+        .op-dot[data-c="12"] { --dot: #e597b7; }
+        .op-dot[data-c="13"] { --dot: #3b5b8c; }
+        body.dark .op-dot[data-c="9"] { --dot: #f1f2f4; }
+        body.dark .op-dot[data-c="10"] { --dot: #7f848c; }
+        body.dark .op-dot[data-c="11"] { --dot: #d0789f; }
+        body.dark .op-dot[data-c="12"] { --dot: #f4c0d5; }
+        body.dark .op-dot[data-c="13"] { --dot: #86a5da; }
         .day-toggles { display: flex; align-items: center; gap: 14px; flex: none; }
         /* 他予定の入力画面(必要最小限・2行) */
         .op-box { margin: 0 0 8px; padding: 8px; background: var(--surface); border: 1px solid var(--ink-fill); border-radius: 12px; display: none; }
@@ -389,8 +397,8 @@
         .nv-chip.cont { opacity: .7; }
         /* 終日の予定は塗りではなく枠だけ。日時の入っている予定は塗り */
         .nv-chip.ring { background: transparent; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)); }
-        :root { --pr0: #7b818b; --pr1: #3a608f; --pr2: #5a40a8; --pr3: #965828; --pr4: #23744a; --pr5: #b0312f; --pr6: #b0407a; --pr7: #1b7882; --pr8: #8a6a05; --pr9: #2a2c31; --pr10: #80838b; --pr11: #8a3f66; --pr12: #c08aa8; --pr13: #2e3d63; }
-        body.dark { --pr0: #a2a8b3; --pr1: #a9c3e6; --pr2: #d6caf8; --pr3: #f0c4a0; --pr4: #a6e0bb; --pr5: #f5b3b3; --pr6: #f5bcd8; --pr7: #9fdde3; --pr8: #f2dc92; --pr9: #e4e5e8; --pr10: #8f939b; --pr11: #c97ea7; --pr12: #e6bfd3; --pr13: #93a6d8; }
+        :root { --pr0: #9aa0a8; --pr1: #3b5b8c; --pr2: #3b5b8c; --pr3: #e597b7; --pr4: #1f2124; --pr5: #9c3d68; --pr6: #e597b7; --pr7: #3b5b8c; --pr8: #9aa0a8; --pr9: #1f2124; --pr10: #9aa0a8; --pr11: #9c3d68; --pr12: #e597b7; --pr13: #3b5b8c; }
+        body.dark { --pr0: #7f848c; --pr1: #86a5da; --pr2: #86a5da; --pr3: #f4c0d5; --pr4: #f1f2f4; --pr5: #d0789f; --pr6: #f4c0d5; --pr7: #86a5da; --pr8: #7f848c; --pr9: #f1f2f4; --pr10: #7f848c; --pr11: #d0789f; --pr12: #f4c0d5; --pr13: #86a5da; }
         .cal-day.p-ring::after { content: ""; position: absolute; inset: 0; box-sizing: border-box; border: 2px solid var(--ring, var(--plan-ink)); border-radius: inherit; pointer-events: none; }
         .cal-day.p-ring.cont-l::after { border-left: none; }
         .cal-day.p-ring.cont-r::after { border-right: none; }
@@ -3025,9 +3033,7 @@ const TOKEN_KEY = "vb_widget_token_v1";
 const STYLE = "list";
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 // 予定の色(アプリの色番号 0〜8)。[ライト, ダーク] はアプリの予定の線の色と同じ
-const PCOL = [["#8a93a3", "#a6aebd"], ["#3a608f", "#a9c3e6"], ["#5a40a8", "#d6caf8"], ["#965828", "#f0c4a0"], ["#23744a", "#a6e0bb"],
-  ["#b0312f", "#f5b3b3"], ["#b0407a", "#f5bcd8"], ["#1b7882", "#9fdde3"], ["#8a6a05", "#f2dc92"],
-  ["#2a2c31", "#e4e5e8"], ["#80838b", "#8f939b"], ["#8a3f66", "#c97ea7"], ["#c08aa8", "#e6bfd3"], ["#2e3d63", "#93a6d8"]];   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
+const PCOL = [["#9aa0a8", "#7f848c"], ["#3b5b8c", "#86a5da"], ["#3b5b8c", "#86a5da"], ["#e597b7", "#f4c0d5"], ["#1f2124", "#f1f2f4"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#3b5b8c", "#86a5da"], ["#9aa0a8", "#7f848c"], ["#1f2124", "#f1f2f4"], ["#9aa0a8", "#7f848c"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#3b5b8c", "#86a5da"]];   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
 // バレーの人数の色(アプリのカレンダーと同じ: 十分=緑 / やや不足=黄 / 不足・多すぎ=赤)
 const LV = { sufficient: ["#5d9487", "#7fb5a8"], warning: ["#ad9e72", "#cbbb8c"], danger: ["#b27c85", "#d29aa3"] };
 
@@ -3296,8 +3302,8 @@ const RP = {
 };
 // 予定の色(アプリの試作UIと同じ渋い色)とバレーの人数の色
 const RCOL = {
-  light: ["#8d9095", "#5a6788", "#7a6688", "#8a6f5e", "#56708a", "#7a6070", "#8a7896", "#6b7a8f", "#7b6a5a", "#2a2c31", "#80838b", "#8a3f66", "#c08aa8", "#2e3d63"],
-  dark: ["#a6aab0", "#9aa3c4", "#b19fbf", "#bea08d", "#8fa7bf", "#b39aa8", "#b9abc4", "#9aa7ba", "#b3a593", "#e4e5e8", "#8f939b", "#c97ea7", "#e6bfd3", "#93a6d8"]
+  light: ["#9aa0a8", "#3b5b8c", "#3b5b8c", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#3b5b8c", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#3b5b8c"],
+  dark: ["#7f848c", "#86a5da", "#86a5da", "#f4c0d5", "#f1f2f4", "#d0789f", "#f4c0d5", "#86a5da", "#7f848c", "#f1f2f4", "#7f848c", "#d0789f", "#f4c0d5", "#86a5da"]
 };
 const RLV = { light: { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" }, dark: { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } };
 const WEN3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -3928,15 +3934,11 @@ await main();
             <button type="button" class="op-sc on" id="opAllDay" aria-pressed="true" onclick="togglePlanAllDay()">終日</button>
             <button type="button" class="op-sc" id="opHoliday" aria-pressed="false" onclick="setPlanHoliday(!planHoliday)" title="この予定の日をカレンダーで休日(赤い数字)にする">休日</button>
             <div class="op-colors" id="opColors" role="radiogroup" aria-label="色">
-                <button type="button" class="op-dot on" data-c="0" role="radio" aria-label="グレー" onclick="setPlanColor(0)"></button>
-                <button type="button" class="op-dot" data-c="1" role="radio" aria-label="青" onclick="setPlanColor(1)"></button>
-                <button type="button" class="op-dot" data-c="2" role="radio" aria-label="紫" onclick="setPlanColor(2)"></button>
-                <button type="button" class="op-dot" data-c="3" role="radio" aria-label="オレンジ" onclick="setPlanColor(3)"></button>
-                <button type="button" class="op-dot" data-c="4" role="radio" aria-label="緑" onclick="setPlanColor(4)"></button>
-                <button type="button" class="op-dot" data-c="5" role="radio" aria-label="赤" onclick="setPlanColor(5)"></button>
-                <button type="button" class="op-dot" data-c="6" role="radio" aria-label="ピンク" onclick="setPlanColor(6)"></button>
-                <button type="button" class="op-dot" data-c="7" role="radio" aria-label="水色" onclick="setPlanColor(7)"></button>
-                <button type="button" class="op-dot" data-c="8" role="radio" aria-label="黄" onclick="setPlanColor(8)"></button>
+                <button type="button" class="op-dot on" data-c="9" role="radio" aria-label="黒" onclick="setPlanColor(9)"></button>
+                <button type="button" class="op-dot" data-c="10" role="radio" aria-label="灰色" onclick="setPlanColor(10)"></button>
+                <button type="button" class="op-dot" data-c="13" role="radio" aria-label="青" onclick="setPlanColor(13)"></button>
+                <button type="button" class="op-dot" data-c="11" role="radio" aria-label="暗いピンク" onclick="setPlanColor(11)"></button>
+                <button type="button" class="op-dot" data-c="12" role="radio" aria-label="ピンク" onclick="setPlanColor(12)"></button>
             </div>
         </div>
         <div class="op-scope pair-or-admin" id="opScope" role="radiogroup" aria-label="保存先">
@@ -7016,7 +7018,7 @@ await main();
         function planStartKey(p) { if (!planTimed(p)) return -1; const s = parseHM(p.start); return s != null ? s : (parseHM(p.end) ?? 9999); }
         // 時間指定のある予定(終日にしていなくて、開始か終了の時間がある)
         function planTimed(p) { return !!(p && !p.allDay && (p.start || p.end)); }
-        function pcCls(p) { const c = +(p && p.color) || 0; return c >= 1 && c <= 13 ? " pc" + c : ""; }
+        function pcCls(p) { const c = +(p && p.color) || 0; return c >= 0 && c <= 13 ? " pc" + c : ""; }
         function parseHM(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; }
         // 予定の時間(開始・終了がそろって終了が後のときだけ)
         function planTimeMin(p) {
@@ -7791,7 +7793,7 @@ await main();
         let planPanel = { date: "", open: false };   // 「他予定」の入力画面を開いているか(日付ごと)
         let planEditId = null;      // 編集中の予定(新規はnull)
         let planFormDate = "";      // 入力欄がどの日付用か
-        let planColor = 0;          // 入力欄の色(0=灰 1=青 2=紫 3=橙 4=緑 5=赤 6=ピンク 7=水色 8=黄)
+        let planColor = 9;          // 入力欄の色(9=黒 10=灰色 11=暗いピンク 12=ピンク 13=青。0〜8 は古い色番号で、近い色で出す)
         let planShare = [];         // 入力欄の共有先(名簿ID。空=全員)
         let planShareOpen = false;   // 共有先の一覧を開いているか(普段は折りたたむ)
         function togglePlanShareOpen() { planShareOpen = !planShareOpen; renderPlanShare(); }
@@ -7943,7 +7945,7 @@ await main();
         function planHolidayOn(key) { return plansOn(key).some(({ p }) => p.holiday); }
         const $op = (id) => document.getElementById(id);
         function resetPlanForm() {
-            planEditId = null; planFormDate = selectedDate; setPlanColor(0); planShare = []; planShareOpen = false; planNoRsvp = []; planNoRsvpOpen = false; planRsvp = false; planNtf = null; planScope = "local"; setPlanScope(defaultPlanScope());
+            planEditId = null; planFormDate = selectedDate; setPlanColor(9); planShare = []; planShareOpen = false; planNoRsvp = []; planNoRsvpOpen = false; planRsvp = false; planNtf = null; planScope = "local"; setPlanScope(defaultPlanScope());
             $op("opTitle").value = ""; $op("opMemo").value = ""; setPlanHoliday(false);
             $op("opStartDate").value = selectedDate; $op("opStart").value = "";
             $op("opEndDate").value = ""; $op("opEnd").value = "";
@@ -13602,8 +13604,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 : { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", hi: "#ffffff", lo: "#c9cfd8", rim: "rgba(255,255,255,.95)", rimLo: "rgba(80,90,110,.10)", red: "#c0504a", acc: "#2f6bf2", blue: "#3f63b0", today: "#2f9a72" };
             // 予定の色(アプリの色番号 0〜8): 渋い寒色〜茶系。バレーの人数の色(緑・黄土・小豆色)の系統は使わない
             const C = dark
-                ? ["#a6aab0", "#9aa3c4", "#b19fbf", "#bea08d", "#8fa7bf", "#b39aa8", "#b9abc4", "#9aa7ba", "#b3a593", "#e4e5e8", "#8f939b", "#c97ea7", "#e6bfd3", "#93a6d8"]
-                : ["#8d9095", "#5a6788", "#7a6688", "#8a6f5e", "#56708a", "#7a6070", "#8a7896", "#6b7a8f", "#7b6a5a", "#2a2c31", "#80838b", "#8a3f66", "#c08aa8", "#2e3d63"];   // 9〜13: 新しい入力画面の5色(黒 濃/薄・暗いピンク 濃/薄・紺)
+                ? ["#7f848c", "#86a5da", "#86a5da", "#f4c0d5", "#f1f2f4", "#d0789f", "#f4c0d5", "#86a5da", "#7f848c", "#f1f2f4", "#7f848c", "#d0789f", "#f4c0d5", "#86a5da"]
+                : ["#9aa0a8", "#3b5b8c", "#3b5b8c", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#3b5b8c", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#3b5b8c"];   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に寄せる
             const LV = dark ? { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } : { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" };
             return { dark, P, C, LV };
         }
@@ -13993,7 +13995,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 試作UIの予定の入力(かんたん入力だけ。上のヘッダーが入力欄に変わる) -------
         // 入力の中身は今の入力欄(opQuick→題名・日時)に流し込み、保存は今の addOtherPlan を使う(ペア・Local・出欠・通知・休日はそのまま)
         var pinOpen = false, pinEditId = null, pinShareOpen = false;
-        const PIN_COLS = [[9, "黒"], [10, "薄い黒"], [11, "ピンク"], [12, "薄いピンク"], [13, "紺"]];
+        const PIN_COLS = [[9, "黒"], [10, "灰色"], [13, "青"], [11, "暗いピンク"], [12, "ピンク"]];
         var pinGhost = { d: "", h: "" }, pinSD = "", pinED = "", pinRange = false, pinColOpen = false, pinSetOpen = false;
         const pinVal = id => { const e = document.getElementById(id); return e ? e.value : ""; };
         const pinMD = k => { const [, m, d] = k.split("-").map(Number); return `${m}/${d}`; };
