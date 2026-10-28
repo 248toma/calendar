@@ -13451,9 +13451,9 @@ const namesBtn = isAdmin() && dates.length > 0
             spansOf(sel).forEach(x => {
                 if (x.h1 == null) return;
                 const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.4;
-                fills.push(fillArc(INS, INT, x.h1 / 24 * 360, e / 24 * 360, x.col) + ";opacity:.92");
+                fills.push(fillArc(INS, INT, x.h1 / 24 * 360, e / 24 * 360, x.col));
             });
-            if (sv && sv.s != null) fills.push(fillArc(INS, INT, hmv(sv.s) / 24 * 360, hmv(sv.e) / 24 * 360, P.ink2) + ";opacity:.75");
+            if (sv && sv.s != null) fills.push(fillArc(INS, INT, hmv(sv.s) / 24 * 360, hmv(sv.e) / 24 * 360, P.ink2));
             const dial = groove(DSZ, DTH, 3, P.bot, fills, under);
             let hand = "";
             if (sel === todayKey) { const nowD = new Date(), deg = (nowD.getHours() + nowD.getMinutes() / 60) / 24 * 360; hand = L(`position:absolute;left:50%;top:50%;width:2px;height:${DTH + 6}px;margin-left:-1px;border-radius:1px;background:${P.ink};transform-origin:50% 0;transform:rotate(${deg + 180}deg) translateY(${DSZ / 2 - DTH - 3}px);pointer-events:none`); }
@@ -13486,12 +13486,12 @@ const namesBtn = isAdmin() && dates.length > 0
             for (let i = 0; i < 42; i++) {
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
                 const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0 || planHolidayOn(k), blue = !red && d.getDay() === 6;
-                const v = inM ? volInfo(k) : null;
+                const v = volInfo(k);
                 // 予定は日付の下に「何があるか」を小さく。連続予定は日をまたいでつながる帯
                 const col7 = i % 7;
                 const items = [];
                 if (v) items.push({ t: "バレー", col: v.col, vol: true });
-                if (inM) plansOn(k).forEach(({ p, first, last }) => {
+                plansOn(k).forEach(({ p, first, last }) => {
                     const col = C[+p.color || 0] || C[0];
                     const multi = !!p.endDate && p.endDate !== p.startDate;
                     items.push({ t: p.title || "予定", col, multi, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6 });
@@ -13507,8 +13507,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 const moreTag = "";
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
-                cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日" style="opacity:${inM ? 1 : 0.28}">
-                    <span style="position:relative;width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${face ? L(face) : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
+                cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
+                    <span style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${face ? L(face) : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
                     <span style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px">${tags}</span></button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
