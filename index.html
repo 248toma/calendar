@@ -13470,7 +13470,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join("")}
             </div>`;
             // 予定の一覧(バレーも入れる。2件分の高さで、ほかはスクロール)
-            const rows = plansOn(sel).filter(({ p }) => !p.holiday).map(({ p, first, last }) => {
+            const rows = plansOn(sel).map(({ p, first, last }) => {
                 const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = !!p.endDate && p.endDate !== p.startDate;
                 const timed = !p.allDay && s0 != null && (first || !multi);
                 const endsHere = multi && last && !first && !p.allDay && e0 != null;   // 連続の最終日: 終わりの時間
@@ -13493,7 +13493,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 const items = [];
                 if (v) items.push({ t: "バレー", col: v.col, vol: true });
                 plansOn(k).forEach(({ p, first, last }) => {
-                    if (p.holiday) return;   // 休日は赤い数字で分かるのでマークは出さない
                     const col = C[+p.color || 0] || C[0];
                     const multi = !!p.endDate && p.endDate !== p.startDate;
                     items.push({ t: p.title || "予定", col, multi, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6 });
