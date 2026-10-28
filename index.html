@@ -3378,17 +3378,20 @@ function buildRing(data, now, myName) {
   const vv = nextKey ? volleyOn(data, nextKey, myName) : null;
   const w = new ListWidget(); w.url = APP_URL;
   w.backgroundColor = BG_SET ? C.bg : new Color(P.bg);
-  const S = fam === "small" ? 118 : fam === "large" ? 128 : 124;
+  const S = fam === "small" ? 126 : fam === "large" ? 132 : 130;
   const dial = drawDial(S, k, data, myName, vv, mode, true, now);
   if (fam === "small") {
     w.setPadding(8, 8, 8, 8);
     const r = w.addStack(); r.addSpacer(); const im = r.addImage(dial); im.imageSize = new Size(S, S); r.addSpacer();
     setRefresh(w, [], now); return w;
   }
-  w.setPadding(12, 14, 12, 14);
+  // 上下・左右とも真ん中に寄せる(リングと文字のかたまりを、ウィジェットの中央に置く)
+  w.setPadding(8, 12, 8, 12);
+  if (fam !== "large") w.addSpacer();
   const top = w.addStack(); top.centerAlignContent();
+  top.addSpacer();
   const im = top.addImage(dial); im.imageSize = new Size(S, S);
-  top.addSpacer(14);
+  top.addSpacer(18);
   const col = top.addStack(); col.layoutVertically();
   // 日付
   const dl = col.addStack(); dl.bottomAlignContent();
@@ -3432,6 +3435,7 @@ function buildRing(data, now, myName) {
     const ti = line.addText(r.title); ti.font = Font.boldSystemFont(12.5); ti.textColor = new Color(P.ink); ti.lineLimit = 1;
   });
   if (rows.length > max) { col.addSpacer(3); const m = col.addText(`+${rows.length - max}`); m.font = Font.boldSystemFont(10); m.textColor = new Color(P.ink3); }
+  top.addSpacer();
   // 大: 下に残りの予定も並べる
   if (fam === "large" && rows.length > max) {
     w.addSpacer(10);
