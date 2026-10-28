@@ -3003,6 +3003,8 @@ const KEYS = {
   plans: "attendance_plans_v2", roster: "attendance_roster_v1", thresholds: "attendance_thresholds_v4"
 };
 const TOKEN_KEY = "vb_widget_token_v1";
+// 見た目: "list" = 予定の板が並ぶ版 / "ring" = アプリの試作UIのヘッダーと同じリング版
+const STYLE = "list";
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 // 予定の色(アプリの色番号 0〜8)。[ライト, ダーク] はアプリの予定の線の色と同じ
 const PCOL = [["#8a93a3", "#a6aebd"], ["#3a608f", "#a9c3e6"], ["#5a40a8", "#d6caf8"], ["#965828", "#f0c4a0"], ["#23744a", "#a6e0bb"],
@@ -3129,8 +3131,10 @@ const C = {
 // Scriptable は影を付けられないので、ぼかした影を絵として描いて、板の背景に敷く
 // 影の色はライト/ダークで変える。ウィジェットの中では iPhone の設定を読めないことがあるので、
 // Parameter の名前の後ろに「,dark」「,light」を付けると固定できる(付けないときは、どちらでも目立ちすぎない影)
-let NEU = { hl: [255, 255, 255, 0.22], sh: [0, 0, 0, 0.32] };
+let BG_SET = false;
+let NEU = { hl: [255, 255, 255, 0.22], sh: [0, 0, 0, 0.32] }, NEU_MODE = "";
 function setNeuMode(mode) {
+  NEU_MODE = mode;
   if (mode === "dark") NEU = { hl: [255, 255, 255, 0.09], sh: [0, 0, 0, 0.85] };
   else if (mode === "light") NEU = { hl: [255, 255, 255, 1.0], sh: [112, 124, 150, 0.38] };
 }
@@ -3265,13 +3269,195 @@ function build(data, now, myName) {
   return w;
 }
 
+// ===== リング版(アプリの試作UIのヘッダーと同じ: 左に24時間のリング、右に日付・次のバレー・予定3つ) =====
+// リングは絵として描くので、ライト/ダークは iPhone の設定(読めないときは Parameter の ,dark / ,light)で決める
+const RP = {
+  light: { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", red: "#c0504a" },
+  dark: { bg: "#2b2e34", top: "#34383f", bot: "#24272c", ink: "#eceef2", ink2: "#c3c7cf", ink3: "#9aa0aa", red: "#e39a95" }
+};
+// 予定の色(アプリの試作UIと同じ渋い色)とバレーの人数の色
+const RCOL = {
+  light: ["#8d9095", "#5a6788", "#7a6688", "#8a6f5e", "#56708a", "#7a6070", "#8a7896", "#6b7a8f", "#7b6a5a"],
+  dark: ["#a6aab0", "#9aa3c4", "#b19fbf", "#bea08d", "#8fa7bf", "#b39aa8", "#b9abc4", "#9aa7ba", "#b3a593"]
+};
+const RLV = { light: { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" }, dark: { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } };
+const WEN3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+function ringMode() {
+  if (NEU_MODE) return NEU_MODE;
+  try { return Device.isUsingDarkAppearance() ? "dark" : "light"; } catch (e) { return "light"; }
+}
+function mixHex(a, b, t) {
+  const h = x => [1, 3, 5].map(i => parseInt(x.slice(i, i + 2), 16));
+  const A = h(a), B = h(b);
+  return "#" + A.map((v, i) => Math.round(v * t + B[i] * (1 - t)).toString(16).padStart(2, "0")).join("");
+}
+// その日の予定(共有・ペア・自分のLocal)
+function plansOnDay(data, k, myName) {
+  const me = myName ? (data.roster || []).find(r => r.name === myName) : null, myId = me ? me.id : null;
+  const visible = p => !p.to || !p.to.length || (myId != null && p.to.includes(myId));
+  const onDay = p => p && p.startDate && p.startDate <= k && (p.endDate ? p.endDate >= k : p.startDate === k);
+  const has = p => p.title || p.start || p.end || p.memo || p.endDate;
+  const out = [];
+  (data.plans || []).filter(p => !p.local && has(p) && onDay(p) && visible(p)).forEach(p => out.push(p));
+  ((data.byDate || {}).pairplans || []).filter(p => p && !p.deleted && has(p) && onDay(p) && visible(p)).forEach(p => out.push(p));
+  if (myId != null) {
+    const seen = new Set();
+    ((data.byDate || {}).localntf || []).filter(x => x.who === myId).concat(((data.byDate || {}).widget || []).filter(x => x && x.who === myId))
+      .forEach(x => (x.list || []).filter(p => has(p) && onDay(p) && !seen.has(p.id)).forEach(p => { seen.add(p.id); out.push(p); }));
+  }
+  return out.map(p => ({ p, first: p.startDate === k, last: !p.endDate || p.endDate === k, multi: !!p.endDate && p.endDate !== p.startDate }));
+}
+function volleyOn(data, k, myName) {
+  if (!(data.events || {})[k]) return null;
+  const rs = (data.reservations || {})[k] || [];
+  const tr = rs.map(r => String(r.time || "").match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/)).filter(Boolean);
+  const s = tr.length ? Math.min(...tr.map(x => hm(x[1]))) : null, e = tr.length ? Math.max(...tr.map(x => hm(x[2]))) : null;
+  const list = (data.byDate || {})[k] || [];
+  const n = list.filter(m => m.status === "来る").length;
+  const th = Object.assign({ yellowMin: 8, cyanMin: 12, cyanMax: 14 }, data.thresholds || {});
+  const lv = n > th.cyanMax ? "danger" : n >= th.cyanMin ? "sufficient" : n >= th.yellowMin ? "warning" : "danger";
+  const mine = myName ? list.find(m => m.name === myName) : null;
+  return { n, cap: th.cyanMax, lv, s, e, mine: mine ? mine.status : "" };
+}
+const fmtM = m => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+// 24時間のリング(上=0時、右=6時、下=12時、左=18時)
+function drawDial(S, k, data, myName, vol, mode, isToday, now) {
+  const P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
+  const ctx = new DrawContext(); ctx.size = new Size(S, S); ctx.opaque = false; ctx.respectScreenScale = true;
+  const c = S / 2, R = S / 2 - 3, TH = Math.round(S * 0.135), Ri = R - TH, Rm = Ri + TH / 2 - 0.5;
+  const pt = (r, h) => { const a = h / 24 * 2 * Math.PI; return new Point(c + r * Math.sin(a), c - r * Math.cos(a)); };
+  const band = (r1, r2, h1, h2, col) => {
+    const n = Math.max(2, Math.ceil((h2 - h1) * 6)), pts = [];
+    for (let i = 0; i <= n; i++) pts.push(pt(r2, h1 + (h2 - h1) * i / n));
+    for (let i = n; i >= 0; i--) pts.push(pt(r1, h1 + (h2 - h1) * i / n));
+    const p = new Path(); p.addLines(pts); p.closeSubpath(); ctx.addPath(p); ctx.setFillColor(new Color(col)); ctx.fillPath();
+  };
+  const disc = (r, col) => { const p = new Path(); p.addEllipse(new Rect(c - r, c - r, r * 2, r * 2)); ctx.addPath(p); ctx.setFillColor(new Color(col)); ctx.fillPath(); };
+  disc(R + 3, P.top);                 // ふくらんだ台
+  disc(R, P.bot);                     // 溝
+  for (let i = 0; i < 12; i++) band(Ri, R, i * 2 - 0.13, i * 2 + 0.13, mixHex(P.top, P.bot, 0.8));   // 12マスの区切り
+  if (vol) {   // 人数: 1人1マス(12人を超えた分は濃い色で2周目)
+    const cA = mixHex(LVc[vol.lv], P.bg, 0.78), cB = LVc[vol.lv];
+    for (let i = 0; i < Math.min(vol.n, 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cA);
+    for (let i = 0; i < Math.max(0, vol.n - 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cB);
+  }
+  // 内側の半分: その日の予定(休日の予定は描かない)
+  plansOnDay(data, k, myName).filter(x => !x.p.holiday).forEach(({ p, first, last, multi }) => {
+    const s0 = hm(p.start), e0 = hm(p.end);
+    let h1 = null, h2 = null;
+    if (!multi && !p.allDay && s0 != null) { h1 = s0 / 60; h2 = e0 != null && e0 > s0 ? e0 / 60 : h1 + 0.4; }
+    else if (multi && first && !p.allDay && s0 != null) { h1 = s0 / 60; h2 = 24; }
+    else if (multi && last && !p.allDay && e0 != null) { h1 = 0; h2 = e0 / 60; }
+    else if (multi) { h1 = 0; h2 = 24; }
+    if (h1 == null) return;
+    band(Ri, Rm, h1, h2, PC[+p.color || 0] || PC[0]);
+  });
+  const sv = volleyOn(data, k, myName);
+  if (sv && sv.s != null) band(Ri, Rm, sv.s / 60, sv.e / 60, P.ink2);
+  disc(Ri, P.bg);                     // 真ん中
+  if (isToday) {                      // 今の時間: 黒い線
+    const h = now.getHours() + now.getMinutes() / 60, a = pt(Ri - 3, h), b = pt(R + 3, h);
+    const p = new Path(); p.move(a); p.addLine(b); ctx.addPath(p); ctx.setStrokeColor(new Color(P.ink)); ctx.setLineWidth(2); ctx.strokePath();
+  }
+  // 真ん中の数字: バレーの人数(なければ日付)
+  const big = vol ? String(vol.n) : String(+k.slice(8));
+  ctx.setTextAlignedCenter();
+  ctx.setFont(Font.semiboldRoundedSystemFont(Math.round(S * 0.19))); ctx.setTextColor(new Color(vol ? LVc[vol.lv] : P.ink));
+  ctx.drawTextInRect(big, new Rect(0, c - S * 0.17, S, S * 0.24));
+  ctx.setFont(Font.boldSystemFont(Math.round(S * 0.075))); ctx.setTextColor(new Color(P.ink3));
+  ctx.drawTextInRect(vol ? `/ ${vol.cap}人` : WEN3[new Date(k + "T00:00:00").getDay()], new Rect(0, c + S * 0.07, S, S * 0.12));
+  return ctx.getImage();
+}
+function buildRing(data, now, myName) {
+  const fam = config.widgetFamily || "medium";
+  if (String(fam).startsWith("accessory")) return buildAccessory(data, now, myName, fam);
+  const mode = ringMode(), P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
+  const k = dkey(now);
+  const sv = volleyOn(data, k, myName);
+  const nextKey = sv ? k : Object.keys(data.events || {}).filter(x => data.events[x] && x >= k && /^\d{4}-\d{2}-\d{2}$/.test(x)).sort()[0] || "";
+  const vv = nextKey ? volleyOn(data, nextKey, myName) : null;
+  const w = new ListWidget(); w.url = APP_URL;
+  w.backgroundColor = BG_SET ? C.bg : new Color(P.bg);
+  const S = fam === "small" ? 118 : fam === "large" ? 128 : 124;
+  const dial = drawDial(S, k, data, myName, vv, mode, true, now);
+  if (fam === "small") {
+    w.setPadding(8, 8, 8, 8);
+    const r = w.addStack(); r.addSpacer(); const im = r.addImage(dial); im.imageSize = new Size(S, S); r.addSpacer();
+    setRefresh(w, [], now); return w;
+  }
+  w.setPadding(12, 14, 12, 14);
+  const top = w.addStack(); top.centerAlignContent();
+  const im = top.addImage(dial); im.imageSize = new Size(S, S);
+  top.addSpacer(14);
+  const col = top.addStack(); col.layoutVertically();
+  // 日付
+  const dl = col.addStack(); dl.bottomAlignContent();
+  const d1 = dl.addText(`${now.getMonth() + 1}/${now.getDate()}`); d1.font = Font.boldRoundedSystemFont(15); d1.textColor = new Color(P.ink);
+  dl.addSpacer(5);
+  const d2 = dl.addText(WEN3[now.getDay()]); d2.font = Font.semiboldSystemFont(10); d2.textColor = new Color(P.ink3);
+  const plans = plansOnDay(data, k, myName);
+  if (plans.some(x => x.p.holiday)) { dl.addSpacer(6); const hl = dl.addText("休日"); hl.font = Font.systemFont(10); hl.textColor = new Color(P.red); }
+  col.addSpacer(6);
+  // 次のバレー + 自分の出欠
+  if (vv) {
+    const vl = col.addStack(); vl.centerAlignContent();
+    const a = vl.addText(sv ? "VOLLEY" : `NEXT ${md(nextKey)}`); a.font = Font.boldSystemFont(11); a.textColor = new Color(P.ink);
+    vl.addSpacer(6);
+    const b = vl.addText(vv.s != null ? `${fmtM(vv.s)}〜` : "時間未定"); b.font = Font.mediumSystemFont(11); b.textColor = new Color(P.ink3);
+    if (vv.mine) {
+      vl.addSpacer(6);
+      const AC = { "来る": LVc.sufficient, "未定": LVc.warning, "来ない": LVc.danger };
+      const m = vl.addText(SYM[vv.mine] || "?"); m.font = Font.boldSystemFont(11); m.textColor = new Color(AC[vv.mine] || P.ink3);
+    }
+    col.addSpacer(6);
+  }
+  // 予定(バレーも入れる)
+  const rows = plans.map(({ p, first, last, multi }) => {
+    const s0 = hm(p.start), e0 = hm(p.end);
+    const timed = !p.allDay && s0 != null && (first || !multi);
+    const endsHere = multi && last && !first && !p.allDay && e0 != null;
+    return { t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", col: PC[+p.color || 0] || PC[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
+  });
+  if (sv) rows.push({ t: sv.s != null ? fmtM(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
+  rows.sort((a, b) => a.min - b.min);
+  const max = fam === "large" ? 3 : 3;
+  if (!rows.length) { const t = col.addText("予定なし"); t.font = Font.systemFont(11.5); t.textColor = new Color(P.ink3); }
+  rows.slice(0, max).forEach((r, i) => {
+    if (i) col.addSpacer(4);
+    const line = col.addStack(); line.centerAlignContent();
+    const dot = line.addStack(); dot.size = new Size(7, 7); dot.cornerRadius = 3.5; dot.backgroundColor = new Color(r.col);
+    line.addSpacer(7);
+    const tt = line.addText(r.t); tt.font = Font.semiboldMonospacedSystemFont(11); tt.textColor = new Color(P.ink2); tt.lineLimit = 1;
+    line.addSpacer(7);
+    const ti = line.addText(r.title); ti.font = Font.boldSystemFont(12.5); ti.textColor = new Color(P.ink); ti.lineLimit = 1;
+  });
+  if (rows.length > max) { col.addSpacer(3); const m = col.addText(`+${rows.length - max}`); m.font = Font.boldSystemFont(10); m.textColor = new Color(P.ink3); }
+  // 大: 下に残りの予定も並べる
+  if (fam === "large" && rows.length > max) {
+    w.addSpacer(10);
+    rows.slice(max, max + 8).forEach(r => {
+      const line = w.addStack(); line.centerAlignContent();
+      const dot = line.addStack(); dot.size = new Size(7, 7); dot.cornerRadius = 3.5; dot.backgroundColor = new Color(r.col);
+      line.addSpacer(8);
+      const tt = line.addText(r.t); tt.font = Font.semiboldMonospacedSystemFont(11); tt.textColor = new Color(P.ink2);
+      line.addSpacer(8);
+      const ti = line.addText(r.title); ti.font = Font.boldSystemFont(13); ti.textColor = new Color(P.ink); ti.lineLimit = 1;
+      w.addSpacer(5);
+    });
+  }
+  if (WBLOCK) { w.addSpacer(4); const bl = w.addText("⚠︎ この名前は合言葉が必要です"); bl.font = Font.systemFont(9); bl.textColor = new Color(P.ink3); }
+  w.addSpacer();
+  setRefresh(w, [], now);
+  return w;
+}
+
 async function main() {
   // 名前: ウィジェットの Parameter。アプリ内で実行するときは、前にウィジェットで使った名前(またはここで入れた名前)を使う
   // Parameter: 「名前」または「名前,dark」「名前,light」
   const prm = String(args.widgetParameter || "").split(/[,、，]/).map(x => x.trim());
   let myName = prm[0] || "";
   if (/^(dark|light)$/i.test(prm[1] || "")) setNeuMode(prm[1].toLowerCase());
-  if (/^#?[0-9a-f]{6}$/i.test(prm[2] || "")) C.bg = new Color(prm[2].replace(/^#?/, "#"));   // 3つ目: 背景の色(壁紙の色)
+  if (/^#?[0-9a-f]{6}$/i.test(prm[2] || "")) { C.bg = new Color(prm[2].replace(/^#?/, "#")); BG_SET = true; }   // 3つ目: 背景の色(壁紙の色)
   if (myName) Keychain.set("vb_widget_name", myName);
   else if (!config.runsInWidget) {
     const saved = Keychain.contains("vb_widget_name") ? Keychain.get("vb_widget_name") : "";
@@ -3281,7 +3467,7 @@ async function main() {
   let w;
   try {
     const data = await loadShared();
-    w = build(data, new Date(), resolveMe(data, myName));
+    w = (STYLE === "ring" ? buildRing : build)(data, new Date(), resolveMe(data, myName));
   } catch (e) {
     w = new ListWidget(); w.backgroundColor = C.bg; w.url = APP_URL;
     const t = w.addText("予定を読み込めませんでした"); t.font = Font.mediumSystemFont(12); t.textColor = C.ink2;
@@ -12866,7 +13052,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 + `<div id="gdMe">${gdMeHtml()}</div>`
                 + gdSteps([
                     `App Store で <b>Scriptable</b> を入れる(無料)`,
-                    `下のボタンで <b>コードをコピー</b>
+                    `見た目を選んで <b>コードをコピー</b>
+                     <div class="gd-tabs" id="gdStyleSeg" style="margin:8px 0 4px"><button type="button" data-v="list" class="${wgtStyle === "list" ? "on" : ""}" onclick="setWgtStyle('list')">リスト版</button><button type="button" data-v="ring" class="${wgtStyle === "ring" ? "on" : ""}" onclick="setWgtStyle('ring')">リング版</button></div>
+                     <div class="gd-sub" id="gdStyleNote">${wgtStyleNote()}</div>
                      <button type="button" class="gd-copy" id="gdCopyBtn" onclick="copyWidgetCode()">コードをコピー</button>
                      <pre class="gd-code" id="gdCode"></pre>`,
                     `Scriptable を開き、右上の <span class="gd-key">${GD_PLUS}</span> → 白い画面を長押しして <b>ペースト</b>。上の題名を「バレー予定」などにして <span class="gd-key">Done</span>`,
@@ -12891,7 +13079,16 @@ const namesBtn = isAdmin() && dates.length > 0
             document.body.style.overflow = "hidden";
         }
         function closeGuide() { const ov = document.getElementById("guideOv"); if (ov) ov.style.display = "none"; document.body.style.overflow = ""; }
-        function widgetCode() { const el = document.getElementById("widgetSrc"); return el ? el.textContent.replace(/^\n/, "") : ""; }
+        // ウィジェットの見た目: list = 予定の板が並ぶ版 / ring = 試作UIのヘッダーと同じリング版(コードの STYLE を書き換えて渡す)
+        let wgtStyle = "list";
+        function wgtStyleNote() { return wgtStyle === "ring" ? "左に24時間のリングとバレーの人数、右に日付・次のバレー・今日の予定3つ(中サイズ向け)" : "今日の予定を板で並べる版(小・中・大・ロック画面)"; }
+        function setWgtStyle(v) {
+            wgtStyle = v === "ring" ? "ring" : "list";
+            document.querySelectorAll("#gdStyleSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === wgtStyle));
+            const n = document.getElementById("gdStyleNote"); if (n) n.textContent = wgtStyleNote();
+            const pre = document.getElementById("gdCode"); if (pre) pre.textContent = widgetCode();
+        }
+        function widgetCode() { const el = document.getElementById("widgetSrc"); const t = el ? el.textContent.replace(/^\n/, "") : ""; return wgtStyle === "ring" ? t.replace('const STYLE = "list";', 'const STYLE = "ring";') : t; }
         async function copyWidgetCode() {
             const txt = widgetCode(), btn = document.getElementById("gdCopyBtn");
             let ok = false;
