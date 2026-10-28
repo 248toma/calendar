@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#eceff4">
     <title>日程管理アプリ</title>
     <!-- ホーム画面に追加したときのアイコン(iPhone: apple-touch-icon / Android: manifest) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.webmanifest">
@@ -2962,6 +2962,20 @@
         .op-qpv.miss { color: var(--ink-3); font-weight: 600; }
         .op-box.editing-existing .op-quick { display: none; }
 
+        /* ===== 試作UI ===== */
+        #protoUI { display: none; }
+        body.proto-on #protoUI { display: block; position: fixed; inset: 0; z-index: 40; overflow: hidden; }
+        body.proto-on.nv-full #protoUI, body.proto-on.plan-editing #protoUI,
+        body.proto-on.proto-panel #protoUI, body.proto-on.plan-detail #protoUI { display: none; }
+        @keyframes prSlideL { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+        @keyframes prSlideR { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+        body.proto-on:not(.nv-full):not(.plan-editing) #addFab, body.proto-on:not(.nv-full):not(.plan-editing) #todayFab { display: none !important; }
+        #protoUI .pr-wrap { max-width: 440px; margin: 0 auto; height: 100%; box-sizing: border-box; padding: calc(env(safe-area-inset-top, 0px) + 16px) 22px 0; display: flex; flex-direction: column; gap: 22px; position: relative; font-family: 'Noto Sans JP', system-ui, sans-serif; }
+        #protoUI button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
+        #protoUI button:active { transform: scale(.95); }
+        #protoUI .pr-cell { display: flex; align-items: center; justify-content: center; min-height: 44px; height: 100%; }
+        #protoUI .pr-dock { position: absolute; left: 22px; right: 22px; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: center; gap: 14px; }
+        #protoUI #prRows::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -3330,6 +3344,7 @@ await main();
                     <option value="view">View</option>
                 </select></div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
+            <div class="st-row"><span class="st-lbl">試作UI</span><span class="st-seg" id="protoSeg"><button type="button" data-v="0" onclick="setProtoUI(false)">オフ</button><button type="button" data-v="1" onclick="setProtoUI(true)">オン</button></span></div>
             <div class="st-row"><span class="st-lbl">使い方</span><span class="st-seg st-guide"><button type="button" onclick="startTutorial()">説明</button><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
         </div>
         <div class="panel-group-label">記録</div>
@@ -6594,7 +6609,8 @@ await main();
                 <div class="pd-acts">${editable ? `<button type="button" class="op-delbtn" onclick="deleteOtherPlan(${p.id})">削除</button>` : ""}<span class="op-grow"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button>${editable ? `<button type="button" class="op-add" onclick="editFromDetail(${p.id})">編集</button>` : ""}</div>
             </div>`;
         }
-        function renderNvPanel() {
+        function renderNvPanel() { renderNvPanelCore(); document.body.classList.toggle("plan-detail", planDetailId != null && !!document.getElementById("planDetail")); if (typeof protoOn !== "undefined" && protoOn) renderProto(); }
+        function renderNvPanelCore() {
             const el = document.getElementById("nvDayPanel");
             if (!el) return;
             if (volleyFull && !events[selectedDate]) volleyFull = false;   // バレーが無くなった日は全体表示を解除
@@ -9383,6 +9399,7 @@ await main();
             document.documentElement.style.colorScheme = dark ? "dark" : "light";
             const meta = document.querySelector('meta[name="theme-color"]');
             if (meta) meta.setAttribute("content", dark ? "#313746" : "#eceff4");
+            if (typeof protoOn !== "undefined" && protoOn) setTimeout(renderProto, 0);   // 試作UIの色も切り替える
             const lb = document.getElementById("themeLbl");
             if (lb) lb.textContent = typeof realAdmin === "function" && realAdmin() ? (themeIsViewSlot() ? "表示(Viewのとき)" : "表示(Adminのとき)") : "表示";
             const btn = document.getElementById("themeToggleBtn");
@@ -13291,6 +13308,289 @@ const namesBtn = isAdmin() && dates.length > 0
             if (typeof calTimeMode !== "undefined" && calTimeMode) { viewWeekStart = startOfWeek(new Date(y, m - 1, d)); twReset(); }
             selectDate(k);
         }
+
+        // ======================================================================
+        // 試作UI(設定の「試作UI」でオン/オフ。この端末だけ)
+        // 上: 選んだ日の24時間の文字盤(底=バレーの人数12マス、内側半分=予定)+バレー・出欠・予定2件
+        // 下: シンプルなカレンダー(選んだ日だけ凹んだ文字盤。ほかは細い弧。バレーは人数のメモリ)
+        // データは今のアプリと同じ(出欠・予定・予約)。入力や詳しい画面は、今の画面を使う
+        // ======================================================================
+        const PROTO_KEY = "proto_ui_v1";
+        var protoOn = false, protoYM = null, protoRowsTop = 0, protoTick = 0, protoSlide = 0, protoSx = null, protoSy = null;   // var: 先に描かれる今の画面から参照されても大丈夫なように
+        try { protoOn = localStorage.getItem(PROTO_KEY) === "1"; } catch (e) { /* ignore */ }
+        function setProtoUI(on) {
+            protoOn = !!on;
+            try { localStorage.setItem(PROTO_KEY, protoOn ? "1" : "0"); } catch (e) { /* ignore */ }
+            document.body.classList.toggle("proto-on", protoOn);
+            document.querySelectorAll("#protoSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === protoOn));
+            if (protoOn) { protoYM = null; const sp = document.getElementById("settingsPanel"); if (sp && sp.classList.contains("open")) toggleSettings(); renderProto(); }
+            clearInterval(protoTick);
+            if (protoOn) protoTick = setInterval(() => { if (!document.hidden) renderProto(); }, 30000);   // 今の時刻の線を動かす
+        }
+        function protoPal() {
+            const dark = document.body.classList.contains("dark");
+            const P = dark
+                ? { bg: "#2b2e34", top: "#34383f", bot: "#24272c", ink: "#eceef2", ink2: "#c3c7cf", ink3: "#9aa0aa", hi: "rgba(255,255,255,.06)", lo: "rgba(0,0,0,.5)", rim: "rgba(255,255,255,.07)", rimLo: "rgba(0,0,0,.35)", red: "#e39a95", acc: "#7aa2ff" }
+                : { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", hi: "#ffffff", lo: "#c9cfd8", rim: "rgba(255,255,255,.95)", rimLo: "rgba(80,90,110,.10)", red: "#c0504a", acc: "#2f6bf2" };
+            // 予定の色(アプリの色番号 0〜8): 渋い寒色〜茶系。バレーの人数の色(緑・黄土・小豆色)の系統は使わない
+            const C = dark
+                ? ["#a6aab0", "#9aa3c4", "#b19fbf", "#bea08d", "#8fa7bf", "#b39aa8", "#b9abc4", "#9aa7ba", "#b3a593"]
+                : ["#8d9095", "#5a6788", "#7a6688", "#8a6f5e", "#56708a", "#7a6070", "#8a7896", "#6b7a8f", "#7b6a5a"];
+            const LV = dark ? { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } : { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" };
+            return { dark, P, C, LV };
+        }
+        function renderProto() {
+            const root = document.getElementById("protoUI");
+            if (!root) return;
+            if (!protoOn) { root.innerHTML = ""; return; }
+            const { dark, P, C, LV } = protoPal();
+            const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif";
+            const raise = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 7px 7px 18px ${P.lo}, -7px -7px 18px ${P.hi}, inset 3px 3px 6px ${P.rim}, inset -4px -4px 8px ${P.rimLo}`;
+            const raiseS = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 3px 3px 9px ${P.lo}, -3px -3px 9px ${P.hi}, inset 2px 2px 3px ${P.rim}, inset -2px -2px 4px ${P.rimLo}`;
+            const inset = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 5px 5px 10px ${P.lo}, inset -5px -5px 10px ${P.hi}`;
+            const insetS = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 3px 3px 6px ${P.lo}, inset -3px -3px 6px ${P.hi}`;
+            const offC = dark ? "rgba(255,255,255,.12)" : "rgba(40,50,70,.12)";
+            const tickC = dark ? "rgba(255,255,255,.45)" : "rgba(40,50,70,.4)";
+            const nightC = dark ? "rgba(255,255,255,.08)" : "rgba(40,50,70,.10)", dayC = dark ? "rgba(255,255,255,.03)" : "rgba(40,50,70,.04)";
+            const shadeC = dark ? "rgba(0,0,0,.45)" : "rgba(60,70,90,.28)", glintC = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.7)";
+            const esc = escapeHtml, todayKey = formatDateKey(new Date());
+            const ringBox = (size) => `position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:50%;pointer-events:none;`;
+            const maskOf = (th) => `radial-gradient(farthest-side, transparent calc(100% - ${th}px), #000 calc(100% - ${th - 0.6}px))`;
+            const L = (st) => `<i style="${st}"></i>`;
+            const fillArc = (size, th, a1, a2, col) => { const mk = maskOf(th); return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${a2}deg, transparent ${a2}deg 360deg);-webkit-mask:${mk};mask:${mk}`; };
+            const groove = (size, th, sh, baseBg, fills, under) => {
+                const isl = size - th * 2;
+                return [
+                    `${ringBox(size)}background:${baseBg};box-shadow:inset ${sh}px ${sh}px ${sh * 2}px ${P.lo}, inset -${sh}px -${sh}px ${sh * 2}px ${P.hi}`,
+                    ...(under || []),
+                    `${ringBox(size)}box-shadow:inset ${sh * 0.8}px ${sh * 0.8}px ${sh * 1.6}px ${shadeC}, inset -${sh * 0.6}px -${sh * 0.6}px ${sh * 1.2}px ${glintC}`,
+                    `${ringBox(isl)}background:${P.bg};box-shadow:${sh * 0.5}px ${sh * 0.5}px ${sh * 1.2}px ${P.lo}, -${sh * 0.5}px -${sh * 0.5}px ${sh * 1.2}px ${P.hi}`,
+                    ...fills
+                ];
+            };
+            const segs = (size, th, cnt, col, off, gap) => {
+                const st = []; for (let i = 0; i < 12; i++) { const a = i * 30; st.push(`${i < cnt ? col : off} ${a + gap / 2}deg ${a + 30 - gap / 2}deg`, `transparent ${a + 30 - gap / 2}deg ${a + 30 + gap / 2}deg`); }
+                const mk = maskOf(th);
+                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}`;
+            };
+            const deepen = (col) => `color-mix(in srgb, ${col} 60%, ${dark ? "#000" : "#2a2e35"})`;
+            const hmv = (m) => m / 60;   // 分 → 時
+            // その日の予定の時間帯(時: 0〜24)。終日は null
+            const spansOf = (k) => plansOn(k).map(({ p, first, last }) => {
+                const col = C[+p.color || 0] || C[0];
+                const multi = !!p.endDate && p.endDate !== p.startDate;
+                const s0 = parseHM(p.start), e0 = parseHM(p.end);
+                let h1 = null, h2 = null;
+                if (!multi && !p.allDay && s0 != null) { h1 = hmv(s0); h2 = e0 != null && e0 > s0 ? hmv(e0) : null; }
+                else if (multi && first && !p.allDay && s0 != null) { h1 = hmv(s0); h2 = 24; }
+                else if (multi && last && !p.allDay && e0 != null) { h1 = 0; h2 = hmv(e0); }
+                else if (multi) { h1 = 0; h2 = 24; }
+                return { p, col, h1, h2 };
+            });
+            const volInfo = (k) => {
+                if (!events[k]) return null;
+                const rs = reservations[k] || [];
+                const prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean);
+                const s0 = prs.length ? Math.min(...prs.map(x => x.s)) : null, e0 = prs.length ? Math.max(...prs.map(x => x.e)) : null;
+                const n = countComing(k);
+                return { n, cap: thresholds.cyanMax, col: LV[getStatusLevel(n)], s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
+            };
+            const flatPeople = (n, size, th, col) => { const out = [segs(size, th, Math.min(n, 12), col, offC, 9)]; if (n > 12) out.push(segs(size, th, n - 12, deepen(col), "transparent", 9)); return out; };
+            const flatDial = (k, size) => {
+                const out = [], allDay = [];
+                spansOf(k).forEach(x => {
+                    if (x.h1 == null) { allDay.push(x); return; }
+                    if (x.h1 === 0 && x.h2 === 24) { out.unshift(`${ringBox(size)}border:1px solid ${x.col};box-sizing:border-box;opacity:.55`); return; }
+                    const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.5;
+                    out.push(fillArc(size, 2.2, x.h1 / 24 * 360, e / 24 * 360, x.col));
+                });
+                const v = volInfo(k);
+                if (v && v.s != null) out.push(fillArc(size, 3, hmv(v.s) / 24 * 360, hmv(v.e) / 24 * 360, P.ink2));
+                return { layers: out, allDay };
+            };
+            const tk = (deg) => `${tickC} ${deg - 1.5}deg ${deg + 1.5}deg`;
+            const dialBase = `conic-gradient(${tickC} 0deg 1.5deg, ${nightC} 1.5deg 88.5deg, ${tk(90)}, ${dayC} 91.5deg 178.5deg, ${tk(180)}, ${dayC} 181.5deg 268.5deg, ${tk(270)}, ${nightC} 271.5deg 358.5deg, ${tickC} 358.5deg 360deg), ${P.bot}`;
+            const grooveDial = (k, size, th, sh) => {
+                const fills = [], allDay = [];
+                spansOf(k).sort((a, b) => ((b.h1 === 0 && b.h2 === 24) ? 1 : 0) - ((a.h1 === 0 && a.h2 === 24) ? 1 : 0)).forEach(x => {
+                    if (x.h1 == null) { allDay.push(x); return; }
+                    const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.35;
+                    fills.push(fillArc(size, th, x.h1 / 24 * 360, e / 24 * 360, x.col));
+                });
+                const v = volInfo(k);
+                if (v && v.s != null) fills.push(fillArc(size, th, hmv(v.s) / 24 * 360, hmv(v.e) / 24 * 360, P.ink2));
+                return { layers: fills.length ? groove(size, th, sh, dialBase, fills) : [], allDay };
+            };
+
+            // ---------- 選んだ日 ----------
+            const sel = selectedDate;
+            const [sy, sm, sd] = sel.split("-").map(Number), sdt = new Date(sy, sm - 1, sd);
+            if (!protoYM) protoYM = [sy, sm];
+            const [y, m] = protoYM;
+            const WEN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const MSH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const MEN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const jp = jpDay(sel), note = [jp.hol, jp.ev].filter(Boolean).join(" · ");
+            const sv = volInfo(sel);
+            const nextKey = sv ? sel : Object.keys(events).filter(k => events[k] && k >= todayKey).sort()[0];
+            const vv = nextKey ? volInfo(nextKey) : null;
+            // 大きな文字盤: 底=人数の12マス、内側の半分=選んだ日の予定(半透明)
+            const DTH = 16, DSZ = 108, INT = DTH / 2 - 1, INS = DSZ - DTH;
+            const fills = [], under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
+            if (vv) {
+                fills.push(segs(DSZ, DTH, Math.min(vv.n, 12), `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`, "transparent", 4));
+                if (vv.n > 12) fills.push(segs(DSZ, DTH, vv.n - 12, vv.col, "transparent", 4));
+            }
+            spansOf(sel).forEach(x => {
+                if (x.h1 == null) return;
+                const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.4;
+                fills.push(fillArc(INS, INT, x.h1 / 24 * 360, e / 24 * 360, x.col) + ";opacity:.92");
+            });
+            if (sv && sv.s != null) fills.push(fillArc(INS, INT, hmv(sv.s) / 24 * 360, hmv(sv.e) / 24 * 360, P.ink2) + ";opacity:.75");
+            const dial = groove(DSZ, DTH, 3, P.bot, fills, under);
+            let hand = "";
+            if (sel === todayKey) { const nowD = new Date(), deg = (nowD.getHours() + nowD.getMinutes() / 60) / 24 * 360; hand = L(`position:absolute;left:50%;top:50%;width:2px;height:${DTH + 6}px;margin-left:-1px;border-radius:1px;background:${P.ink};transform-origin:50% 0;transform:rotate(${deg + 180}deg) translateY(${DSZ / 2 - DTH - 3}px);pointer-events:none`); }
+            // 自分の出欠
+            const me = surveyWho();
+            const myMem = nextKey && me ? (attendanceByDate[nextKey] || []).find(x => x.name === me) : null;
+            const myAns = myMem ? myMem.status : "";
+            const OPTS = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"]];
+            const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger };
+            const idx = OPTS.findIndex(([st]) => st === myAns);
+            const segHtml = `<div onclick="event.stopPropagation()" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;max-width:160px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
+                ${idx >= 0 ? L(`position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 3 * ${idx});width:calc((100% - 8px) / 3);border-radius:15px;${raiseS}`) : ""}
+                ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join("")}
+            </div>`;
+            // 予定の一覧(バレーも入れる。2件分の高さで、ほかはスクロール)
+            const rows = plansOn(sel).map(({ p, first }) => {
+                const s0 = parseHM(p.start), timed = !p.allDay && s0 != null && (first || !p.endDate);
+                return { id: p.id, t: timed ? p.start : "終日", title: p.title || "予定", col: C[+p.color || 0] || C[0], min: timed ? s0 : -1 };
+            });
+            if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
+            rows.sort((a, b) => a.min - b.min);
+            const moreN = Math.max(0, rows.length - 2 - protoRowsTop);
+            const vlabel = !vv ? "VOLLEY" : sv ? "VOLLEY · この日" : (() => { const [a, b, c] = nextKey.split("-").map(Number), dd = new Date(a, b - 1, c); return `NEXT VOLLEY · ${MSH[b - 1]} ${c} ${WEN[dd.getDay()].slice(0, 3)}`; })();
+
+            // ---------- カレンダー ----------
+            const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
+            let cellsHtml = "";
+            for (let i = 0; i < 42; i++) {
+                const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
+                const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0;
+                const v = inM ? volInfo(k) : null;
+                let layers = [], allDay = [];
+                if (inM) ({ layers, allDay } = isSel ? grooveDial(k, 46, 4, 1.2) : flatDial(k, 40));
+                const ppl = v ? flatPeople(v.n, 31, 2.2, v.col) : [];
+                const fs = v ? 24 : 30;
+                const face = isSel ? `${ringBox(fs)}${inset}` : isToday ? `${ringBox(fs)}${raiseS}` : "";
+                const ad = allDay.slice(0, 3).map((x, n, arr) => L(`position:absolute;left:calc(50% + ${(n - (arr.length - 1) / 2) * 5}px);top:calc(50% + 7.5px);width:3.5px;height:3.5px;margin-left:-1.75px;border-radius:50%;background:${x.col};pointer-events:none`)).join("");
+                const numCol = isSel || isToday ? P.acc : red ? P.red : P.ink;
+                cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日" style="opacity:${inM ? 1 : 0.3}">
+                    <span style="position:relative;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${layers.map(L).join("")}${ppl.map(L).join("")}${face ? L(face) : ""}${ad}<span style="position:relative">${d.getDate()}</span></span></button>`;
+            }
+            const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
+            const sunIdx = weekStartDay === 1 ? 6 : 0;
+            const unans = !!document.querySelector("#surveyBtn.alert");
+            const protoAnim = protoSlide ? `animation: prSlide${protoSlide > 0 ? "L" : "R"} .28s cubic-bezier(.2,.8,.2,1)` : "";
+            protoSlide = 0;
+
+            root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">
+              <div style="border-radius:28px;padding:18px 20px;${raise}">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="font-family:${en};font-size:14px;font-weight:600;color:${P.ink3}">${WEN[sdt.getDay()]}</span>
+                  <span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span>
+                  <span style="font-family:${en};font-size:16px;font-weight:700">${MSH[sm - 1]} ${sd}</span>
+                  <span style="margin-left:auto;font-size:11.5px;color:${P.red}">${esc(note)}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:18px;padding-top:14px;height:176px">
+                  <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:120px;height:120px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
+                    ${dial.map(L).join("")}${hand}
+                    ${[["0", "left:50%;top:2px;transform:translateX(-50%)"], ["6", "right:2px;top:50%;transform:translateY(-50%)"], ["12", "left:50%;bottom:2px;transform:translateX(-50%)"], ["18", "left:2px;top:50%;transform:translateY(-50%)"]].map(([t, pos]) => `<span style="position:absolute;${pos};font-family:${en};font-size:8px;font-weight:700;color:${P.ink3}">${t}</span>`).join("")}
+                    <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
+                      <span style="font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink}">${vv ? vv.n : sd}</span>
+                      <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
+                    ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;padding-bottom:4px;cursor:pointer">
+                      <span style="font-family:${en};font-size:10px;font-weight:600;letter-spacing:.14em;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${vlabel}</span>
+                      <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700">Volley</span><span style="font-family:${en};font-size:11px;font-weight:500;color:${P.ink3}">${esc(vv.time)}</span></div>
+                      <span style="font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(vv.place)}</span>
+                      ${segHtml}</div>` : `<span style="font-size:12px;color:${P.ink3}">バレーの予定なし</span>`}
+                    <div style="position:relative">
+                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:52px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 2 ? "-webkit-mask:linear-gradient(#000 70%, transparent);mask:linear-gradient(#000 70%, transparent)" : ""}">
+                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;background:${r.col}"></i><span style="width:36px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2}">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:26px">予定なし</span>`}
+                      </div>
+                      <span id="prMore" style="position:absolute;right:0;bottom:-2px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="pr-cal" ontouchstart="protoTS(event)" ontouchend="protoTE(event)" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px;touch-action:pan-y;${protoAnim}">
+                <div style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
+
+                  <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${MEN[m - 1]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span></div>
+
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : P.ink3}">${t}</span>`).join("")}</div>
+                <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cellsHtml}</div>
+              </div>
+              <div class="pr-dock">
+                <button type="button" onclick="protoToday()" style="height:44px;padding:0 20px;border-radius:22px;font-family:${en};font-size:13px;font-weight:700;color:${sel === todayKey ? P.ink3 : P.acc};${raiseS}">Today</button>
+                <span style="flex:1"></span>
+                <button type="button" aria-label="アンケート" onclick="openSurvey()" style="position:relative;width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg>${unans ? `<i style="position:absolute;top:10px;right:10px;width:7px;height:7px;border-radius:4px;background:${P.red}"></i>` : ""}</button>
+                <button type="button" aria-label="設定" onclick="toggleSettings()" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle></svg></button>
+                <button type="button" aria-label="予定を追加" onclick="protoAdd()" style="width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:${P.acc};${raise}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+              </div>
+            </div>`;
+            const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * 26;
+        }
+        // 同じ日をもう一度押すと: バレーの日はバレーの画面、それ以外は今の画面の予定一覧を最大で
+        function protoPick(k) {
+            if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
+            if (k === selectedDate) {
+                if (events[k]) openVolleyFull();   // バレーの日はバレーの画面へ
+                return;
+            }
+            protoRowsTop = 0;
+            const [y, m] = k.split("-").map(Number);
+            protoYM = [y, m];
+            selectDate(k);
+        }
+        // カレンダーを横にスライドして月を移る(指・マウスどちらでも)
+        function protoTS(e) { if (e.touches.length === 1) { protoSx = e.touches[0].clientX; protoSy = e.touches[0].clientY; } }
+        function protoTE(e) { if (protoSx == null) return; const t = e.changedTouches[0], dx = t.clientX - protoSx, dy = t.clientY - protoSy; protoSx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
+        var protoPx = null, protoSkipClick = 0;
+        function protoPD(e) { if (e.pointerType === "mouse") protoPx = [e.clientX, e.clientY]; }
+        function protoPU(e) { if (!protoPx || e.pointerType !== "mouse") return; const dx = e.clientX - protoPx[0], dy = e.clientY - protoPx[1]; protoPx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
+        function protoMonth(dir) {
+            protoSlide = dir; const [y, m] = protoYM || [new Date().getFullYear(), new Date().getMonth() + 1]; const d = new Date(y, m - 1 + dir, 1); protoYM = [d.getFullYear(), d.getMonth() + 1]; renderProto(); }
+        function protoToday() { protoYM = null; protoRowsTop = 0; jumpToToday(); renderProto(); }
+        function protoAns(k, st) { surveySet(k, st); renderProto(); }
+        // 上のバレー部分 → その日のバレーのタスク画面 / 予定の行 → その予定を編集(編集できない予定は詳細)
+        function protoVol(k) { if (!k) return; if (k !== selectedDate) { const [y, m] = k.split("-").map(Number); protoYM = [y, m]; selectDate(k); } openVolleyFull(); }
+        function protoRow(id) {
+            const p = planList.find(x => x.id === id); if (!p) return;
+            const editable = isAdmin() || !!p.local || pairPlanEditable(p);
+            if (editable) editOtherPlan(id); else openPlanDetail(id);
+        }
+        function protoAdd() { planDetailId = null; if (isAdmin()) { onAddFab(); return; } openNewPlan(); }
+        function protoRowsScroll(el) {
+            protoRowsTop = Math.round(el.scrollTop / 26);
+            const b = document.getElementById("prMore"); if (!b) return;
+            const total = el.children.length, n = Math.max(0, total - 2 - protoRowsTop);
+            b.style.display = n > 0 ? "flex" : "none"; const num = b.querySelector("b"); if (num) num.textContent = String(n);
+        }
+
+        // 今の画面の描き直しに合わせて、試作UIも描き直す
+        (function initProtoUI() {
+            const host = document.createElement("div"); host.id = "protoUI"; document.body.appendChild(host);
+            // 設定・名簿などのパネルが見えている間は、試作UIを引っこめて今の画面を出す
+            const sync = () => { const open = [...document.querySelectorAll(".settings-panel.open, .roster-panel.open, .copy-panel.open")].some(e => e.offsetHeight > 0); document.body.classList.toggle("proto-panel", open); };
+            const mo = new MutationObserver(() => requestAnimationFrame(sync));
+            document.querySelectorAll(".settings-panel, .roster-panel, .copy-panel").forEach(e => mo.observe(e, { attributes: true, attributeFilter: ["class"] }));
+            setProtoUI(protoOn);
+        })();
     </script>
 </body>
 </html>
