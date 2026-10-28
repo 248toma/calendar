@@ -13442,7 +13442,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const nextKey = sv ? sel : Object.keys(events).filter(k => events[k] && k >= todayKey).sort()[0];
             const vv = nextKey ? volInfo(nextKey) : null;
             // 大きな文字盤: 底=人数の12マス、内側の半分=選んだ日の予定(半透明)
-            const DTH = 16, DSZ = 108, INT = DTH / 2 - 1, INS = DSZ - DTH;
+            const DTH = 17, DSZ = 124, INT = DTH / 2 - 1, INS = DSZ - DTH;
             const fills = [], under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
             if (vv) {
                 fills.push(segs(DSZ, DTH, Math.min(vv.n, 12), `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`, "transparent", 4));
@@ -13477,7 +13477,7 @@ const namesBtn = isAdmin() && dates.length > 0
             });
             if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
             rows.sort((a, b) => a.min - b.min);
-            const moreN = Math.max(0, rows.length - 2 - protoRowsTop);
+            const moreN = Math.max(0, rows.length - 3 - protoRowsTop);
             const vlabel = !vv ? "VOLLEY" : sv ? "VOLLEY · この日" : (() => { const [a, b, c] = nextKey.split("-").map(Number), dd = new Date(a, b - 1, c); return `NEXT VOLLEY · ${MSH[b - 1]} ${c} ${WEN[dd.getDay()].slice(0, 3)}`; })();
 
             // ---------- カレンダー ----------
@@ -13519,8 +13519,8 @@ const namesBtn = isAdmin() && dates.length > 0
 
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">
               <div style="border-radius:28px;padding:18px 20px;${raise}">
-                <div style="display:flex;align-items:center;gap:18px;height:168px">
-                  <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:120px;height:120px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
+                <div style="display:flex;align-items:center;gap:18px;height:200px">
+                  <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${hand}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
                       <span style="font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink}">${vv ? vv.n : sd}</span>
@@ -13533,10 +13533,10 @@ const namesBtn = isAdmin() && dates.length > 0
                       <span style="font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${sv ? "VOLLEY" : `NEXT ${nextKey.slice(5).replace("-", "/").replace(/^0/, "")}`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>
                       ${segHtml}</div>` : ""}
                     <div style="position:relative">
-                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:52px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 2 ? "-webkit-mask:linear-gradient(#000 70%, transparent);mask:linear-gradient(#000 70%, transparent)" : ""}">
+                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:78px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
                         ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;background:${r.col}"></i><span style="width:44px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:26px">予定なし</span>`}
                       </div>
-                      <span id="prMore" style="position:absolute;right:0;bottom:-2px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+                      <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
                     </div>
                   </div>
                 </div>
@@ -13593,7 +13593,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoRowsScroll(el) {
             protoRowsTop = Math.round(el.scrollTop / 26);
             const b = document.getElementById("prMore"); if (!b) return;
-            const total = el.children.length, n = Math.max(0, total - 2 - protoRowsTop);
+            const total = el.children.length, n = Math.max(0, total - 3 - protoRowsTop);
             b.style.display = n > 0 ? "flex" : "none"; const num = b.querySelector("b"); if (num) num.textContent = String(n);
         }
 
