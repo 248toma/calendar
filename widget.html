@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>バレー予定 ウィジェット</title>
+<style>
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { display: flex; align-items: center; justify-content: center; -webkit-font-smoothing: antialiased; }
+#wg { overflow: hidden; }
+#msg { font: 13px system-ui, sans-serif; color: #888; padding: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<!-- Android のホーム画面用: 「ウェブページをウィジェットにする」アプリでこのページを置く。
+     中身は iPhone の Scriptable 用ウィジェット(リング版)と同じコードを、ブラウザで動かしたもの。
+     使い方: widget.html?me=名前(または 名前%23合言葉)&theme=dark|light&size=small|medium|large -->
+<div id="wg"><div id="msg">読み込み中…</div></div>
+<script type="module">
+// ===== Scriptable の代わり(ブラウザで同じコードを動かすための小さな置きかえ) =====
+const DPR = Math.min(3, window.devicePixelRatio || 2);
+const QS = new URLSearchParams(location.search);
+const THEME = (QS.get("theme") || "").toLowerCase();
+const DARK = THEME === "dark" || (THEME !== "light" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+class Size { constructor(w, h) { this.width = w; this.height = h; } }
+class Point { constructor(x, y) { this.x = x; this.y = y; } }
+class Rect { constructor(x, y, w, h) { this.x = x; this.y = y; this.width = w; this.height = h; } }
+class Color {
+  constructor(h, a) { this.hex = h; this.a = a == null ? 1 : a; }
+  css() { const h = this.hex.replace("#", ""); const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16); return `rgba(${r},${g},${b},${this.a})`; }
+  static dynamic(l, d) { return DARK ? d : l; }
+}
+const SYS = '-apple-system, "Roboto", "Noto Sans JP", system-ui, sans-serif', MONO = '"Roboto Mono", ui-monospace, Menlo, monospace';
+class Font {
+  constructor(w, s, f) { this.css = `${w} ${s}px ${f || SYS}`; }
+  static systemFont(s) { return new Font(400, s); } static mediumSystemFont(s) { return new Font(500, s); } static semiboldSystemFont(s) { return new Font(600, s); }
+  static boldSystemFont(s) { return new Font(700, s); } static heavySystemFont(s) { return new Font(800, s); }
+  static boldRoundedSystemFont(s) { return new Font(700, s); } static semiboldRoundedSystemFont(s) { return new Font(600, s); }
+  static semiboldMonospacedSystemFont(s) { return new Font(600, s, MONO); } static regularMonospacedSystemFont(s) { return new Font(400, s, MONO); }
+}
+class Path {
+  constructor() { this.ops = []; }
+  addLines(p) { this.ops.push(["lines", p]); } closeSubpath() { this.ops.push(["close"]); } addEllipse(r) { this.ops.push(["ell", r]); }
+  addRoundedRect(r, a) { this.ops.push(["rr", r, a]); } move(p) { this.ops.push(["m", p]); } addLine(p) { this.ops.push(["l", p]); }
+}
+class DrawContext {
+  constructor() { this.cv = document.createElement("canvas"); }
+  set size(s) { this._s = s; this.cv.width = s.width * DPR; this.cv.height = s.height * DPR; this.g = this.cv.getContext("2d"); this.g.scale(DPR, DPR); }
+  get size() { return this._s; }
+  addPath(p) { const g = this.g; g.beginPath(); p.ops.forEach(([o, a, b]) => { if (o === "lines") a.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)); else if (o === "close") g.closePath(); else if (o === "ell") g.ellipse(a.x + a.width / 2, a.y + a.height / 2, a.width / 2, a.height / 2, 0, 0, Math.PI * 2); else if (o === "rr") { if (g.roundRect) g.roundRect(a.x, a.y, a.width, a.height, b); else g.rect(a.x, a.y, a.width, a.height); } else if (o === "m") g.moveTo(a.x, a.y); else if (o === "l") g.lineTo(a.x, a.y); }); }
+  setFillColor(c) { this.g.fillStyle = c.css(); } fillPath() { this.g.fill(); } setStrokeColor(c) { this.g.strokeStyle = c.css(); } setLineWidth(w) { this.g.lineWidth = w; } strokePath() { this.g.stroke(); }
+  setTextAlignedCenter() { } setFont(f) { this.font = f; } setTextColor(c) { this.tc = c; }
+  drawTextInRect(t, r) { const g = this.g; g.font = this.font.css; g.fillStyle = this.tc.css(); g.textAlign = "center"; g.textBaseline = "top"; g.fillText(t, r.x + r.width / 2, r.y); }
+  getImage() { return { url: this.cv.toDataURL(), w: this._s.width, h: this._s.height }; }
+}
+class WidgetStack {
+  constructor() { this.el = document.createElement("div"); this.el.style.cssText = "display:flex;flex-direction:row;flex:none;min-width:0"; }
+  layoutVertically() { this.el.style.flexDirection = "column"; } centerAlignContent() { this.el.style.alignItems = "center"; } bottomAlignContent() { this.el.style.alignItems = "flex-end"; }
+  setPadding(t, l, b, r) { this.el.style.padding = `${t}px ${r}px ${b}px ${l}px`; }
+  set backgroundColor(c) { this.el.style.background = c.css(); this._bg = c; } set cornerRadius(r) { this.el.style.borderRadius = r + "px"; }
+  set size(s) { if (s.width) this.el.style.width = s.width + "px"; if (s.height) this.el.style.height = s.height + "px"; this.el.style.boxSizing = "border-box"; }
+  set backgroundImage(i) { } set url(u) { this._url = u; } set refreshAfterDate(d) { this._refresh = d; }
+  addStack() { const s = new WidgetStack(); this.el.appendChild(s.el); return s; }
+  addSpacer(n) { const d = document.createElement("div"); d.style.cssText = n == null ? "flex:1" : `flex:none;width:${n}px;height:${n}px`; this.el.appendChild(d); }
+  addText(t) { const sp = document.createElement("span"); sp.textContent = t; sp.style.cssText = "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0"; this.el.appendChild(sp); return { set font(f) { sp.style.font = f.css; }, set textColor(c) { sp.style.color = c.css(); }, set lineLimit(v) { }, set minimumScaleFactor(v) { }, centerAlignText() { sp.style.textAlign = "center"; } }; }
+  addImage(img) { const im = document.createElement("img"); im.src = img.url; im.style.cssText = `width:${img.w}px;height:${img.h}px;flex:none`; this.el.appendChild(im); return { set imageSize(s) { im.style.width = s.width + "px"; im.style.height = s.height + "px"; } }; }
+}
+class ListWidget extends WidgetStack { constructor() { super(); this.el.style.flexDirection = "column"; } }
+class Request {
+  constructor(url) { this.url = url; this.method = "GET"; this.headers = {}; this.body = null; }
+  async loadJSON() { const r = await fetch(this.url, { method: this.method, headers: this.headers, body: this.body }); return r.json(); }
+}
+const Device = { screenSize: () => ({ width: 390 }), isUsingDarkAppearance: () => DARK };
+const Keychain = {
+  contains: k => { try { return localStorage.getItem("wgk_" + k) != null; } catch (e) { return false; } },
+  get: k => { try { return localStorage.getItem("wgk_" + k) || ""; } catch (e) { return ""; } },
+  set: (k, v) => { try { localStorage.setItem("wgk_" + k, v); } catch (e) { } }
+};
+// 大きさ: ?size=small|medium|large。なければ画面の縦横の比から
+const FAM = (() => { const s = (QS.get("size") || "").toLowerCase(); if (["small", "medium", "large"].includes(s)) return s; const r = innerWidth / Math.max(1, innerHeight); return r > 1.45 ? "medium" : innerHeight > 300 && r < 1.2 ? "large" : "small"; })();
+const config = { widgetFamily: FAM, runsInWidget: true };
+const args = { widgetParameter: [QS.get("me") || "", DARK ? "dark" : "light"].join(",") };
+const BASE = { small: [158, 158], medium: [338, 158], large: [338, 354] };
+const Script = {
+  setWidget(w) {
+    const [bw, bh] = BASE[FAM];
+    const host = document.getElementById("wg");
+    w.el.style.width = bw + "px"; w.el.style.height = bh + "px"; w.el.style.boxSizing = "border-box"; w.el.style.overflow = "hidden";
+    host.innerHTML = ""; host.appendChild(w.el);
+    const fit = () => { const k = Math.min(innerWidth / bw, innerHeight / bh); w.el.style.transform = `scale(${k})`; w.el.style.transformOrigin = "0 0"; host.style.width = bw * k + "px"; host.style.height = bh * k + "px"; };
+    fit(); addEventListener("resize", fit);
+    document.body.style.background = w._bg ? w._bg.css() : "";
+    document.body.onclick = () => { location.href = w._url || "./"; };
+    // 次に描き直す時刻(リング版の決まりと同じ)。ウィジェットのアプリが撮り直すときに新しい絵になるよう、ページも読み直す
+    const next = w._refresh ? Math.max(60000, w._refresh - Date.now()) : 15 * 60000;
+    setTimeout(() => location.reload(), Math.min(next, 30 * 60000));
+  },
+  complete() { }
+};
+
+// ===== ここから下は scriptable-widget.js と同じ(リング版) =====
+// バレー日程アプリ: 今日の予定ウィジェット(Scriptable 用)
+// 使い方: Scriptable にこのコードを貼って保存 → ホーム画面かロック画面に Scriptable のウィジェットを置く →
+//         ウィジェットを長押し「ウィジェットを編集」→ Script でこのスクリプトを選び、Parameter に
+//         アプリの「使い方 → ウィジェット」に出る「あなたの Parameter」を入れる(名前、または 名前#合言葉)
+// (自分あての共有予定・自分の出欠・共有をオンにした自分のLocal予定も出ます)
+// アカウントを紐付けている名前は、合言葉がないと使えません(名前だけで他の人に成りすませないように)
+
+const APP_URL = "https://248toma.github.io/calendar/";
+const API_KEY = "AIzaSyCupZ4RbR9eLzz991by5DFu9lxOsVbjrNg";
+const PROJECT = "calendar24884";
+const DOC_PATH = "sharedApps/volleyball-schedule";
+const KEYS = {
+  events: "attendance_events_v3", reservations: "attendance_reservations_v1", byDate: "attendance_bydate_v4",
+  plans: "attendance_plans_v2", roster: "attendance_roster_v1", thresholds: "attendance_thresholds_v4"
+};
+const TOKEN_KEY = "vb_widget_token_v1";
+// 見た目: "list" = 予定の板が並ぶ版 / "ring" = アプリの試作UIのヘッダーと同じリング版
+const STYLE = "ring";
+const WD = ["日", "月", "火", "水", "木", "金", "土"];
+// 予定の色(アプリの色番号 0〜8)。[ライト, ダーク] はアプリの予定の線の色と同じ
+const PCOL = [["#8a93a3", "#a6aebd"], ["#3a608f", "#a9c3e6"], ["#5a40a8", "#d6caf8"], ["#965828", "#f0c4a0"], ["#23744a", "#a6e0bb"],
+  ["#b0312f", "#f5b3b3"], ["#b0407a", "#f5bcd8"], ["#1b7882", "#9fdde3"], ["#8a6a05", "#f2dc92"],
+  ["#2a2c31", "#e4e5e8"], ["#80838b", "#8f939b"], ["#8a3f66", "#c97ea7"], ["#c08aa8", "#e6bfd3"], ["#2e3d63", "#93a6d8"]];   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
+// バレーの人数の色(アプリのカレンダーと同じ: 十分=緑 / やや不足=黄 / 不足・多すぎ=赤)
+const LV = { sufficient: ["#5d9487", "#7fb5a8"], warning: ["#ad9e72", "#cbbb8c"], danger: ["#b27c85", "#d29aa3"] };
+
+// ===== 共有データを読む(アプリのゲストと同じ匿名ログイン。ログイン情報はキーチェーンに保存して使い回す) =====
+async function idToken() {
+  let t = null;
+  try { if (Keychain.contains(TOKEN_KEY)) t = JSON.parse(Keychain.get(TOKEN_KEY)); } catch (e) { t = null; }
+  if (t && t.id && t.exp - Date.now() > 5 * 60 * 1000) return t.id;
+  if (t && t.refresh) {
+    try {
+      const r = new Request("https://securetoken.googleapis.com/v1/token?key=" + API_KEY);
+      r.method = "POST";
+      r.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+      r.body = "grant_type=refresh_token&refresh_token=" + encodeURIComponent(t.refresh);
+      const j = await r.loadJSON();
+      if (j.id_token) {
+        Keychain.set(TOKEN_KEY, JSON.stringify({ id: j.id_token, refresh: j.refresh_token, exp: Date.now() + (+j.expires_in) * 1000 }));
+        return j.id_token;
+      }
+    } catch (e) { /* 取り直す */ }
+  }
+  const r = new Request("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + API_KEY);
+  r.method = "POST";
+  r.headers = { "Content-Type": "application/json" };
+  r.body = JSON.stringify({ returnSecureToken: true });
+  const j = await r.loadJSON();
+  if (!j.idToken) throw new Error("ログインできません");
+  Keychain.set(TOKEN_KEY, JSON.stringify({ id: j.idToken, refresh: j.refreshToken, exp: Date.now() + (+j.expiresIn) * 1000 }));
+  return j.idToken;
+}
+async function loadShared() {
+  const r = new Request(`https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/${DOC_PATH}`);
+  r.headers = { Authorization: "Bearer " + await idToken() };
+  const j = await r.loadJSON();
+  const f = (((j.fields || {}).values || {}).mapValue || {}).fields || {};
+  const get = (k) => { try { return JSON.parse((f[k] && f[k].stringValue) || "null"); } catch (e) { return null; } };
+  return {
+    events: get(KEYS.events) || {}, reservations: get(KEYS.reservations) || {}, byDate: get(KEYS.byDate) || {},
+    plans: get(KEYS.plans) || [], roster: get(KEYS.roster) || [], thresholds: get(KEYS.thresholds) || {}
+  };
+}
+
+// ===== 今日の予定を作る =====
+function dkey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function md(k) { const [, m, d] = k.split("-").map(Number); return `${m}/${d}`; }
+function hm(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; }
+const SYM = { "来る": "○", "来ない": "✖", "未定": "△" };
+
+// 「名前」または「名前#合言葉」。紐付け済みの名前は合言葉が合わないと使わない(blocked)
+let WBLOCK = false;
+function resolveMe(data, raw) {
+  const m = String(raw || "").match(/^(.*?)(?:#([a-z0-9]+))?$/i);
+  const name = (m ? m[1] : "").trim(), key = m && m[2] ? m[2].toLowerCase() : "";
+  if (!name) return "";
+  const me = (data.roster || []).find(r => r.name === name);
+  if (me && me.emailHash) {
+    const rec = ((data.byDate || {}).widget || []).find(x => x && x.who === me.id);
+    if (!key || !rec || rec.k !== key) { WBLOCK = true; return ""; }
+  }
+  return name;
+}
+function itemsFor(data, today, myName, nowMin) {
+  const me = myName ? (data.roster || []).find(r => r.name === myName) : null, myId = me ? me.id : null;
+  const items = [];
+  // バレー
+  if (data.events[today]) {
+    const rs = data.reservations[today] || [];
+    const times = rs.map(r => String(r.time || "").match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/)).filter(Boolean);
+    const s = times.length ? times.map(x => x[1]).sort((a, b) => hm(a) - hm(b))[0] : "";
+    const e = times.length ? times.map(x => x[2]).sort((a, b) => hm(b) - hm(a))[0] : "";
+    const list = data.byDate[today] || [];
+    const come = list.filter(m => m.status === "来る").length;
+    const mine = myName ? list.find(m => m.name === myName) : null;
+    const place = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
+    const th = Object.assign({ yellowMin: 8, cyanMin: 12, cyanMax: 14 }, data.thresholds || {});
+    const lv = come > th.cyanMax ? "danger" : come >= th.cyanMin ? "sufficient" : come >= th.yellowMin ? "warning" : "danger";
+    items.push({ ad: 1, s: hm(s) ?? -1, endM: hm(e) ?? hm(s), t1: s || "終日", t2: e, title: `🏐 Volley · ${come}`, sub: [place, mine ? `自分 ${SYM[mine.status] || "?"}` : ""].filter(Boolean).join("  "), color: LV[lv] });
+  }
+  const visible = p => !p.to || !p.to.length || (myId != null && p.to.includes(myId));
+  const onDay = p => p && p.startDate && p.startDate <= today && (p.endDate ? p.endDate >= today : p.startDate === today);
+  const has = p => p.title || p.start || p.end || p.memo || p.endDate;
+  const add = (p, local) => {
+    const first = p.startDate === today, last = !p.endDate || p.endDate === today, multi = !!p.endDate && p.endDate !== p.startDate;
+    const timed = !p.allDay && (p.start || p.end);
+    const t1 = first ? (timed && p.start ? p.start : "終日") : md(p.startDate);
+    const t2 = multi ? (last ? (p.end || md(p.endDate)) : md(p.endDate)) : (timed ? (p.end || "") : "");
+    // 今日で終わる時間のある予定は、終わりの時間(なければ開始の時間)を覚えておく(過ぎたら消す)
+    const endM = last && timed ? (hm(p.end) ?? hm(p.start)) : null;
+    items.push({ ad: !(first && last) ? 0 : timed ? 3 : 2, s: first && timed ? (hm(p.start) ?? -1) : -1, endM, t1, t2, title: (local ? "📱 " : "") + (p.title || "予定"), sub: p.memo || "", color: PCOL[+p.color || 0] || PCOL[0] });   // color = [ライト, ダーク]
+  };
+  (data.plans || []).filter(p => !p.local && has(p) && onDay(p) && visible(p)).forEach(p => add(p, false));
+  ((data.byDate || {}).pairplans || []).filter(p => p && !p.deleted && has(p) && onDay(p) && visible(p)).forEach(p => add(p, false));
+  // 管理者のLocal予定(通知用に共有している分): 自分の分だけ
+  // 自分のLocal予定: 管理者の通知用の写し+ウィジェット用に共有をオンにした写し(同じ予定は1つだけ)
+  if (myId != null) {
+    const seen = new Set();
+    const locals = ((data.byDate || {}).localntf || []).filter(x => x.who === myId).concat(((data.byDate || {}).widget || []).filter(x => x && x.who === myId));
+    locals.forEach(x => (x.list || []).filter(p => has(p) && onDay(p) && !seen.has(p.id)).forEach(p => { seen.add(p.id); add(p, true); }));
+  }
+  items.sort((a, b) => a.ad - b.ad || a.s - b.s);
+  // 終わった予定は出さない(終日・何日も続く予定は、その日のうちは出したまま)
+  const nowM = nowMin == null ? -1 : nowMin;
+  return items.filter(it => it.endM == null || it.endM > nowM);
+}
+function nextVolley(data, today) {
+  return Object.keys(data.events || {}).filter(k => data.events[k] && k > today && /^\d{4}-\d{2}-\d{2}$/.test(k)).sort()[0] || "";
+}
+
+// ===== ウィジェット =====
+// アプリと同じ色(ライト / ダーク)。予定は一覧と同じ「丸い板」に乗せる
+const dyn = (l, d) => Color.dynamic(new Color(l), new Color(d));
+const C = {
+  // ダークは黒と白(アプリの紺ではなく、iPhone の黒に合わせる)
+  // 背景はホーム画面の壁紙の色に合わせると、透けているように見える(この iPhone の壁紙は #1e1e1e)
+  bg: dyn("#eceff4", "#1e1e1e"), card: dyn("#ffffff", "#2c2c2e"),   // ライトは白い板(影がないので、背景との差で区切る)
+  ink: dyn("#12151c", "#ffffff"), ink2: dyn("#4a5262", "#d1d1d6"), ink3: dyn("#8a93a3", "#8e8e93"),
+  accent: dyn("#0a8f6a", "#3ec79c")
+};
+// ===== 凹凸(アプリと同じ「ふくらんだ板」: 左上に白い光・右下に影) =====
+// Scriptable は影を付けられないので、ぼかした影を絵として描いて、板の背景に敷く
+// 影の色はライト/ダークで変える。ウィジェットの中では iPhone の設定を読めないことがあるので、
+// Parameter の名前の後ろに「,dark」「,light」を付けると固定できる(付けないときは、どちらでも目立ちすぎない影)
+let BG_SET = false;
+let NEU = { hl: [255, 255, 255, 0.22], sh: [0, 0, 0, 0.32] }, NEU_MODE = "";
+function setNeuMode(mode) {
+  NEU_MODE = mode;
+  if (mode === "dark") NEU = { hl: [255, 255, 255, 0.09], sh: [0, 0, 0, 0.85] };
+  else if (mode === "light") NEU = { hl: [255, 255, 255, 1.0], sh: [112, 124, 150, 0.38] };
+}
+const M = 9;   // 板のまわりの影の余白
+function rgba(c, a) { return new Color("#" + c.slice(0, 3).map(v => v.toString(16).padStart(2, "0")).join(""), a); }
+const neuCache = {};
+function neuCard(w, h, rad) {
+  const key = `${w}x${h}x${rad}`;
+  if (neuCache[key]) return neuCache[key];
+  const W = w + M * 2, H = h + M * 2;
+  const ctx = new DrawContext(); ctx.size = new Size(W, H); ctx.opaque = false; ctx.respectScreenScale = true;
+  // ぼかし: 少しずつ大きい半透明の角丸を重ねる。重ね方の濃さを「なめらかな曲線(smoothstep)」にして、段がつかないようにする
+  const blob = (dx, dy, col, spread) => {
+    const steps = 32;
+    for (let k = steps; k >= 1; k--) {
+      const t = k / steps, wgt = 6 * t * (1 - t) / steps;
+      const g = spread * t;
+      const p = new Path(); p.addRoundedRect(new Rect(M + dx - g, M + dy - g, w + g * 2, h + g * 2), rad + g, rad + g);
+      ctx.addPath(p); ctx.setFillColor(rgba(col, Math.min(1, col[3] * wgt * 1.15))); ctx.fillPath();
+    }
+  };
+  // 影はなし(シンプル): 光も影も描かない。板の区切りは、板の色と背景の色の差だけ
+  void blob;
+  // 板の塗りは描かない(上に、ライト/ダークで自動で変わる色の板を重ねる)
+  return (neuCache[key] = ctx.getImage());
+}
+// ウィジェットの横幅(iPhone の画面幅からの目安)
+function widgetWidth(fam) {
+  const sw = (() => { try { return Device.screenSize().width; } catch (e) { return 390; } })();
+  const T = { 440: [170, 364], 430: [170, 364], 428: [170, 364], 414: [169, 360], 402: [162, 344], 393: [158, 338], 390: [158, 338], 375: [155, 329], 360: [155, 329], 320: [141, 292] };
+  const k = Object.keys(T).map(Number).sort((a, b) => Math.abs(a - sw) - Math.abs(b - sw))[0];
+  return T[k][fam === "small" ? 0 : 1];
+}
+// 次に予定が終わる時刻か30分後(日付が変わるときも)の早い方で描き直してもらう。実際の時刻は iPhone が決めるので、数分ずれることがある
+function setRefresh(w, items, now) {
+  const ends = items.map(it => it.endM).filter(v => v != null).map(v => new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(v / 60), v % 60, 30).getTime());
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 1).getTime();
+  w.refreshAfterDate = new Date(Math.min(Date.now() + 30 * 60 * 1000, midnight, ...ends));
+}
+// ロック画面用(長方形・1行)
+function buildAccessory(data, now, myName, fam) {
+  const w = new ListWidget(); w.url = APP_URL;
+  const items = itemsFor(data, dkey(now), myName, now.getHours() * 60 + now.getMinutes());
+  const line = it => it.ad === 0 ? `${it.title}(〜${it.t2})` : `${it.t1 === "終日" ? "" : it.t1 + " "}${it.title}`;
+  if (fam === "accessoryCircular") {   // 丸: 今日の予定の数
+    w.addSpacer(); const n = w.addText(String(items.length)); n.font = Font.heavySystemFont(22); n.centerAlignText();
+    const l = w.addText("今日"); l.font = Font.systemFont(9); l.centerAlignText(); w.addSpacer(); setRefresh(w, items, now); return w;
+  }
+  if (fam === "accessoryInline") { w.addText(items.length ? line(items[0]) + (items.length > 1 ? ` ほか${items.length - 1}` : "") : "今日の予定なし"); setRefresh(w, items, now); return w; }
+  if (!items.length) { const t = w.addText("今日の予定なし"); t.font = Font.mediumSystemFont(13); const nv = nextVolley(data, dkey(now)); if (nv) { const n = w.addText(`次のバレー ${md(nv)}`); n.font = Font.systemFont(11); } setRefresh(w, items, now); return w; }
+  items.slice(0, 3).forEach(it => { const t = w.addText(line(it)); t.font = Font.semiboldSystemFont(12); t.lineLimit = 1; });
+  if (items.length > 3) { const m = w.addText(`ほか${items.length - 3}件`); m.font = Font.systemFont(10); }
+  setRefresh(w, items, now);
+  return w;
+}
+function build(data, now, myName) {
+  const today = dkey(now), fam = config.widgetFamily || "medium";
+  if (String(fam).startsWith("accessory")) return buildAccessory(data, now, myName, fam);
+  const max = fam === "small" ? 2 : fam === "large" ? 5 : 2;
+  const cardW = widgetWidth(fam) - 24, cardH = fam === "large" ? 40 : 38;
+  const w = new ListWidget();
+  w.backgroundColor = C.bg;
+  w.url = APP_URL;
+  w.setPadding(10, 12 - M, 8, 12 - M);
+  // 見出し: 「10月25日(日)」
+  const head = w.addStack(); head.centerAlignContent(); head.setPadding(0, M + 4, 0, M + 4);
+  const h = head.addText(`${now.getMonth() + 1}月${now.getDate()}日(${WD[now.getDay()]})`);
+  h.font = Font.heavySystemFont(fam === "small" ? 14 : 16); h.textColor = C.ink;
+  head.addSpacer();
+  w.addSpacer(2);
+  const items = itemsFor(data, today, myName, now.getHours() * 60 + now.getMinutes());
+  const allToday = itemsFor(data, today, myName, null);
+  if (!items.length) {
+    const shell = w.addStack(); shell.backgroundImage = neuCard(cardW, 44, 14); shell.size = new Size(cardW + M * 2, 44 + M * 2); shell.setPadding(M, M, M, M);
+    const card = shell.addStack(); card.layoutVertically(); card.backgroundColor = C.card; card.cornerRadius = 14; card.size = new Size(cardW, 44); card.setPadding(7, 12, 7, 12);
+    const t = card.addText(allToday.length ? "今日の予定は終わりました" : "No plans"); t.font = Font.mediumSystemFont(13); t.textColor = C.ink3;
+    const nv = nextVolley(data, today);
+    if (nv) { card.addSpacer(3); const n = card.addText(`次のバレー ${md(nv)}(${WD[new Date(nv + "T00:00:00").getDay()]})`); n.font = Font.systemFont(11); n.textColor = C.ink3; }
+  }
+  // 時間の短い書き方(2列の板用): 「18:00–21:00」「終日」「〜10/26」
+  const whenOf = it => it.ad === 0 ? `〜${it.t2}` : it.t1 === "終日" ? "終日" : it.t1 + (it.t2 ? "–" + it.t2 : "");
+  const grid = fam !== "small" && items.length > max;
+  if (!grid) {
+    items.slice(0, max).forEach(it => {
+      // 1件 = ふくらんだ丸い板: [時間2行] [色の線] [題名 / メモ]
+      const shell = w.addStack(); shell.backgroundImage = neuCard(cardW, cardH, 14); shell.size = new Size(cardW + M * 2, cardH + M * 2); shell.setPadding(M, M, M, M);
+      const row = shell.addStack(); row.centerAlignContent(); row.backgroundColor = C.card; row.cornerRadius = 14; row.size = new Size(cardW, cardH); row.setPadding(0, 10, 0, 10);
+      if (fam !== "small") {
+        const tc = row.addStack(); tc.layoutVertically(); tc.size = new Size(38, 0);
+        const a = tc.addText(it.t1); a.font = Font.semiboldMonospacedSystemFont(11); a.textColor = C.ink2; a.lineLimit = 1; a.minimumScaleFactor = 0.7;
+        if (it.t2) { const b = tc.addText(it.t2); b.font = Font.regularMonospacedSystemFont(10); b.textColor = C.ink3; b.lineLimit = 1; b.minimumScaleFactor = 0.7; }
+        row.addSpacer(6);
+      }
+      const bar = row.addStack(); bar.size = new Size(3, 26); bar.backgroundColor = dyn(it.color[0], it.color[1]); bar.cornerRadius = 1.5;
+      row.addSpacer(8);
+      const body = row.addStack(); body.layoutVertically();
+      const tt = body.addText(it.title); tt.font = Font.boldSystemFont(fam === "small" ? 12 : 14); tt.textColor = C.ink; tt.lineLimit = 1;
+      const sub = fam === "small" ? [whenOf(it), it.sub].filter(Boolean).join("  ") : it.sub;
+      if (sub) { const sb = body.addText(sub); sb.font = Font.systemFont(10.5); sb.textColor = C.ink3; sb.lineLimit = 1; }
+      row.addSpacer();
+    });
+    if (items.length > max) { const m = w.addText(`    ほか${items.length - max}件`); m.font = Font.systemFont(10); m.textColor = C.ink3; }
+  } else {
+    // 多い日は2列に並べる(中: 2×2=4件 / 大: 2×5=10件)。入りきらないときは最後の板に「ほか◯件」
+    const cap = max * 2, cellW = (cardW - M * 2) / 2;
+    const shown = items.length > cap ? items.slice(0, cap - 1) : items.slice(0, cap);
+    const rest = items.length - shown.length;
+    const cells = shown.map(it => ({ it }));
+    if (rest > 0) cells.push({ more: rest });
+    for (let r = 0; r < cells.length; r += 2) {
+      const line = w.addStack();
+      cells.slice(r, r + 2).forEach(c => {
+        const shell = line.addStack(); shell.backgroundImage = neuCard(cellW, cardH, 14); shell.size = new Size(cellW + M * 2, cardH + M * 2); shell.setPadding(M, M, M, M);
+        const cell = shell.addStack(); cell.centerAlignContent(); cell.backgroundColor = C.card; cell.cornerRadius = 14; cell.size = new Size(cellW, cardH); cell.setPadding(0, 9, 0, 8);
+        if (c.more) {
+          cell.addSpacer(); const m = cell.addText(`ほか${c.more}件`); m.font = Font.semiboldSystemFont(12); m.textColor = C.ink3; cell.addSpacer();
+          return;
+        }
+        const it = c.it;
+        const bar = cell.addStack(); bar.size = new Size(3, 24); bar.backgroundColor = dyn(it.color[0], it.color[1]); bar.cornerRadius = 1.5;
+        cell.addSpacer(7);
+        const body = cell.addStack(); body.layoutVertically();
+        const tt = body.addText(it.title); tt.font = Font.boldSystemFont(12.5); tt.textColor = C.ink; tt.lineLimit = 1; tt.minimumScaleFactor = 0.8;
+        const sb = body.addText(whenOf(it)); sb.font = Font.semiboldMonospacedSystemFont(10); sb.textColor = C.ink3; sb.lineLimit = 1; sb.minimumScaleFactor = 0.8;
+        cell.addSpacer();
+      });
+    }
+  }
+  if (WBLOCK) { w.addSpacer(4); const bl = w.addText("    ⚠︎ この名前は合言葉が必要です(アプリの 使い方→ウィジェット)"); bl.font = Font.systemFont(9); bl.textColor = C.ink3; bl.lineLimit = 1; bl.minimumScaleFactor = 0.7; }
+  w.addSpacer();
+  setRefresh(w, items, now);
+  return w;
+}
+
+// ===== リング版(アプリの試作UIのヘッダーと同じ: 左に24時間のリング、右に日付・次のバレー・予定3つ) =====
+// リングは絵として描くので、ライト/ダークは iPhone の設定(読めないときは Parameter の ,dark / ,light)で決める
+const RP = {
+  light: { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", red: "#c0504a" },
+  dark: { bg: "#2b2e34", top: "#34383f", bot: "#24272c", ink: "#eceef2", ink2: "#c3c7cf", ink3: "#9aa0aa", red: "#e39a95" }
+};
+// 予定の色(アプリの試作UIと同じ渋い色)とバレーの人数の色
+const RCOL = {
+  light: ["#8d9095", "#5a6788", "#7a6688", "#8a6f5e", "#56708a", "#7a6070", "#8a7896", "#6b7a8f", "#7b6a5a", "#2a2c31", "#80838b", "#8a3f66", "#c08aa8", "#2e3d63"],
+  dark: ["#a6aab0", "#9aa3c4", "#b19fbf", "#bea08d", "#8fa7bf", "#b39aa8", "#b9abc4", "#9aa7ba", "#b3a593", "#e4e5e8", "#8f939b", "#c97ea7", "#e6bfd3", "#93a6d8"]
+};
+const RLV = { light: { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" }, dark: { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } };
+const WEN3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+function ringMode() {
+  if (NEU_MODE) return NEU_MODE;
+  try { return Device.isUsingDarkAppearance() ? "dark" : "light"; } catch (e) { return "light"; }
+}
+function mixHex(a, b, t) {
+  const h = x => [1, 3, 5].map(i => parseInt(x.slice(i, i + 2), 16));
+  const A = h(a), B = h(b);
+  return "#" + A.map((v, i) => Math.round(v * t + B[i] * (1 - t)).toString(16).padStart(2, "0")).join("");
+}
+// その日の予定(共有・ペア・自分のLocal)
+function plansOnDay(data, k, myName) {
+  const me = myName ? (data.roster || []).find(r => r.name === myName) : null, myId = me ? me.id : null;
+  const visible = p => !p.to || !p.to.length || (myId != null && p.to.includes(myId));
+  const onDay = p => p && p.startDate && p.startDate <= k && (p.endDate ? p.endDate >= k : p.startDate === k);
+  const has = p => p.title || p.start || p.end || p.memo || p.endDate;
+  const out = [];
+  (data.plans || []).filter(p => !p.local && has(p) && onDay(p) && visible(p)).forEach(p => out.push(p));
+  ((data.byDate || {}).pairplans || []).filter(p => p && !p.deleted && has(p) && onDay(p) && visible(p)).forEach(p => out.push(p));
+  if (myId != null) {
+    const seen = new Set();
+    ((data.byDate || {}).localntf || []).filter(x => x.who === myId).concat(((data.byDate || {}).widget || []).filter(x => x && x.who === myId))
+      .forEach(x => (x.list || []).filter(p => has(p) && onDay(p) && !seen.has(p.id)).forEach(p => { seen.add(p.id); out.push(p); }));
+  }
+  return out.map(p => ({ p, first: p.startDate === k, last: !p.endDate || p.endDate === k, multi: !!p.endDate && p.endDate !== p.startDate }));
+}
+function volleyOn(data, k, myName) {
+  if (!(data.events || {})[k]) return null;
+  const rs = (data.reservations || {})[k] || [];
+  const tr = rs.map(r => String(r.time || "").match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/)).filter(Boolean);
+  const s = tr.length ? Math.min(...tr.map(x => hm(x[1]))) : null, e = tr.length ? Math.max(...tr.map(x => hm(x[2]))) : null;
+  const list = (data.byDate || {})[k] || [];
+  const n = list.filter(m => m.status === "来る").length;
+  const th = Object.assign({ yellowMin: 8, cyanMin: 12, cyanMax: 14 }, data.thresholds || {});
+  const lv = n > th.cyanMax ? "danger" : n >= th.cyanMin ? "sufficient" : n >= th.yellowMin ? "warning" : "danger";
+  const mine = myName ? list.find(m => m.name === myName) : null;
+  return { n, cap: th.cyanMax, lv, s, e, mine: mine ? mine.status : "" };
+}
+const fmtM = m => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+// 24時間のリング(上=0時、右=6時、下=12時、左=18時)
+function drawDial(S, k, data, myName, vol, mode, isToday, now) {
+  const P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
+  const ctx = new DrawContext(); ctx.size = new Size(S, S); ctx.opaque = false; ctx.respectScreenScale = true;
+  const c = S / 2, R = S / 2 - 3, TH = Math.round(S * 0.135), Ri = R - TH, Rm = Ri + TH / 2 - 0.5;
+  const pt = (r, h) => { const a = h / 24 * 2 * Math.PI; return new Point(c + r * Math.sin(a), c - r * Math.cos(a)); };
+  const band = (r1, r2, h1, h2, col) => {
+    const n = Math.max(2, Math.ceil((h2 - h1) * 6)), pts = [];
+    for (let i = 0; i <= n; i++) pts.push(pt(r2, h1 + (h2 - h1) * i / n));
+    for (let i = n; i >= 0; i--) pts.push(pt(r1, h1 + (h2 - h1) * i / n));
+    const p = new Path(); p.addLines(pts); p.closeSubpath(); ctx.addPath(p); ctx.setFillColor(new Color(col)); ctx.fillPath();
+  };
+  const disc = (r, col) => { const p = new Path(); p.addEllipse(new Rect(c - r, c - r, r * 2, r * 2)); ctx.addPath(p); ctx.setFillColor(new Color(col)); ctx.fillPath(); };
+  disc(R + 3, P.top);                 // ふくらんだ台
+  disc(R, P.bot);                     // 溝
+  for (let i = 0; i < 12; i++) band(Ri, R, i * 2 - 0.13, i * 2 + 0.13, mixHex(P.top, P.bot, 0.8));   // 12マスの区切り
+  if (vol) {   // 人数: 1人1マス(12人を超えた分は濃い色で2周目)
+    const cA = mixHex(LVc[vol.lv], P.bg, 0.78), cB = LVc[vol.lv];
+    for (let i = 0; i < Math.min(vol.n, 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cA);
+    for (let i = 0; i < Math.max(0, vol.n - 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cB);
+  }
+  // 内側の半分: その日の予定(休日の予定は描かない)
+  plansOnDay(data, k, myName).filter(x => !x.p.holiday).forEach(({ p, first, last, multi }) => {
+    const s0 = hm(p.start), e0 = hm(p.end);
+    let h1 = null, h2 = null;
+    if (!multi && !p.allDay && s0 != null) { h1 = s0 / 60; h2 = e0 != null && e0 > s0 ? e0 / 60 : h1 + 0.4; }
+    else if (multi && first && !p.allDay && s0 != null) { h1 = s0 / 60; h2 = 24; }
+    else if (multi && last && !p.allDay && e0 != null) { h1 = 0; h2 = e0 / 60; }
+    else if (multi) { h1 = 0; h2 = 24; }
+    if (h1 == null) return;
+    band(Ri, Rm, h1, h2, PC[+p.color || 0] || PC[0]);
+  });
+  const sv = volleyOn(data, k, myName);
+  if (sv && sv.s != null) band(Ri, Rm, sv.s / 60, sv.e / 60, P.ink2);
+  disc(Ri, P.bg);                     // 真ん中
+  if (isToday) {                      // 今の時間: 黒い線
+    const h = now.getHours() + now.getMinutes() / 60, a = pt(Ri - 3, h), b = pt(R + 3, h);
+    const p = new Path(); p.move(a); p.addLine(b); ctx.addPath(p); ctx.setStrokeColor(new Color(P.ink)); ctx.setLineWidth(2); ctx.strokePath();
+  }
+  // 真ん中の数字: バレーの人数(なければ日付)
+  const big = vol ? String(vol.n) : String(+k.slice(8));
+  ctx.setTextAlignedCenter();
+  ctx.setFont(Font.semiboldRoundedSystemFont(Math.round(S * 0.19))); ctx.setTextColor(new Color(vol ? LVc[vol.lv] : P.ink));
+  ctx.drawTextInRect(big, new Rect(0, c - S * 0.17, S, S * 0.24));
+  ctx.setFont(Font.boldSystemFont(Math.round(S * 0.075))); ctx.setTextColor(new Color(P.ink3));
+  ctx.drawTextInRect(vol ? `/ ${vol.cap}人` : WEN3[new Date(k + "T00:00:00").getDay()], new Rect(0, c + S * 0.07, S, S * 0.12));
+  return ctx.getImage();
+}
+// リング版の描き直し: 予定の始まりの前後(15分前〜15分後)だけ5分ごと、過ぎたら30分ごと、夜中(0〜6時)は1時間ごと
+// 予定の始まり・終わりの時刻ちょうどにも描き直してもらう。iPhone には1日の描き直しの回数に上限があるので、暇な時間は減らしてその分を予定のある時間に回す
+function busySpans(data, k, myName) {
+  const out = [];
+  plansOnDay(data, k, myName).forEach(({ p, first, last, multi }) => {
+    if (p.allDay || p.holiday) return;
+    const s0 = hm(p.start), e0 = hm(p.end);
+    if (!multi && s0 != null) out.push([s0, e0 != null && e0 > s0 ? e0 : s0 + 30]);
+    else if (multi && first && s0 != null) out.push([s0, 24 * 60]);
+    else if (multi && last && e0 != null) out.push([0, e0]);
+  });
+  const v = volleyOn(data, k, myName);
+  if (v && v.s != null) out.push([v.s, v.e != null && v.e > v.s ? v.e : v.s + 120]);
+  return out;
+}
+function setRefreshRing(w, now, spans) {
+  const nowM = now.getHours() * 60 + now.getMinutes();
+  const busy = (spans || []).some(([s]) => nowM >= s - 15 && nowM < s + 15);
+  const step = busy ? 5 : now.getHours() < 6 ? 60 : 30;
+  let next = (Math.floor(nowM / step) + 1) * step;
+  (spans || []).forEach(([s, e]) => [s - 15, s, s + 15, e].forEach(t => { if (t > nowM && t < next) next = t; }));
+  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, next, 5);
+  w.refreshAfterDate = t;
+}
+function buildRing(data, now, myName) {
+  const fam = config.widgetFamily || "medium";
+  if (String(fam).startsWith("accessory")) return buildAccessory(data, now, myName, fam);
+  const mode = ringMode(), P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
+  const k = dkey(now);
+  const sv = volleyOn(data, k, myName);
+  const nextKey = sv ? k : Object.keys(data.events || {}).filter(x => data.events[x] && x >= k && /^\d{4}-\d{2}-\d{2}$/.test(x)).sort()[0] || "";
+  const vv = nextKey ? volleyOn(data, nextKey, myName) : null;
+  const w = new ListWidget(); w.url = APP_URL;
+  w.backgroundColor = BG_SET ? C.bg : new Color(P.bg);
+  const S = fam === "small" ? 126 : fam === "large" ? 132 : 130;
+  const dial = drawDial(S, k, data, myName, vv, mode, true, now);
+  if (fam === "small") {
+    w.setPadding(8, 8, 8, 8);
+    const r = w.addStack(); r.addSpacer(); const im = r.addImage(dial); im.imageSize = new Size(S, S); r.addSpacer();
+    setRefreshRing(w, now, busySpans(data, dkey(now), myName)); return w;
+  }
+  // 上下・左右とも真ん中に寄せる(リングと文字のかたまりを、ウィジェットの中央に置く)
+  w.setPadding(8, 12, 8, 12);
+  if (fam !== "large") w.addSpacer();
+  const top = w.addStack(); top.centerAlignContent();
+  top.addSpacer(8);   // リングは少し左寄り(右の余りは文字の後ろへ)
+  const im = top.addImage(dial); im.imageSize = new Size(S, S);
+  top.addSpacer(18);
+  const col = top.addStack(); col.layoutVertically();
+  // 日付
+  const dl = col.addStack(); dl.bottomAlignContent();
+  const d1 = dl.addText(`${now.getMonth() + 1}/${now.getDate()}`); d1.font = Font.boldRoundedSystemFont(15); d1.textColor = new Color(P.ink);
+  dl.addSpacer(5);
+  const d2 = dl.addText(WEN3[now.getDay()]); d2.font = Font.semiboldSystemFont(10); d2.textColor = new Color(P.ink3);
+  const plans = plansOnDay(data, k, myName);
+  if (plans.some(x => x.p.holiday)) { dl.addSpacer(6); const hl = dl.addText("休日"); hl.font = Font.systemFont(10); hl.textColor = new Color(P.red); }
+  col.addSpacer(6);
+  // 次のバレー + 自分の出欠
+  if (vv) {
+    const vl = col.addStack(); vl.centerAlignContent();
+    const a = vl.addText(sv ? "VOLLEY" : `NEXT ${md(nextKey)}`); a.font = Font.boldSystemFont(11); a.textColor = new Color(P.ink);
+    vl.addSpacer(6);
+    const b = vl.addText(vv.s != null ? `${fmtM(vv.s)}〜` : "時間未定"); b.font = Font.mediumSystemFont(11); b.textColor = new Color(P.ink3);
+    if (vv.mine) {
+      vl.addSpacer(6);
+      const AC = { "来る": LVc.sufficient, "未定": LVc.warning, "来ない": LVc.danger };
+      const m = vl.addText(SYM[vv.mine] || "?"); m.font = Font.boldSystemFont(11); m.textColor = new Color(AC[vv.mine] || P.ink3);
+    }
+    col.addSpacer(6);
+  }
+  // 予定(バレーも入れる)
+  const rows = plans.map(({ p, first, last, multi }) => {
+    const s0 = hm(p.start), e0 = hm(p.end);
+    const timed = !p.allDay && s0 != null && (first || !multi);
+    const endsHere = multi && last && !first && !p.allDay && e0 != null;
+    return { t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", col: PC[+p.color || 0] || PC[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
+  });
+  if (sv) rows.push({ t: sv.s != null ? fmtM(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
+  rows.sort((a, b) => a.min - b.min);
+  const max = fam === "large" ? 3 : 3;
+  if (!rows.length) { const t = col.addText("予定なし"); t.font = Font.systemFont(11.5); t.textColor = new Color(P.ink3); }
+  rows.slice(0, max).forEach((r, i) => {
+    if (i) col.addSpacer(4);
+    const line = col.addStack(); line.centerAlignContent();
+    const dot = line.addStack(); dot.size = new Size(7, 7); dot.cornerRadius = 3.5; dot.backgroundColor = new Color(r.col);
+    line.addSpacer(7);
+    const tt = line.addText(r.t); tt.font = Font.semiboldMonospacedSystemFont(11); tt.textColor = new Color(P.ink2); tt.lineLimit = 1;
+    line.addSpacer(7);
+    const ti = line.addText(r.title); ti.font = Font.boldSystemFont(12.5); ti.textColor = new Color(P.ink); ti.lineLimit = 1;
+  });
+  if (rows.length > max) { col.addSpacer(3); const m = col.addText(`+${rows.length - max}`); m.font = Font.boldSystemFont(10); m.textColor = new Color(P.ink3); }
+  top.addSpacer();
+  // 大: 下に残りの予定も並べる
+  if (fam === "large" && rows.length > max) {
+    w.addSpacer(10);
+    rows.slice(max, max + 8).forEach(r => {
+      const line = w.addStack(); line.centerAlignContent();
+      const dot = line.addStack(); dot.size = new Size(7, 7); dot.cornerRadius = 3.5; dot.backgroundColor = new Color(r.col);
+      line.addSpacer(8);
+      const tt = line.addText(r.t); tt.font = Font.semiboldMonospacedSystemFont(11); tt.textColor = new Color(P.ink2);
+      line.addSpacer(8);
+      const ti = line.addText(r.title); ti.font = Font.boldSystemFont(13); ti.textColor = new Color(P.ink); ti.lineLimit = 1;
+      w.addSpacer(5);
+    });
+  }
+  if (WBLOCK) { w.addSpacer(4); const bl = w.addText("⚠︎ この名前は合言葉が必要です"); bl.font = Font.systemFont(9); bl.textColor = new Color(P.ink3); }
+  w.addSpacer();
+  setRefreshRing(w, now, busySpans(data, dkey(now), myName));
+  return w;
+}
+
+async function main() {
+  // 名前: ウィジェットの Parameter。アプリ内で実行するときは、前にウィジェットで使った名前(またはここで入れた名前)を使う
+  // Parameter: 「名前」または「名前,dark」「名前,light」
+  const prm = String(args.widgetParameter || "").split(/[,、，]/).map(x => x.trim());
+  let myName = prm[0] || "";
+  if (/^(dark|light)$/i.test(prm[1] || "")) setNeuMode(prm[1].toLowerCase());
+  if (/^#?[0-9a-f]{6}$/i.test(prm[2] || "")) { C.bg = new Color(prm[2].replace(/^#?/, "#")); BG_SET = true; }   // 3つ目: 背景の色(壁紙の色)
+  if (myName) Keychain.set("vb_widget_name", myName);
+  else if (!config.runsInWidget) {
+    const saved = Keychain.contains("vb_widget_name") ? Keychain.get("vb_widget_name") : "";
+    const a = new Alert(); a.title = "名簿の自分の名前"; a.message = "アプリの「使い方→ウィジェット」に出る Parameter(名前、または 名前#合言葉)"; a.addTextField("例: たろう", saved); a.addAction("OK"); a.addCancelAction("名前なし");
+    if (await a.present() === 0) { myName = a.textFieldValue(0).trim(); if (myName) Keychain.set("vb_widget_name", myName); }
+  } else myName = Keychain.contains("vb_widget_name") ? Keychain.get("vb_widget_name") : "";
+  let w;
+  try {
+    const data = await loadShared();
+    w = (STYLE === "ring" ? buildRing : build)(data, new Date(), resolveMe(data, myName));
+  } catch (e) {
+    w = new ListWidget(); w.backgroundColor = C.bg; w.url = APP_URL;
+    const t = w.addText("予定を読み込めませんでした"); t.font = Font.mediumSystemFont(12); t.textColor = C.ink2;
+    const d = w.addText(String(e && e.message || e)); d.font = Font.systemFont(9); d.textColor = C.ink3;
+  }
+  if (config.runsInWidget) Script.setWidget(w);
+  else await w.presentMedium();   // アプリの中で実行したときは見本を表示
+  Script.complete();
+}
+await main();
+
+</script>
+</body>
+</html>

@@ -13095,7 +13095,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 + gdSteps([`右上の <span class="gd-key">⋮</span> → <span class="gd-key">ホーム画面に追加</span>(または「アプリをインストール」)`]);
         }
         function guideWidgetHtml() {
-            return `<div class="gd-note">ホーム画面やロック画面に、今日の予定を出せます(iPhoneのみ)。無料アプリ「Scriptable」を使います。</div>`
+            return `<div class="gd-note">ホーム画面やロック画面に、今日の予定を出せます。iPhone は無料アプリ「Scriptable」、Android は下の「Android」を見てね。</div>`
                 + `<div id="gdMe">${gdMeHtml()}</div>`
                 + gdSteps([
                     `App Store で <b>Scriptable</b> を入れる(無料)`,
@@ -13109,7 +13109,16 @@ const namesBtn = isAdmin() && dates.length > 0
                     `置いたウィジェットを長押し → <span class="gd-key">ウィジェットを編集</span><br>・<b>Script</b>: さっきの「バレー予定」<br>・<b>Parameter</b>: 上の「<b>あなたの Parameter</b>」をそのまま入れる(例: たろう)<br><span class="gd-sub">アカウントを紐付けている人は「名前#合言葉」の形です。名前だけでは使えません</span>`,
                     `ロック画面にも置けます: ロック画面を長押し → <span class="gd-key">カスタマイズ</span> → ロック画面 → ウィジェットの枠から Scriptable を追加し、同じように設定`
                 ])
-                + `<div class="gd-note">・ダークモードで影が合わないときは、Parameter を「たろう,dark」(ライトなら「,light」)に<br>・壁紙の色に合わせたいときは「たろう,dark,1e1e1e」のように3つ目に色を入れる<br>・表示は30分ごとと、予定が終わるたびに自動で変わります(iPhoneの都合で数分ずれることがあります)</div>`;
+                + `<div class="gd-note">・ダークモードで影が合わないときは、Parameter を「たろう,dark」(ライトなら「,light」)に<br>・壁紙の色に合わせたいときは「たろう,dark,1e1e1e」のように3つ目に色を入れる<br>・表示は30分ごとと、予定が終わるたびに自動で変わります(iPhoneの都合で数分ずれることがあります)</div>`
+                + `<div class="gd-note" style="margin-top:18px"><b>Android(リング版)</b><br>Android には Scriptable がないので、「ウェブページをウィジェットにする」無料アプリで、ウィジェット用のページを置きます。</div>`
+                + `<div id="gdAnd">${gdAndroidHtml()}</div>`
+                + gdSteps([
+                    `Play ストアで <b>AnyWidget</b>(無料・広告あり)などの「ウェブページをウィジェットにする」アプリを入れる`,
+                    `上の <b>アドレスをコピー</b>`,
+                    `アプリでウィジェットを作り、アドレスに貼り付け。表示する範囲は「ページ全体」に合わせる`,
+                    `ホーム画面に置く(横長 4×2 がおすすめ。正方形にするとリングだけ)。更新の間隔は短いほど今の時間に近くなります(無料は30分ごとから)`
+                ])
+                + `<div class="gd-note">・色を固定したいときは、アドレスの最後に <code>&amp;theme=dark</code>(または light)を付ける<br>・押すとアプリが開きます。中身は数分〜30分ごとの「写真」なので、出欠を変えるのはアプリで</div>`;
         }
         let guideTab = "home";
         function openGuide(tab) {
@@ -13238,7 +13247,13 @@ const namesBtn = isAdmin() && dates.length > 0
             return `<div class="gd-me"><h3>あなたの Parameter</h3>${prmRow}${remake}
                 <label class="gd-sw"><span><b>Local 予定もウィジェットに出す</b><br><span class="gd-sub">オンにすると、Local 予定をサーバーに共有します</span></span><input type="checkbox" ${wgtLocalOn() ? "checked" : ""} onchange="setWgtLocal(this.checked, this)"></label></div>`;
         }
-        function gdMeRefresh() { const el = document.getElementById("gdMe"); if (el) el.innerHTML = gdMeHtml(); }
+        // Android 用: ウィジェット用ページ(widget.html)のアドレス。名前(#合言葉)を付けておく
+        function gdAndroidUrl() { const prm = myMemberName() && wgtCanWrite() ? wgtParam() : ""; let u; try { u = new URL("widget.html", location.href.split("#")[0]).href.split("?")[0]; } catch (e) { u = "widget.html"; } return u + "?me=" + encodeURIComponent(prm || ""); }
+        function gdAndroidHtml() {
+            const u = gdAndroidUrl(), has = !/\?me=$/.test(u);
+            return `<div class="gd-me"><h3>Android 用のアドレス</h3><div class="gd-prm"><code id="gdAndUrl" style="word-break:break-all">${escapeHtml(u)}</code><button type="button" class="gd-small" onclick="copyText(document.getElementById('gdAndUrl').textContent, this)">コピー</button></div>${has ? "" : `<div class="gd-sub">ログインして名簿の自分の名前とつながると、自分の出欠・自分あての予定も出るアドレスになります</div>`}</div>`;
+        }
+        function gdMeRefresh() { const el = document.getElementById("gdMe"); if (el) el.innerHTML = gdMeHtml(); const a = document.getElementById("gdAnd"); if (a) a.innerHTML = gdAndroidHtml(); }
         async function copyText(txt, btn) {
             let ok = false;
             try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { /* 下の方法で */ }
