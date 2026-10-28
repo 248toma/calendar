@@ -3368,6 +3368,14 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   ctx.drawTextInRect(vol ? `/ ${vol.cap}人` : WEN3[new Date(k + "T00:00:00").getDay()], new Rect(0, c + S * 0.07, S, S * 0.12));
   return ctx.getImage();
 }
+// リング版: 今の時間の線がずれないよう、時計のきりのいい時刻(昼は15分ごと・夜中は1時間ごと)に描き直してもらう
+// iPhone には1日に描き直せる回数の上限があるので、細かくしすぎると逆に止まりやすくなる。夜中を減らしてその分を昼に回す
+function setRefreshRing(w, now) {
+  const h = now.getHours(), step = h < 6 ? 60 : 15;
+  const t = new Date(now); t.setSeconds(5, 0);
+  t.setMinutes(Math.floor(now.getMinutes() / step) * step + step);
+  w.refreshAfterDate = t;
+}
 function buildRing(data, now, myName) {
   const fam = config.widgetFamily || "medium";
   if (String(fam).startsWith("accessory")) return buildAccessory(data, now, myName, fam);
@@ -3383,13 +3391,13 @@ function buildRing(data, now, myName) {
   if (fam === "small") {
     w.setPadding(8, 8, 8, 8);
     const r = w.addStack(); r.addSpacer(); const im = r.addImage(dial); im.imageSize = new Size(S, S); r.addSpacer();
-    setRefresh(w, [], now); return w;
+    setRefreshRing(w, now); return w;
   }
   // 上下・左右とも真ん中に寄せる(リングと文字のかたまりを、ウィジェットの中央に置く)
   w.setPadding(8, 12, 8, 12);
   if (fam !== "large") w.addSpacer();
   const top = w.addStack(); top.centerAlignContent();
-  top.addSpacer();
+  top.addSpacer(8);   // リングは少し左寄り(右の余りは文字の後ろへ)
   const im = top.addImage(dial); im.imageSize = new Size(S, S);
   top.addSpacer(18);
   const col = top.addStack(); col.layoutVertically();
@@ -3451,7 +3459,7 @@ function buildRing(data, now, myName) {
   }
   if (WBLOCK) { w.addSpacer(4); const bl = w.addText("⚠︎ この名前は合言葉が必要です"); bl.font = Font.systemFont(9); bl.textColor = new Color(P.ink3); }
   w.addSpacer();
-  setRefresh(w, [], now);
+  setRefreshRing(w, now);
   return w;
 }
 
