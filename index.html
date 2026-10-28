@@ -13383,7 +13383,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const deepen = (col) => `color-mix(in srgb, ${col} 60%, ${dark ? "#000" : "#2a2e35"})`;
             const hmv = (m) => m / 60;   // 分 → 時
             // その日の予定の時間帯(時: 0〜24)。終日は null
-            const spansOf = (k) => plansOn(k).map(({ p, first, last }) => {
+            const spansOf = (k) => plansOn(k).filter(({ p }) => !p.holiday).map(({ p, first, last }) => {
                 const col = C[+p.color || 0] || C[0];
                 const multi = !!p.endDate && p.endDate !== p.startDate;
                 const s0 = parseHM(p.start), e0 = parseHM(p.end);
@@ -13438,6 +13438,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const MSH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             const MEN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             const jp = jpDay(sel), note = [jp.hol, jp.ev].filter(Boolean).join(" · ");
+            const holP = plansOn(sel).find(({ p }) => p.holiday);   // 休日にした予定: 行事のように「休日」と出す(押すと編集)
             const sv = volInfo(sel);
             const nextKey = sv ? sel : Object.keys(events).filter(k => events[k] && k >= todayKey).sort()[0];
             const vv = nextKey ? volInfo(nextKey) : null;
@@ -13469,7 +13470,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join("")}
             </div>`;
             // 予定の一覧(バレーも入れる。2件分の高さで、ほかはスクロール)
-            const rows = plansOn(sel).map(({ p, first, last }) => {
+            const rows = plansOn(sel).filter(({ p }) => !p.holiday).map(({ p, first, last }) => {
                 const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = !!p.endDate && p.endDate !== p.startDate;
                 const timed = !p.allDay && s0 != null && (first || !multi);
                 const endsHere = multi && last && !first && !p.allDay && e0 != null;   // 連続の最終日: 終わりの時間
@@ -13492,6 +13493,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const items = [];
                 if (v) items.push({ t: "バレー", col: v.col, vol: true });
                 plansOn(k).forEach(({ p, first, last }) => {
+                    if (p.holiday) return;   // 休日は赤い数字で分かるのでマークは出さない
                     const col = C[+p.color || 0] || C[0];
                     const multi = !!p.endDate && p.endDate !== p.startDate;
                     items.push({ t: p.title || "予定", col, multi, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6 });
@@ -13518,7 +13520,7 @@ const namesBtn = isAdmin() && dates.length > 0
             protoSlide = 0;
 
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">
-              <div style="border-radius:28px;padding:18px 20px;${raise}">
+              <div style="border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
                 <div style="display:flex;align-items:center;gap:18px;height:200px">
                   <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${hand}
@@ -13528,7 +13530,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     </div>
                   </div>
                   <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
-                    <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
+                    <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${holP ? `<span role="button" tabindex="0" onclick="protoRow(${holP.p.id})" style="font-size:10.5px;color:${P.red};white-space:nowrap;cursor:pointer">休日</span>` : ""}${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
                     ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;cursor:pointer">
                       <span style="font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${sv ? "VOLLEY" : `NEXT ${nextKey.slice(5).replace("-", "/").replace(/^0/, "")}`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>
                       ${segHtml}</div>` : ""}
