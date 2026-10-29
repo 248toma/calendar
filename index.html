@@ -3000,7 +3000,7 @@
         #protoUI .pr-wrap { max-width: 440px; margin: 0 auto; height: 100%; box-sizing: border-box; padding: calc(env(safe-area-inset-top, 0px) + 16px) 22px 0; display: flex; flex-direction: column; gap: 22px; position: relative; font-family: 'Noto Sans JP', system-ui, sans-serif; }
         #protoUI button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
         #protoUI button:active { transform: scale(.95); }
-        #protoUI .pr-cell { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 44px; height: 100%; min-width: 0; padding: 2px 0 0; overflow: hidden; }
+        #protoUI .pr-cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 44px; height: 100%; min-width: 0; padding: 2px 0 0; overflow: hidden; }
         #protoUI .pr-dock { position: absolute; left: 22px; right: 22px; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: center; gap: 14px; }
         #protoUI #prRows::-webkit-scrollbar { display: none; }
         /* 試作UIのアンケートボタンの印(今のボタンと同じ決まり) */
@@ -3018,12 +3018,12 @@
         @media (prefers-reduced-motion: reduce) { #protoUI .pr-svbtn.alert.pulse, #protoUI .pr-svbtn.alert.urgent { animation: none; } }
         /* 試作UIのアンケート(中身は今のアンケートと同じデータ) */
         #protoSv { display: none; }
-        @keyframes prCellIn { 0% { opacity: 0; transform: scale(.9); } 55% { opacity: 1; transform: scale(1.06); filter: brightness(1.25); } 100% { opacity: 1; transform: scale(1); filter: none; } }
-        @keyframes prCellOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.92); } }
-        @keyframes prSweepIn { 0% { opacity: 0; } 60% { opacity: 1; filter: brightness(1.22); } 100% { opacity: 1; filter: none; } }
+        @keyframes prCellIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes prCellOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes prSweepIn { 0% { opacity: 0; } 100% { opacity: 1; } }
         /* iPhone の触覚: ボタンの上に透明なスイッチを重ね、指で直接切り替えてもらう(iOS 26.5 からは、指で押したスイッチでしか鳴らない) */
         .pr-hap { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; z-index: 2; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        @keyframes prNumPop { 0% { transform: scale(1); } 45% { transform: scale(1.22); } 100% { transform: scale(1); } }
+        @keyframes prNumPop { 0% { opacity: .35; } 100% { opacity: 1; } }
         @media (prefers-reduced-motion: reduce) { .pr-anim { animation: none !important; } }
         #protoCal { display: none; }
         body.proto-on #protoCal.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -13892,7 +13892,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
                     <span style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${face ? L(face) : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
-                    <span style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px">${tags}</span></button>`;
+                    <span style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px">${tags}</span>${protoHapHtml()}</button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
             const sunIdx = weekStartDay === 1 ? 6 : 0;
@@ -14066,6 +14066,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 同じ日をもう一度押すと: バレーの日はバレーの画面、それ以外はその日の予定の入力
         function protoPick(k) {
             if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
+            protoHaptic();   // 日付を押したら「トン」(iPhone はマスに重ねた透明スイッチが鳴らす)
             if (pinOpen) {   // 入力中: 押した日が予定の日(→ を押したあとは終わりの日)
                 if (pinRange && k > pinSD) { pinED = k; pinRange = false; }
                 else { pinSD = k; pinRange = false; if (pinED && pinED <= k) pinED = ""; }
@@ -14073,7 +14074,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             if (k === selectedDate) {
                 if (events[k]) openVolleyFull();   // バレーの日はバレーの画面へ
-                else { protoHaptic(); protoOpenInput(null); }   // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
+                else protoOpenInput(null);   // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
                 return;
             }
             protoRowsTop = 0;
@@ -14095,7 +14096,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoRingAnim = null;   // { d: 日付, from: 前の人数, at: 時刻 }
         const PROTO_RING_MS = 650;
         var protoRingShown = null;   // 最後に時計回りで埋めたバレーの日
-        const PROTO_SWEEP_STEP = 55, PROTO_SWEEP_MS = 380;   // 1マスずつずらす間隔 / 1マスが埋まる時間
+        const PROTO_SWEEP_STEP = 60, PROTO_SWEEP_MS = 480;   // 1マスずつずらす間隔 / 1マスが埋まる時間
         // マスが埋まるのに合わせて「トトトト」(Android のみ。iPhone は指で押したときにしか鳴らせない。開いた直後は、まだ一度も触っていないと鳴らない)
         function protoSweepBuzz(n) {
             try {
@@ -14181,7 +14182,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const a = (i % 12) * 30;
             const mk = maskFn(th);
             return `${ringBoxFn(size)}background:conic-gradient(transparent 0deg ${a + gap / 2}deg, ${col} ${a + gap / 2}deg ${a + 30 - gap / 2}deg, transparent ${a + 30 - gap / 2}deg 360deg);-webkit-mask:${mk};mask:${mk};${anim.sweep
-                ? `animation:prSweepIn ${PROTO_SWEEP_MS}ms ease-out both;animation-delay:${(i - anim.base) * PROTO_SWEEP_STEP - anim.el}ms`
+                ? `animation:prSweepIn ${PROTO_SWEEP_MS}ms ease-in-out both;animation-delay:${(i - anim.base) * PROTO_SWEEP_STEP - anim.el}ms`
                 : `animation:${anim.inc ? "prCellIn" : "prCellOut"} ${PROTO_RING_MS}ms cubic-bezier(.2,.8,.2,1) both;animation-delay:-${anim.el}ms`}`;
         }
         // 上のバレー部分 → その日のバレーのタスク画面 / 予定の行 → その予定を編集(編集できない予定は詳細)
