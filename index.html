@@ -14170,7 +14170,15 @@ const namesBtn = isAdmin() && dates.length > 0
 
         // ------- 試作UIのアンケート -------
         // 中身は今のアンケートと同じ(surveySet / surveyNote / planRsvpSet で答え、同じ出欠データに入る)。見た目だけ試作UIに合わせる
-        var protoSvDirty = false;
+        var protoSvDirty = false, protoSvNoteOpen = new Set();
+        // ひとことの欄を開く/閉じる(開いたらすぐ打てるように)
+        function protoSvNoteToggle(d) {
+            if (protoSvNoteOpen.has(d)) protoSvNoteOpen.delete(d); else protoSvNoteOpen.add(d);
+            protoRenderSurvey();
+            const i = document.querySelector(`#protoSv input[data-k="${d}"]`); if (i) { try { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } catch (e) { /* ignore */ } }
+        }
+        // 打ち終わったら畳む(書いた文は小さく残る)
+        function protoSvNoteBlur(d) { protoSvNoteOpen.delete(d); protoRenderSurvey(); }
         function protoSvBlur() { if (protoSvDirty) protoRenderSurvey(); }
         function protoSvIsOpen() { const e = document.getElementById("protoSv"); return !!(e && e.classList.contains("open")); }
         function protoOpenSurvey() {
@@ -14253,16 +14261,18 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-family:${en};font-size:10px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">SURVEY</span>${whoHtml}</div>
                 ${tools}</div>`;
             // ---- バレーの日 ----
-            const dateHead = (k, extra) => { const [, m, d] = k.split("-").map(Number), w = new Date(k + "T00:00:00").getDay(); return `<div style="display:flex;align-items:baseline;gap:7px;min-width:0"><span style="font-family:${en};font-size:21px;font-weight:700">${m}/${d}</span><span style="font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span>${extra || ""}</div>`; };
+            const dateHead = (k, extra) => { const [, m, d] = k.split("-").map(Number), w = new Date(k + "T00:00:00").getDay(); return `<div style="display:flex;align-items:baseline;gap:6px;min-width:0"><span style="font-family:${en};font-size:16px;font-weight:600;letter-spacing:.01em">${m}/${d}</span><span style="font-family:${en};font-size:9.5px;font-weight:600;letter-spacing:.1em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3};opacity:.85">${WD3[w]}</span>${extra || ""}</div>`; };
             let body = "";
             if (tab === "plan") {
                 body = plans.map(p => {
                     const st = planStatusOf(p, name), col = C[+p.color || 0] || C[0];
                     const when = planTimed(p) && p.start ? `${p.start}${p.end ? "–" + p.end : ""}` : "終日";
-                    return `<div style="border-radius:22px;padding:14px 16px;display:flex;align-items:center;gap:12px;${raiseS}">
-                        <div role="button" tabindex="0" onclick="goPlanRsvp(${p.id})" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;cursor:pointer">
-                          ${dateHead(p.startDate, answered(st) ? "" : dot)}
-                          <div style="display:flex;align-items:center;gap:7px;min-width:0"><i style="width:3px;height:14px;border-radius:2px;flex:none;background:${col}"></i><span style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.title || "予定")}</span><span style="font-family:${en};font-size:11px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(when)}</span></div>
+                    const [, pm, pd] = p.startDate.split("-").map(Number), pw = new Date(p.startDate + "T00:00:00").getDay();
+                    return `<div style="border-radius:22px;padding:14px 16px 14px 14px;display:flex;align-items:center;gap:12px;${raiseS}">
+                        <i style="width:4px;align-self:stretch;margin:4px 0;border-radius:2px;flex:none;background:${col}"></i>
+                        <div role="button" tabindex="0" onclick="goPlanRsvp(${p.id})" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;cursor:pointer">
+                          <div style="display:flex;align-items:center;gap:7px;min-width:0"><span style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.title || "予定")}</span>${answered(st) ? "" : dot}</div>
+                          <span style="font-family:${en};font-size:11px;font-weight:500;color:${P.ink3};white-space:nowrap"><span style="font-weight:600;color:${P.ink2}">${pm}/${pd}</span> <span style="font-size:9.5px;letter-spacing:.08em;color:${pw === 0 ? P.red : pw === 6 ? P.blue : P.ink3}">${WD3[pw]}</span>　${esc(when)}</span>
                         </div>
                         ${seg(st, true, s0 => `planRsvpSet(${p.id},'${s0}');protoRenderSurvey()`)}
                       </div>`;
@@ -14284,7 +14294,12 @@ const namesBtn = isAdmin() && dates.length > 0
                         const ns = svNotesOn(d).filter(x => x.name !== name);
                         if (ns.length) notes = `<div style="display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-radius:14px;${insetS}">${ns.map(x => `<div style="display:flex;gap:7px;font-size:12px;line-height:1.5"><b style="flex:none">${esc(x.name)}</b><span style="flex:none;color:${AC[x.status] || P.ink3}">${STATUS_META[x.status] ? STATUS_META[x.status].sym : ""}</span><span style="color:${P.ink2}">${esc(x.note)}</span>${svNoteFresh.has(svNoteKey(d, x)) ? `<i style="width:6px;height:6px;border-radius:3px;flex:none;margin-top:6px;background:${P.today}"></i>` : ""}</div>`).join("")}</div>`;
                     }
-                    const note = name && mem ? `<div style="display:flex;align-items:center;gap:8px;height:30px;border-bottom:1px solid ${P.lo};color:${P.ink3}">${ico('<path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9z"></path>', 13)}<div style="flex:1;min-width:0;height:100%;color:${P.ink}"><input class="psv-in" data-k="${d}" type="text" maxlength="${SV_NOTE_MAX}" value="${esc(mem.note || "")}" placeholder="管理者へひとこと" aria-label="管理者へひとこと(遅刻・9割行ける など)" onchange="surveyNote('${d}', this.value)" onblur="setTimeout(protoSvBlur, 0)" onkeydown="if(event.key==='Enter'){this.blur();}"></div></div>` : "";
+                    // ひとことはふだん畳んでおく: 答えの横の吹き出しボタンで開く。書いてあるときだけ、その文を小さく出す(押すと直せる)
+                    const chat = '<path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9z"></path>';
+                    const noteOpen = name && mem && protoSvNoteOpen.has(d), hasNote = !!(mem && mem.note);
+                    const noteBtn = name && mem ? `<button type="button" aria-label="管理者へひとこと" title="管理者へひとこと" aria-pressed="${noteOpen || hasNote}" onclick="protoSvNoteToggle('${d}')" style="width:36px;height:36px;border-radius:18px;flex:none;display:flex;align-items:center;justify-content:center;color:${hasNote ? P.acc : P.ink3};${noteOpen ? insetS : raiseS}">${ico(chat, 14)}</button>` : "";
+                    const note = noteOpen ? `<div style="display:flex;align-items:center;gap:8px;height:30px;border-bottom:1px solid ${P.lo};color:${P.ink3}">${ico(chat, 13)}<div style="flex:1;min-width:0;height:100%;color:${P.ink}"><input class="psv-in" data-k="${d}" type="text" maxlength="${SV_NOTE_MAX}" value="${esc(mem.note || "")}" placeholder="遅刻・9割行ける など" aria-label="管理者へひとこと" onchange="surveyNote('${d}', this.value)" onblur="setTimeout(() => protoSvNoteBlur('${d}'), 0)" onkeydown="if(event.key==='Enter'){this.blur();}"></div></div>`
+                        : hasNote ? `<div role="button" tabindex="0" onclick="protoSvNoteToggle('${d}')" style="display:flex;align-items:center;gap:7px;padding:0 2px;font-size:12px;color:${P.ink3};cursor:pointer;min-width:0">${ico(chat, 12)}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${P.ink2}">${esc(mem.note)}</span></div>` : "";
                     return `<div style="border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;${raiseS}">
                         <div style="display:flex;align-items:center;gap:14px">
                           ${peopleRing(n, lvc)}
@@ -14293,7 +14308,7 @@ const namesBtn = isAdmin() && dates.length > 0
                             ${info.map(t => `<span style="font-family:${en};font-size:11.5px;font-weight:500;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t)}</span>`).join("")}
                           </div>
                         </div>
-                        ${name || ppl ? `<div style="display:flex;align-items:center;gap:10px">${ppl}${name ? seg(st, !!mem, s0 => `surveySet('${d}','${s0}')`, true) : ""}</div>` : ""}
+                        ${name || ppl ? `<div style="display:flex;align-items:center;gap:10px">${ppl}${name ? seg(st, !!mem, s0 => `surveySet('${d}','${s0}')`, true) : ""}${noteBtn}</div>` : ""}
                         ${notes}${note}
                       </div>`;
                 }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">—</div>`;
