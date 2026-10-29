@@ -13649,17 +13649,17 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // 試作UIの凹凸(ニューモーフィズム): 面は背景と同じ色で平らに。左上に白い光・右下にやわらかい影を、ぼかし大きめで
         function protoNeu(P, dark) {
-            // 凸: 面を左上が明るく右下が少し暗いゆるい丸みにして、影は近く短めに(浮くより、盛り上がって見えるように)
-            const dk = dark ? "rgba(0,0,0,.55)" : "rgba(163,175,196,.60)", lt = dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)";
-            const hiC = dark ? "color-mix(in srgb, " + P.bg + " 88%, #fff)" : "color-mix(in srgb, " + P.bg + " 55%, #fff)";
-            const loC = dark ? "color-mix(in srgb, " + P.bg + " 82%, #000)" : "color-mix(in srgb, " + P.bg + " 86%, #9aa6bb)";
-            const rimHi = dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", rimLo = dark ? "rgba(0,0,0,.35)" : "rgba(120,132,155,.16)";
+            // 凸: 面はゆるい丸み(左上が少し明るい)。影は中くらいのぼかしで、ふちに細い光と影の線を入れて輪郭をくっきりさせる
+            const dk = dark ? "rgba(0,0,0,.55)" : "rgba(160,172,194,.62)", lt = dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)";
+            const hiC = dark ? "color-mix(in srgb, " + P.bg + " 92%, #fff)" : "color-mix(in srgb, " + P.bg + " 68%, #fff)";
+            const loC = dark ? "color-mix(in srgb, " + P.bg + " 88%, #000)" : "color-mix(in srgb, " + P.bg + " 92%, #9aa6bb)";
+            const edgeHi = dark ? "rgba(255,255,255,.08)" : "rgba(255,255,255,.9)", edgeLo = dark ? "rgba(0,0,0,.45)" : "rgba(120,132,155,.22)";
             const dome = `background: linear-gradient(145deg, ${hiC}, ${loC})`;
             return {
-                raise: `${dome}; box-shadow: 7px 7px 16px ${dk}, -7px -7px 16px ${lt}, inset 2px 2px 3px ${rimHi}, inset -3px -3px 6px ${rimLo}`,
-                raiseS: `${dome}; box-shadow: 3px 3px 7px ${dk}, -3px -3px 7px ${lt}, inset 1.5px 1.5px 2px ${rimHi}, inset -2px -2px 3px ${rimLo}`,
-                inset: `background: linear-gradient(145deg, ${loC}, ${hiC}); box-shadow: inset 5px 5px 10px ${dk}, inset -5px -5px 10px ${lt}`,
-                insetS: `background: linear-gradient(145deg, ${loC}, ${hiC}); box-shadow: inset 3px 3px 6px ${dk}, inset -3px -3px 6px ${lt}`
+                raise: `${dome}; box-shadow: 8px 8px 18px ${dk}, -8px -8px 18px ${lt}, inset 1px 1px 0 ${edgeHi}, inset -1px -1px 0 ${edgeLo}`,
+                raiseS: `${dome}; box-shadow: 4px 4px 9px ${dk}, -4px -4px 9px ${lt}, inset 1px 1px 0 ${edgeHi}, inset -1px -1px 0 ${edgeLo}`,
+                inset: `background: linear-gradient(145deg, ${loC}, ${hiC}); box-shadow: inset 5px 5px 9px ${dk}, inset -5px -5px 9px ${lt}, inset -1px -1px 0 ${edgeHi}`,
+                insetS: `background: linear-gradient(145deg, ${loC}, ${hiC}); box-shadow: inset 3px 3px 5px ${dk}, inset -3px -3px 5px ${lt}, inset -1px -1px 0 ${edgeHi}`
             };
         }
         function protoPal() {
@@ -14182,7 +14182,8 @@ const namesBtn = isAdmin() && dates.length > 0
 
         // ------- 試作UIのアンケート -------
         // 中身は今のアンケートと同じ(surveySet / surveyNote / planRsvpSet で答え、同じ出欠データに入る)。見た目だけ試作UIに合わせる
-        var protoSvDirty = false, protoSvNoteOpen = new Set();
+        var protoSvDirty = false, protoSvNoteOpen = new Set(), protoSvNotesShown = new Set();
+        function protoSvNotesToggle(d) { if (protoSvNotesShown.has(d)) protoSvNotesShown.delete(d); else protoSvNotesShown.add(d); protoRenderSurvey(); }
         // ひとことの欄を開く/閉じる(開いたらすぐ打てるように)
         function protoSvNoteToggle(d) {
             if (protoSvNoteOpen.has(d)) protoSvNoteOpen.delete(d); else protoSvNoteOpen.add(d);
@@ -14324,10 +14325,11 @@ const namesBtn = isAdmin() && dates.length > 0
                         const chip = (sym, arr, c) => arr.length ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;font-size:11px;color:${P.ink2};${insetS}"><b style="color:${c}">${sym}</b>${esc(surveyShowNames ? arr.join("・") : String(arr.length))}</span>` : "";
                         ppl = un.length || pd.length ? `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;flex:none;max-width:${surveyShowNames ? "45%" : "none"}">${chip("?", un, P.ink3)}${chip("△", pd, LV.warning)}</div>` : "";
                     }
-                    let notes = "";
+                    let notes = "", notesChip = "";
                     if (isAdmin()) {
-                        const ns = svNotesOn(d).filter(x => x.name !== name);
-                        if (ns.length) notes = `<div style="display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-radius:14px;${insetS}">${ns.map(x => `<div style="display:flex;gap:7px;font-size:12px;line-height:1.5"><b style="flex:none">${esc(x.name)}</b><span style="flex:none;color:${AC[x.status] || P.ink3}">${STATUS_META[x.status] ? STATUS_META[x.status].sym : ""}</span><span style="color:${P.ink2}">${esc(x.note)}</span>${svNoteFresh.has(svNoteKey(d, x)) ? `<i style="width:6px;height:6px;border-radius:3px;flex:none;margin-top:6px;background:${P.today}"></i>` : ""}</div>`).join("")}</div>`;
+                        const ns = svNotesOn(d).filter(x => x.name !== name), shown = protoSvNotesShown.has(d), fresh = ns.some(x => svNoteFresh.has(svNoteKey(d, x)));
+                        if (ns.length) notesChip = `<button type="button" aria-label="みんなのひとこと ${ns.length}件" aria-pressed="${shown}" onclick="protoSvNotesToggle('${d}')" style="position:relative;align-self:flex-start;height:28px;padding:0 10px;border-radius:14px;flex:none;display:flex;align-items:center;gap:5px;font-family:${en};font-size:11px;font-weight:700;color:${shown ? P.acc : P.ink2};${shown ? insetS : raiseS}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9z"></path></svg>${ns.length}${fresh ? `<i style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:4px;background:${P.today}"></i>` : ""}</button>`;
+                        if (ns.length && shown) notes = `<div style="display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-radius:14px;${insetS}">${ns.map(x => `<div style="display:flex;gap:7px;font-size:12px;line-height:1.5"><b style="flex:none">${esc(x.name)}</b><span style="flex:none;color:${AC[x.status] || P.ink3}">${STATUS_META[x.status] ? STATUS_META[x.status].sym : ""}</span><span style="color:${P.ink2}">${esc(x.note)}</span>${svNoteFresh.has(svNoteKey(d, x)) ? `<i style="width:6px;height:6px;border-radius:3px;flex:none;margin-top:6px;background:${P.today}"></i>` : ""}</div>`).join("")}</div>`;
                     }
                     // ひとことはふだん畳んでおく: 答えの横の吹き出しボタンで開く。書いてあるときだけ、その文を小さく出す(押すと直せる)
                     const chat = '<path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9z"></path>';
@@ -14342,6 +14344,7 @@ const namesBtn = isAdmin() && dates.length > 0
                             <div style="display:flex;align-items:center;gap:7px">${dateHead(d, name && mem && !answered(st) ? dot : "")}</div>
                             ${info.map(t => `<span style="font-family:${en};font-size:11.5px;font-weight:500;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t)}</span>`).join("")}
                           </div>
+                          ${notesChip}
                         </div>
                         ${name || ppl ? `<div style="display:flex;align-items:center;gap:10px">${ppl}${name ? seg(st, !!mem, s0 => `surveySet('${d}','${s0}')`, true) : ""}${noteBtn}</div>` : ""}
                         ${notes}${note}
