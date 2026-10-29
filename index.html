@@ -13647,6 +13647,21 @@ const namesBtn = isAdmin() && dates.length > 0
             const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute("content", P.bg);
             document.documentElement.style.background = P.bg;
         }
+        // 試作UIの凹凸(ニューモーフィズム): 面は背景と同じ色で平らに。左上に白い光・右下にやわらかい影を、ぼかし大きめで
+        function protoNeu(P, dark) {
+            // 凸: 面を左上が明るく右下が少し暗いゆるい丸みにして、影は近く短めに(浮くより、盛り上がって見えるように)
+            const dk = dark ? "rgba(0,0,0,.55)" : "rgba(163,175,196,.60)", lt = dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)";
+            const hiC = dark ? "color-mix(in srgb, " + P.bg + " 88%, #fff)" : "color-mix(in srgb, " + P.bg + " 55%, #fff)";
+            const loC = dark ? "color-mix(in srgb, " + P.bg + " 82%, #000)" : "color-mix(in srgb, " + P.bg + " 86%, #9aa6bb)";
+            const rimHi = dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", rimLo = dark ? "rgba(0,0,0,.35)" : "rgba(120,132,155,.16)";
+            const dome = `background: linear-gradient(145deg, ${hiC}, ${loC})`;
+            return {
+                raise: `${dome}; box-shadow: 7px 7px 16px ${dk}, -7px -7px 16px ${lt}, inset 2px 2px 3px ${rimHi}, inset -3px -3px 6px ${rimLo}`,
+                raiseS: `${dome}; box-shadow: 3px 3px 7px ${dk}, -3px -3px 7px ${lt}, inset 1.5px 1.5px 2px ${rimHi}, inset -2px -2px 3px ${rimLo}`,
+                inset: `background: linear-gradient(145deg, ${loC}, ${hiC}); box-shadow: inset 5px 5px 10px ${dk}, inset -5px -5px 10px ${lt}`,
+                insetS: `background: linear-gradient(145deg, ${loC}, ${hiC}); box-shadow: inset 3px 3px 6px ${dk}, inset -3px -3px 6px ${lt}`
+            };
+        }
         function protoPal() {
             const dark = document.body.classList.contains("dark");
             const P = dark
@@ -13665,10 +13680,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!protoOn) { root.innerHTML = ""; return; }
             const { dark, P, C, LV } = protoPal();
             const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif";
-            const raise = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 7px 7px 18px ${P.lo}, -7px -7px 18px ${P.hi}, inset 3px 3px 6px ${P.rim}, inset -4px -4px 8px ${P.rimLo}`;
-            const raiseS = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 3px 3px 9px ${P.lo}, -3px -3px 9px ${P.hi}, inset 2px 2px 3px ${P.rim}, inset -2px -2px 4px ${P.rimLo}`;
-            const inset = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 5px 5px 10px ${P.lo}, inset -5px -5px 10px ${P.hi}`;
-            const insetS = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 3px 3px 6px ${P.lo}, inset -3px -3px 6px ${P.hi}`;
+            const { raise, raiseS, inset, insetS } = protoNeu(P, dark);   // 凹凸はまとめて protoNeu で決める
             const offC = dark ? "rgba(255,255,255,.12)" : "rgba(40,50,70,.12)";
             const tickC = dark ? "rgba(255,255,255,.45)" : "rgba(40,50,70,.4)";
             const nightC = dark ? "rgba(255,255,255,.08)" : "rgba(40,50,70,.10)", dayC = dark ? "rgba(255,255,255,.03)" : "rgba(40,50,70,.04)";
@@ -14201,9 +14213,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const keep = null;
             const { dark, P, C, LV } = protoPal();
             const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif", esc = escapeHtml;
-            const raise = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 7px 7px 18px ${P.lo}, -7px -7px 18px ${P.hi}, inset 3px 3px 6px ${P.rim}, inset -4px -4px 8px ${P.rimLo}`;
-            const raiseS = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 3px 3px 9px ${P.lo}, -3px -3px 9px ${P.hi}, inset 2px 2px 3px ${P.rim}, inset -2px -2px 4px ${P.rimLo}`;
-            const insetS = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 3px 3px 6px ${P.lo}, inset -3px -3px 6px ${P.hi}`;
+            const { raise, raiseS, insetS } = protoNeu(P, dark);   // 凹凸はまとめて protoNeu で決める
             const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
             const name = surveyWho();
             const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger };
@@ -14356,9 +14366,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const el = document.getElementById("protoCal"); if (!el || !el.classList.contains("open")) return;
             const { dark, P } = protoPal();
             const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif", esc = escapeHtml;
-            const raise = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 7px 7px 18px ${P.lo}, -7px -7px 18px ${P.hi}, inset 3px 3px 6px ${P.rim}, inset -4px -4px 8px ${P.rimLo}`;
-            const raiseS = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 3px 3px 9px ${P.lo}, -3px -3px 9px ${P.hi}, inset 2px 2px 3px ${P.rim}, inset -2px -2px 4px ${P.rimLo}`;
-            const insetS = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 3px 3px 6px ${P.lo}, inset -3px -3px 6px ${P.hi}`;
+            const { raise, raiseS, insetS } = protoNeu(P, dark);   // 凹凸はまとめて protoNeu で決める
             const ico = (d, sz, sw) => `<svg width="${sz || 16}" height="${sz || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
             const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
             const list = gcalFutureList(), map = gcalAddedMap(), todo = list.filter(x => !gcalIsAdded(x.d, x.r, map));
