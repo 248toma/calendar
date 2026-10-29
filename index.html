@@ -13775,6 +13775,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 fills.push(segs(DSZ, DTH, Math.min(vv.n, 12), `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`, "transparent", 4));
                 if (vv.n > 12) fills.push(segs(DSZ, DTH, vv.n - 12, vv.col, "transparent", 4));
             }
+            const pplLayers = fills.length;   // ここまでが人数(この上に目盛りの区切り、さらにその上に予定)
             spansOf(sel).forEach(x => {
                 if (x.h1 == null || (pin && x.p.id === planEditId)) return;   // 直している予定は、もとの位置を描かない
                 const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.4;
@@ -13786,7 +13787,10 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (pin.allDay || s0 == null) fills.push(fillArc(INS, INT, 0, 360, pc));
                 else fills.push(fillArc(INS, INT, s0 / 60 / 24 * 360, (pin.ed ? 24 : e0 != null && e0 > s0 ? e0 / 60 : s0 / 60 + 0.4) / 24 * 360, pc));
             }
-            const dial = groove(DSZ, DTH, 3, P.bot, fills, under);
+            // 目盛りの区切りは、溝の影・人数・予定のいちばん上に、面と同じ色で平らにのせる(区切りが面の高さ、マスが凹んで見える)
+            const sepC = dark ? `color-mix(in srgb, ${P.bg} 90%, #fff)` : `color-mix(in srgb, ${P.bg} 62%, #fff)`;
+            const seps = `${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${sepC} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)}`;
+            const dial = groove(DSZ, DTH, 3, P.bot, [...fills.slice(0, pplLayers), seps, ...fills.slice(pplLayers)], []);   // 人数 → 区切り → 予定 の順に重ねる
             let hand = "";
             if (sel === todayKey && !pin) { const nowD = new Date(), deg = (nowD.getHours() + nowD.getMinutes() / 60) / 24 * 360; hand = L(`position:absolute;left:50%;top:50%;width:2px;height:${DTH + 6}px;margin-left:-1px;border-radius:1px;background:${P.ink};transform-origin:50% 0;transform:rotate(${deg + 180}deg) translateY(${DSZ / 2 - DTH - 3}px);pointer-events:none`); }
             // 自分の出欠
@@ -14261,7 +14265,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 const under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
                 const fills = [segsR(DSZ, DTH, Math.min(n, 12), `color-mix(in srgb, ${col} 78%, ${P.bg})`, "transparent", 4)];
                 if (n > 12) fills.push(segsR(DSZ, DTH, n - 12, col, "transparent", 4));
-                const layers = groove(DSZ, DTH, 3, P.bot, fills, under).map(st => `<i style="${st}"></i>`).join("");
+                const sepC = dark ? `color-mix(in srgb, ${P.bg} 90%, #fff)` : `color-mix(in srgb, ${P.bg} 62%, #fff)`;
+                const seps = `${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${sepC} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)}`;   // 区切りは面の高さで平らに上へ
+                const layers = groove(DSZ, DTH, 3, P.bot, [...fills, seps], []).map(st => `<i style="${st}"></i>`).join("");
                 return `<div title="${n}人 / ${thresholds.cyanMax}人" style="width:${OUT}px;height:${OUT}px;flex:none"><div style="position:relative;width:${BOX}px;height:${BOX}px;border-radius:50%;display:flex;align-items:center;justify-content:center;transform:scale(${k});transform-origin:0 0;${raiseS}">${layers}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px"><span style="font-family:${en};font-size:34px;font-weight:600;color:${col}">${n}</span><span style="font-family:${en};font-size:15px;font-weight:700;letter-spacing:.06em;color:${P.ink3}">/ ${thresholds.cyanMax}</span></div></div></div>`;
             };
