@@ -13795,6 +13795,27 @@ const namesBtn = isAdmin() && dates.length > 0
             // ---------- カレンダー ----------
             const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
             let cellsHtml = "";
+            // 連続予定の段(線の高さ)を、表示している6週ぶん通して決めておく(先に始まった予定が上。途中で別の予定が終わっても段がずれない)
+            const laneOf = new Map(), MAXL = 2;
+            {
+                const busy = new Map();   // 日付 → その日に使っている段
+                for (let i = 0; i < 42; i++) {
+                    const k = formatDateKey(new Date(y, m - 1, 1 - off + i));
+                    const used = busy.get(k) || new Set();
+                    const ms = plansOn(k).filter(({ p }) => !!p.endDate && p.endDate !== p.startDate && !(pin && p.id === planEditId)).map(({ p }) => p);
+                    if (pin && !pin.empty && pin.ed && k >= pin.sd && k <= pin.ed) ms.unshift({ id: "__pin", startDate: pin.sd, endDate: pin.ed });
+                    ms.forEach(p => {
+                        if (!laneOf.has(p.id)) {
+                            let ln = 0; while (used.has(ln)) ln++;
+                            laneOf.set(p.id, ln);
+                            // この予定が続く日(表示範囲の中)は、この段を使う
+                            for (let j = i; j < 42; j++) { const kk = formatDateKey(new Date(y, m - 1, 1 - off + j)); if (kk > p.endDate) break; if (!busy.has(kk)) busy.set(kk, new Set()); busy.get(kk).add(ln); }
+                        }
+                        used.add(laneOf.get(p.id));
+                    });
+                    busy.set(k, used);
+                }
+            }
             for (let i = 0; i < 42; i++) {
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
                 const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0 || planHolidayOn(k), blue = !red && d.getDay() === 6;
@@ -13807,15 +13828,17 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (pin && p.id === planEditId) return;
                     const col = C[+p.color || 0] || C[0];
                     const multi = !!p.endDate && p.endDate !== p.startDate;
-                    items.push({ t: p.title || "予定", col, multi, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6 });
+                    items.push({ t: p.title || "予定", col, multi, lane: multi ? laneOf.get(p.id) : null, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6 });
                 });
                 if (pin && !pin.empty && k >= pin.sd && k <= (pin.ed || pin.sd)) {
                     const pc = C[planColor] || C[0];
-                    if (pin.ed) items.unshift({ col: pc, multi: true, l: k === pin.sd || col7 === 0, r: k === pin.ed || col7 === 6 });
+                    if (pin.ed) items.unshift({ col: pc, multi: true, lane: laneOf.get("__pin"), l: k === pin.sd || col7 === 0, r: k === pin.ed || col7 === 6 });
                     else items.push({ col: pc, multi: false, pin: true });
                 }
                 // 文字は出さない: 連続予定=日をまたぐ細い線、ほかの予定=色の点(バレーは人数の色)
-                const lines = items.filter(x => x.multi).slice(0, 2);
+                // 段ごとに並べる(上の段が空いている日は、透明の線で場所をとっておく)
+                const mls = items.filter(x => x.multi && x.lane != null && x.lane < MAXL), topLane = mls.reduce((a, x) => Math.max(a, x.lane), -1);
+                const lines = []; for (let ln = 0; ln <= topLane; ln++) lines.push(mls.find(x => x.lane === ln) || { col: "transparent", l: false, r: false });
                 const dots = items.filter(x => !x.multi), MAXD = 4;
                 const lineHtml = lines.map(x => `<i style="display:block;height:3px;margin:0 ${x.r ? 6 : 0}px 0 ${x.l ? 6 : 0}px;border-radius:${x.l ? 2 : 0}px ${x.r ? 2 : 0}px ${x.r ? 2 : 0}px ${x.l ? 2 : 0}px;background:${x.col}"></i>`).join("");
                 const dotHtml = dots.slice(0, MAXD).map(x => x.vol
