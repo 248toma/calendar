@@ -2562,6 +2562,7 @@
         #daySheet { flex: none; display: flex; flex-direction: column; height: var(--sheet-h, 120px); margin: 10px 0 0; background: var(--bg); border-radius: 24px; box-shadow: var(--raise-sm); overflow: hidden; }
         body.nv-full #daySheet { display: none !important; }
         #daySheet.folded #sheetBody { visibility: hidden; }
+        #daySheet.folded { margin-bottom: 16px; }   /* 畳んだときは、つまみをホームバーより少し上に置く(下のふちのスワイプと取り合わない) */
         #sheetGrip { flex: none; height: 20px; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
         #sheetGrip span { width: 42px; height: 5px; border-radius: 3px; background: var(--ink-3); opacity: .45; }
         /* 上にも余白を取り、1番上の予定の影(左上の光)が切れて立体感がなくならないようにする */
@@ -12385,7 +12386,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 saveSheetMode(); layoutSheet();
             };
             let d = null;
-            grip.addEventListener("pointerdown", e => { d = { y: e.clientY, moved: false, done: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
+            // 画面のいちばん下のふち(iPhone のホームバー)から始まった指は無視する(アプリ切り替えの上スワイプで一覧が開かないように)
+            const EDGE = 24, fromEdge = y => y > window.innerHeight - EDGE;
+            grip.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse" && fromEdge(e.clientY)) { d = null; return; } d = { y: e.clientY, moved: false, done: false }; try { grip.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
             grip.addEventListener("pointermove", e => {
                 if (!d || d.done) return;
                 const dy = d.y - e.clientY;
@@ -12403,6 +12406,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 let t = null;
                 body.addEventListener("touchstart", e => {
                     if (e.touches.length !== 1) { t = null; return; }
+                    if (fromEdge(e.touches[0].clientY)) { t = null; return; }
                     t = { x: e.touches[0].clientX, y: e.touches[0].clientY, top: body.scrollTop <= 0, bottom: body.scrollTop + body.clientHeight >= body.scrollHeight - 2, at: Date.now() };
                 }, { passive: true });
                 body.addEventListener("touchend", e => {
