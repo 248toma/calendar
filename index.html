@@ -3020,6 +3020,7 @@
         #protoSv { display: none; }
         @keyframes prCellIn { 0% { opacity: 0; transform: scale(.9); } 55% { opacity: 1; transform: scale(1.06); filter: brightness(1.25); } 100% { opacity: 1; transform: scale(1); filter: none; } }
         @keyframes prCellOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.92); } }
+        @keyframes prSweepIn { 0% { opacity: 0; } 60% { opacity: 1; filter: brightness(1.22); } 100% { opacity: 1; filter: none; } }
         @keyframes prNumPop { 0% { transform: scale(1); } 45% { transform: scale(1.22); } 100% { transform: scale(1); } }
         @media (prefers-reduced-motion: reduce) { .pr-anim { animation: none !important; } }
         #protoCal { display: none; }
@@ -13777,6 +13778,11 @@ const namesBtn = isAdmin() && dates.length > 0
             const fills = [], under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
             let hAn = null;
             if (vv) {
+                // 開いた直後(更新後)や、別のバレーの日に切り替えたとき: 0人から時計回りに1マスずつ埋めていく
+                if (nextKey !== protoRingShown && vv.n > 0) {
+                    protoRingShown = nextKey;
+                    if (!protoRingAnim || protoRingAnim.d !== nextKey) protoRingAnim = { d: nextKey, from: 0, at: Date.now(), sweep: true };
+                }
                 hAn = protoRingAnimFor(nextKey, vv.n);
                 const bn = hAn ? hAn.base : vv.n, colA = `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`;
                 fills.push(segs(DSZ, DTH, Math.min(bn, 12), colA, "transparent", 4));
@@ -13895,7 +13901,7 @@ const namesBtn = isAdmin() && dates.length > 0
                   <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${hand}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
-                      <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:-${hAn.el}ms` : ""}">${vv ? vv.n : sd}</span>
+                      <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
                       <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
                     </div>
                   </div>
@@ -14084,6 +14090,9 @@ const namesBtn = isAdmin() && dates.length > 0
         // 答えた瞬間のリングの動き: 増えたマスはふわっと埋まり、減ったマスはすっと消える(人数の数字も少し弾む)
         var protoRingAnim = null;   // { d: 日付, from: 前の人数, at: 時刻 }
         const PROTO_RING_MS = 650;
+        var protoRingShown = null;   // 最後に時計回りで埋めたバレーの日
+        const PROTO_SWEEP_STEP = 55, PROTO_SWEEP_MS = 380;   // 1マスずつずらす間隔 / 1マスが埋まる時間
+        function protoSweepLen(a) { return PROTO_SWEEP_MS + Math.max(0, a.cells.length - 1) * PROTO_SWEEP_STEP; }
         // 触覚フィードバック(ブルッ)。Android は vibrate、iPhone は「スイッチ」の切り替えで鳴る触覚を借りる(iOS 18 ごろから。押した操作の中でだけ動く)
         function protoHaptic() {
             try {
@@ -14109,16 +14118,20 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoRingAnimFor(d, n) {
             const a = protoRingAnim;
             if (!a || a.d !== d || a.from === n) return null;
-            const el = Date.now() - a.at; if (el >= PROTO_RING_MS) return null;
+            const el = Date.now() - a.at;
             const lo = Math.min(a.from, n), hi = Math.max(a.from, n), cells = [];
             for (let i = lo; i < hi; i++) cells.push(i);
-            return { base: lo, inc: n > a.from, cells, el };
+            const r = { base: lo, inc: n > a.from, cells, el, sweep: !!a.sweep };
+            if (el >= (r.sweep ? protoSweepLen(r) : PROTO_RING_MS)) { if (a.sweep) protoRingAnim = null; return null; }
+            return r;
         }
         // 1マスだけの層(i=0〜23。12からは2周目)
         function protoCellLayer(ringBoxFn, maskFn, size, th, i, col, gap, anim) {
             const a = (i % 12) * 30;
             const mk = maskFn(th);
-            return `${ringBoxFn(size)}background:conic-gradient(transparent 0deg ${a + gap / 2}deg, ${col} ${a + gap / 2}deg ${a + 30 - gap / 2}deg, transparent ${a + 30 - gap / 2}deg 360deg);-webkit-mask:${mk};mask:${mk};animation:${anim.inc ? "prCellIn" : "prCellOut"} ${PROTO_RING_MS}ms cubic-bezier(.2,.8,.2,1) both;animation-delay:-${anim.el}ms`;
+            return `${ringBoxFn(size)}background:conic-gradient(transparent 0deg ${a + gap / 2}deg, ${col} ${a + gap / 2}deg ${a + 30 - gap / 2}deg, transparent ${a + 30 - gap / 2}deg 360deg);-webkit-mask:${mk};mask:${mk};${anim.sweep
+                ? `animation:prSweepIn ${PROTO_SWEEP_MS}ms ease-out both;animation-delay:${(i - anim.base) * PROTO_SWEEP_STEP - anim.el}ms`
+                : `animation:${anim.inc ? "prCellIn" : "prCellOut"} ${PROTO_RING_MS}ms cubic-bezier(.2,.8,.2,1) both;animation-delay:-${anim.el}ms`}`;
         }
         // 上のバレー部分 → その日のバレーのタスク画面 / 予定の行 → その予定を編集(編集できない予定は詳細)
         function protoVol(k) { if (!k) return; if (k !== selectedDate) { const [y, m] = k.split("-").map(Number); protoYM = [y, m]; selectDate(k); } openVolleyFull(); }
