@@ -3018,6 +3018,10 @@
         @media (prefers-reduced-motion: reduce) { #protoUI .pr-svbtn.alert.pulse, #protoUI .pr-svbtn.alert.urgent { animation: none; } }
         /* 試作UIのアンケート(中身は今のアンケートと同じデータ) */
         #protoSv { display: none; }
+        @keyframes prCellIn { 0% { opacity: 0; transform: scale(.9); } 55% { opacity: 1; transform: scale(1.06); filter: brightness(1.25); } 100% { opacity: 1; transform: scale(1); filter: none; } }
+        @keyframes prCellOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.92); } }
+        @keyframes prNumPop { 0% { transform: scale(1); } 45% { transform: scale(1.22); } 100% { transform: scale(1); } }
+        @media (prefers-reduced-motion: reduce) { .pr-anim { animation: none !important; } }
         #protoCal { display: none; }
         body.proto-on #protoCal.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         #protoCal button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
@@ -13771,9 +13775,13 @@ const namesBtn = isAdmin() && dates.length > 0
             // 大きな文字盤: 底=人数の12マス、内側の半分=選んだ日の予定(半透明)
             const DTH = 17, DSZ = 124, INT = DTH / 2 - 1, INS = DSZ - DTH;
             const fills = [], under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
+            let hAn = null;
             if (vv) {
-                fills.push(segs(DSZ, DTH, Math.min(vv.n, 12), `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`, "transparent", 4));
-                if (vv.n > 12) fills.push(segs(DSZ, DTH, vv.n - 12, vv.col, "transparent", 4));
+                hAn = protoRingAnimFor(nextKey, vv.n);
+                const bn = hAn ? hAn.base : vv.n, colA = `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`;
+                fills.push(segs(DSZ, DTH, Math.min(bn, 12), colA, "transparent", 4));
+                if (bn > 12) fills.push(segs(DSZ, DTH, bn - 12, vv.col, "transparent", 4));
+                if (hAn) hAn.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, DTH, i, i < 12 ? colA : vv.col, 4, hAn)));   // 増えた/減ったマスだけ動かす
             }
             const pplLayers = fills.length;   // ここまでが人数(この上に目盛りの区切り、さらにその上に予定)
             spansOf(sel).forEach(x => {
@@ -13887,7 +13895,7 @@ const namesBtn = isAdmin() && dates.length > 0
                   <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${hand}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
-                      <span style="font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink}">${vv ? vv.n : sd}</span>
+                      <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:-${hAn.el}ms` : ""}">${vv ? vv.n : sd}</span>
                       <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
                     </div>
                   </div>
@@ -14072,7 +14080,31 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoMonth(dir) {
             protoSlide = dir; const [y, m] = protoYM || [new Date().getFullYear(), new Date().getMonth() + 1]; const d = new Date(y, m - 1 + dir, 1); protoYM = [d.getFullYear(), d.getMonth() + 1]; renderProto(); }
         function protoToday() { protoYM = null; protoRowsTop = 0; jumpToToday(); renderProto(); }
-        function protoAns(k, st) { surveySet(k, st); renderProto(); }
+        function protoAns(k, st) { protoAnswer(k, st); renderProto(); }
+        // 答えた瞬間のリングの動き: 増えたマスはふわっと埋まり、減ったマスはすっと消える(人数の数字も少し弾む)
+        var protoRingAnim = null;   // { d: 日付, from: 前の人数, at: 時刻 }
+        const PROTO_RING_MS = 650;
+        function protoAnswer(d, st) {
+            const mem = (attendanceByDate[d] || []).find(m => m.name === surveyWho());
+            if (mem && mem.status !== st) protoRingAnim = { d, from: countComing(d), at: Date.now() };
+            surveySet(d, st);
+            setTimeout(() => { if (protoRingAnim && Date.now() - protoRingAnim.at >= PROTO_RING_MS) { protoRingAnim = null; } }, PROTO_RING_MS + 50);
+        }
+        // その日のリングの動き(なければ null)。base=動かさずに描くマスの数 / cells=動かすマス / el=経過時間(描き直しても動きが途切れないように)
+        function protoRingAnimFor(d, n) {
+            const a = protoRingAnim;
+            if (!a || a.d !== d || a.from === n) return null;
+            const el = Date.now() - a.at; if (el >= PROTO_RING_MS) return null;
+            const lo = Math.min(a.from, n), hi = Math.max(a.from, n), cells = [];
+            for (let i = lo; i < hi; i++) cells.push(i);
+            return { base: lo, inc: n > a.from, cells, el };
+        }
+        // 1マスだけの層(i=0〜23。12からは2周目)
+        function protoCellLayer(ringBoxFn, maskFn, size, th, i, col, gap, anim) {
+            const a = (i % 12) * 30;
+            const mk = maskFn(th);
+            return `${ringBoxFn(size)}background:conic-gradient(transparent 0deg ${a + gap / 2}deg, ${col} ${a + gap / 2}deg ${a + 30 - gap / 2}deg, transparent ${a + 30 - gap / 2}deg 360deg);-webkit-mask:${mk};mask:${mk};animation:${anim.inc ? "prCellIn" : "prCellOut"} ${PROTO_RING_MS}ms cubic-bezier(.2,.8,.2,1) both;animation-delay:-${anim.el}ms`;
+        }
         // 上のバレー部分 → その日のバレーのタスク画面 / 予定の行 → その予定を編集(編集できない予定は詳細)
         function protoVol(k) { if (!k) return; if (k !== selectedDate) { const [y, m] = k.split("-").map(Number); protoYM = [y, m]; selectDate(k); } openVolleyFull(); }
         function protoRow(id) {
@@ -14260,16 +14292,19 @@ const namesBtn = isAdmin() && dates.length > 0
                     ...fills
                 ];
             };
-            const peopleRing = (n, col) => {
+            const peopleRing = (n, col, d) => {
+                const an = d ? protoRingAnimFor(d, n) : null, bn = an ? an.base : n;
                 const DTH = 17, DSZ = 124, BOX = 138, OUT = 60, k = OUT / BOX;
                 const under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
-                const fills = [segsR(DSZ, DTH, Math.min(n, 12), `color-mix(in srgb, ${col} 78%, ${P.bg})`, "transparent", 4)];
-                if (n > 12) fills.push(segsR(DSZ, DTH, n - 12, col, "transparent", 4));
+                const colA = `color-mix(in srgb, ${col} 78%, ${P.bg})`;
+                const fills = [segsR(DSZ, DTH, Math.min(bn, 12), colA, "transparent", 4)];
+                if (bn > 12) fills.push(segsR(DSZ, DTH, bn - 12, col, "transparent", 4));
+                if (an) an.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, DTH, i, i < 12 ? colA : col, 4, an)));
                 const sepC = dark ? `color-mix(in srgb, ${P.bg} 90%, #fff)` : `color-mix(in srgb, ${P.bg} 62%, #fff)`;
                 const seps = `${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${sepC} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)}`;   // 区切りは面の高さで平らに上へ
                 const layers = groove(DSZ, DTH, 3, P.bot, [...fills, seps], []).map(st => `<i style="${st}"></i>`).join("");
                 return `<div title="${n}人 / ${thresholds.cyanMax}人" style="width:${OUT}px;height:${OUT}px;flex:none"><div style="position:relative;width:${BOX}px;height:${BOX}px;border-radius:50%;display:flex;align-items:center;justify-content:center;transform:scale(${k});transform-origin:0 0;${raiseS}">${layers}
-                    <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px"><span style="font-family:${en};font-size:34px;font-weight:600;color:${col}">${n}</span><span style="font-family:${en};font-size:15px;font-weight:700;letter-spacing:.06em;color:${P.ink3}">/ ${thresholds.cyanMax}</span></div></div></div>`;
+                    <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px"><span class="pr-anim" style="display:inline-block;font-family:${en};font-size:34px;font-weight:600;color:${col};${an ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:-${an.el}ms` : ""}">${n}</span><span style="font-family:${en};font-size:15px;font-weight:700;letter-spacing:.06em;color:${P.ink3}">/ ${thresholds.cyanMax}</span></div></div></div>`;
             };
             const ico = (d, sz) => `<svg width="${sz || 16}" height="${sz || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
             const answered = st => st === "来る" || st === "来ない";
@@ -14346,14 +14381,14 @@ const namesBtn = isAdmin() && dates.length > 0
                         : hasNote ? `<div role="button" tabindex="0" onclick="protoSvNoteToggle('${d}')" style="display:flex;align-items:center;gap:7px;padding:0 2px;font-size:12px;color:${P.ink3};cursor:pointer;min-width:0">${ico(chat, 12)}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${P.ink2}">${esc(mem.note)}</span></div>` : "";
                     return `<div style="border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;${raiseS}">
                         <div style="display:flex;align-items:center;gap:14px">
-                          ${peopleRing(n, lvc)}
+                          ${peopleRing(n, lvc, d)}
                           <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
                             <div style="display:flex;align-items:center;gap:7px">${dateHead(d, name && mem && !answered(st) ? dot : "")}</div>
                             ${info.map(t => `<span style="font-family:${en};font-size:11.5px;font-weight:500;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t)}</span>`).join("")}
                           </div>
                           ${notesChip}
                         </div>
-                        ${name || ppl ? `<div style="display:flex;align-items:center;gap:10px">${ppl}${name ? seg(st, !!mem, s0 => `surveySet('${d}','${s0}')`, true) : ""}${noteBtn}</div>` : ""}
+                        ${name || ppl ? `<div style="display:flex;align-items:center;gap:10px">${ppl}${name ? seg(st, !!mem, s0 => `protoAnswer('${d}','${s0}')`, true) : ""}${noteBtn}</div>` : ""}
                         ${notes}${note}
                       </div>`;
                 }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">—</div>`;
