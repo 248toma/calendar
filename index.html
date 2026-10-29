@@ -14063,7 +14063,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             if (k === selectedDate) {
                 if (events[k]) openVolleyFull();   // バレーの日はバレーの画面へ
-                else protoOpenInput(null);         // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
+                else { protoHaptic(); protoOpenInput(null); }   // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
                 return;
             }
             protoRowsTop = 0;
@@ -14084,7 +14084,22 @@ const namesBtn = isAdmin() && dates.length > 0
         // 答えた瞬間のリングの動き: 増えたマスはふわっと埋まり、減ったマスはすっと消える(人数の数字も少し弾む)
         var protoRingAnim = null;   // { d: 日付, from: 前の人数, at: 時刻 }
         const PROTO_RING_MS = 650;
+        // 触覚フィードバック(ブルッ)。Android は vibrate、iPhone は「スイッチ」の切り替えで鳴る触覚を借りる(iOS 18 ごろから。押した操作の中でだけ動く)
+        function protoHaptic() {
+            try {
+                if (navigator.vibrate) { navigator.vibrate(12); return; }
+                let lb = document.getElementById("prHapticLb");
+                if (!lb) {
+                    const inp = document.createElement("input"); inp.type = "checkbox"; inp.setAttribute("switch", ""); inp.id = "prHapticSw"; inp.tabIndex = -1; inp.setAttribute("aria-hidden", "true");
+                    lb = document.createElement("label"); lb.id = "prHapticLb"; lb.htmlFor = "prHapticSw"; lb.setAttribute("aria-hidden", "true");
+                    const box = document.createElement("div"); box.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none";
+                    box.append(inp, lb); document.body.appendChild(box);
+                }
+                lb.click();
+            } catch (e) { /* 鳴らせない端末は何もしない */ }
+        }
         function protoAnswer(d, st) {
+            protoHaptic();
             const mem = (attendanceByDate[d] || []).find(m => m.name === surveyWho());
             if (mem && mem.status !== st) protoRingAnim = { d, from: countComing(d), at: Date.now() };
             surveySet(d, st);
@@ -14204,6 +14219,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function pinSave() {
             const t = document.getElementById("pinT");
             if (!t) return;
+            protoHaptic();
             if (!(pinVal("pinT").trim() || pinVal("pinH").trim())) { t.focus(); return; }
             pinInput();
             planPanel = { date: selectedDate, open: false };
@@ -14352,7 +14368,7 @@ const namesBtn = isAdmin() && dates.length > 0
                           <div style="display:flex;align-items:center;gap:7px;min-width:0"><span style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.title || "予定")}</span>${answered(st) ? "" : dot}</div>
                           <span style="font-family:${en};font-size:11px;font-weight:500;color:${P.ink3};white-space:nowrap"><span style="font-weight:600;color:${P.ink2}">${pm}/${pd}</span> <span style="font-size:9.5px;letter-spacing:.08em;color:${pw === 0 ? P.red : pw === 6 ? P.blue : P.ink3}">${WD3[pw]}</span>　${esc(when)}</span>
                         </div>
-                        ${seg(st, true, s0 => `planRsvpSet(${p.id},'${s0}');protoRenderSurvey()`)}
+                        ${seg(st, true, s0 => `protoHaptic();planRsvpSet(${p.id},'${s0}');protoRenderSurvey()`)}
                       </div>`;
                 }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">—</div>`;
             } else {
