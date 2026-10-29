@@ -9940,7 +9940,7 @@ await main();
             }
             const allDates = (name || isAdmin()) ? surveyDates() : [];   // 管理者は、答える人を選ばなくても日付ごとの状況を見られる
             const shownSet = new Set(surveyDatesShown()), later = allDates.filter(d => !shownSet.has(d));
-            if (surveyLater && !later.length) surveyLater = false;
+            if (surveyLater && !later.length && allDates.length) surveyLater = false;
             let dates = surveyLater ? later : allDates.filter(d => shownSet.has(d));   // ふだんは今月(14日以降は来月も)。「以降」の画面はそれより後だけ
             if (surveyUnansFirst && name) {   // 未回答 → △ → ○/✖(同じ区分の中は日付順のまま)
                 const rank = d => {
@@ -12256,6 +12256,8 @@ const namesBtn = isAdmin() && dates.length > 0
             try {
                 sessionStorage.setItem(UI_RESTORE_KEY, JSON.stringify({
                     selectedDate, currentView, volleyFull: !!volleyFull, survey: !!surveyOpen, list: !!calListMode,
+                    svTab: typeof surveyPlanTab !== "undefined" && surveyPlanTab ? "plan" : typeof surveyLater !== "undefined" && surveyLater ? "later" : "now",
+                    pcal: !!(document.getElementById("protoCal") && document.getElementById("protoCal").classList.contains("open")),
                     month: [viewMonth.getFullYear(), viewMonth.getMonth()],
                     week: formatDateKey(viewWeekStart),
                     scrollY: window.scrollY || 0
@@ -12825,7 +12827,9 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         if (restoredUi && restoredUi.volleyFull && events[selectedDate]) { volleyFull = true; renderOtherPlanBox(); renderNvPanel(); }
         if (restoredUi && restoredUi.list && !calListMode) { calListMode = true; calListNeedScroll = true; renderCalendar(); }
-        if (restoredUi && restoredUi.survey) openSurvey();
+        // アンケート・カレンダー登録は、試作UIの準備(この下の最後)が済んでから開き直す(先に開くとオリジナルの画面になってしまう)
+        if (restoredUi && restoredUi.survey) setTimeout(() => { openSurvey(); if (protoOn && restoredUi.svTab && restoredUi.svTab !== "now") protoSvTab(restoredUi.svTab); }, 0);
+        if (restoredUi && restoredUi.pcal) setTimeout(() => { if (protoOn) openBulkAdd(); }, 0);
         // ------- 日付入力: 「週の始まり(日/月)」の設定に連動する独自カレンダー -------
         // 端末標準の日付ピッカーは曜日の並びを変えられないため、日付入力をこのカレンダーに置き換える(値は従来どおり YYYY-MM-DD)
         (function () {
@@ -14217,7 +14221,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // ---- 範囲 ----
             const allDates = (name || isAdmin()) ? surveyDates() : [];
             const shownSet = new Set(surveyDatesShown()), later = allDates.filter(d => !shownSet.has(d));
-            if (surveyLater && !later.length) surveyLater = false;
+            if (surveyLater && !later.length && allDates.length) surveyLater = false;   // 読み込み前(まだ日程がない)ときは、選んでいたタブのままにする
             let dates = surveyLater ? later : allDates.filter(d => shownSet.has(d));
             if (surveyUnansFirst && name) {
                 const rank = d => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); if (!mem) return 2; return answered(mem.status) ? 2 : mem.status === "未定" ? 1 : 0; };
