@@ -3021,6 +3021,8 @@
         @keyframes prCellIn { 0% { opacity: 0; transform: scale(.9); } 55% { opacity: 1; transform: scale(1.06); filter: brightness(1.25); } 100% { opacity: 1; transform: scale(1); filter: none; } }
         @keyframes prCellOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.92); } }
         @keyframes prSweepIn { 0% { opacity: 0; } 60% { opacity: 1; filter: brightness(1.22); } 100% { opacity: 1; filter: none; } }
+        /* iPhone の触覚: ボタンの上に透明なスイッチを重ね、指で直接切り替えてもらう(iOS 26.5 からは、指で押したスイッチでしか鳴らない) */
+        .pr-hap { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; z-index: 2; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         @keyframes prNumPop { 0% { transform: scale(1); } 45% { transform: scale(1.22); } 100% { transform: scale(1); } }
         @media (prefers-reduced-motion: reduce) { .pr-anim { animation: none !important; } }
         #protoCal { display: none; }
@@ -3617,6 +3619,7 @@ await main();
                 </select></div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
             <div class="st-row"><span class="st-lbl">試作UI</span><span class="st-seg" id="protoSeg"><button type="button" data-v="0" onclick="setProtoUI(false)">オフ</button><button type="button" data-v="1" onclick="setProtoUI(true)">オン</button></span></div>
+            <div class="st-row"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
             <div class="st-row"><span class="st-lbl">使い方</span><span class="st-seg st-guide"><button type="button" onclick="startTutorial()">説明</button><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
         </div>
         <div class="panel-group-label">記録</div>
@@ -11821,6 +11824,7 @@ const namesBtn = isAdmin() && dates.length > 0
             setTimeout(() => el.classList.remove("spin"), 260);
         }
         function reloadWithSpin() {
+            if (typeof protoHaptic === "function") protoHaptic();   // 引っぱって離した瞬間に「トン」(Android。iPhone はスイッチを押していないので鳴らない)
             showPtrSpin();
             try { sessionStorage.setItem(PTR_SPIN_KEY, "1"); } catch (e) { /* ignore */ }
             saveUiStateForReload();
@@ -13781,7 +13785,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 開いた直後(更新後)や、別のバレーの日に切り替えたとき: 0人から時計回りに1マスずつ埋めていく
                 if (nextKey !== protoRingShown && vv.n > 0) {
                     protoRingShown = nextKey;
-                    if (!protoRingAnim || protoRingAnim.d !== nextKey) protoRingAnim = { d: nextKey, from: 0, at: Date.now(), sweep: true };
+                    if (!protoRingAnim || protoRingAnim.d !== nextKey) { protoRingAnim = { d: nextKey, from: 0, at: Date.now(), sweep: true }; protoSweepBuzz(vv.n); }
                 }
                 hAn = protoRingAnimFor(nextKey, vv.n);
                 const bn = hAn ? hAn.base : vv.n, colA = `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`;
@@ -13816,7 +13820,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const idx = OPTS.findIndex(([st]) => st === myAns);
             const segHtml = `<div onclick="event.stopPropagation()" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;max-width:160px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
                 ${idx >= 0 ? L(`position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 3 * ${idx});width:calc((100% - 8px) / 3);border-radius:15px;${raiseS}`) : ""}
-                ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join("")}
+                ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg>${myMem ? protoHapHtml() : ""}</button>`).join("")}
             </div>`;
             // 予定の一覧(バレーも入れる。2件分の高さで、ほかはスクロール)
             const rows = plansOn(sel).map(({ p, first, last }) => {
@@ -14034,7 +14038,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;height:40px;flex:none">
                   <div id="prPinOpts" style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;height:40px;box-sizing:content-box;margin:-12px -10px -12px -18px;padding:12px 10px 12px 18px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none">${pinOpts}</div>
-                  <button type="button" aria-label="保存" onclick="pinSave()" style="width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.acc};${raiseS}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></button>
+                  <button type="button" aria-label="保存" onclick="pinSave()" style="position:relative;width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.acc};${raiseS}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>${protoHapHtml()}</button>
                 </div>
               </div>`;
             // 入力中に描き直すときは、入力欄はそのまま(日本語の変換中でも切れないように)中身だけ差し替える
@@ -14092,11 +14096,58 @@ const namesBtn = isAdmin() && dates.length > 0
         const PROTO_RING_MS = 650;
         var protoRingShown = null;   // 最後に時計回りで埋めたバレーの日
         const PROTO_SWEEP_STEP = 55, PROTO_SWEEP_MS = 380;   // 1マスずつずらす間隔 / 1マスが埋まる時間
+        // マスが埋まるのに合わせて「トトトト」(Android のみ。iPhone は指で押したときにしか鳴らせない。開いた直後は、まだ一度も触っていないと鳴らない)
+        function protoSweepBuzz(n) {
+            try {
+                if (!hapOn || !n) return;
+                if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+                if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+                if (!navigator.vibrate) { for (let i = 0; i < n; i++) setTimeout(protoHapProg, i * PROTO_SWEEP_STEP); return; }   // iPhone(鳴るのは iOS 26.4 まで)
+                const ON = 7, pat = [];
+                for (let i = 0; i < n; i++) { if (i) pat.push(PROTO_SWEEP_STEP - ON); pat.push(ON); }
+                navigator.vibrate(pat);
+            } catch (e) { }
+        }
         function protoSweepLen(a) { return PROTO_SWEEP_MS + Math.max(0, a.cells.length - 1) * PROTO_SWEEP_STEP; }
         // 触覚フィードバック(ブルッ)。Android は vibrate、iPhone は「スイッチ」の切り替えで鳴る触覚を借りる(iOS 18 ごろから。押した操作の中でだけ動く)
+        var protoHapAt = 0;
+        // ボタンの中に入れる透明スイッチ(Android は vibrate で鳴らすので入れない)
+        // 設定の「触覚フィードバック」(この端末だけ。最初はオン)
+        const HAP_KEY = "haptic_v1";
+        var hapOn = true;
+        try { hapOn = localStorage.getItem(HAP_KEY) !== "0"; } catch (e) { /* ignore */ }
+        function hapSegSync() {
+            document.querySelectorAll("#hapSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === hapOn));
+            const onB = document.querySelector('#hapSeg button[data-v="1"]');   // オンにした瞬間に一度鳴らす(iPhone は透明スイッチで)
+            if (onB) { const old = onB.querySelector(".pr-hap"); if (old) old.remove(); if (!hapOn && !navigator.vibrate) onB.insertAdjacentHTML("beforeend", `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`); }
+        }
+        function setHaptic(on) {
+            const was = hapOn; hapOn = !!on;
+            try { localStorage.setItem(HAP_KEY, hapOn ? "1" : "0"); } catch (e) { /* ignore */ }
+            hapSegSync();
+            if (hapOn && !was) protoHaptic();
+            if (typeof protoOn !== "undefined" && protoOn) renderProto();
+        }
+        hapSegSync();
+        function protoHapHtml() { return !hapOn || navigator.vibrate ? "" : `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`; }
+        // スイッチが押された: 触覚はスイッチが鳴らす。本来のボタンの処理は、スイッチの切り替えが終わってから呼ぶ(すぐ描き直すとスイッチが消えて鳴らないため)
+        function protoHapTap(ev, el) {
+            ev.stopPropagation();
+            protoHapAt = Date.now();
+            const btn = el.parentNode;
+            setTimeout(() => { if (btn && btn.isConnected) btn.click(); }, 0);
+        }
         function protoHaptic() {
+            if (!hapOn) return;
             try {
                 if (navigator.vibrate) { navigator.vibrate(12); return; }
+                if (Date.now() - protoHapAt < 400) return;   // スイッチで鳴らしたばかり
+                protoHapProg();
+            } catch (e) { /* 鳴らせない端末は何もしない */ }
+        }
+        // iPhone: 隠したスイッチをプログラムで切り替える(iOS 26.4 まではこれで鳴る。26.5 からは鳴らない)
+        function protoHapProg() {
+            try {
                 let lb = document.getElementById("prHapticLb");
                 if (!lb) {
                     const inp = document.createElement("input"); inp.type = "checkbox"; inp.setAttribute("switch", ""); inp.id = "prHapticSw"; inp.tabIndex = -1; inp.setAttribute("aria-hidden", "true");
@@ -14290,7 +14341,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const idx = OPTS.findIndex(([s0]) => s0 === st);
                 return `<div style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;${wide ? "flex:1;min-width:0" : "width:138px;flex:none"};box-sizing:border-box;${insetS};${on ? "" : "opacity:.4"}">
                     ${idx >= 0 ? `<i style="position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 3 * ${idx});width:calc((100% - 8px) / 3);border-radius:15px;transition:left .2s;${raiseS}"></i>` : ""}
-                    ${OPTS.map(([s0, svg, lb]) => `<button type="button" aria-label="${lb}" ${on ? `onclick="${click(s0)}"` : "disabled"} style="position:relative;height:34px;display:flex;align-items:center;justify-content:center;color:${st === s0 ? AC[s0] : P.ink3};opacity:${st === s0 || idx < 0 ? 1 : 0.55}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join("")}
+                    ${OPTS.map(([s0, svg, lb]) => `<button type="button" aria-label="${lb}" ${on ? `onclick="${click(s0)}"` : "disabled"} style="position:relative;height:34px;display:flex;align-items:center;justify-content:center;color:${st === s0 ? AC[s0] : P.ink3};opacity:${st === s0 || idx < 0 ? 1 : 0.55}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg>${on ? protoHapHtml() : ""}</button>`).join("")}
                 </div>`;
             };
             const dot = `<i style="width:7px;height:7px;border-radius:4px;flex:none;background:${P.red}"></i>`;
