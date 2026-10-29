@@ -3002,6 +3002,33 @@
         #protoUI .pr-cell { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 44px; height: 100%; min-width: 0; padding: 2px 0 0; overflow: hidden; }
         #protoUI .pr-dock { position: absolute; left: 22px; right: 22px; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: center; gap: 14px; }
         #protoUI #prRows::-webkit-scrollbar { display: none; }
+        /* 試作UIのアンケートボタンの印(今のボタンと同じ決まり) */
+        #protoUI .pr-svbtn .sv-badge, #protoUI .pr-svbtn .sv-badge2, #protoUI .pr-svbtn .sv-badge3 { display: none; position: absolute; top: -3px; min-width: 17px; height: 17px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; color: #fff; font: 800 10px/17px 'Montserrat', system-ui, sans-serif; text-align: center; }
+        #protoUI .pr-svbtn .sv-badge { right: -3px; z-index: 2; background: #e5484d; }
+        #protoUI .pr-svbtn .sv-badge2 { right: -3px; z-index: 1; background: #f59e0b; }
+        #protoUI .pr-svbtn .sv-badge3 { left: -3px; z-index: 2; background: #16a34a; }
+        #protoUI .pr-svbtn.alert .sv-badge, #protoUI .pr-svbtn.later .sv-badge2, #protoUI .pr-svbtn.notes .sv-badge3 { display: block; }
+        #protoUI .pr-svbtn.alert.later .sv-badge2 { top: -1px; right: -9px; color: transparent; }
+        #protoUI .pr-svbtn.alert.pulse { animation: prSvPulse 1.8s ease-in-out infinite; }
+        #protoUI .pr-svbtn.alert.urgent { background: #e5484d !important; color: #fff !important; animation: prSvPulseBig 1s ease-in-out infinite; }
+        #protoUI .pr-svbtn.alert.urgent .sv-badge { background: #fff; color: #e5484d; }
+        @keyframes prSvPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .5); } 50% { box-shadow: 0 0 0 8px rgba(229, 72, 77, 0); } }
+        @keyframes prSvPulseBig { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .7); transform: scale(1); } 50% { box-shadow: 0 0 0 11px rgba(229, 72, 77, 0); transform: scale(1.08); } }
+        @media (prefers-reduced-motion: reduce) { #protoUI .pr-svbtn.alert.pulse, #protoUI .pr-svbtn.alert.urgent { animation: none; } }
+        /* 試作UIのアンケート(中身は今のアンケートと同じデータ) */
+        #protoSv { display: none; }
+        #protoCal { display: none; }
+        body.proto-on #protoCal.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        #protoCal button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
+        #protoCal button:active { transform: scale(.95); }
+        #protoCal button:disabled { cursor: default; opacity: .4; }
+        body.proto-on #protoSv.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        #protoSv button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
+        #protoSv button:active { transform: scale(.95); }
+        #protoSv button:disabled { cursor: default; }
+        #protoSv .psv-in { -webkit-appearance: none; appearance: none; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; min-width: 0; height: 100% !important; border-radius: 0 !important; color: inherit !important; font: 500 12.5px 'Noto Sans JP', system-ui, sans-serif !important; }
+        #protoSv .psv-in::placeholder { color: inherit; opacity: .3; }
+        #protoSv select { -webkit-appearance: none; appearance: none; border: 0; outline: none; background: transparent; color: inherit; font: 600 14px 'Noto Sans JP', system-ui, sans-serif; padding: 0 6px; height: 100%; }
     </style>
 </head>
 <body>
@@ -9718,6 +9745,7 @@ await main();
         }
         let svNoteFresh = new Set();   // 開いた時点でまだ見ていなかったひとこと(緑の印を付ける)
         function openSurvey() {
+            if (typeof protoOn !== "undefined" && protoOn) { protoOpenSurvey(); return; }   // 試作UIは試作のアンケート画面
             surveyOpen = true; surveyLater = false;
             svNoteFresh = new Set(svNoteUnseen()); svNoteMarkSeen([...svNoteFresh]);
             setTimeout(refreshSurveyBtn, 0);
@@ -9729,6 +9757,7 @@ await main();
         }
         function closeSurvey() {
             surveyOpen = false;
+            { const ps = document.getElementById("protoSv"); if (ps && ps.classList.contains("open")) { ps.classList.remove("open"); if (typeof protoOn !== "undefined" && protoOn) setTimeout(renderProto, 0); } }
             document.getElementById("surveyOv").style.display = "none";
             document.body.style.overflow = "";
         }
@@ -9813,6 +9842,7 @@ await main();
             if (n > 0) setTimeout(surveyReleasePrompt, 600);
             bd.textContent = n > 0 ? String(n) : "";
             b.title = n > 0 ? `出欠の回答(未回答${n}件)` : "出欠の回答";
+            if (typeof protoSvBtnSync === "function") protoSvBtnSync();   // 試作UIのボタンにも同じ印
         }
         let surveyPlanTab = false;   // アンケート画面: true=バレー以外の予定の一覧
         function surveyTogglePlans() { surveyPlanTab = !surveyPlanTab; if (surveyPlanTab) surveyLater = false; renderSurvey(); const ov = document.getElementById("surveyOv"); if (ov) ov.scrollTop = 0; }
@@ -9888,6 +9918,7 @@ await main();
             refreshSurveyBtn();
         }
         function renderSurvey() {
+            if (typeof protoSvIsOpen === "function" && protoSvIsOpen()) protoRenderSurvey();   // 試作のアンケートも同じ中身で描き直す
             const box = document.getElementById("surveyBody");
             if (!box) return;
             const name = surveyWho();
@@ -11245,6 +11276,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return out;
         }
         function openBulkAdd() {
+            if (typeof protoOn !== "undefined" && protoOn) { protoOpenCal(); return; }   // 試作UIは試作の画面
             let ov = document.getElementById("bulkAddOv");
             if (!ov) {
                 ov = document.createElement("div"); ov.id = "bulkAddOv";
@@ -11257,6 +11289,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function closeBulkAdd() { const ov = document.getElementById("bulkAddOv"); if (ov) ov.classList.remove("open"); }
         function renderBulkAdd() {
+            if (typeof protoRenderCal === "function") protoRenderCal();
             const ov = document.getElementById("bulkAddOv");
             if (!ov || !ov.classList.contains("open")) return;
             const list = gcalFutureList(), map = gcalAddedMap();
@@ -13731,7 +13764,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const me = surveyWho();
             const myMem = nextKey && me ? (attendanceByDate[nextKey] || []).find(x => x.name === me) : null;
             const myAns = myMem ? myMem.status : "";
-            const OPTS = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"]];
+            const OPTS = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"]];   // 並びは ○ ✖ △(今のアンケートと同じ)
             const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger };
             const idx = OPTS.findIndex(([st]) => st === myAns);
             const segHtml = `<div onclick="event.stopPropagation()" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;max-width:160px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
@@ -13789,7 +13822,6 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
             const sunIdx = weekStartDay === 1 ? 6 : 0;
-            const unans = !!document.querySelector("#surveyBtn.alert");
             const protoAnim = protoSlide ? `animation: prSlide${protoSlide > 0 ? "L" : "R"} .28s cubic-bezier(.2,.8,.2,1)` : "";
             protoSlide = 0;
 
@@ -13831,7 +13863,8 @@ const namesBtn = isAdmin() && dates.length > 0
               <div class="pr-dock">
                 <button type="button" onclick="protoToday()" style="height:44px;padding:0 20px;border-radius:22px;font-family:${en};font-size:13px;font-weight:700;color:${sel === todayKey ? P.ink3 : P.today};${raiseS}">Today</button>
                 <span style="flex:1"></span>
-                <button type="button" aria-label="アンケート" onclick="openSurvey()" style="position:relative;width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg>${unans ? `<i style="position:absolute;top:10px;right:10px;width:7px;height:7px;border-radius:4px;background:${P.red}"></i>` : ""}</button>
+                <button type="button" aria-label="バレーの予約をカレンダーに追加" title="カレンダーに登録" onclick="openBulkAdd()" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path></svg></button>
+                <button type="button" id="prSvBtn" aria-label="アンケート" onclick="openSurvey()" class="pr-svbtn" style="position:relative;width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg><span class="sv-badge3"></span><span class="sv-badge2"></span><span class="sv-badge"></span></button>
                 <button type="button" aria-label="設定" onclick="toggleSettings()" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle></svg></button>
                 <button type="button" aria-label="予定を追加" onclick="protoAdd()" style="width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:${P.acc};${raise}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
               </div>`;
@@ -13947,6 +13980,14 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">${pin ? headPin : headHtml}${calHtml}${dockHtml}</div>`;
             const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * 26;
+            protoSvBtnSync();
+        }
+        // 下のアンケートボタンの印は、今の画面のアンケートボタンと同じ(赤=今月・来月の未回答 / オレンジ=その先 / 緑=新しいひとこと / 点滅)
+        function protoSvBtnSync() {
+            const b = document.getElementById("prSvBtn"), o = document.getElementById("surveyBtn"); if (!b || !o) return;
+            ["alert", "later", "notes", "pulse", "urgent"].forEach(c => b.classList.toggle(c, o.classList.contains(c)));
+            [["sv-badge", "surveyBadge"], ["sv-badge2", "surveyBadge2"], ["sv-badge3", "surveyBadge3"]].forEach(([c, id]) => { const t = b.querySelector("." + c), f = document.getElementById(id); if (t && f) { t.textContent = f.textContent; t.title = f.title || ""; } });
+            b.title = o.title || "出欠の回答";
         }
         // 同じ日をもう一度押すと: バレーの日はバレーの画面、それ以外は今の画面の予定一覧を最大で
         function protoPick(k) {
@@ -14085,6 +14126,181 @@ const namesBtn = isAdmin() && dates.length > 0
             const id = pinEditId;
             deleteOtherPlan(id);
             if (!planList.some(x => x.id === id)) protoCloseInput();
+        }
+
+        // ------- 試作UIのアンケート -------
+        // 中身は今のアンケートと同じ(surveySet / surveyNote / planRsvpSet で答え、同じ出欠データに入る)。見た目だけ試作UIに合わせる
+        var protoSvDirty = false;
+        function protoSvBlur() { if (protoSvDirty) protoRenderSurvey(); }
+        function protoSvIsOpen() { const e = document.getElementById("protoSv"); return !!(e && e.classList.contains("open")); }
+        function protoOpenSurvey() {
+            surveyOpen = true; surveyLater = false; surveyPlanTab = false;
+            svNoteFresh = new Set(svNoteUnseen()); svNoteMarkSeen([...svNoteFresh]);
+            setTimeout(refreshSurveyBtn, 0);
+            let el = document.getElementById("protoSv");
+            if (!el) { el = document.createElement("div"); el.id = "protoSv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "出欠の回答"); document.body.appendChild(el); }
+            el.classList.add("open"); el.scrollTop = 0;
+            protoRenderSurvey();
+            applyPendingOnScreenChange();
+        }
+        function protoSvTab(t) { surveyPlanTab = t === "plan"; surveyLater = t === "later"; protoRenderSurvey(); const el = document.getElementById("protoSv"); if (el) el.scrollTop = 0; }
+        function protoRenderSurvey() {
+            const el = document.getElementById("protoSv"); if (!el || !el.classList.contains("open")) return;
+            // ひとことを打っている間は描き直さない(打ち終わって欄から離れたときに描き直す)
+            const ae = document.activeElement;
+            if (ae && el.contains(ae) && ae.dataset && ae.dataset.k) { protoSvDirty = true; return; }
+            protoSvDirty = false;
+            const keep = null;
+            const { dark, P, C, LV } = protoPal();
+            const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif", esc = escapeHtml;
+            const raise = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 7px 7px 18px ${P.lo}, -7px -7px 18px ${P.hi}, inset 3px 3px 6px ${P.rim}, inset -4px -4px 8px ${P.rimLo}`;
+            const raiseS = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 3px 3px 9px ${P.lo}, -3px -3px 9px ${P.hi}, inset 2px 2px 3px ${P.rim}, inset -2px -2px 4px ${P.rimLo}`;
+            const insetS = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 3px 3px 6px ${P.lo}, inset -3px -3px 6px ${P.hi}`;
+            const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            const name = surveyWho();
+            const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger };
+            const OPTS = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "行かない"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"]];   // ○ ✖ △
+            // 答えのボタン(ヘッダーと同じ3つの凹み。選んだものが浮く)
+            const seg = (st, on, click, wide) => {
+                const idx = OPTS.findIndex(([s0]) => s0 === st);
+                return `<div style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;${wide ? "flex:1;min-width:0" : "width:138px;flex:none"};box-sizing:border-box;${insetS};${on ? "" : "opacity:.4"}">
+                    ${idx >= 0 ? `<i style="position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 3 * ${idx});width:calc((100% - 8px) / 3);border-radius:15px;transition:left .2s;${raiseS}"></i>` : ""}
+                    ${OPTS.map(([s0, svg, lb]) => `<button type="button" aria-label="${lb}" ${on ? `onclick="${click(s0)}"` : "disabled"} style="position:relative;height:34px;display:flex;align-items:center;justify-content:center;color:${st === s0 ? AC[s0] : P.ink3};opacity:${st === s0 || idx < 0 ? 1 : 0.55}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join("")}
+                </div>`;
+            };
+            const dot = `<i style="width:7px;height:7px;border-radius:4px;flex:none;background:${P.red}"></i>`;
+            // 人数のリング(ヘッダーと同じ: 1人1マスの12マス。13人目からは内側に2周目)
+            const offC = dark ? "rgba(255,255,255,.10)" : "rgba(40,50,70,.10)";
+            const ringSegs = (size, th, cnt, col, off) => {
+                const gap = 7, st = [];
+                for (let i = 0; i < 12; i++) { const a = i * 30; st.push(`${i < cnt ? col : off} ${a + gap / 2}deg ${a + 30 - gap / 2}deg`, `transparent ${a + 30 - gap / 2}deg ${a + 30 + gap / 2}deg`); }
+                const mk = `radial-gradient(farthest-side, transparent calc(100% - ${th}px), #000 calc(100% - ${th - 0.6}px))`;
+                return `<i style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:50%;background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}"></i>`;
+            };
+            const peopleRing = (n, col) => `<div title="${n}人 / ${thresholds.cyanMax}人" style="position:relative;width:58px;height:58px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;${insetS}">
+                ${ringSegs(50, 7, Math.min(n, 12), col, offC)}${n > 12 ? ringSegs(36, 4, n - 12, `color-mix(in srgb, ${col} 60%, ${dark ? "#000" : "#2a2e35"})`, "transparent") : ""}
+                <span style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1"><span style="font-family:${en};font-size:16px;font-weight:700;color:${col}">${n}</span><span style="font-family:${en};font-size:7.5px;font-weight:700;color:${P.ink3};margin-top:1px">/${thresholds.cyanMax}</span></span></div>`;
+            const ico = (d, sz) => `<svg width="${sz || 16}" height="${sz || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+            const answered = st => st === "来る" || st === "来ない";
+            // ---- 範囲 ----
+            const allDates = (name || isAdmin()) ? surveyDates() : [];
+            const shownSet = new Set(surveyDatesShown()), later = allDates.filter(d => !shownSet.has(d));
+            if (surveyLater && !later.length) surveyLater = false;
+            let dates = surveyLater ? later : allDates.filter(d => shownSet.has(d));
+            if (surveyUnansFirst && name) {
+                const rank = d => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); if (!mem) return 2; return answered(mem.status) ? 2 : mem.status === "未定" ? 1 : 0; };
+                dates = dates.map((d, i) => ({ d, i, r: rank(d) })).sort((a, b) => a.r - b.r || a.i - b.i).map(x => x.d);
+            }
+            const unOf = list => name ? list.filter(d => { const mem = (attendanceByDate[d] || []).find(m => m.name === name); return !!mem && !answered(mem.status); }).length : 0;
+            const plans = name ? myRsvpPlans(name) : [];
+            const pUn = plans.filter(p => !answered(planStatusOf(p, name))).length;
+            const months = [...new Set(allDates.filter(d => shownSet.has(d)).map(d => +d.slice(5, 7)))];
+            const nm = +surveyRangeEnd().slice(5, 7) % 12 + 1;
+            const tab = surveyPlanTab ? "plan" : surveyLater ? "later" : "now";
+            const tabs = [["now", months.length ? months.map(m => m + "月").join("・") : "今月", unOf(allDates.filter(d => shownSet.has(d)))]];
+            if (later.length) tabs.push(["later", nm + "月〜", unOf(later)]);
+            if (name && plans.length) tabs.push(["plan", "予定", pUn]);
+            const tabsHtml = tabs.length > 1 ? `<div style="display:flex;gap:4px;padding:4px;border-radius:22px;${insetS}">${tabs.map(([k, lb, n]) => `<button type="button" onclick="protoSvTab('${k}')" aria-pressed="${tab === k}" style="flex:1;height:34px;border-radius:17px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;color:${tab === k ? P.ink : P.ink3};${tab === k ? raiseS : ""}">${lb}${n ? `<b style="min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;font-family:${en};font-size:9.5px;line-height:16px;color:#fff;background:${P.red}">${n}</b>` : ""}</button>`).join("")}</div>` : "";
+            // ---- 上の段: 戻る / 名前(管理者で名前がないときは選ぶ) / 並べ替え・名前表示 ----
+            const whoHtml = name ? `<span style="font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</span>`
+                : isAdmin() ? `<div style="height:36px;border-radius:18px;padding:0 10px;display:flex;align-items:center;${insetS}"><select onchange="surveySetWho(this.value)" aria-label="答える人"><option value="">答える人を選ぶ</option>${roster.filter(r => r.position !== GUEST_POS).map(r => `<option value="${esc(r.name)}">${esc(r.name)}</option>`).join("")}</select></div>`
+                : `<span style="font-size:13px;color:${P.ink3}">${firebaseAvailable && !authUid && !firestoreSyncActive ? "読み込み中…" : "名前を選んでください"}</span>`;
+            const tool = (on, label, click, d) => `<button type="button" aria-label="${label}" title="${label}" aria-pressed="${on}" onclick="${click}" style="width:36px;height:36px;border-radius:18px;flex:none;display:flex;align-items:center;justify-content:center;color:${on ? P.acc : P.ink3};${on ? insetS : raiseS}">${ico(d, 15)}</button>`;
+            const tools = (tab !== "plan" && name && dates.length > 1 ? tool(surveyUnansFirst, "未回答を上に", "surveyToggleSort()", '<path d="M8 19V5M4 9l4-4 4 4"></path><circle cx="17" cy="7" r="2.2"></circle><path d="M14.5 14h5M14.5 18h5"></path>') : "")
+                + (isAdmin() && tab !== "plan" && dates.length ? tool(surveyShowNames, "未回答・未定の人の名前を出す", "surveyToggleNames()", '<circle cx="9" cy="9" r="3"></circle><path d="M3.8 19c.7-2.9 2.8-4.4 5.2-4.4s4.5 1.5 5.2 4.4"></path><circle cx="16.6" cy="9.8" r="2.4"></circle><path d="M15.4 14.4c2.3 0 4 1.3 4.8 4"></path>') : "");
+            const head = `<div style="display:flex;align-items:center;gap:12px">
+                <button type="button" aria-label="戻る" onclick="closeSurvey()" style="width:40px;height:40px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${ico('<path d="M15 5l-7 7 7 7"></path>', 16)}</button>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-family:${en};font-size:10px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">SURVEY</span>${whoHtml}</div>
+                ${tools}</div>`;
+            // ---- バレーの日 ----
+            const dateHead = (k, extra) => { const [, m, d] = k.split("-").map(Number), w = new Date(k + "T00:00:00").getDay(); return `<div style="display:flex;align-items:baseline;gap:7px;min-width:0"><span style="font-family:${en};font-size:21px;font-weight:700">${m}/${d}</span><span style="font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span>${extra || ""}</div>`; };
+            let body = "";
+            if (tab === "plan") {
+                body = plans.map(p => {
+                    const st = planStatusOf(p, name), col = C[+p.color || 0] || C[0];
+                    const when = planTimed(p) && p.start ? `${p.start}${p.end ? "–" + p.end : ""}` : "終日";
+                    return `<div style="border-radius:22px;padding:14px 16px;display:flex;align-items:center;gap:12px;${raiseS}">
+                        <div role="button" tabindex="0" onclick="goPlanRsvp(${p.id})" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;cursor:pointer">
+                          ${dateHead(p.startDate, answered(st) ? "" : dot)}
+                          <div style="display:flex;align-items:center;gap:7px;min-width:0"><i style="width:3px;height:14px;border-radius:2px;flex:none;background:${col}"></i><span style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.title || "予定")}</span><span style="font-family:${en};font-size:11px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(when)}</span></div>
+                        </div>
+                        ${seg(st, true, s0 => `planRsvpSet(${p.id},'${s0}');protoRenderSurvey()`)}
+                      </div>`;
+                }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">—</div>`;
+            } else {
+                body = dates.map(d => {
+                    const mem = (attendanceByDate[d] || []).find(m => m.name === name), st = mem ? mem.status : "";
+                    const info = (reservations[d] || []).map(r => [r.time, (r.place || "") + (r.court || "")].filter(Boolean).join("  ")).filter(Boolean);
+                    const n = countComing(d), lvc = LV[getStatusLevel(n)];
+                    let ppl = "";
+                    if (isAdmin()) {
+                        const day = attendanceByDate[d] || [];
+                        const un = day.filter(x => x.status === "未確認" && !isGuestName(x.name)).map(x => x.name), pd = day.filter(x => x.status === "未定" && !isGuestName(x.name)).map(x => x.name);
+                        const chip = (sym, arr, c) => arr.length ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;font-size:11px;color:${P.ink2};${insetS}"><b style="color:${c}">${sym}</b>${esc(surveyShowNames ? arr.join("・") : String(arr.length))}</span>` : "";
+                        ppl = un.length || pd.length ? `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;flex:none;max-width:${surveyShowNames ? "45%" : "none"}">${chip("?", un, P.ink3)}${chip("△", pd, LV.warning)}</div>` : "";
+                    }
+                    let notes = "";
+                    if (isAdmin()) {
+                        const ns = svNotesOn(d).filter(x => x.name !== name);
+                        if (ns.length) notes = `<div style="display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-radius:14px;${insetS}">${ns.map(x => `<div style="display:flex;gap:7px;font-size:12px;line-height:1.5"><b style="flex:none">${esc(x.name)}</b><span style="flex:none;color:${AC[x.status] || P.ink3}">${STATUS_META[x.status] ? STATUS_META[x.status].sym : ""}</span><span style="color:${P.ink2}">${esc(x.note)}</span>${svNoteFresh.has(svNoteKey(d, x)) ? `<i style="width:6px;height:6px;border-radius:3px;flex:none;margin-top:6px;background:${P.today}"></i>` : ""}</div>`).join("")}</div>`;
+                    }
+                    const note = name && mem ? `<div style="display:flex;align-items:center;gap:8px;height:30px;border-bottom:1px solid ${P.lo};color:${P.ink3}">${ico('<path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9z"></path>', 13)}<div style="flex:1;min-width:0;height:100%;color:${P.ink}"><input class="psv-in" data-k="${d}" type="text" maxlength="${SV_NOTE_MAX}" value="${esc(mem.note || "")}" placeholder="管理者へひとこと" aria-label="管理者へひとこと(遅刻・9割行ける など)" onchange="surveyNote('${d}', this.value)" onblur="setTimeout(protoSvBlur, 0)" onkeydown="if(event.key==='Enter'){this.blur();}"></div></div>` : "";
+                    return `<div style="border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;${raiseS}">
+                        <div style="display:flex;align-items:center;gap:14px">
+                          ${peopleRing(n, lvc)}
+                          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                            <div style="display:flex;align-items:center;gap:7px">${dateHead(d, name && mem && !answered(st) ? dot : "")}</div>
+                            ${info.map(t => `<span style="font-family:${en};font-size:11.5px;font-weight:500;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t)}</span>`).join("")}
+                          </div>
+                        </div>
+                        ${name || ppl ? `<div style="display:flex;align-items:center;gap:10px">${ppl}${name ? seg(st, !!mem, s0 => `surveySet('${d}','${s0}')`, true) : ""}</div>` : ""}
+                        ${notes}${note}
+                      </div>`;
+                }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">—</div>`;
+            }
+            el.style.background = P.bg; el.style.color = P.ink;
+            el.innerHTML = `<div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px);display:flex;flex-direction:column;gap:18px;font-family:'Noto Sans JP',system-ui,sans-serif">
+                ${head}${tabsHtml}<div style="display:flex;flex-direction:column;gap:16px">${body}</div></div>`;
+            if (keep) { const i = el.querySelector(`input[data-k="${keep.k}"]`); if (i) { i.value = keep.v; try { i.focus(); i.setSelectionRange(keep.s, keep.e); } catch (e) { /* ignore */ } } }
+        }
+
+        // ------- 試作UIのカレンダー登録(中身は今の「カレンダーに一括追加」と同じ: .ics でまとめて / 1つずつ Googleカレンダー) -------
+        function protoOpenCal() {
+            let el = document.getElementById("protoCal");
+            if (!el) { el = document.createElement("div"); el.id = "protoCal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "予約をカレンダーに追加"); document.body.appendChild(el); }
+            el.classList.add("open"); el.scrollTop = 0;
+            protoRenderCal();
+        }
+        function protoCloseCal() { const el = document.getElementById("protoCal"); if (el) el.classList.remove("open"); }
+        function protoRenderCal() {
+            const el = document.getElementById("protoCal"); if (!el || !el.classList.contains("open")) return;
+            const { dark, P } = protoPal();
+            const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif", esc = escapeHtml;
+            const raise = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 7px 7px 18px ${P.lo}, -7px -7px 18px ${P.hi}, inset 3px 3px 6px ${P.rim}, inset -4px -4px 8px ${P.rimLo}`;
+            const raiseS = `background: linear-gradient(145deg, ${P.top}, ${P.bot}); box-shadow: 3px 3px 9px ${P.lo}, -3px -3px 9px ${P.hi}, inset 2px 2px 3px ${P.rim}, inset -2px -2px 4px ${P.rimLo}`;
+            const insetS = `background: linear-gradient(145deg, ${P.bot}, ${P.top}); box-shadow: inset 3px 3px 6px ${P.lo}, inset -3px -3px 6px ${P.hi}`;
+            const ico = (d, sz, sw) => `<svg width="${sz || 16}" height="${sz || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+            const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            const list = gcalFutureList(), map = gcalAddedMap(), todo = list.filter(x => !gcalIsAdded(x.d, x.r, map));
+            const head = `<div style="display:flex;align-items:center;gap:12px">
+                <button type="button" aria-label="戻る" onclick="protoCloseCal()" style="width:40px;height:40px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${ico('<path d="M15 5l-7 7 7 7"></path>')}</button>
+                <span style="flex:1;font-family:${en};font-size:11px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">CALENDAR</span></div>`;
+            // まとめて(.ics: iPhone・Googleカレンダーに一度に入る。同じ予約は上書き) / 1つずつ(まだ入れていない予約を順に Googleカレンダーで開く)
+            const num = n => `<b style="min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;font-family:${en};font-size:11px;line-height:20px;text-align:center;${insetS}">${n}</b>`;
+            const acts = list.length ? `<div style="display:flex;gap:12px">
+                <button type="button" onclick="exportReservationsIcs()" aria-label="すべてカレンダーに追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.acc};${raise}">${ico('<rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path>', 17)}<span style="font-family:${en};letter-spacing:.08em">ALL</span>${num(list.length)}</button>
+                <button type="button" ${todo.length ? "" : "disabled"} onclick="bulkAddNext()" aria-label="まだの予約を1つずつ追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.ink2};${raiseS}"><span style="font-family:${en};letter-spacing:.08em">ONE BY ONE</span>${num(todo.length)}</button>
+              </div>` : "";
+            const rows = list.map(({ d, r }) => {
+                const [, m, dd] = d.split("-").map(Number), w = new Date(d + "T00:00:00").getDay(), done = gcalIsAdded(d, r, map);
+                return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px 12px 16px;border-radius:20px;${raiseS};${done ? "opacity:.75" : ""}">
+                    <div style="width:54px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:${en};font-size:17px;font-weight:700">${m}/${dd}</span><span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span></div>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-family:${en};font-size:13px;font-weight:700">${esc(r.time)}</span><span style="font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((r.place || "") + (r.court ? " " + r.court : ""))}</span></div>
+                    <button type="button" onclick="bulkAddOne('${d}', ${r.id})" aria-label="${done ? "追加済み(もう一度追加)" : "Googleカレンダーに追加"}" style="width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${done ? P.today : P.acc};${done ? insetS : raiseS}">${done ? ico('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 15, 2.4) : ico('<path d="M12 5v14M5 12h14"></path>', 15, 2.2)}</button>
+                  </div>`;
+            }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">追加できる予約日はありません</div>`;
+            el.style.background = P.bg; el.style.color = P.ink;
+            el.innerHTML = `<div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px);display:flex;flex-direction:column;gap:18px;font-family:'Noto Sans JP',system-ui,sans-serif">${head}${acts}<div style="display:flex;flex-direction:column;gap:12px">${rows}</div></div>`;
         }
         (function initProtoUI() {
             const host = document.createElement("div"); host.id = "protoUI"; document.body.appendChild(host);
