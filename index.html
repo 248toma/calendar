@@ -14041,7 +14041,7 @@ const namesBtn = isAdmin() && dates.length > 0
             [["sv-badge", "surveyBadge"], ["sv-badge2", "surveyBadge2"], ["sv-badge3", "surveyBadge3"]].forEach(([c, id]) => { const t = b.querySelector("." + c), f = document.getElementById(id); if (t && f) { t.textContent = f.textContent; t.title = f.title || ""; } });
             b.title = o.title || "出欠の回答";
         }
-        // 同じ日をもう一度押すと: バレーの日はバレーの画面、それ以外は今の画面の予定一覧を最大で
+        // 同じ日をもう一度押すと: バレーの日はバレーの画面、それ以外はその日の予定の入力
         function protoPick(k) {
             if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
             if (pinOpen) {   // 入力中: 押した日が予定の日(→ を押したあとは終わりの日)
@@ -14051,6 +14051,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             if (k === selectedDate) {
                 if (events[k]) openVolleyFull();   // バレーの日はバレーの画面へ
+                else protoOpenInput(null);         // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
                 return;
             }
             protoRowsTop = 0;
