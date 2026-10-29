@@ -14225,9 +14225,34 @@ const namesBtn = isAdmin() && dates.length > 0
                 const mk = `radial-gradient(farthest-side, transparent calc(100% - ${th}px), #000 calc(100% - ${th - 0.6}px))`;
                 return `<i style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:50%;background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}"></i>`;
             };
-            const peopleRing = (n, col) => `<div title="${n}人 / ${thresholds.cyanMax}人" style="position:relative;width:58px;height:58px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;${insetS}">
-                ${ringSegs(50, 7, Math.min(n, 12), col, offC)}${n > 12 ? ringSegs(36, 4, n - 12, `color-mix(in srgb, ${col} 60%, ${dark ? "#000" : "#2a2e35"})`, "transparent") : ""}
-                <span style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1"><span style="font-family:${en};font-size:16px;font-weight:700;color:${col}">${n}</span><span style="font-family:${en};font-size:7.5px;font-weight:700;color:${P.ink3};margin-top:1px">/${thresholds.cyanMax}</span></span></div>`;
+            // 人数のリング: 上の文字盤とまったく同じ作り(浮いた台 → 溝 → 12マス → 浮いた真ん中)を、縮めて出す
+            const shadeC = dark ? "rgba(0,0,0,.45)" : "rgba(60,70,90,.28)", glintC = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.7)";
+            const ringBox = (size) => `position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:50%;pointer-events:none;`;
+            const maskOf = (th) => `radial-gradient(farthest-side, transparent calc(100% - ${th}px), #000 calc(100% - ${th - 0.6}px))`;
+            const segsR = (size, th, cnt, col, off, gap) => {
+                const st = []; for (let i = 0; i < 12; i++) { const a = i * 30; st.push(`${i < cnt ? col : off} ${a + gap / 2}deg ${a + 30 - gap / 2}deg`, `transparent ${a + 30 - gap / 2}deg ${a + 30 + gap / 2}deg`); }
+                const mk = maskOf(th);
+                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}`;
+            };
+            const groove = (size, th, sh, baseBg, fills, under) => {
+                const isl = size - th * 2;
+                return [
+                    `${ringBox(size)}background:${baseBg};box-shadow:inset ${sh}px ${sh}px ${sh * 2}px ${P.lo}, inset -${sh}px -${sh}px ${sh * 2}px ${P.hi}`,
+                    ...(under || []),
+                    `${ringBox(size)}box-shadow:inset ${sh * 0.8}px ${sh * 0.8}px ${sh * 1.6}px ${shadeC}, inset -${sh * 0.6}px -${sh * 0.6}px ${sh * 1.2}px ${glintC}`,
+                    `${ringBox(isl)}background:${P.bg};box-shadow:${sh * 0.5}px ${sh * 0.5}px ${sh * 1.2}px ${P.lo}, -${sh * 0.5}px -${sh * 0.5}px ${sh * 1.2}px ${P.hi}`,
+                    ...fills
+                ];
+            };
+            const peopleRing = (n, col) => {
+                const DTH = 17, DSZ = 124, BOX = 138, OUT = 60, k = OUT / BOX;
+                const under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
+                const fills = [segsR(DSZ, DTH, Math.min(n, 12), `color-mix(in srgb, ${col} 78%, ${P.bg})`, "transparent", 4)];
+                if (n > 12) fills.push(segsR(DSZ, DTH, n - 12, col, "transparent", 4));
+                const layers = groove(DSZ, DTH, 3, P.bot, fills, under).map(st => `<i style="${st}"></i>`).join("");
+                return `<div title="${n}人 / ${thresholds.cyanMax}人" style="width:${OUT}px;height:${OUT}px;flex:none"><div style="position:relative;width:${BOX}px;height:${BOX}px;border-radius:50%;display:flex;align-items:center;justify-content:center;transform:scale(${k});transform-origin:0 0;${raiseS}">${layers}
+                    <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px"><span style="font-family:${en};font-size:34px;font-weight:600;color:${col}">${n}</span><span style="font-family:${en};font-size:15px;font-weight:700;letter-spacing:.06em;color:${P.ink3}">/ ${thresholds.cyanMax}</span></div></div></div>`;
+            };
             const ico = (d, sz) => `<svg width="${sz || 16}" height="${sz || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
             const answered = st => st === "来る" || st === "来ない";
             // ---- 範囲 ----
