@@ -2994,8 +2994,8 @@
         body.proto-on #protoUI { display: block; position: fixed; inset: 0; z-index: 40; overflow: hidden; }
         body.proto-on.nv-full #protoUI, body.proto-on.plan-editing #protoUI,
         body.proto-on.proto-panel #protoUI, body.proto-on.plan-detail #protoUI { display: none; }
-        @keyframes prSlideL { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-        @keyframes prSlideR { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+        @keyframes prSlideL { from { transform: translateX(34%); opacity: 0; } 35% { opacity: 1; } to { transform: none; opacity: 1; } }
+        @keyframes prSlideR { from { transform: translateX(-34%); opacity: 0; } 35% { opacity: 1; } to { transform: none; opacity: 1; } }
         body.proto-on:not(.nv-full):not(.plan-editing) #addFab, body.proto-on:not(.nv-full):not(.plan-editing) #todayFab { display: none !important; }
         #protoUI .pr-wrap { max-width: 440px; margin: 0 auto; height: 100%; box-sizing: border-box; padding: calc(env(safe-area-inset-top, 0px) + 16px) 22px 0; display: flex; flex-direction: column; gap: 22px; position: relative; font-family: 'Noto Sans JP', system-ui, sans-serif; }
         #protoUI button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
@@ -3020,6 +3020,8 @@
         #protoSv { display: none; }
         @keyframes prCellIn { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes prCellOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+        @property --pp { syntax: '<number>'; inherits: false; initial-value: 1; }
+        @keyframes prArc { from { --pp: 0; } to { --pp: 1; } }
         @keyframes prSweepIn { 0% { opacity: 0; } 100% { opacity: 1; } }
         /* iPhone の触覚: ボタンの上に透明なスイッチを重ね、指で直接切り替えてもらう(iOS 26.5 からは、指で押したスイッチでしか鳴らない) */
         .pr-hap { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; z-index: 2; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -13647,7 +13649,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (protoOn) { protoYM = null; const sp = document.getElementById("settingsPanel"); if (sp && sp.classList.contains("open")) toggleSettings(); renderProto(); }
             if (protoOn) protoTopColor(); else applyTheme();
             clearInterval(protoTick);
-            if (protoOn) protoTick = setInterval(() => { if (!document.hidden) renderProto(); }, 30000);   // 今の時刻の線を動かす
+            if (protoOn) protoTick = setInterval(() => { if (!document.hidden && !protoDrag) renderProto(); }, 30000);   // 今の時刻の線を動かす
         }
         // 画面のいちばん上(時計・電池の帯)も試作UIの背景と同じ色にする(色がずれて切れて見えないように)
         function protoTopColor() {
@@ -13699,6 +13701,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const maskOf = (th) => `radial-gradient(farthest-side, transparent calc(100% - ${th}px), #000 calc(100% - ${th - 0.6}px))`;
             const L = (st) => `<i style="${st}"></i>`;
             const fillArc = (size, th, a1, a2, col) => { const mk = maskOf(th); return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${a2}deg, transparent ${a2}deg 360deg);-webkit-mask:${mk};mask:${mk}`; };
+            // 予定の弧を、始まりから終わりへ時計回りに伸ばす(an = 経過時間 ms。null なら止まった絵)
+            const fillArcA = (size, th, a1, a2, col, an) => {
+                if (an == null) return fillArc(size, th, a1, a2, col);
+                const mk = maskOf(th), e = `calc(${a1}deg + ${a2 - a1}deg * var(--pp))`;
+                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${e}, transparent ${e} 360deg);-webkit-mask:${mk};mask:${mk};animation:prArc ${PROTO_ARC_MS}ms cubic-bezier(.45,.05,.25,1) both;animation-delay:${Math.round(a1 / 360 * PROTO_ARC_LAG) - an}ms`;
+            };
             const groove = (size, th, sh, baseBg, fills, under) => {
                 const isl = size - th * 2;
                 return [
@@ -13794,12 +13802,16 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (hAn) hAn.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, DTH, i, i < 12 ? colA : vv.col, 4, hAn)));   // 増えた/減ったマスだけ動かす
             }
             const pplLayers = fills.length;   // ここまでが人数(この上に目盛りの区切り、さらにその上に予定)
+            // 選んだ日が変わったとき(開いた直後も): 予定の弧が時計回りに伸びる
+            if (!pin && !protoCapMode && sel !== protoArcShown) { protoArcShown = sel; protoArcAt = Date.now(); }
+            const arcEl = Date.now() - protoArcAt;
+            const arcAn = !pin && arcEl < PROTO_ARC_MS + PROTO_ARC_LAG && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? arcEl : null;
             spansOf(sel).forEach(x => {
                 if (x.h1 == null || (pin && x.p.id === planEditId)) return;   // 直している予定は、もとの位置を描かない
                 const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.4;
-                fills.push(fillArc(INS, INT, x.h1 / 24 * 360, e / 24 * 360, pin ? `color-mix(in srgb, ${x.col} 35%, ${P.bot})` : x.col));
+                fills.push(fillArcA(INS, INT, x.h1 / 24 * 360, e / 24 * 360, pin ? `color-mix(in srgb, ${x.col} 35%, ${P.bot})` : x.col, arcAn));
             });
-            if (sv && sv.s != null) fills.push(fillArc(INS, INT, hmv(sv.s) / 24 * 360, hmv(sv.e) / 24 * 360, pin ? `color-mix(in srgb, ${P.ink2} 35%, ${P.bot})` : P.ink2));
+            if (sv && sv.s != null) fills.push(fillArcA(INS, INT, hmv(sv.s) / 24 * 360, hmv(sv.e) / 24 * 360, pin ? `color-mix(in srgb, ${P.ink2} 35%, ${P.bot})` : P.ink2, arcAn));
             if (pin && !pin.empty) {   // 入れようとしている予定: 内側の半分を、選んだ色で(終日・何日も続く日は全周)
                 const s0 = parseHM(pin.st), e0 = parseHM(pin.et), pc = C[planColor] || C[0];
                 if (pin.allDay || s0 == null) fills.push(fillArc(INS, INT, 0, 360, pc));
@@ -13896,7 +13908,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
             const sunIdx = weekStartDay === 1 ? 6 : 0;
-            const protoAnim = protoSlide ? `animation: prSlide${protoSlide > 0 ? "L" : "R"} .28s cubic-bezier(.2,.8,.2,1)` : "";
+            const protoAnim = protoSlide ? `animation: prSlide${protoSlide > 0 ? "L" : "R"} .42s cubic-bezier(.16,1,.3,1)` : "";
             protoSlide = 0;
 
             const headHtml = `
@@ -13924,7 +13936,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 </div>
               </div>`;
             const calHtml = `
-              <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchend="protoTE(event)" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px;touch-action:pan-y;${protoAnim}">
+              <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchmove="protoTM(event)" ontouchend="protoTE(event)" ontouchcancel="protoTC()" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px;touch-action:pan-y;${protoAnim}">
                 <div style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
 
                   <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${MEN[m - 1]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span></div>
@@ -14032,7 +14044,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       <div id="prPinInfo" style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;color:${P.ink}">${pinInfo}</div>
                     </div>
                     <div style="height:30px;margin:6px 0 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5V12l3 2"></path></svg>
-                      <div style="position:relative;flex:1;min-width:0;height:100%;color:${P.ink}"><input id="pinH" class="pin-in" type="text" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="時間(19-21・7じ など。空なら終日)" oninput="pinInput()" onblur="pinTidy('h')" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();this.blur();pinSave();}"><span id="pinHG" style="position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.06em;color:${P.ink3};pointer-events:none;white-space:nowrap">${pinGhost.h}</span></div>
+                      <div style="position:relative;flex:1;min-width:0;height:100%;color:${P.ink}"><input id="pinH" class="pin-in" type="text" inputmode="numeric" maxlength="8" placeholder="17001800" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="時間(4桁ずつ: 17001800 = 17:00-18:00。空なら終日)" oninput="pinInput()" onblur="pinTidy('h')" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();this.blur();pinSave();}"><span id="pinHG" style="position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.06em;color:${P.ink3};pointer-events:none;white-space:nowrap">${pinGhost.h}</span></div>
                     </div>
                   </div>
                 </div>
@@ -14041,6 +14053,7 @@ const namesBtn = isAdmin() && dates.length > 0
                   <button type="button" aria-label="保存" onclick="pinSave()" style="position:relative;width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.acc};${raiseS}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>${protoHapHtml()}</button>
                 </div>
               </div>`;
+            if (protoCapMode) { protoCapOut = calHtml; return; }   // めくっている最中の、となりの月の絵だけほしいとき
             // 入力中に描き直すときは、入力欄はそのまま(日本語の変換中でも切れないように)中身だけ差し替える
             const softQ = document.getElementById("pinT");
             if (pin && softQ && root.contains(softQ)) {
@@ -14083,8 +14096,83 @@ const namesBtn = isAdmin() && dates.length > 0
             selectDate(k);
         }
         // カレンダーを横にスライドして月を移る(指・マウスどちらでも)
-        function protoTS(e) { if (e.touches.length === 1) { protoSx = e.touches[0].clientX; protoSy = e.touches[0].clientY; } }
-        function protoTE(e) { if (protoSx == null) return; const t = e.changedTouches[0], dx = t.clientX - protoSx, dy = t.clientY - protoSy; protoSx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
+        // 指に合わせてカレンダーが横に動き、となりの月が横から見えてくる。離すと: 十分動かした(または素早く払った)ら前後の月へ、足りなければ元に戻る
+        var protoDrag = null;   // { x, y, lock(1=横 / -1=縦), el, prev, next, v(速さ px/ms) }
+        var protoCapMode = false, protoCapOut = "";
+        const PROTO_PAGE_GAP = 28;
+        function protoMonthHtml(dir) {   // となりの月のカレンダー(絵だけ)
+            const save = protoYM, [y, m] = protoYM || [new Date().getFullYear(), new Date().getMonth() + 1], d = new Date(y, m - 1 + dir, 1);
+            protoYM = [d.getFullYear(), d.getMonth() + 1]; protoCapMode = true; protoCapOut = "";
+            try { renderProto(); } finally { protoCapMode = false; protoYM = save; }
+            return protoCapOut;
+        }
+        function protoGhost(el, dir) {
+            const html = protoMonthHtml(dir); if (!html) return null;
+            const box = document.createElement("div"); box.innerHTML = html;
+            const g = box.firstElementChild; if (!g) return null;
+            g.removeAttribute("id"); ["ontouchstart", "ontouchmove", "ontouchend", "ontouchcancel", "onpointerdown", "onpointerup"].forEach(a => g.removeAttribute(a));
+            g.querySelectorAll("[onclick],input").forEach(x => { if (x.tagName === "INPUT") x.remove(); else x.removeAttribute("onclick"); });
+            g.setAttribute("aria-hidden", "true");
+            Object.assign(g.style, { position: "absolute", left: el.offsetLeft + "px", top: el.offsetTop + "px", width: el.offsetWidth + "px", height: el.offsetHeight + "px", boxSizing: "border-box", animation: "none", pointerEvents: "none", willChange: "transform", flex: "none", margin: "0" });
+            el.after(g);   // 下のボタン(ドック)より下に重ねる
+            return g;
+        }
+        function protoDragPaint(d, dx, tr) {
+            const W = (d.el.offsetWidth || 360) + PROTO_PAGE_GAP;
+            [[d.el, 0], [d.prev, -1], [d.next, 1]].forEach(([e, k]) => { if (!e) return; e.style.transition = tr || "none"; e.style.transform = `translateX(${dx + k * W}px)`; });
+        }
+        function protoDragClear(d) {
+            if (d.prev) d.prev.remove();
+            if (d.next) d.next.remove();
+            if (d.el && d.el.isConnected) { d.el.style.transition = ""; d.el.style.transform = ""; d.el.style.willChange = ""; }
+        }
+        function protoTS(e) {
+            if (e.touches.length !== 1) { protoTC(); return; }
+            const t = e.touches[0];
+            protoDrag = { x: t.clientX, y: t.clientY, lock: 0, lx: t.clientX, lt: e.timeStamp, v: 0 };
+        }
+        function protoTM(e) {
+            const d = protoDrag; if (!d || e.touches.length !== 1) return;
+            const t = e.touches[0], dx = t.clientX - d.x, dy = t.clientY - d.y;
+            if (!d.lock) {
+                if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+                d.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? 1 : -1;
+                if (d.lock === 1) {
+                    d.el = document.getElementById("prCal"); if (!d.el) { protoDrag = null; return; }
+                    d.el.style.animation = "none"; d.el.style.willChange = "transform";
+                    d.prev = protoGhost(d.el, -1); d.next = protoGhost(d.el, 1);
+                }
+            }
+            if (d.lock !== 1) return;
+            const dt = e.timeStamp - d.lt; if (dt > 0) { d.v = d.v * 0.4 + (t.clientX - d.lx) / dt * 0.6; d.lx = t.clientX; d.lt = e.timeStamp; }
+            protoDragPaint(d, dx);
+        }
+        function protoTC() {   // 途中でやめた: 元の位置へ
+            const d = protoDrag; protoDrag = null;
+            if (d && d.lock === 1 && d.el) protoSnapBack(d);
+        }
+        function protoSnapBack(d) {
+            protoDragPaint(d, 0, "transform .34s cubic-bezier(.2,.9,.25,1)");
+            setTimeout(() => protoDragClear(d), 360);
+        }
+        function protoTE(e) {
+            const d = protoDrag; protoDrag = null;
+            if (!d || d.lock !== 1 || !d.el) return;
+            const dx = e.changedTouches[0].clientX - d.x, W = (d.el.offsetWidth || 360) + PROTO_PAGE_GAP;
+            protoSkipClick = Date.now();
+            const go = Math.abs(dx) > W * 0.2 || (Math.abs(d.v) > 0.35 && Math.sign(d.v) === Math.sign(dx) && Math.abs(dx) > 24);
+            if (!go) { protoSnapBack(d); return; }
+            const dir = dx < 0 ? 1 : -1;   // 左へ払う → 次の月
+            // 残りの距離を、払った速さに合わせて動かす(速く払うほど短く)
+            const rest = W - Math.abs(dx), ms = Math.round(Math.max(170, Math.min(340, rest / Math.max(0.6, Math.abs(d.v)))));
+            protoDragPaint(d, -dir * W, `transform ${ms}ms cubic-bezier(.2,.75,.25,1)`);
+            setTimeout(() => {
+                protoSkipClick = Date.now();
+                protoDragClear(d);
+                const [y, m] = protoYM || [new Date().getFullYear(), new Date().getMonth() + 1], nd = new Date(y, m - 1 + dir, 1);
+                protoYM = [nd.getFullYear(), nd.getMonth() + 1]; protoSlide = 0; renderProto();   // となりの月は、もう見えている位置にあるので動かさずに差し替える
+            }, ms + 10);
+        }
         var protoPx = null, protoSkipClick = 0;
         function protoPD(e) { if (e.pointerType === "mouse") protoPx = [e.clientX, e.clientY]; }
         function protoPU(e) { if (!protoPx || e.pointerType !== "mouse") return; const dx = e.clientX - protoPx[0], dy = e.clientY - protoPx[1]; protoPx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
@@ -14095,7 +14183,9 @@ const namesBtn = isAdmin() && dates.length > 0
         // 答えた瞬間のリングの動き: 増えたマスはふわっと埋まり、減ったマスはすっと消える(人数の数字も少し弾む)
         var protoRingAnim = null;   // { d: 日付, from: 前の人数, at: 時刻 }
         const PROTO_RING_MS = 650;
-        var protoRingShown = null;   // 最後に時計回りで埋めたバレーの日
+        var protoRingShown = null;
+        var protoArcShown = null, protoArcAt = 0;   // 予定の弧を伸ばした日 / 時刻
+        const PROTO_ARC_MS = 560, PROTO_ARC_LAG = 420;   // 1本が伸びる時間 / 0時→24時の位置による遅れ(時計回りに順に)   // 最後に時計回りで埋めたバレーの日
         const PROTO_SWEEP_STEP = 60, PROTO_SWEEP_MS = 480;   // 1マスずつずらす間隔 / 1マスが埋まる時間
         // マスが埋まるのに合わせて「トトトト」(Android のみ。iPhone は指で押したときにしか鳴らせない。開いた直後は、まだ一度も触っていないと鳴らない)
         function protoSweepBuzz(n) {
@@ -14215,12 +14305,24 @@ const namesBtn = isAdmin() && dates.length > 0
         function pinParse() {
             const T = pinVal("pinT").trim(), D = "", H = pinVal("pinH").trim();
             let sd = pinSD || selectedDate, ed = pinED || "", st = "", et = "", dOk = true, hOk = true, allDay = true;
-            if (H) {
+            const dg = pinDigits(H);
+            if (dg) { st = dg.st; et = dg.et; allDay = !dg.st; hOk = dg.ok; }
+            else if (H) {
                 const r = QA.parse("x " + H, selectedDate);
                 if (r) { hOk = !String(r.title || "").replace(/^x\s*/, "").trim(); if (!r.allDay && (r.start || r.end)) { st = r.start || ""; et = r.end || ""; allDay = false; } else { st = et = ""; allDay = true; } }
             }
             return { T, D, H, sd, ed: ed && ed > sd ? ed : "", st, et, allDay, dOk, hOk };
         }
+        // 時間は4桁ずつの数字: 1700 → 17:00〜 / 17001800 → 17:00-18:00(打っている途中の 5〜7桁は、始まりだけ読む)
+        function pinDigits(H) {
+            const v = String(H || "").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\s/g, "");
+            if (!/^\d{4,8}$/.test(v)) return null;
+            const hm = x => { const h = +x.slice(0, 2), m = +x.slice(2, 4); return h <= 24 && m < 60 && !(h === 24 && m) ? `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` : null; };
+            const st = hm(v.slice(0, 4)); if (!st) return { st: "", et: "", ok: false };
+            const et = v.length === 8 ? hm(v.slice(4, 8)) : "";
+            return { st, et: et || "", ok: v.length < 8 || (!!et && et > st) };
+        }
+        const pinHDigits = (st, et) => `${(st || "").replace(":", "")}${(et || "").replace(":", "")}`;
         // 読み取った中身(今の入力欄の値)
         function pinPreview() {
             const empty = !(pinVal("pinT").trim() || pinVal("pinH").trim() || pinED);
@@ -14245,7 +14347,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!t) return;
             if (p) {
                 t.value = p.title || "";
-                h.value = planTimed(p) ? `${p.start || ""}${p.end ? "-" + p.end : ""}` : "";
+                h.value = planTimed(p) ? pinHDigits(p.start, p.end) : "";
             }
             pinInput();
             setTimeout(() => { try { t.focus(); } catch (e) { /* ignore */ } }, 30);
@@ -14278,7 +14380,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 欄から離れたら、読み取れた形に整える(金 → 10/30、19-21 → 19:00-21:00)
         function pinTidy(which) {
             const r = pinParse();
-            if (which === "h" && r.H && r.hOk) document.getElementById("pinH").value = r.allDay ? "" : `${r.st}${r.et ? "-" + r.et : ""}`;
+            if (which === "h" && r.H && r.hOk) document.getElementById("pinH").value = r.allDay ? "" : pinHDigits(r.st, r.et);
             pinInput();
         }
         function pinSave() {
