@@ -3020,6 +3020,13 @@
         #protoSv { display: none; }
         @keyframes prCellIn { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes prCellOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+        /* 日付を押すと沈んで、離すとふわっと戻る */
+        #protoUI .pr-num { transition: transform .48s cubic-bezier(.22,1,.36,1); }
+        #protoUI .pr-cell.pressing .pr-num { transform: scale(.8); transition: transform .07s ease-out; }
+        #protoUI .pr-press { opacity: 0; transition: opacity .3s; }
+        #protoUI .pr-cell.pressing .pr-press { opacity: 1; transition: opacity .05s; }
+        @keyframes prPopBack { from { transform: scale(.8); } to { transform: scale(1); } }
+        @keyframes prMarkIn { from { opacity: 0; } to { opacity: 1; } }
         @property --pp { syntax: '<number>'; inherits: false; initial-value: 1; }
         @keyframes prArc { from { --pp: 0; } to { --pp: 1; } }
         @keyframes prSweepIn { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -13870,6 +13877,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     busy.set(k, used);
                 }
             }
+            const popEl = Date.now() - protoPressAt, popAn = popEl < 480 ? popEl : null;
+            const markEl = Date.now() - protoMarkAt, markAn = !protoCapMode && protoMarkDir && markEl < 900 ? markEl : null;   // めくって来た側から、予定の印が順に出る
             for (let i = 0; i < 42; i++) {
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
                 const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0 || planHolidayOn(k), blue = !red && d.getDay() === 6;
@@ -13903,8 +13912,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
-                    <span style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol}">${face ? L(face) : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
-                    <span style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px">${tags}</span>${protoHapHtml()}</button>`;
+                    <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
+                    <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${markAn != null ? `animation:prMarkIn .46s ease-out both;animation-delay:${(protoMarkDir > 0 ? 6 - col7 : col7) * 55 + Math.floor(i / 7) * 8 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
             const sunIdx = weekStartDay === 1 ? 6 : 0;
@@ -13943,7 +13952,7 @@ const namesBtn = isAdmin() && dates.length > 0
 
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
-                <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cellsHtml}</div>
+                <div class="pr-grid" style="position:relative;flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cellsHtml}</div>
               </div>`;
             const dockHtml = pin ? "" : `
               <div class="pr-dock">
@@ -14080,6 +14089,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoPick(k) {
             if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
             protoHaptic();   // 日付を押したら「トン」(iPhone はマスに重ねた透明スイッチが鳴らす)
+            protoPressK = k; protoPressAt = Date.now();   // 描き直したあとも、押したマスがふわっと戻るように
             if (pinOpen) {   // 入力中: 押した日が予定の日(→ を押したあとは終わりの日)
                 if (pinRange && k > pinSD) { pinED = k; pinRange = false; }
                 else { pinSD = k; pinRange = false; if (pinED && pinED <= k) pinED = ""; }
@@ -14092,8 +14102,11 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             protoRowsTop = 0;
             const [y, m] = k.split("-").map(Number);
+            const f0 = document.querySelector("#prCal .pr-face"), from = f0 ? f0.getBoundingClientRect() : null;
+            const sameMonth = protoYM && protoYM[0] === y && protoYM[1] === m;
             protoYM = [y, m];
             selectDate(k);
+            if (sameMonth) protoFaceSlide(from);
         }
         // カレンダーを横にスライドして月を移る(指・マウスどちらでも)
         // 指に合わせてカレンダーが横に動き、となりの月が横から見えてくる。離すと: 十分動かした(または素早く払った)ら前後の月へ、足りなければ元に戻る
@@ -14113,6 +14126,7 @@ const namesBtn = isAdmin() && dates.length > 0
             g.removeAttribute("id"); ["ontouchstart", "ontouchmove", "ontouchend", "ontouchcancel", "onpointerdown", "onpointerup"].forEach(a => g.removeAttribute(a));
             g.querySelectorAll("[onclick],input").forEach(x => { if (x.tagName === "INPUT") x.remove(); else x.removeAttribute("onclick"); });
             g.setAttribute("aria-hidden", "true");
+            g.querySelectorAll(".pr-tags").forEach(x => { x.style.opacity = "0"; });   // 予定の印は、めくり終わってから出す
             Object.assign(g.style, { position: "absolute", left: el.offsetLeft + "px", top: el.offsetTop + "px", width: el.offsetWidth + "px", height: el.offsetHeight + "px", boxSizing: "border-box", animation: "none", pointerEvents: "none", willChange: "transform", flex: "none", margin: "0" });
             el.after(g);   // 下のボタン(ドック)より下に重ねる
             return g;
@@ -14126,8 +14140,12 @@ const namesBtn = isAdmin() && dates.length > 0
             if (d.next) d.next.remove();
             if (d.el && d.el.isConnected) { d.el.style.transition = ""; d.el.style.transform = ""; d.el.style.willChange = ""; }
         }
+        // 指を置いている間、そのマスを沈める(:active は iPhone で効かないことがあるので、自分で付け外し)
+        function protoPressOn(t) { protoPressOff(); const c = t && t.closest && t.closest("#prCal .pr-cell"); if (c) c.classList.add("pressing"); }
+        function protoPressOff() { document.querySelectorAll("#prCal .pr-cell.pressing").forEach(c => c.classList.remove("pressing")); }
         function protoTS(e) {
-            if (e.touches.length !== 1) { protoTC(); return; }
+            if (e.touches.length !== 1) { protoPressOff(); protoTC(); return; }
+            protoPressOn(e.target);
             const t = e.touches[0];
             protoDrag = { x: t.clientX, y: t.clientY, lock: 0, lx: t.clientX, lt: e.timeStamp, v: 0 };
         }
@@ -14136,6 +14154,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const t = e.touches[0], dx = t.clientX - d.x, dy = t.clientY - d.y;
             if (!d.lock) {
                 if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+                protoPressOff();   // 動かし始めたら、押したことにしない
                 d.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? 1 : -1;
                 if (d.lock === 1) {
                     d.el = document.getElementById("prCal"); if (!d.el) { protoDrag = null; return; }
@@ -14148,6 +14167,7 @@ const namesBtn = isAdmin() && dates.length > 0
             protoDragPaint(d, dx);
         }
         function protoTC() {   // 途中でやめた: 元の位置へ
+            protoPressOff();
             const d = protoDrag; protoDrag = null;
             if (d && d.lock === 1 && d.el) protoSnapBack(d);
         }
@@ -14156,6 +14176,7 @@ const namesBtn = isAdmin() && dates.length > 0
             setTimeout(() => protoDragClear(d), 360);
         }
         function protoTE(e) {
+            setTimeout(protoPressOff, 0);   // 押したマスは、描き直したあと「ふわっと戻る」で戻す
             const d = protoDrag; protoDrag = null;
             if (!d || d.lock !== 1 || !d.el) return;
             const dx = e.changedTouches[0].clientX - d.x, W = (d.el.offsetWidth || 360) + PROTO_PAGE_GAP;
@@ -14170,13 +14191,30 @@ const namesBtn = isAdmin() && dates.length > 0
                 protoSkipClick = Date.now();
                 protoDragClear(d);
                 const [y, m] = protoYM || [new Date().getFullYear(), new Date().getMonth() + 1], nd = new Date(y, m - 1 + dir, 1);
-                protoYM = [nd.getFullYear(), nd.getMonth() + 1]; protoSlide = 0; renderProto();   // となりの月は、もう見えている位置にあるので動かさずに差し替える
+                protoYM = [nd.getFullYear(), nd.getMonth() + 1]; protoSlide = 0; protoMarkDir = dir; protoMarkAt = Date.now(); renderProto();   // となりの月は、もう見えている位置にあるので動かさずに差し替える
             }, ms + 10);
         }
         var protoPx = null, protoSkipClick = 0;
-        function protoPD(e) { if (e.pointerType === "mouse") protoPx = [e.clientX, e.clientY]; }
-        function protoPU(e) { if (!protoPx || e.pointerType !== "mouse") return; const dx = e.clientX - protoPx[0], dy = e.clientY - protoPx[1]; protoPx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
+        function protoPD(e) { if (e.pointerType === "mouse") { protoPx = [e.clientX, e.clientY]; protoPressOn(e.target); } }
+        function protoPU(e) { if (e.pointerType === "mouse") setTimeout(protoPressOff, 0); if (!protoPx || e.pointerType !== "mouse") return; const dx = e.clientX - protoPx[0], dy = e.clientY - protoPx[1]; protoPx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
+        var protoPressK = "", protoPressAt = 0, protoMarkDir = 0, protoMarkAt = 0;
+        // 選んだ日のくぼみを、前の日から新しい日へ滑らせる(マスの外にはみ出せるように、上に重ねた写しを動かす)
+        function protoFaceSlide(from) {
+            const to = document.querySelector("#prCal .pr-face"), wrap = document.querySelector("#prCal .pr-grid");   // 数字の下を通す(数字が隠れないように)
+            if (!from || !to || !wrap) return;
+            const r = to.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+            const ox = from.left - r.left, oy = from.top - r.top;
+            if (!ox && !oy) return;
+            const c = document.createElement("i");
+            c.style.cssText = to.getAttribute("style") + `;position:absolute;margin:0;left:${r.left - w.left}px;top:${r.top - w.top}px`;
+            wrap.insertBefore(c, wrap.firstChild); to.style.visibility = "hidden";
+            const done = () => { c.remove(); to.style.visibility = ""; };
+            if (!c.animate) { done(); return; }
+            const a = c.animate([{ transform: `translate(${ox}px,${oy}px)` }, { transform: "translate(0,0)" }], { duration: 460, easing: "cubic-bezier(.22,1,.36,1)" });
+            a.onfinish = done; a.oncancel = done;
+        }
         function protoMonth(dir) {
+            protoMarkDir = dir; protoMarkAt = Date.now();
             protoSlide = dir; const [y, m] = protoYM || [new Date().getFullYear(), new Date().getMonth() + 1]; const d = new Date(y, m - 1 + dir, 1); protoYM = [d.getFullYear(), d.getMonth() + 1]; renderProto(); }
         function protoToday() { protoYM = null; protoRowsTop = 0; jumpToToday(); renderProto(); }
         function protoAns(k, st) { protoAnswer(k, st); renderProto(); }
