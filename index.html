@@ -13913,7 +13913,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
                     <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
-                    <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${markAn != null ? `animation:prMarkIn .46s ease-out both;animation-delay:${(protoMarkDir > 0 ? 6 - col7 : col7) * 55 + Math.floor(i / 7) * 8 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
+                    <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${markAn != null ? `animation:prMarkIn .46s ease-out both;animation-delay:${(protoMarkDir > 0 ? col7 : 6 - col7) * 55 + Math.floor(i / 7) * 8 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
             const sunIdx = weekStartDay === 1 ? 6 : 0;
@@ -14141,8 +14141,10 @@ const namesBtn = isAdmin() && dates.length > 0
             if (d.el && d.el.isConnected) { d.el.style.transition = ""; d.el.style.transform = ""; d.el.style.willChange = ""; }
         }
         // 指を置いている間、そのマスを沈める(:active は iPhone で効かないことがあるので、自分で付け外し)
-        function protoPressOn(t) { protoPressOff(); const c = t && t.closest && t.closest("#prCal .pr-cell"); if (c) c.classList.add("pressing"); }
-        function protoPressOff() { document.querySelectorAll("#prCal .pr-cell.pressing").forEach(c => c.classList.remove("pressing")); }
+        // 少しだけ待ってから沈める(引っぱって更新・めくりの出だしで沈まないように)。素早いタップは、描き直したあとの「ふわっと戻る」だけで見せる
+        var protoPressT = 0;
+        function protoPressOn(t) { protoPressOff(); const c = t && t.closest && t.closest("#prCal .pr-cell"); if (c) protoPressT = setTimeout(() => c.classList.add("pressing"), 90); }
+        function protoPressOff() { clearTimeout(protoPressT); document.querySelectorAll("#prCal .pr-cell.pressing").forEach(c => c.classList.remove("pressing")); }
         function protoTS(e) {
             if (e.touches.length !== 1) { protoPressOff(); protoTC(); return; }
             protoPressOn(e.target);
@@ -14153,7 +14155,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const d = protoDrag; if (!d || e.touches.length !== 1) return;
             const t = e.touches[0], dx = t.clientX - d.x, dy = t.clientY - d.y;
             if (!d.lock) {
-                if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+                if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
                 protoPressOff();   // 動かし始めたら、押したことにしない
                 d.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? 1 : -1;
                 if (d.lock === 1) {
@@ -14178,6 +14180,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoTE(e) {
             setTimeout(protoPressOff, 0);   // 押したマスは、描き直したあと「ふわっと戻る」で戻す
             const d = protoDrag; protoDrag = null;
+            if (d && d.lock === -1) protoSkipClick = Date.now();   // 縦に動かした(引っぱって更新など)あとは、日付を押したことにしない
             if (!d || d.lock !== 1 || !d.el) return;
             const dx = e.changedTouches[0].clientX - d.x, W = (d.el.offsetWidth || 360) + PROTO_PAGE_GAP;
             protoSkipClick = Date.now();
