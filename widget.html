@@ -118,11 +118,11 @@ const KEYS = {
 const TOKEN_KEY = "vb_widget_token_v1";
 // 見た目: "list" = 予定の板が並ぶ版 / "ring" = アプリの試作UIのヘッダーと同じリング版
 const STYLE = "ring";
+// リングの時計(アプリの設定「リングの時計」と同じ): "24" = 1周24時間 / "12" = 1周12時間(午前は内側・午後は外側)
+const DIAL = "24";
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 // 予定の色(アプリの色番号 0〜8)。[ライト, ダーク] はアプリの予定の線の色と同じ
-const PCOL = [["#8a93a3", "#a6aebd"], ["#3a608f", "#a9c3e6"], ["#5a40a8", "#d6caf8"], ["#965828", "#f0c4a0"], ["#23744a", "#a6e0bb"],
-  ["#b0312f", "#f5b3b3"], ["#b0407a", "#f5bcd8"], ["#1b7882", "#9fdde3"], ["#8a6a05", "#f2dc92"],
-  ["#2a2c31", "#e4e5e8"], ["#80838b", "#8f939b"], ["#8a3f66", "#c97ea7"], ["#c08aa8", "#e6bfd3"], ["#2e3d63", "#93a6d8"]];   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
+const PCOL = [["#9aa0a8", "#7f848c"], ["#4677c4", "#86aef0"], ["#4677c4", "#86aef0"], ["#e597b7", "#f4c0d5"], ["#1f2124", "#f1f2f4"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"], ["#9aa0a8", "#7f848c"], ["#1f2124", "#f1f2f4"], ["#9aa0a8", "#7f848c"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"]];   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
 // バレーの人数の色(アプリのカレンダーと同じ: 十分=緑 / やや不足=黄 / 不足・多すぎ=赤)
 const LV = { sufficient: ["#5d9487", "#7fb5a8"], warning: ["#ad9e72", "#cbbb8c"], danger: ["#b27c85", "#d29aa3"] };
 
@@ -391,8 +391,8 @@ const RP = {
 };
 // 予定の色(アプリの試作UIと同じ渋い色)とバレーの人数の色
 const RCOL = {
-  light: ["#8d9095", "#5a6788", "#7a6688", "#8a6f5e", "#56708a", "#7a6070", "#8a7896", "#6b7a8f", "#7b6a5a", "#2a2c31", "#80838b", "#8a3f66", "#c08aa8", "#2e3d63"],
-  dark: ["#a6aab0", "#9aa3c4", "#b19fbf", "#bea08d", "#8fa7bf", "#b39aa8", "#b9abc4", "#9aa7ba", "#b3a593", "#e4e5e8", "#8f939b", "#c97ea7", "#e6bfd3", "#93a6d8"]
+  light: ["#9aa0a8", "#4677c4", "#4677c4", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#4677c4", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#4677c4"],
+  dark: ["#7f848c", "#86aef0", "#86aef0", "#f4c0d5", "#f1f2f4", "#d0789f", "#f4c0d5", "#86aef0", "#7f848c", "#f1f2f4", "#7f848c", "#d0789f", "#f4c0d5", "#86aef0"]
 };
 const RLV = { light: { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" }, dark: { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } };
 const WEN3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -434,12 +434,13 @@ function volleyOn(data, k, myName) {
   return { n, cap: th.cyanMax, lv, s, e, mine: mine ? mine.status : "" };
 }
 const fmtM = m => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
-// 24時間のリング(上=0時、右=6時、下=12時、左=18時)
+// 時計のリング。24h: 上=0時、右=6時、下=12時、左=18時 / 12h: 1周12時間(上=0時・12時)
 function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   const P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
   const ctx = new DrawContext(); ctx.size = new Size(S, S); ctx.opaque = false; ctx.respectScreenScale = true;
   const c = S / 2, R = S / 2 - 3, TH = Math.round(S * 0.135), Ri = R - TH, Rm = Ri + TH / 2 - 0.5;
-  const pt = (r, h) => { const a = h / 24 * 2 * Math.PI; return new Point(c + r * Math.sin(a), c - r * Math.cos(a)); };
+  const PER = DIAL === "12" ? 12 : 24, U = PER / 12, SEP = 0.065 * U;   // 1周の時間 / 1マスの時間 / 区切りの半分の幅
+  const pt = (r, h) => { const a = h / PER * 2 * Math.PI; return new Point(c + r * Math.sin(a), c - r * Math.cos(a)); };
   const band = (r1, r2, h1, h2, col) => {
     const n = Math.max(2, Math.ceil((h2 - h1) * 6)), pts = [];
     for (let i = 0; i <= n; i++) pts.push(pt(r2, h1 + (h2 - h1) * i / n));
@@ -449,12 +450,18 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   const disc = (r, col) => { const p = new Path(); p.addEllipse(new Rect(c - r, c - r, r * 2, r * 2)); ctx.addPath(p); ctx.setFillColor(new Color(col)); ctx.fillPath(); };
   disc(R + 3, P.top);                 // ふくらんだ台
   disc(R, P.bot);                     // 溝
-  for (let i = 0; i < 12; i++) band(Ri, R, i * 2 - 0.13, i * 2 + 0.13, mixHex(P.top, P.bot, 0.8));   // 12マスの区切り
-  if (vol) {   // 人数: 1人1マス(12人を超えた分は濃い色で2周目)
-    const cA = mixHex(LVc[vol.lv], P.bg, 0.78), cB = LVc[vol.lv];
-    for (let i = 0; i < Math.min(vol.n, 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cA);
-    for (let i = 0; i < Math.max(0, vol.n - 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cB);
+  for (let i = 0; i < 12; i++) band(Ri, R, i * U - SEP, i * U + SEP, mixHex(P.top, P.bot, 0.8));   // 12マスの区切り
+  if (vol) {   // 人数: 1人1マス(12人を超えた分は、同じマスを濃い色で2周目)
+    const cA = mixHex(LVc[vol.lv], P.bg, 0.55), cB = mixHex(LVc[vol.lv], P.ink, 0.72);
+    for (let i = 0; i < Math.min(vol.n, 12); i++) band(Ri, R, i * U + SEP, i * U + U - SEP, cA);
+    for (let i = 0; i < Math.max(0, vol.n - 12); i++) band(Ri, R, i * U + SEP, i * U + U - SEP, cB);
   }
+  // 予定の弧: 24h は内側の半分 / 12h は 0〜12時を内側の半分、12〜24時を外側の半分
+  const arc = (h1, h2, col) => {
+    if (PER === 24) { band(Ri, Rm, h1, h2, col); return; }
+    if (h1 < 12) band(Ri, Rm, h1, Math.min(h2, 12), col);
+    if (h2 > 12) band(Rm, R, Math.max(h1, 12) - 12, h2 - 12, col);
+  };
   // 内側の半分: その日の予定(休日の予定は描かない)
   plansOnDay(data, k, myName).filter(x => !x.p.holiday).forEach(({ p, first, last, multi }) => {
     const s0 = hm(p.start), e0 = hm(p.end);
@@ -464,10 +471,10 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
     else if (multi && last && !p.allDay && e0 != null) { h1 = 0; h2 = e0 / 60; }
     else if (multi) { h1 = 0; h2 = 24; }
     if (h1 == null) return;
-    band(Ri, Rm, h1, h2, PC[+p.color || 0] || PC[0]);
+    arc(h1, h2, PC[+p.color || 0] || PC[0]);
   });
   const sv = volleyOn(data, k, myName);
-  if (sv && sv.s != null) band(Ri, Rm, sv.s / 60, sv.e / 60, P.ink2);
+  if (sv && sv.s != null) arc(sv.s / 60, sv.e / 60, P.ink2);
   disc(Ri, P.bg);                     // 真ん中
   if (isToday) {                      // 今の時間: 黒い線
     const h = now.getHours() + now.getMinutes() / 60, a = pt(Ri - 3, h), b = pt(R + 3, h);

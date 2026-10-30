@@ -3078,6 +3078,8 @@ const KEYS = {
 const TOKEN_KEY = "vb_widget_token_v1";
 // 見た目: "list" = 予定の板が並ぶ版 / "ring" = アプリの試作UIのヘッダーと同じリング版
 const STYLE = "list";
+// リングの時計(アプリの設定「リングの時計」と同じ): "24" = 1周24時間 / "12" = 1周12時間(午前は内側・午後は外側)
+const DIAL = "24";
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 // 予定の色(アプリの色番号 0〜8)。[ライト, ダーク] はアプリの予定の線の色と同じ
 const PCOL = [["#9aa0a8", "#7f848c"], ["#4677c4", "#86aef0"], ["#4677c4", "#86aef0"], ["#e597b7", "#f4c0d5"], ["#1f2124", "#f1f2f4"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"], ["#9aa0a8", "#7f848c"], ["#1f2124", "#f1f2f4"], ["#9aa0a8", "#7f848c"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"]];   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
@@ -3392,12 +3394,13 @@ function volleyOn(data, k, myName) {
   return { n, cap: th.cyanMax, lv, s, e, mine: mine ? mine.status : "" };
 }
 const fmtM = m => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
-// 24時間のリング(上=0時、右=6時、下=12時、左=18時)
+// 時計のリング。24h: 上=0時、右=6時、下=12時、左=18時 / 12h: 1周12時間(上=0時・12時)
 function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   const P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
   const ctx = new DrawContext(); ctx.size = new Size(S, S); ctx.opaque = false; ctx.respectScreenScale = true;
   const c = S / 2, R = S / 2 - 3, TH = Math.round(S * 0.135), Ri = R - TH, Rm = Ri + TH / 2 - 0.5;
-  const pt = (r, h) => { const a = h / 24 * 2 * Math.PI; return new Point(c + r * Math.sin(a), c - r * Math.cos(a)); };
+  const PER = DIAL === "12" ? 12 : 24, U = PER / 12, SEP = 0.065 * U;   // 1周の時間 / 1マスの時間 / 区切りの半分の幅
+  const pt = (r, h) => { const a = h / PER * 2 * Math.PI; return new Point(c + r * Math.sin(a), c - r * Math.cos(a)); };
   const band = (r1, r2, h1, h2, col) => {
     const n = Math.max(2, Math.ceil((h2 - h1) * 6)), pts = [];
     for (let i = 0; i <= n; i++) pts.push(pt(r2, h1 + (h2 - h1) * i / n));
@@ -3407,12 +3410,18 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   const disc = (r, col) => { const p = new Path(); p.addEllipse(new Rect(c - r, c - r, r * 2, r * 2)); ctx.addPath(p); ctx.setFillColor(new Color(col)); ctx.fillPath(); };
   disc(R + 3, P.top);                 // ふくらんだ台
   disc(R, P.bot);                     // 溝
-  for (let i = 0; i < 12; i++) band(Ri, R, i * 2 - 0.13, i * 2 + 0.13, mixHex(P.top, P.bot, 0.8));   // 12マスの区切り
-  if (vol) {   // 人数: 1人1マス(12人を超えた分は濃い色で2周目)
-    const cA = mixHex(LVc[vol.lv], P.bg, 0.78), cB = LVc[vol.lv];
-    for (let i = 0; i < Math.min(vol.n, 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cA);
-    for (let i = 0; i < Math.max(0, vol.n - 12); i++) band(Ri, R, i * 2 + 0.13, i * 2 + 2 - 0.13, cB);
+  for (let i = 0; i < 12; i++) band(Ri, R, i * U - SEP, i * U + SEP, mixHex(P.top, P.bot, 0.8));   // 12マスの区切り
+  if (vol) {   // 人数: 1人1マス(12人を超えた分は、同じマスを濃い色で2周目)
+    const cA = mixHex(LVc[vol.lv], P.bg, 0.55), cB = mixHex(LVc[vol.lv], P.ink, 0.72);
+    for (let i = 0; i < Math.min(vol.n, 12); i++) band(Ri, R, i * U + SEP, i * U + U - SEP, cA);
+    for (let i = 0; i < Math.max(0, vol.n - 12); i++) band(Ri, R, i * U + SEP, i * U + U - SEP, cB);
   }
+  // 予定の弧: 24h は内側の半分 / 12h は 0〜12時を内側の半分、12〜24時を外側の半分
+  const arc = (h1, h2, col) => {
+    if (PER === 24) { band(Ri, Rm, h1, h2, col); return; }
+    if (h1 < 12) band(Ri, Rm, h1, Math.min(h2, 12), col);
+    if (h2 > 12) band(Rm, R, Math.max(h1, 12) - 12, h2 - 12, col);
+  };
   // 内側の半分: その日の予定(休日の予定は描かない)
   plansOnDay(data, k, myName).filter(x => !x.p.holiday).forEach(({ p, first, last, multi }) => {
     const s0 = hm(p.start), e0 = hm(p.end);
@@ -3422,10 +3431,10 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
     else if (multi && last && !p.allDay && e0 != null) { h1 = 0; h2 = e0 / 60; }
     else if (multi) { h1 = 0; h2 = 24; }
     if (h1 == null) return;
-    band(Ri, Rm, h1, h2, PC[+p.color || 0] || PC[0]);
+    arc(h1, h2, PC[+p.color || 0] || PC[0]);
   });
   const sv = volleyOn(data, k, myName);
-  if (sv && sv.s != null) band(Ri, Rm, sv.s / 60, sv.e / 60, P.ink2);
+  if (sv && sv.s != null) arc(sv.s / 60, sv.e / 60, P.ink2);
   disc(Ri, P.bg);                     // 真ん中
   if (isToday) {                      // 今の時間: 黒い線
     const h = now.getHours() + now.getMinutes() / 60, a = pt(Ri - 3, h), b = pt(R + 3, h);
@@ -3633,6 +3642,7 @@ await main();
             <div class="st-row"><span class="st-lbl">試作UI</span><span class="st-seg" id="protoSeg"><button type="button" data-v="0" onclick="setProtoUI(false)">オフ</button><button type="button" data-v="1" onclick="setProtoUI(true)">オン</button></span></div>
             <div class="st-row"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
             <div class="st-row"><span class="st-lbl">アニメーション</span><span class="st-seg" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)">オフ</button><button type="button" data-v="1" onclick="setAnim(true)">オン</button></span></div>
+            <div class="st-row"><span class="st-lbl">リングの時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
             <div class="st-row"><span class="st-lbl">使い方</span><span class="st-seg st-guide"><button type="button" onclick="startTutorial()">説明</button><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
         </div>
         <div class="panel-group-label">記録</div>
@@ -13203,14 +13213,20 @@ const namesBtn = isAdmin() && dates.length > 0
         function closeGuide() { const ov = document.getElementById("guideOv"); if (ov) ov.style.display = "none"; document.body.style.overflow = ""; }
         // ウィジェットの見た目: list = 予定の板が並ぶ版 / ring = 試作UIのヘッダーと同じリング版(コードの STYLE を書き換えて渡す)
         let wgtStyle = "list";
-        function wgtStyleNote() { return wgtStyle === "ring" ? "左に24時間のリングとバレーの人数、右に日付・次のバレー・今日の予定3つ(中サイズ向け)" : "今日の予定を板で並べる版(小・中・大・ロック画面)"; }
+        function wgtStyleNote() { return wgtStyle === "ring" ? `左に${typeof protoDial12 !== "undefined" && protoDial12 ? "12時間(午前は内側・午後は外側)" : "24時間"}のリングとバレーの人数、右に日付・次のバレー・今日の予定3つ(中サイズ向け)。リングの時計は設定の「リングの時計」に合わせます(変えたらコードを入れ直してください)` : "今日の予定を板で並べる版(小・中・大・ロック画面)"; }
         function setWgtStyle(v) {
             wgtStyle = v === "ring" ? "ring" : "list";
             document.querySelectorAll("#gdStyleSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === wgtStyle));
             const n = document.getElementById("gdStyleNote"); if (n) n.textContent = wgtStyleNote();
             const pre = document.getElementById("gdCode"); if (pre) pre.textContent = widgetCode();
         }
-        function widgetCode() { const el = document.getElementById("widgetSrc"); const t = el ? el.textContent.replace(/^\n/, "") : ""; return wgtStyle === "ring" ? t.replace('const STYLE = "list";', 'const STYLE = "ring";') : t; }
+        // ウィジェットのコード: 見た目(リスト/リング)と、リングの時計(設定の「リングの時計」の 24h / 12h)を書き換えて渡す
+        function widgetCode() {
+            const el = document.getElementById("widgetSrc"); let t = el ? el.textContent.replace(/^\n/, "") : "";
+            if (wgtStyle === "ring") t = t.replace('const STYLE = "list";', 'const STYLE = "ring";');
+            if (typeof protoDial12 !== "undefined" && protoDial12) t = t.replace('const DIAL = "24";', 'const DIAL = "12";');
+            return t;
+        }
         async function copyWidgetCode() {
             const txt = widgetCode(), btn = document.getElementById("gdCopyBtn");
             let ok = false;
@@ -13713,10 +13729,10 @@ const namesBtn = isAdmin() && dates.length > 0
             const L = (st) => `<i style="${st}"></i>`;
             const fillArc = (size, th, a1, a2, col) => { const mk = maskOf(th); return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${a2}deg, transparent ${a2}deg 360deg);-webkit-mask:${mk};mask:${mk}`; };
             // 予定の弧を、始まりから終わりへ時計回りに伸ばす(an = 経過時間 ms。null なら止まった絵)
-            const fillArcA = (size, th, a1, a2, col, an) => {
+            const fillArcA = (size, th, a1, a2, col, an, lag = 0) => {
                 if (an == null) return fillArc(size, th, a1, a2, col);
                 const mk = maskOf(th), e = `calc(${a1}deg + ${a2 - a1}deg * var(--pp))`;
-                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${e}, transparent ${e} 360deg);-webkit-mask:${mk};mask:${mk};--pp:1;animation:prArc ${PROTO_ARC_MS}ms cubic-bezier(.45,.05,.25,1) both;animation-delay:${Math.round(a1 / 360 * PROTO_ARC_LAG) - an}ms`;
+                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${e}, transparent ${e} 360deg);-webkit-mask:${mk};mask:${mk};--pp:1;animation:prArc ${Math.max(90, Math.round((a2 - a1) * PROTO_DEG_MS))}ms linear both;animation-delay:${Math.round((a1 + lag) * PROTO_DEG_MS) + PROTO_ARC_OFF - an}ms`;   // 人数のマスと同じ速さで、時計回りに進む
             };
             const groove = (size, th, sh, baseBg, fills, under) => {
                 const isl = size - th * 2;
@@ -13802,38 +13818,50 @@ const namesBtn = isAdmin() && dates.length > 0
             let hAn = null;
             if (vv) {
                 // 開いた直後(更新後)や、別のバレーの日に切り替えたとき: 0人から時計回りに1マスずつ埋めていく
-                if (nextKey !== protoRingShown && vv.n > 0) {
-                    protoRingShown = nextKey;
-                    if (!protoRingAnim || protoRingAnim.d !== nextKey) { protoRingAnim = { d: nextKey, from: 0, at: Date.now(), sweep: true }; protoSweepBuzz(vv.n); }
+                // 見ているバレーの日が変わるたびに(0人の日をはさんで戻ってきたときも)。0人のときは「0人で見た」と覚え、人数が入ったら埋める
+                const shownKey = nextKey + (vv.n > 0 ? "" : "#0");
+                if (shownKey !== protoRingShown && !protoCapMode) {
+                    protoRingShown = shownKey;
+                    const answering = protoRingAnim && protoRingAnim.d === nextKey && !protoRingAnim.sweep && Date.now() - protoRingAnim.at < PROTO_RING_MS;   // ○✖△で答えた直後は、その動きのまま
+                    if (vv.n > 0 && !answering) { protoRingAnim = { d: nextKey, from: 0, at: protoBoot ? Date.now() : Date.now() + 1e7, sweep: true }; if (protoBoot) protoSweepBuzz(vv.n); }   // 開いた直後は、画面が出るまで待ってから始める
                 }
                 hAn = protoRingAnimFor(nextKey, vv.n);
-                const bn = hAn ? hAn.base : vv.n, colA = `color-mix(in srgb, ${vv.col} 78%, ${P.bg})`;
+                // 12人を超えたぶん(2周目)は、同じマスを濃い色で塗り直す(1周目は淡く、2周目は濃く)
+                const bn = hAn ? hAn.base : vv.n, colA = `color-mix(in srgb, ${vv.col} 55%, ${P.bg})`, colB = `color-mix(in srgb, ${vv.col} 72%, ${P.ink})`, TH2 = DTH;
                 fills.push(segs(DSZ, DTH, Math.min(bn, 12), colA, "transparent", 4));
-                if (bn > 12) fills.push(segs(DSZ, DTH, bn - 12, vv.col, "transparent", 4));
-                if (hAn) hAn.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, DTH, i, i < 12 ? colA : vv.col, 4, hAn)));   // 増えた/減ったマスだけ動かす
+                if (bn > 12) fills.push(segs(DSZ, TH2, bn - 12, colB, "transparent", 4));
+                if (hAn) hAn.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, i < 12 ? DTH : TH2, i, i < 12 ? colA : colB, 4, hAn)));   // 増えた/減ったマスだけ動かす
             }
             const pplLayers = fills.length;   // ここまでが人数(この上に目盛りの区切り、さらにその上に予定)
             // 選んだ日が変わったとき(開いた直後も): 予定の弧が時計回りに伸びる
-            if (!pin && !protoCapMode && sel !== protoArcShown) { protoArcShown = sel; protoArcAt = Date.now(); }
+            if (!pin && !protoCapMode && sel !== protoArcShown) { protoArcShown = sel; protoArcAt = protoBoot ? Date.now() : Date.now() + 1e7; }
             const arcEl = Date.now() - protoArcAt;
-            const arcAn = !pin && arcEl < PROTO_ARC_MS + PROTO_ARC_LAG && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? arcEl : null;
+            const arcAn = !pin && arcEl < PROTO_ARC_END && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? arcEl : null;
+            // 時間 h1〜h2 の弧。24h: 1周=24時間(内側の半分) / 12h: 1周=12時間。0〜12時は内側の半分、12〜24時は外側の半分
+            const hArcs = (h1, h2, col, an) => {
+                if (!protoDial12) return [fillArcA(INS, INT, h1 / 24 * 360, h2 / 24 * 360, col, an)];
+                const out = [];
+                if (h1 < 12) out.push(fillArcA(INS, INT, h1 / 12 * 360, Math.min(h2, 12) / 12 * 360, col, an));
+                if (h2 > 12) out.push(fillArcA(DSZ, INT, (Math.max(h1, 12) - 12) / 12 * 360, (h2 - 12) / 12 * 360, col, an, 360));   // 午後は、人数の2周目と同じく1周遅れで伸びる
+                return out;
+            };
             spansOf(sel).forEach(x => {
                 if (x.h1 == null || (pin && x.p.id === planEditId)) return;   // 直している予定は、もとの位置を描かない
                 const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.4;
-                fills.push(fillArcA(INS, INT, x.h1 / 24 * 360, e / 24 * 360, pin ? `color-mix(in srgb, ${x.col} 35%, ${P.bot})` : x.col, arcAn));
+                fills.push(...hArcs(x.h1, e, pin ? `color-mix(in srgb, ${x.col} 35%, ${P.bot})` : x.col, arcAn));
             });
-            if (sv && sv.s != null) fills.push(fillArcA(INS, INT, hmv(sv.s) / 24 * 360, hmv(sv.e) / 24 * 360, pin ? `color-mix(in srgb, ${P.ink2} 35%, ${P.bot})` : P.ink2, arcAn));
-            if (pin && !pin.empty) {   // 入れようとしている予定: 内側の半分を、選んだ色で(終日・何日も続く日は全周)
+            if (sv && sv.s != null) fills.push(...hArcs(hmv(sv.s), hmv(sv.e), pin ? `color-mix(in srgb, ${P.ink2} 35%, ${P.bot})` : P.ink2, arcAn));
+            if (pin && !pin.empty) {   // 入れようとしている予定: 選んだ色で(終日・何日も続く日は全部)
                 const s0 = parseHM(pin.st), e0 = parseHM(pin.et), pc = C[planColor] || C[0];
-                if (pin.allDay || s0 == null) fills.push(fillArc(INS, INT, 0, 360, pc));
-                else fills.push(fillArc(INS, INT, s0 / 60 / 24 * 360, (pin.ed ? 24 : e0 != null && e0 > s0 ? e0 / 60 : s0 / 60 + 0.4) / 24 * 360, pc));
+                if (pin.allDay || s0 == null) fills.push(...hArcs(0, 24, pc, null));
+                else fills.push(...hArcs(s0 / 60, pin.ed ? 24 : e0 != null && e0 > s0 ? e0 / 60 : s0 / 60 + 0.4, pc, null));
             }
             // 目盛りの区切りは、溝の影・人数・予定のいちばん上に、面と同じ色で平らにのせる(区切りが面の高さ、マスが凹んで見える)
             const sepC = dark ? `color-mix(in srgb, ${P.bg} 90%, #fff)` : `color-mix(in srgb, ${P.bg} 62%, #fff)`;
             const seps = `${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${sepC} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)}`;
             const dial = groove(DSZ, DTH, 3, P.bot, [...fills.slice(0, pplLayers), seps, ...fills.slice(pplLayers)], []);   // 人数 → 区切り → 予定 の順に重ねる
             let hand = "";
-            if (sel === todayKey && !pin) { const nowD = new Date(), deg = (nowD.getHours() + nowD.getMinutes() / 60) / 24 * 360; hand = L(`position:absolute;left:50%;top:50%;width:2px;height:${DTH + 6}px;margin-left:-1px;border-radius:1px;background:${P.ink};transform-origin:50% 0;transform:rotate(${deg + 180}deg) translateY(${DSZ / 2 - DTH - 3}px);pointer-events:none`); }
+            if (sel === todayKey && !pin) { const nowD = new Date(), deg = (nowD.getHours() + nowD.getMinutes() / 60) / (protoDial12 ? 12 : 24) * 360; hand = L(`position:absolute;left:50%;top:50%;width:2px;height:${DTH + 6}px;margin-left:-1px;border-radius:1px;background:${P.ink};transform-origin:50% 0;transform:rotate(${deg + 180}deg) translateY(${DSZ / 2 - DTH - 3}px);pointer-events:none`); }
             // 自分の出欠
             const me = surveyWho();
             const myMem = nextKey && me ? (attendanceByDate[nextKey] || []).find(x => x.name === me) : null;
@@ -13882,7 +13910,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
             }
             const popEl = Date.now() - protoPressAt, popAn = popEl < 480 ? popEl : null;
-            const markEl = Date.now() - protoMarkAt, markAn = !protoCapMode && protoMarkDir && markEl < 900 ? markEl : null;   // めくって来た側から、予定の印が順に出る
+            const markEl = Date.now() - protoMarkAt, markAn = !protoCapMode && protoMarkDir && markEl < 520 ? markEl : null;   // めくって来た側から、予定の印が順に出る
             for (let i = 0; i < 42; i++) {
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
                 const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0 || planHolidayOn(k), blue = !red && d.getDay() === 6;
@@ -13917,7 +13945,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
                     <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
-                    <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${markAn != null ? `animation:prMarkIn .46s ease-out both;animation-delay:${(protoMarkDir > 0 ? col7 : 6 - col7) * 55 + Math.floor(i / 7) * 8 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
+                    <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${markAn != null ? `animation:prMarkIn .3s ease-out both;animation-delay:${(protoMarkDir > 0 ? col7 : 6 - col7) * 28 + Math.floor(i / 7) * 4 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
             const sunIdx = weekStartDay === 1 ? 6 : 0;
@@ -13930,7 +13958,7 @@ const namesBtn = isAdmin() && dates.length > 0
                   <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${hand}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
-                      <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
+                      <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
                       <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
                     </div>
                   </div>
@@ -14231,9 +14259,12 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoRingAnim = null;   // { d: 日付, from: 前の人数, at: 時刻 }
         const PROTO_RING_MS = 650;
         var protoRingShown = null;
-        var protoArcShown = null, protoArcAt = 0;   // 予定の弧を伸ばした日 / 時刻
-        const PROTO_ARC_MS = 560, PROTO_ARC_LAG = 420;   // 1本が伸びる時間 / 0時→24時の位置による遅れ(時計回りに順に)   // 最後に時計回りで埋めたバレーの日
+        var protoArcShown = null, protoArcAt = 0;
+        var protoBoot = false;   // 開いた直後の画面が実際に出たか(文字の読み込みなどで最初の表示が遅れると、その間に動きが終わってしまうため)   // 予定の弧を伸ばした日 / 時刻
         const PROTO_SWEEP_STEP = 60, PROTO_SWEEP_MS = 480;   // 1マスずつずらす間隔 / 1マスが埋まる時間
+        const PROTO_DEG_MS = PROTO_SWEEP_STEP / 30;   // 時計回りに進む速さ(1度あたり ms)。人数のマス(30度ずつ)と予定の弧で同じにして、揃って進む
+        const PROTO_ARC_OFF = Math.round(PROTO_SWEEP_MS * 0.35);   // マスがじわっと見え始めるぶん、弧を少し遅らせて頭をそろえる
+        const PROTO_ARC_END = 720 * PROTO_DEG_MS + PROTO_ARC_OFF + 120;   // 12h表示の午後(1周遅れ)まで
         // マスが埋まるのに合わせて「トトトト」(Android のみ。iPhone は指で押したときにしか鳴らせない。開いた直後は、まだ一度も触っていないと鳴らない)
         function protoSweepBuzz(n) {
             try {
@@ -14282,6 +14313,18 @@ const namesBtn = isAdmin() && dates.length > 0
             if (typeof protoOn !== "undefined" && protoOn) renderProto();
         }
         animSync();
+        // 設定の「リングの時計」: 24h = 1周24時間 / 12h = 1周12時間(午前は内側・午後は外側)。この端末だけ
+        const DIAL_KEY = "proto_dial12_v1";
+        var protoDial12 = false;
+        try { protoDial12 = localStorage.getItem(DIAL_KEY) === "1"; } catch (e) { /* ignore */ }
+        function dialSync() { document.querySelectorAll("#dialSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "12") === protoDial12)); }
+        function setDial12(on) {
+            protoDial12 = !!on;
+            try { localStorage.setItem(DIAL_KEY, protoDial12 ? "1" : "0"); } catch (e) { /* ignore */ }
+            dialSync();
+            if (typeof protoOn !== "undefined" && protoOn) renderProto();
+        }
+        dialSync();
         function protoHapHtml() { return !hapOn || navigator.vibrate ? "" : `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`; }
         // スイッチが押された: 触覚はスイッチが鳴らす。本来のボタンの処理は、スイッチの切り替えが終わってから呼ぶ(すぐ描き直すとスイッチが消えて鳴らないため)
         function protoHapTap(ev, el) {
@@ -14541,10 +14584,10 @@ const namesBtn = isAdmin() && dates.length > 0
                 const an = d ? protoRingAnimFor(d, n) : null, bn = an ? an.base : n;
                 const DTH = 17, DSZ = 124, BOX = 138, OUT = 60, k = OUT / BOX;
                 const under = [`${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${P.top} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)};opacity:.8`];
-                const colA = `color-mix(in srgb, ${col} 78%, ${P.bg})`;
+                const colA = `color-mix(in srgb, ${col} 55%, ${P.bg})`, colB = `color-mix(in srgb, ${col} 72%, ${P.ink})`, TH2 = DTH;   // 2周目は同じマスを濃い色で(上のリングと同じ)
                 const fills = [segsR(DSZ, DTH, Math.min(bn, 12), colA, "transparent", 4)];
-                if (bn > 12) fills.push(segsR(DSZ, DTH, bn - 12, col, "transparent", 4));
-                if (an) an.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, DTH, i, i < 12 ? colA : col, 4, an)));
+                if (bn > 12) fills.push(segsR(DSZ, TH2, bn - 12, colB, "transparent", 4));
+                if (an) an.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, i < 12 ? DTH : TH2, i, i < 12 ? colA : colB, 4, an)));
                 const sepC = dark ? `color-mix(in srgb, ${P.bg} 90%, #fff)` : `color-mix(in srgb, ${P.bg} 62%, #fff)`;
                 const seps = `${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${sepC} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)}`;   // 区切りは面の高さで平らに上へ
                 const layers = groove(DSZ, DTH, 3, P.bot, [...fills, seps], []).map(st => `<i style="${st}"></i>`).join("");
@@ -14687,6 +14730,16 @@ const namesBtn = isAdmin() && dates.length > 0
             const mo = new MutationObserver(() => requestAnimationFrame(sync));
             document.querySelectorAll(".settings-panel, .roster-panel, .copy-panel").forEach(e => mo.observe(e, { attributes: true, attributeFilter: ["class"] }));
             setProtoUI(protoOn);
+            // 文字(フォント)がそろって、画面が実際に描かれてから、リングの動きを始める
+            const go = () => requestAnimationFrame(() => requestAnimationFrame(() => {
+                protoBoot = true;
+                const t = Date.now();
+                if (protoRingAnim && protoRingAnim.sweep && protoRingAnim.at > t) protoRingAnim.at = t;
+                if (protoArcAt > t) protoArcAt = t;
+                if (protoOn) renderProto();
+            }));
+            const fontsReady = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))]) : Promise.resolve();
+            fontsReady.then(go, go);
         })();
     </script>
 </body>
