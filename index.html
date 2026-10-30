@@ -3025,6 +3025,9 @@
         #protoUI .pr-cell.pressing .pr-num { transform: scale(.8); transition: transform .07s ease-out; }
         #protoUI .pr-press { opacity: 0; transition: opacity .3s; }
         #protoUI .pr-cell.pressing .pr-press { opacity: 1; transition: opacity .05s; }
+        /* 設定の「アニメーション」オフ: 試作UIの動きを止める(アンケートボタンの点滅などの知らせは残す) */
+        body.pr-noanim #protoUI *:not(.pr-svbtn):not(.pr-svbtn *), body.pr-noanim #protoSv * { animation: none !important; transition: none !important; }
+        body.pr-noanim #protoUI .pr-cell.pressing .pr-num { transform: none; }
         @keyframes prPopBack { from { transform: scale(.8); } to { transform: scale(1); } }
         @keyframes prMarkIn { from { opacity: 0; } to { opacity: 1; } }
         @property --pp { syntax: '<number>'; inherits: false; initial-value: 1; }
@@ -3629,6 +3632,7 @@ await main();
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
             <div class="st-row"><span class="st-lbl">試作UI</span><span class="st-seg" id="protoSeg"><button type="button" data-v="0" onclick="setProtoUI(false)">オフ</button><button type="button" data-v="1" onclick="setProtoUI(true)">オン</button></span></div>
             <div class="st-row"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
+            <div class="st-row"><span class="st-lbl">アニメーション</span><span class="st-seg" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)">オフ</button><button type="button" data-v="1" onclick="setAnim(true)">オン</button></span></div>
             <div class="st-row"><span class="st-lbl">使い方</span><span class="st-seg st-guide"><button type="button" onclick="startTutorial()">説明</button><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
         </div>
         <div class="panel-group-label">記録</div>
@@ -13712,7 +13716,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const fillArcA = (size, th, a1, a2, col, an) => {
                 if (an == null) return fillArc(size, th, a1, a2, col);
                 const mk = maskOf(th), e = `calc(${a1}deg + ${a2 - a1}deg * var(--pp))`;
-                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${e}, transparent ${e} 360deg);-webkit-mask:${mk};mask:${mk};animation:prArc ${PROTO_ARC_MS}ms cubic-bezier(.45,.05,.25,1) both;animation-delay:${Math.round(a1 / 360 * PROTO_ARC_LAG) - an}ms`;
+                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${a1}deg, ${col} ${a1}deg ${e}, transparent ${e} 360deg);-webkit-mask:${mk};mask:${mk};--pp:1;animation:prArc ${PROTO_ARC_MS}ms cubic-bezier(.45,.05,.25,1) both;animation-delay:${Math.round(a1 / 360 * PROTO_ARC_LAG) - an}ms`;
             };
             const groove = (size, th, sh, baseBg, fills, under) => {
                 const isl = size - th * 2;
@@ -14204,7 +14208,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 選んだ日のくぼみを、前の日から新しい日へ滑らせる(マスの外にはみ出せるように、上に重ねた写しを動かす)
         function protoFaceSlide(from) {
             const to = document.querySelector("#prCal .pr-face"), wrap = document.querySelector("#prCal .pr-grid");   // 数字の下を通す(数字が隠れないように)
-            if (!from || !to || !wrap) return;
+            if (!from || !to || !wrap || !animOn) return;
             // 中心で合わせる(押した数字は縮んでから戻る途中なので、端の位置で合わせると最後に少しずれて戻って見える)
             const r = to.getBoundingClientRect(), w = wrap.getBoundingClientRect(), S = to.offsetWidth || 26;
             const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -14263,6 +14267,21 @@ const namesBtn = isAdmin() && dates.length > 0
             if (typeof protoOn !== "undefined" && protoOn) renderProto();
         }
         hapSegSync();
+        // 設定の「アニメーション」(この端末だけ。最初はオン)
+        const ANIM_KEY = "proto_anim_v1";
+        var animOn = true;
+        try { animOn = localStorage.getItem(ANIM_KEY) !== "0"; } catch (e) { /* ignore */ }
+        function animSync() {
+            document.body.classList.toggle("pr-noanim", !animOn);
+            document.querySelectorAll("#animSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === animOn));
+        }
+        function setAnim(on) {
+            animOn = !!on;
+            try { localStorage.setItem(ANIM_KEY, animOn ? "1" : "0"); } catch (e) { /* ignore */ }
+            animSync();
+            if (typeof protoOn !== "undefined" && protoOn) renderProto();
+        }
+        animSync();
         function protoHapHtml() { return !hapOn || navigator.vibrate ? "" : `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`; }
         // スイッチが押された: 触覚はスイッチが鳴らす。本来のボタンの処理は、スイッチの切り替えが終わってから呼ぶ(すぐ描き直すとスイッチが消えて鳴らないため)
         function protoHapTap(ev, el) {
