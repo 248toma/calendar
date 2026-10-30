@@ -8191,6 +8191,7 @@ await main();
             } else {
                 volleyDraft = null;
                 delete events[selectedDate];
+                if (reservations[selectedDate]) { delete reservations[selectedDate]; saveReservations(); }   // その日の予約も消す(残るとアンケート・カレンダー登録・通知に出続けるため)
             }
             saveData();
             renderRoster();
@@ -9816,7 +9817,12 @@ await main();
         function surveyWho() { return myMemberName() || (isAdmin() ? surveyAdminName : ""); }
         function surveyDates() {
             const todayKey = formatDateKey(new Date());
-            return Object.keys(reservations || {}).filter(d => d >= todayKey && (reservations[d] || []).length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+            return Object.keys(reservations || {}).filter(d => d >= todayKey && events[d] && (reservations[d] || []).length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+        }
+        // バレーの日を消したのに予約だけ残っている今日以降の日(前の版で消した日など)
+        function orphanResvKeys() {
+            const t = formatDateKey(new Date());
+            return Object.keys(reservations || {}).filter(k => k >= t && !events[k] && (reservations[k] || []).length > 0);
         }
         let svNoteFresh = new Set();   // 開いた時点でまだ見ていなかったひとこと(緑の印を付ける)
         function openSurvey() {
@@ -11273,7 +11279,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Volley Schedule//JA", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:バレー", "X-WR-TIMEZONE:Asia/Tokyo",
                 "BEGIN:VTIMEZONE", "TZID:Asia/Tokyo", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0900", "TZOFFSETTO:+0900", "TZNAME:JST", "END:STANDARD", "END:VTIMEZONE"];
             let n = 0;
-            Object.keys(reservations).filter(d => d >= today).sort().forEach(d => {
+            Object.keys(reservations).filter(d => d >= today && events[d]).sort().forEach(d => {
                 (reservations[d] || []).forEach((r, i) => {
                     const t = parseTimeRangeMin(r.time);
                     if (!t) return;
@@ -11347,7 +11353,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function gcalFutureList() {
             const today = formatDateKey(new Date()), out = [];
-            Object.keys(reservations).filter(d => d >= today).sort().forEach(d => (reservations[d] || []).forEach(r => { if (parseTimeRangeMin(r.time)) out.push({ d, r }); }));
+            Object.keys(reservations).filter(d => d >= today && events[d]).sort().forEach(d => (reservations[d] || []).forEach(r => { if (parseTimeRangeMin(r.time)) out.push({ d, r }); }));
             return out;
         }
         function openBulkAdd() {
@@ -12644,6 +12650,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     // 共有データの名簿に昔のLINE名(本名)が残っていたら、管理者の端末から消して保存し直す
                     if (firestoreEditor && !firestoreApplyingRemote && /"lineNames"/.test(remoteValues[ROSTER_KEY] || "")) { saveRoster(); return; }
+                    // バレーの日を消したのに予約だけ残っている日があれば、管理者の端末でその予約を消して保存し直す
+                    if (firestoreEditor && !firestoreApplyingRemote) { const orph = orphanResvKeys(); if (orph.length) { orph.forEach(k => { delete reservations[k]; }); saveReservations(); renderCalendar(); return; } }
                     // 取り込み時に足した「他の人の変更」のログなど、この端末にだけあるログは共有データへ送る
                     if (firestoreEditor && !firestoreApplyingRemote && clLocalHasExtra(remoteValues[CHANGELOG_KEY], localValues[CHANGELOG_KEY])) {
                         clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 400);
