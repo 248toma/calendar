@@ -435,7 +435,7 @@ function volleyOn(data, k, myName) {
 }
 const fmtM = m => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
 // 時計のリング。24h: 上=0時、右=6時、下=12時、左=18時 / 12h: 1周12時間(上=0時・12時)
-function drawDial(S, k, data, myName, vol, mode, isToday, now) {
+function drawDial(S, k, data, myName, vol, mode, isToday, now, up) {
   const P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
   const ctx = new DrawContext(); ctx.size = new Size(S, S); ctx.opaque = false; ctx.respectScreenScale = true;
   const c = S / 2, R = S / 2 - 3, TH = Math.round(S * 0.135), Ri = R - TH, Rm = Ri + TH / 2 - 0.5;
@@ -476,6 +476,12 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   const sv = volleyOn(data, k, myName);
   if (sv && sv.s != null) arc(sv.s / 60, sv.e / 60, P.ink2);
   disc(Ri, P.bg);                     // 真ん中
+  if (up) {   // 今日のバレーが終わったあと: 次のバレーの人数を、溝のさらに内側の細い12マスで(12人を超えたぶんは濃い色)
+    const r2 = Ri - 5, r1 = r2 - 3, G = U * 0.13, LC = LVc[up.lv];
+    for (let i = 0; i < 12; i++) band(r1, r2, i * U + G, i * U + U - G, mixHex(P.ink3, P.bg, 0.2));
+    for (let i = 0; i < Math.min(up.n, 12); i++) band(r1, r2, i * U + G, i * U + U - G, mixHex(LC, P.bg, 0.6));
+    for (let i = 0; i < Math.max(0, up.n - 12); i++) band(r1, r2, i * U + G, i * U + U - G, mixHex(LC, P.ink, 0.72));
+  }
   if (isToday) {                      // 今の時間: 黒い線
     const h = now.getHours() + now.getMinutes() / 60, a = pt(Ri - 3, h), b = pt(R + 3, h);
     const p = new Path(); p.move(a); p.addLine(b); ctx.addPath(p); ctx.setStrokeColor(new Color(P.ink)); ctx.setLineWidth(2); ctx.strokePath();
@@ -484,9 +490,14 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now) {
   const big = vol ? String(vol.n) : String(+k.slice(8));
   ctx.setTextAlignedCenter();
   ctx.setFont(Font.semiboldRoundedSystemFont(Math.round(S * 0.19))); ctx.setTextColor(new Color(vol ? LVc[vol.lv] : P.ink));
-  ctx.drawTextInRect(big, new Rect(0, c - S * 0.17, S, S * 0.24));
+  const sh = up ? S * 0.05 : 0;   // 「NEXT 7」を入れるときは、少し上に詰める
+  ctx.drawTextInRect(big, new Rect(0, c - S * 0.17 - sh, S, S * 0.24));
   ctx.setFont(Font.boldSystemFont(Math.round(S * 0.075))); ctx.setTextColor(new Color(P.ink3));
-  ctx.drawTextInRect(vol ? `/ ${vol.cap}人` : WEN3[new Date(k + "T00:00:00").getDay()], new Rect(0, c + S * 0.07, S, S * 0.12));
+  ctx.drawTextInRect(vol ? `/ ${vol.cap}人` : WEN3[new Date(k + "T00:00:00").getDay()], new Rect(0, c + S * 0.07 - sh, S, S * 0.12));
+  if (up) {
+    ctx.setFont(Font.boldSystemFont(Math.round(S * 0.062))); ctx.setTextColor(new Color(LVc[up.lv]));
+    ctx.drawTextInRect(`NEXT ${up.n}`, new Rect(0, c + S * 0.165 - sh, S, S * 0.1));
+  }
   return ctx.getImage();
 }
 // リング版の描き直し: 予定の始まりの前後(15分前〜15分後)だけ5分ごと、過ぎたら30分ごと、夜中(0〜6時)は1時間ごと
@@ -521,10 +532,15 @@ function buildRing(data, now, myName) {
   const sv = volleyOn(data, k, myName);
   const nextKey = sv ? k : Object.keys(data.events || {}).filter(x => data.events[x] && x >= k && /^\d{4}-\d{2}-\d{2}$/.test(x)).sort()[0] || "";
   const vv = nextKey ? volleyOn(data, nextKey, myName) : null;
+  // 今日のバレーが終わった(終わりの時刻を過ぎた)ら: 今日のバレーはそのまま、次のバレーを予告(リングの内側の細いリング・「NEXT 7」・「NEXT 11/2 19:00〜」)
+  const nowM = now.getHours() * 60 + now.getMinutes();
+  const done = sv && sv.s != null && nowM >= (sv.e != null && sv.e > sv.s ? sv.e : sv.s + 120);
+  const upKey = done ? Object.keys(data.events || {}).filter(x => data.events[x] && x > k && /^\d{4}-\d{2}-\d{2}$/.test(x)).sort()[0] || "" : "";
+  const up = upKey ? volleyOn(data, upKey, myName) : null;
   const w = new ListWidget(); w.url = APP_URL;
   w.backgroundColor = BG_SET ? C.bg : new Color(P.bg);
   const S = fam === "small" ? 126 : fam === "large" ? 132 : 130;
-  const dial = drawDial(S, k, data, myName, vv, mode, true, now);
+  const dial = drawDial(S, k, data, myName, vv, mode, true, now, up);
   if (fam === "small") {
     w.setPadding(8, 8, 8, 8);
     const r = w.addStack(); r.addSpacer(); const im = r.addImage(dial); im.imageSize = new Size(S, S); r.addSpacer();
@@ -559,6 +575,13 @@ function buildRing(data, now, myName) {
     }
     col.addSpacer(6);
   }
+  if (up) {   // 次のバレーの予告
+    const ul = col.addStack(); ul.centerAlignContent();
+    const a = ul.addText("NEXT"); a.font = Font.boldSystemFont(10); a.textColor = new Color(P.ink2);
+    ul.addSpacer(5);
+    const b = ul.addText(`${md(upKey)}${up.s != null ? ` ${fmtM(up.s)}〜` : ""}`); b.font = Font.mediumSystemFont(10); b.textColor = new Color(P.ink3);
+    col.addSpacer(6);
+  }
   // 予定(バレーも入れる)
   const rows = plans.map(({ p, first, last, multi }) => {
     const s0 = hm(p.start), e0 = hm(p.end);
@@ -568,7 +591,7 @@ function buildRing(data, now, myName) {
   });
   if (sv) rows.push({ t: sv.s != null ? fmtM(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
   rows.sort((a, b) => a.min - b.min);
-  const max = fam === "large" ? 3 : 3;
+  const max = up && fam !== "large" ? 2 : 3;   // 予告の行が入るときは、予定は2つまで(はみ出さないように)
   if (!rows.length) { const t = col.addText("予定なし"); t.font = Font.systemFont(11.5); t.textColor = new Color(P.ink3); }
   rows.slice(0, max).forEach((r, i) => {
     if (i) col.addSpacer(4);
