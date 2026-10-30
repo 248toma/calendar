@@ -14205,11 +14205,13 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoFaceSlide(from) {
             const to = document.querySelector("#prCal .pr-face"), wrap = document.querySelector("#prCal .pr-grid");   // 数字の下を通す(数字が隠れないように)
             if (!from || !to || !wrap) return;
-            const r = to.getBoundingClientRect(), w = wrap.getBoundingClientRect();
-            const ox = from.left - r.left, oy = from.top - r.top;
+            // 中心で合わせる(押した数字は縮んでから戻る途中なので、端の位置で合わせると最後に少しずれて戻って見える)
+            const r = to.getBoundingClientRect(), w = wrap.getBoundingClientRect(), S = to.offsetWidth || 26;
+            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            const ox = from.left + from.width / 2 - cx, oy = from.top + from.height / 2 - cy;
             if (!ox && !oy) return;
             const c = document.createElement("i");
-            c.style.cssText = to.getAttribute("style") + `;position:absolute;margin:0;left:${r.left - w.left}px;top:${r.top - w.top}px`;
+            c.style.cssText = to.getAttribute("style") + `;position:absolute;margin:0;left:${cx - w.left - S / 2}px;top:${cy - w.top - S / 2}px`;
             wrap.insertBefore(c, wrap.firstChild); to.style.visibility = "hidden";
             const done = () => { c.remove(); to.style.visibility = ""; };
             if (!c.animate) { done(); return; }
