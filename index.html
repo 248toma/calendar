@@ -3002,13 +3002,22 @@
         #protoUI button:active { transform: scale(.95); }
         #protoUI .pr-cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 44px; height: 100%; min-width: 0; padding: 2px 0 0; overflow: hidden; }
         #protoUI .pr-dock { position: absolute; left: 22px; right: 22px; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: center; gap: 14px; }
-        /* 横画面(高さが低い): 左に上の板とボタン、右にカレンダー */
+        /* 横画面(高さが低い): 左に上の板(リングは高さいっぱいに大きく)、真ん中にカレンダー、右端にボタンを縦に */
         @media (orientation: landscape) and (max-height: 620px) {
-            #protoUI .pr-wrap { max-width: 1000px; display: grid; grid-template-columns: minmax(330px, 410px) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 30px; row-gap: 0; align-content: stretch;
-                padding: calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-right, 0px) + 22px) calc(env(safe-area-inset-bottom, 0px) + 10px) calc(env(safe-area-inset-left, 0px) + 22px); }
-            #protoUI .pr-wrap > :first-child { grid-column: 1; grid-row: 1; margin: 0 !important; }
-            #protoUI .pr-wrap > .pr-dock { position: static; grid-column: 1; grid-row: 2; align-self: end; padding: 0 4px 6px; }
-            #protoUI .pr-wrap > .pr-cal { grid-column: 2; grid-row: 1 / span 2; padding-bottom: 0 !important; min-height: 0; }
+            #protoUI .pr-wrap { --hw: 410px; --dz: 1.45; max-width: 1100px; display: grid; grid-template-columns: var(--hw) minmax(0, 1fr) 52px; grid-template-rows: minmax(0, 1fr); column-gap: 20px; row-gap: 0;
+                padding: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-right, 0px) + 18px) calc(env(safe-area-inset-bottom, 0px) + 10px) calc(env(safe-area-inset-left, 0px) + 18px); }
+            /* 左の板と右のボタンの下には背景の帯を敷き、めくっている最中の隣の月がその上に出ないようにする */
+            #protoUI .pr-wrap::before, #protoUI .pr-wrap::after { content: ""; grid-row: 1; position: relative; z-index: 1; background: inherit; pointer-events: none; }
+            #protoUI .pr-wrap::before { grid-column: 1; margin: calc(-12px - env(safe-area-inset-top, 0px)) -10px calc(-10px - env(safe-area-inset-bottom, 0px)) calc(-18px - env(safe-area-inset-left, 0px)); }
+            #protoUI .pr-wrap::after { grid-column: 3; margin: calc(-12px - env(safe-area-inset-top, 0px)) calc(-18px - env(safe-area-inset-right, 0px)) calc(-10px - env(safe-area-inset-bottom, 0px)) -10px; }
+            #protoUI .pr-wrap > :first-child { grid-column: 1; grid-row: 1; margin: 0 !important; position: relative; z-index: 2; box-sizing: border-box; height: 100%; }
+            #protoUI .pr-headrow { height: 100% !important; gap: 16px !important; }
+            #protoUI .pr-dial { zoom: var(--dz); }
+            #protoUI .pr-wrap > .pr-dock { position: relative; z-index: 2; grid-column: 3; grid-row: 1; flex-direction: column; justify-content: center; gap: 12px; left: auto; right: auto; bottom: auto; }
+            #protoUI .pr-dock > span { display: none; }
+            #protoUI .pr-dock > button:first-child { width: 52px; padding: 0 !important; font-size: 11px !important; }
+            #protoUI .pr-dock > button:last-child { width: 52px !important; height: 52px !important; }
+            #protoUI .pr-wrap > .pr-cal { grid-column: 2; grid-row: 1; padding-bottom: 0 !important; min-height: 0; }
             #protoUI .pr-cell { min-height: 0; }
         }
         #protoUI #prRows::-webkit-scrollbar { display: none; }
@@ -13962,9 +13971,9 @@ const namesBtn = isAdmin() && dates.length > 0
             protoSlide = 0;
 
             const headHtml = `
-              <div style="border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
-                <div style="display:flex;align-items:center;gap:18px;height:200px">
-                  <div ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
+              <div class="pr-head" style="border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
+                <div class="pr-headrow" style="display:flex;align-items:center;gap:18px;height:200px">
+                  <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${hand}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
                       <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
@@ -14117,6 +14126,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             root.style.background = P.bg;   // 横画面などで板の外側が空いても、後ろの画面が見えないように
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">${pin ? headPin : headHtml}${calHtml}${dockHtml}</div>`;
+            protoLandFit();
             const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * 26;
             protoSvBtnSync();
         }
@@ -14175,14 +14185,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function protoDragPaint(d, dx, tr) {
             const W = (d.el.offsetWidth || 360) + PROTO_PAGE_GAP;
-            const land = window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches;   // 横画面: 左の板の上にはみ出さないよう、カレンダーの枠の外は切る
-            [[d.el, 0], [d.prev, -1], [d.next, 1]].forEach(([e, k]) => {
-                if (!e) return;
-                const tx = dx + k * W;
-                e.style.transition = tr ? (land ? `${tr}, ${tr.replace("transform", "clip-path")}` : tr) : "none";
-                e.style.transform = `translateX(${tx}px)`;
-                e.style.clipPath = land ? `inset(-20px ${Math.max(0, tx)}px -20px ${Math.max(0, -tx)}px)` : "";
-            });
+            [[d.el, 0], [d.prev, -1], [d.next, 1]].forEach(([e, k]) => { if (!e) return; e.style.transition = tr || "none"; e.style.transform = `translateX(${dx + k * W}px)`; });   // 横画面では、左の板・右のボタンの下の帯が隣の月を隠す
         }
         function protoDragClear(d) {
             if (d.prev) d.prev.remove();
@@ -14249,6 +14252,21 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoPx = null, protoSkipClick = 0;
         function protoPD(e) { if (e.pointerType === "mouse") { protoPx = [e.clientX, e.clientY]; protoPressOn(e.target); } }
         function protoPU(e) { if (e.pointerType === "mouse") setTimeout(protoPressOff, 0); if (!protoPx || e.pointerType !== "mouse") return; const dx = e.clientX - protoPx[0], dy = e.clientY - protoPx[1]; protoPx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
+        // 横画面: リングを左の高さいっぱいまで大きくする(カレンダーが1マス40pxより細くならない範囲で)
+        function protoLandFit() {
+            const wrap = document.querySelector("#protoUI .pr-wrap"), row = document.querySelector("#protoUI .pr-headrow");
+            if (!wrap) return;
+            const land = window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches;
+            if (!land || !row) { wrap.style.removeProperty("--dz"); wrap.style.removeProperty("--hw"); return; }
+            const cs = getComputedStyle(wrap), padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+            const INFO = 150 + 16 + 40;   // 右の文字の幅 + すき間 + 板の左右の余白
+            const byH = row.clientHeight - 4;                                         // 高さいっぱい
+            const byW = wrap.clientWidth - padX - 20 * 2 - 52 - 7 * 40 - INFO;       // カレンダーを 1マス40px は残す
+            const ring = Math.max(138, Math.min(byH, byW));
+            wrap.style.setProperty("--dz", String(ring / 138));
+            wrap.style.setProperty("--hw", Math.round(ring + INFO) + "px");
+        }
+        window.addEventListener("resize", () => { if (typeof protoOn !== "undefined" && protoOn) protoLandFit(); });
         var protoPressK = "", protoPressAt = 0, protoMarkDir = 0, protoMarkAt = 0;
         // 選んだ日のくぼみを、前の日から新しい日へ滑らせる(マスの外にはみ出せるように、上に重ねた写しを動かす)
         function protoFaceSlide(from) {
