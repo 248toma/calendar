@@ -3002,6 +3002,15 @@
         #protoUI button:active { transform: scale(.95); }
         #protoUI .pr-cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 44px; height: 100%; min-width: 0; padding: 2px 0 0; overflow: hidden; }
         #protoUI .pr-dock { position: absolute; left: 22px; right: 22px; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: center; gap: 14px; }
+        /* 横画面(高さが低い): 左に上の板とボタン、右にカレンダー */
+        @media (orientation: landscape) and (max-height: 620px) {
+            #protoUI .pr-wrap { max-width: 1000px; display: grid; grid-template-columns: minmax(330px, 410px) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 30px; row-gap: 0; align-content: stretch;
+                padding: calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-right, 0px) + 22px) calc(env(safe-area-inset-bottom, 0px) + 10px) calc(env(safe-area-inset-left, 0px) + 22px); }
+            #protoUI .pr-wrap > :first-child { grid-column: 1; grid-row: 1; margin: 0 !important; }
+            #protoUI .pr-wrap > .pr-dock { position: static; grid-column: 1; grid-row: 2; align-self: end; padding: 0 4px 6px; }
+            #protoUI .pr-wrap > .pr-cal { grid-column: 2; grid-row: 1 / span 2; padding-bottom: 0 !important; min-height: 0; }
+            #protoUI .pr-cell { min-height: 0; }
+        }
         #protoUI #prRows::-webkit-scrollbar { display: none; }
         /* 試作UIのアンケートボタンの印(今のボタンと同じ決まり) */
         #protoUI .pr-svbtn .sv-badge, #protoUI .pr-svbtn .sv-badge2, #protoUI .pr-svbtn .sv-badge3 { display: none; position: absolute; top: -3px; min-width: 17px; height: 17px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; color: #fff; font: 800 10px/17px 'Montserrat', system-ui, sans-serif; text-align: center; }
@@ -14106,6 +14115,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const cal0 = document.getElementById("prCal"); if (cal0) cal0.outerHTML = calHtml;
                 return;
             }
+            root.style.background = P.bg;   // 横画面などで板の外側が空いても、後ろの画面が見えないように
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">${pin ? headPin : headHtml}${calHtml}${dockHtml}</div>`;
             const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * 26;
             protoSvBtnSync();
@@ -14159,18 +14169,25 @@ const namesBtn = isAdmin() && dates.length > 0
             g.querySelectorAll("[onclick],input").forEach(x => { if (x.tagName === "INPUT") x.remove(); else x.removeAttribute("onclick"); });
             g.setAttribute("aria-hidden", "true");
             g.querySelectorAll(".pr-tags").forEach(x => { x.style.opacity = "0"; });   // 予定の印は、めくり終わってから出す
-            Object.assign(g.style, { position: "absolute", left: el.offsetLeft + "px", top: el.offsetTop + "px", width: el.offsetWidth + "px", height: el.offsetHeight + "px", boxSizing: "border-box", animation: "none", pointerEvents: "none", willChange: "transform", flex: "none", margin: "0" });
+            Object.assign(g.style, { gridColumn: "auto", gridRow: "auto", position: "absolute", left: el.offsetLeft + "px", top: el.offsetTop + "px", width: el.offsetWidth + "px", height: el.offsetHeight + "px", boxSizing: "border-box", animation: "none", pointerEvents: "none", willChange: "transform", flex: "none", margin: "0" });
             el.after(g);   // 下のボタン(ドック)より下に重ねる
             return g;
         }
         function protoDragPaint(d, dx, tr) {
             const W = (d.el.offsetWidth || 360) + PROTO_PAGE_GAP;
-            [[d.el, 0], [d.prev, -1], [d.next, 1]].forEach(([e, k]) => { if (!e) return; e.style.transition = tr || "none"; e.style.transform = `translateX(${dx + k * W}px)`; });
+            const land = window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches;   // 横画面: 左の板の上にはみ出さないよう、カレンダーの枠の外は切る
+            [[d.el, 0], [d.prev, -1], [d.next, 1]].forEach(([e, k]) => {
+                if (!e) return;
+                const tx = dx + k * W;
+                e.style.transition = tr ? (land ? `${tr}, ${tr.replace("transform", "clip-path")}` : tr) : "none";
+                e.style.transform = `translateX(${tx}px)`;
+                e.style.clipPath = land ? `inset(-20px ${Math.max(0, tx)}px -20px ${Math.max(0, -tx)}px)` : "";
+            });
         }
         function protoDragClear(d) {
             if (d.prev) d.prev.remove();
             if (d.next) d.next.remove();
-            if (d.el && d.el.isConnected) { d.el.style.transition = ""; d.el.style.transform = ""; d.el.style.willChange = ""; }
+            if (d.el && d.el.isConnected) { d.el.style.transition = ""; d.el.style.transform = ""; d.el.style.willChange = ""; d.el.style.clipPath = ""; }
         }
         // 指を置いている間、そのマスを沈める(:active は iPhone で効かないことがあるので、自分で付け外し)
         // 少しだけ待ってから沈める(引っぱって更新・めくりの出だしで沈まないように)。素早いタップは、描き直したあとの「ふわっと戻る」だけで見せる
