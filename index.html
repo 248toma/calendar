@@ -12463,7 +12463,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const TH = 70;
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
-            const blocked = (t) => !!(t.closest && t.closest("input, textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
+            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
                 || document.body.style.overflow === "hidden";
             const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
             document.addEventListener("touchstart", e => {
