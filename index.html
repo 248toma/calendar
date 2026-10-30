@@ -2988,6 +2988,7 @@
 
         /* ===== 試作UI ===== */
         #protoUI { display: none; }
+        body:not(.proto-on) .st-row.pr-only { display: none; }   /* 試作UIだけの設定は、試作UIをオンにしたときだけ出す */
         #protoUI .pin-in { -webkit-appearance: none; appearance: none; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding: 0 !important; margin: 0 !important; height: 100% !important; min-height: 0 !important; width: 100% !important; min-width: 0; border-radius: 0 !important; color: inherit !important; font: 600 13.5px 'Montserrat', 'Noto Sans JP', system-ui, sans-serif !important; }
         #protoUI #pinT { font: 700 17px 'Noto Sans JP', system-ui, sans-serif !important; }
         #protoUI .pin-in::placeholder { color: inherit; opacity: .14; }
@@ -3658,9 +3659,9 @@ await main();
                 </select></div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
             <div class="st-row"><span class="st-lbl">試作UI</span><span class="st-seg" id="protoSeg"><button type="button" data-v="0" onclick="setProtoUI(false)">オフ</button><button type="button" data-v="1" onclick="setProtoUI(true)">オン</button></span></div>
-            <div class="st-row"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
-            <div class="st-row"><span class="st-lbl">アニメーション</span><span class="st-seg" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)">オフ</button><button type="button" data-v="1" onclick="setAnim(true)">オン</button></span></div>
-            <div class="st-row"><span class="st-lbl">リングの時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
+            <div class="st-row pr-only"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
+            <div class="st-row pr-only"><span class="st-lbl">アニメーション</span><span class="st-seg" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)">オフ</button><button type="button" data-v="1" onclick="setAnim(true)">オン</button></span></div>
+            <div class="st-row pr-only"><span class="st-lbl">リングの時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
             <div class="st-row"><span class="st-lbl">使い方</span><span class="st-seg st-guide"><button type="button" onclick="startTutorial()">説明</button><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
         </div>
         <div class="panel-group-label">記録</div>
@@ -13828,7 +13829,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const jp = jpDay(sel), note = [jp.hol, jp.ev].filter(Boolean).join(" · ");
             const holP = plansOn(sel).find(({ p }) => p.holiday);   // 休日にした予定: 行事のように「休日」と出す(押すと編集)
             const sv = volInfo(sel);
-            const nextKey = sv ? sel : Object.keys(events).filter(k => events[k] && k >= todayKey).sort()[0];
+            // 今日のバレーが終わった(終わりの時刻を過ぎた)ら: 今日のバレーはそのまま出し(精算などで迷わないように)、次のバレーを「NEXT」として小さく予告する
+            const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+            const volDone = (k) => { if (k < todayKey) return true; if (k > todayKey) return false; const v = volInfo(k); if (!v || v.s == null) return false; const e = v.e != null && v.e > v.s ? v.e : v.s + 120; return nowMin >= e; };
+            const nextKey = sv ? sel : Object.keys(events).filter(k => events[k] && k >= todayKey && !volDone(k)).sort()[0];
+            const upKey = !pinOpen && sv && sel === todayKey && volDone(sel) ? Object.keys(events).filter(k => events[k] && k > todayKey).sort()[0] : null;
+            const up = upKey ? volInfo(upKey) : null;
             const vv = pin ? null : nextKey ? volInfo(nextKey) : null;
             // 大きな文字盤: 底=人数の12マス、内側の半分=選んだ日の予定(半透明)
             const DTH = 17, DSZ = 124, INT = DTH / 2 - 1, INS = DSZ - DTH;
@@ -13878,6 +13884,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const sepC = dark ? `color-mix(in srgb, ${P.bg} 90%, #fff)` : `color-mix(in srgb, ${P.bg} 62%, #fff)`;
             const seps = `${ringBox(DSZ)}background:repeating-conic-gradient(from -2deg, ${sepC} 0deg 4deg, transparent 4deg 30deg);-webkit-mask:${maskOf(DTH)};mask:${maskOf(DTH)}`;
             const dial = groove(DSZ, DTH, 3, P.bot, [...fills.slice(0, pplLayers), seps, ...fills.slice(pplLayers)], []);   // 人数 → 区切り → 予定 の順に重ねる
+            // 次のバレーの人数(今日のバレーが終わったあとの予告): 溝のさらに内側に、細い12マスのリングで(12人を超えたぶんは濃い色)
+            let upRing = "";
+            if (up) {
+                const USZ = DSZ - DTH * 2 - 8, UTH = 3, uA = `color-mix(in srgb, ${up.col} 60%, ${P.bg})`, uB = `color-mix(in srgb, ${up.col} 72%, ${P.ink})`;
+                upRing = [segs(USZ, UTH, 12, `color-mix(in srgb, ${P.ink3} 16%, transparent)`, "transparent", 8), segs(USZ, UTH, Math.min(up.n, 12), uA, "transparent", 8)]
+                    .concat(up.n > 12 ? [segs(USZ, UTH, up.n - 12, uB, "transparent", 8)] : []).map(L).join("");
+            }
             let hand = "";
             if (sel === todayKey && !pin) { const nowD = new Date(), deg = (nowD.getHours() + nowD.getMinutes() / 60) / (protoDial12 ? 12 : 24) * 360; hand = L(`position:absolute;left:50%;top:50%;width:2px;height:${DTH + 6}px;margin-left:-1px;border-radius:1px;background:${P.ink};transform-origin:50% 0;transform:rotate(${deg + 180}deg) translateY(${DSZ / 2 - DTH - 3}px);pointer-events:none`); }
             // 自分の出欠
@@ -13901,7 +13914,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
             rows.sort((a, b) => a.min - b.min);
             const moreN = Math.max(0, rows.length - 3 - protoRowsTop);
-            const vlabel = !vv ? "VOLLEY" : sv ? "VOLLEY · この日" : (() => { const [a, b, c] = nextKey.split("-").map(Number), dd = new Date(a, b - 1, c); return `NEXT VOLLEY · ${MSH[b - 1]} ${c} ${WEN[dd.getDay()].slice(0, 3)}`; })();
+            const vlabel = !vv ? "VOLLEY" : nextKey === sel ? "VOLLEY · この日" : (() => { const [a, b, c] = nextKey.split("-").map(Number), dd = new Date(a, b - 1, c); return `NEXT VOLLEY · ${MSH[b - 1]} ${c} ${WEN[dd.getDay()].slice(0, 3)}`; })();
 
             // ---------- カレンダー ----------
             const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
@@ -13974,7 +13987,7 @@ const namesBtn = isAdmin() && dates.length > 0
               <div class="pr-head" style="border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
                 <div class="pr-headrow" style="display:flex;align-items:center;gap:18px;height:200px">
                   <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
-                    ${dial.map(L).join("")}${hand}
+                    ${dial.map(L).join("")}${upRing}${hand}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
                       <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
                       <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
@@ -13983,10 +13996,12 @@ const namesBtn = isAdmin() && dates.length > 0
                   <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
                     <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${holP ? `<span role="button" tabindex="0" onclick="protoRow(${holP.p.id})" style="font-size:10.5px;color:${P.red};white-space:nowrap;cursor:pointer">休日</span>` : ""}${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
                     ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;cursor:pointer">
-                      <span style="font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${sv ? "VOLLEY" : `NEXT ${nextKey.slice(5).replace("-", "/").replace(/^0/, "")}`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>
+                      <span style="font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${nextKey === sel ? "VOLLEY" : `NEXT ${+nextKey.slice(5, 7)}/${+nextKey.slice(8)}`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>
                       ${segHtml}</div>` : ""}
+                    ${up ? `<div role="button" tabindex="0" aria-label="次のバレーの日へ" onclick="protoPick('${upKey}')" style="display:flex;align-items:center;gap:6px;min-width:0;font-family:${en};font-size:11px;color:${P.ink3};cursor:pointer;white-space:nowrap;overflow:hidden">
+                      <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
                     <div style="position:relative">
-                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:78px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
+                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 52 : 78}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
                         ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;background:${r.col}"></i><span style="width:44px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:26px">予定なし</span>`}
                       </div>
                       <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
