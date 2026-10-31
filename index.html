@@ -3185,6 +3185,20 @@
         .mt-ed-row .mt-wb { flex: 1; }
         .mt-ed-all { margin-right: auto; }
         .mt-ed-seg button { min-width: 30px; }
+
+        /* 操作は1列に収める(チーム数・分ける・小さい丸ボタン) */
+        #teamsView .tb2 { gap: 6px; margin: 0 0 10px; }
+        #teamsView .tc-step { height: 40px; padding: 0 3px; }
+        #teamsView .tc-step button { width: 30px; height: 30px; font-size: 16px; }
+        #teamsView .tc-num { padding: 0 3px; }
+        #teamsView .tc-num .ic { display: none; }
+        #teamsView .tb2 .team-split-btn, #teamsView .tb2 .team-rerun-btn { flex: 1 1 0; min-width: 44px; height: 40px; min-height: 40px; padding: 0 8px; }
+        #teamsView .tb2 .tchip { flex: none; width: 34px; height: 34px; }
+        #teamsView .tb2 #dupMark:empty { display: none; }
+        .rs-unit { display: flex; align-items: center; justify-content: flex-end; font-size: 11.5px; font-weight: 700; color: var(--ink-3); margin: 0 0 6px; }
+        .mt-unit-seg { display: inline-flex; gap: 2px; margin-left: 8px; padding: 2px; border-radius: 9px; background: var(--bg); box-shadow: var(--sink); vertical-align: middle; }
+        .mt-unit-seg button { height: 22px; padding: 0 9px; border: none; border-radius: 7px; background: transparent; color: var(--ink-3); font-size: 11px; font-weight: 700; }
+        .mt-unit-seg button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
 </style>
 </head>
 <body>
@@ -4244,14 +4258,11 @@ await main();
                 </div>
                 <button class="team-split-btn" id="teamSplitBtn" onclick="runTeamSplit()" aria-label="チームを分ける"><i class="ic ic-shuffle"></i></button>
                 <button class="team-rerun-btn" id="teamRerunBtn" onclick="runTeamSplit()" title="もう一度分ける(過去と重複しない組み合わせ)" aria-label="分け直す" style="display:none;"><i class="ic ic-shuffle"></i><span id="dupMark"></span></button>
-            </div>
-            <div class="team-subbar">
                 <label class="tchip" title="ランダム" aria-label="ランダム">
                     <input type="checkbox" id="ignoreParamsToggle" onchange="toggleIgnoreParams()">
                     <span><i class="ic ic-dice"></i></span>
                 </label>
                 <button type="button" class="tchip admin-only" id="hideParamsBtn" onclick="toggleHideTeamParams()" title="コートの数値を隠す" aria-pressed="false"><i class="ic ic-eyeoff"></i></button>
-                <span class="tsub-gap"></span>
                 <button type="button" class="tchip" id="teamResetBtn" onclick="resetTeamSplit()" title="リセット" style="display:none;"><i class="ic ic-undo"></i></button>
                 <button type="button" class="tchip team-sync-btn admin-only" id="teamSyncBtn" onclick="syncTeamSplit()" title="このチーム分けを、ほかの管理者の端末にも出す" style="display:none;"><i class="ic ic-refresh"></i></button>
             </div>
@@ -9707,10 +9718,10 @@ await main();
             if (rule.type === "first" ? score.filter(x => x >= rule.n).length > 1 || n > rule.n * 2 - 1 : n > rule.n) return { done: false, text: `${score.join(" - ")}　⚠` };
             if (rule.type === "first") {
                 const top = Math.max(...score), done = top >= rule.n, w = done ? lbs[score.indexOf(top)] : "";
-                return { done, text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
+                return { done, win: w, text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
             }
             const done = n >= rule.n;
-            return { done, text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
+            return { done, win: done ? (score[0] > score[1] ? lbs[0] : score[1] > score[0] ? lbs[1] : "") : "", text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
         }
         // 組を手で直す: その試合を別の組へ / 新しい組へ / 自動に戻す
         function setMatchGroup(date, id, v) {
@@ -9841,12 +9852,12 @@ await main();
             let rates = "";
             if (adm) {
                 const st = matchStatsFrom("0000"), dy = {};
-                list.forEach(m => m.teams.forEach((t, k) => t.forEach(nm => { const o = dy[nm] || (dy[nm] = { g: 0, w: 0 }); o.g++; if (k === m.win) o.w++; })));
+                matchStatsAddDay(dy, list, matchRateUnit);
                 const mem = (attendanceByDate[selectedDate] || []).filter(m => m.status === "来る").map(m => ({ n: m.name, a: st[m.name] || { g: 0, w: 0 }, d: dy[m.name] || { g: 0, w: 0 } }));
                 const rt = o => o.g ? o.w / o.g : -1;
                 mem.sort((x, y) => (rt(y.a) - rt(x.a)) || y.a.g - x.a.g || (rt(y.d) - rt(x.d)));
                 const cell = o => o.g ? `<span class="mt-rc"><i style="width:${Math.round(o.w / o.g * 100)}%"></i><b>${Math.round(o.w / o.g * 100)}%</b><small>${o.w}勝${o.g - o.w}敗</small></span>` : `<span class="mt-rc none">—</span>`;
-                if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>勝率${admMark()}</summary>
+                if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>勝率${matchUnitSegHtml()}${admMark()}</summary>
                     <div class="mt-rt"><div class="mt-rr mt-rh"><span>名前</span><span>累計</span><span>この日</span></div>${mem.map(x => `<div class="mt-rr"><span class="mt-rn">${escapeHtml(x.n)}</span>${cell(x.a)}${cell(x.d)}</div>`).join("")}</div></details>`;
             }
             const rule = matchRule();
@@ -9856,7 +9867,35 @@ await main();
                 ${rates}</div>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
-        function matchStatsFrom(fromKey) {
+        // 勝率の数え方: "game" = 1ゲームごと / "match" = 1試合(組)ごと。決着していない試合は数えない
+        var matchRateUnit = "game";
+        try { matchRateUnit = localStorage.getItem("match_rate_unit_v1") === "match" ? "match" : "game"; } catch (e) { /* ignore */ }
+        function setMatchRateUnit(u) {
+            matchRateUnit = u === "match" ? "match" : "game";
+            try { localStorage.setItem("match_rate_unit_v1", matchRateUnit); } catch (e) { /* ignore */ }
+            renderMatchBox(); if (typeof renderRosterStats === "function") renderRosterStats();
+        }
+        function matchUnitSegHtml() { return `<span class="mt-unit-seg" onclick="event.stopPropagation()">${[["game", "ゲーム"], ["match", "試合"]].map(([v, l]) => `<button type="button" class="${matchRateUnit === v ? "on" : ""}" onclick="event.preventDefault();setMatchRateUnit('${v}')">${l}</button>`).join("")}</span>`; }
+        // 1日分の勝ち数・試合数を st に足す
+        function matchStatsAddDay(st, list, unit) {
+            const add = (nm, win) => { const o = st[nm] || (st[nm] = { g: 0, w: 0 }); o.g++; if (win) o.w++; };
+            if (unit !== "match") { list.forEach(m => m.teams.forEach((t, k) => t.forEach(nm => add(nm, k === m.win)))); return; }
+            const rule = matchRule();
+            matchGroupsOf(list).forEach(g => {
+                const s0 = matchGroupState(g, rule); if (!s0.done) return;
+                g.labels.slice(0, 2).forEach(lb => {
+                    const names = new Set(); g.games.forEach(({ m }) => { const k = m.labels.indexOf(lb); if (k >= 0) m.teams[k].forEach(n => names.add(n)); });
+                    names.forEach(nm => add(nm, s0.win === lb));
+                });
+            });
+        }
+        function matchStatsFrom(fromKey, unit) {
+            const st = {};
+            unit = unit || matchRateUnit;
+            Object.keys(matchesByDate).filter(d => d >= fromKey).forEach(d => matchStatsAddDay(st, matchesByDate[d] || [], unit));
+            return st;
+        }
+        function matchStatsFromOld(fromKey) {
             const st = {};
             Object.keys(matchesByDate).filter(d => d >= fromKey).forEach(d => (matchesByDate[d] || []).forEach(m => {
                 m.teams.forEach((t, k) => t.forEach(nm => { const o = st[nm] || (st[nm] = { g: 0, w: 0 }); o.g++; if (k === m.win) o.w++; }));
@@ -10576,10 +10615,11 @@ const namesBtn = isAdmin() && dates.length > 0
             const per = [[3, "3か月"], [6, "6か月"], [0, "全部"]].map(([v, l]) => `<button type="button" class="${rstatPeriod === v ? "on" : ""}" onclick="setRstat('p',${v})">${l}</button>`).join("");
             const hd = (k, l) => `<button type="button" class="rs-h${rstatSort === k ? " on" : ""}" onclick="setRstat('s','${k}')">${l}${rstatSort === k ? " ▾" : ""}</button>`;
             el.innerHTML = `<div class="rs-top"><span class="rs-seg2">${per}</span><span class="rs-days">バレー ${days}回分</span></div>
+                <div class="rs-unit">勝率${matchUnitSegHtml()}</div>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
                 <details class="note-details" style="margin-top:10px;" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
-                <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(かっこは試合数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
+                <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
         }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
