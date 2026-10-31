@@ -2839,6 +2839,8 @@
         .mt-rule { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; font-size: 12px; color: var(--ink-3); font-weight: 700; }
         .mt-rule select { height: 30px; border-radius: 9px; border: none; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink); padding: 0 8px; font-size: 12.5px; font-weight: 700; }
         .mt-gno { font-size: 11px; font-weight: 800; color: var(--ink-3); margin-bottom: 3px; }
+        .mt-dnote { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: rgba(124, 58, 237, .12); color: #7c3aed; font-size: 10px; }
+        .mt-diffrow { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 0 0 4px 3.2em; font-size: 11px; color: #7c3aed; font-weight: 700; }
         .mt-gsel { margin-left: auto; height: 24px; border-radius: 7px; border: none; background: transparent; color: var(--ink-3); font-size: 11px; padding: 0 2px; }
         .mt-gsel + .mt-del { margin-left: 4px; }
         #matchBox select.mt-gsel, #matchHistory select.mt-gsel { height: 24px !important; min-height: 0 !important; width: auto !important; max-width: 7em; box-shadow: none !important; background: rgba(128, 128, 128, .1) !important; padding: 0 6px !important; font-size: 11px !important; border-radius: 7px !important; -webkit-appearance: none; appearance: none; }
@@ -9575,7 +9577,7 @@ await main();
         const MATCH_RULE_KEY = "attendance_match_rule_v1";
         const MATCH_RULES = [["first", 2, "2ゲーム先取"], ["first", 3, "3ゲーム先取"], ["first", 1, "1ゲーム"], ["games", 2, "2ゲームマッチ"], ["games", 3, "3ゲームマッチ"]];
         function matchRule() { const v = teamJsonGet(MATCH_RULE_KEY); return v.type === "games" || v.type === "first" ? { type: v.type, n: Math.max(1, Math.min(9, +v.n || 2)) } : { type: "first", n: 2 }; }
-        function setMatchRule(v) { const [type, n] = String(v).split(":"); try { localStorage.setItem(MATCH_RULE_KEY, JSON.stringify({ type, n: +n })); } catch (e) { /* ignore */ } renderMatchBox(); const h = document.getElementById("matchHistory"); if (h && h.closest("details") && h.closest("details").open) renderMatchHistory(); }
+        function setMatchRule(v) { if (!isAdmin()) return; const [type, n] = String(v).split(":"); try { localStorage.setItem(MATCH_RULE_KEY, JSON.stringify({ type, n: +n })); } catch (e) { /* ignore */ } renderMatchBox(); const h = document.getElementById("matchHistory"); if (h && h.closest("details") && h.closest("details").open) renderMatchHistory(); }
         function matchRuleLabel(r) { const f = MATCH_RULES.find(x => x[0] === r.type && x[1] === r.n); return f ? f[2] : r.type === "first" ? `${r.n}ゲーム先取` : `${r.n}ゲームマッチ`; }
         function matchTeamKey(names) { return names.slice().sort().join("\u0001"); }
         // 自動の組: チーム分けボタンを押した時刻(round)と、対戦したチームの番号。round の無い古い記録は、メンバーが同じかどうかで
@@ -9590,7 +9592,7 @@ await main();
                 const gk = matchKeyOf(m);
                 let g = byKey[gk];
                 if (!g) { g = byKey[gk] = { key: gk, labels: [m.labels[0], m.labels[1]], names: {}, games: [] }; groups.push(g); }
-                m.labels.forEach((lb, k) => { if (!g.labels.includes(lb)) g.labels.push(lb); g.names[lb] = m.teams[k]; });   // メンバーは、その組の最後の試合のもの
+                m.labels.forEach((lb, k) => { if (!g.labels.includes(lb)) g.labels.push(lb); if (!g.names[lb]) g.names[lb] = m.teams[k]; });   // 上に出すメンバーは、その組の最初のゲームのもの
                 g.games.push({ m, i });
             });
             return groups;
@@ -9622,9 +9624,18 @@ await main();
             return groups.map((g, gi) => {
                 const st = matchGroupState(g, rule);
                 const opts = (m) => groups.map((x, xi) => `<option value="${escapeHtml(x.key)}"${x.key === g.key ? " selected" : ""}>組${xi + 1}</option>`).join("") + `<option value="new">新しい組</option>${m.grp ? `<option value="auto">自動に戻す</option>` : ""}`;
-                const rows = g.games.map(({ m }, j) => `<div class="mt-top"><span class="mt-no">${j + 1}ゲーム</span><span class="mt-team win">${escapeHtml(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`).join("");
+                // 最初のゲームとメンバーが違うゲーム(手で入れ替えた・人を足した・組を手で直した): 違う人を(+足された人 −抜けた人)で出す
+                let anyDiff = false;
+                const diffOf = (m) => m.labels.map((lb, k) => {
+                    const base = new Set(g.names[lb] || []), now = new Set(m.teams[k]);
+                    const add = m.teams[k].filter(n => !base.has(n)), out = (g.names[lb] || []).filter(n => !now.has(n));
+                    if (!add.length && !out.length) return "";
+                    anyDiff = true;
+                    return `<span class="mt-diff">${escapeHtml(lb)}（${[...add.map(n => "+" + escapeHtml(n)), ...out.map(n => "−" + escapeHtml(n))].join(" ")}）</span>`;
+                }).filter(Boolean).join("");
+                const rows = g.games.map(({ m }, j) => `<div class="mt-top"><span class="mt-no">${j + 1}ゲーム</span><span class="mt-team win">${escapeHtml(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>${(() => { const df = j ? diffOf(m) : ""; return df ? `<div class="mt-diffrow">${df}</div>` : ""; })()}`).join("");
                 const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb)}</b><span>${(g.names[lb] || []).map(escapeHtml).join("・")}</span></div>`;
-                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
+                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${anyDiff ? `<span class="mt-dnote">メンバーが違うゲームあり</span>` : ""}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
             }).join("");
         }
         function renderMatchBox() {
@@ -9655,7 +9666,7 @@ await main();
                     <div class="mt-rt"><div class="mt-rr mt-rh"><span>名前</span><span>累計</span><span>この日</span></div>${mem.map(x => `<div class="mt-rr"><span class="mt-rn">${escapeHtml(x.n)}</span>${cell(x.a)}${cell(x.d)}</div>`).join("")}</div></details>`;
             }
             const rule = matchRule();
-            const ruleHtml = adm ? `<div class="mt-rule"><span>ルール</span><select onchange="setMatchRule(this.value)">${MATCH_RULES.map(([t, n, lb]) => `<option value="${t}:${n}"${rule.type === t && rule.n === n ? " selected" : ""}>${lb}</option>`).join("")}</select></div>` : `<div class="mt-rule"><span>ルール　${matchRuleLabel(rule)}</span></div>`;
+            const ruleHtml = isAdmin() ? `<div class="mt-rule"><span>ルール</span><select onchange="setMatchRule(this.value)">${MATCH_RULES.map(([t, n, lb]) => `<option value="${t}:${n}"${rule.type === t && rule.n === n ? " selected" : ""}>${lb}</option>`).join("")}</select></div>` : `<div class="mt-rule"><span>ルール　${matchRuleLabel(rule)}</span></div>`;
             box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}ゲーム</span>` : ""}</div>${ruleHtml}${form}
                 ${list.length ? `<div class="mt-list">${matchGroupsHtml(selectedDate, list, adm)}</div>` : (teams ? "" : `<div class="mt-empty">この日の試合はまだありません</div>`)}
                 ${rates}</div>`;
