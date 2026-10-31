@@ -2840,6 +2840,24 @@
         .mt-rule select { height: 30px; border-radius: 9px; border: none; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink); padding: 0 8px; font-size: 12.5px; font-weight: 700; }
         .mt-gno { font-size: 11px; font-weight: 800; color: var(--ink-3); margin-bottom: 3px; }
         .mt-dnote { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: rgba(124, 58, 237, .12); color: #7c3aed; font-size: 10px; }
+        .mt-gno { display: flex; align-items: center; }
+        .mt-back { margin-left: auto; height: 24px; padding: 0 10px; border: none; border-radius: 8px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--accent); font-size: 11px; font-weight: 700; }
+        .mt-edb { border: none; background: none; color: var(--ink-3); font-size: 13px; padding: 0 2px; margin-left: 4px; }
+        .mt-ed { margin: 6px 0 8px; padding: 10px; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); display: flex; flex-direction: column; gap: 6px; }
+        .mt-ed-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); font-weight: 700; }
+        .mt-ed-row .mt-wb { height: 32px; font-size: 12px; }
+        .mt-ed-row input { width: 64px; height: 32px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); text-align: center; font-size: 14px; }
+        .mt-ed-h { font-size: 11.5px; font-weight: 800; color: var(--ink-3); margin-top: 2px; }
+        .mt-ed-mem { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+        .mt-ed-mem > span:first-child { flex: 1; min-width: 0; font-weight: 700; }
+        #matchBox .mt-ed-mem select, #matchHistory .mt-ed-mem select { height: 30px !important; min-height: 0 !important; width: auto !important; padding: 0 6px !important; font-size: 12px !important; }
+        .mt-ed-mem select { flex: 1; min-width: 0; height: 30px; border: none; border-radius: 8px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 12px; padding: 0 6px; }
+        .mt-ed-seg { display: inline-flex; gap: 4px; }
+        .mt-ed-seg button { height: 26px; padding: 0 8px; border: none; border-radius: 8px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 11px; font-weight: 700; }
+        .mt-ed-seg button.on { background: var(--accent); color: #fff; box-shadow: none; }
+        .mt-ed-all { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-2); }
+        .mt-ed-cancel { margin-left: auto; height: 38px; padding: 0 14px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-weight: 700; }
+        .mt-ed-row .mt-add { margin-left: 0; }
         .mt-diffrow { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 0 0 4px 3.2em; font-size: 11px; color: #7c3aed; font-weight: 700; }
         .mt-gsel { margin-left: auto; height: 24px; border-radius: 7px; border: none; background: transparent; color: var(--ink-3); font-size: 11px; padding: 0 2px; }
         .mt-gsel + .mt-del { margin-left: 4px; }
@@ -9619,23 +9637,105 @@ await main();
             saveMatches(); renderMatchBox();
             const h = document.getElementById("matchHistory"); if (h && h.closest("details") && h.closest("details").open) renderMatchHistory();
         }
+        // 1ゲーム目とのメンバーの違い: 入れ替え(A⇄B)・移動(名前→チーム2)・足された人(+名前)・抜けた人(−名前)を、1人1回だけ出す
+        function matchDiffItems(g, m) {
+            const baseTeam = {}, nowTeam = {};
+            Object.entries(g.names).forEach(([lb, ns]) => ns.forEach(n => { baseTeam[n] = lb; }));
+            m.labels.forEach((lb, k) => m.teams[k].forEach(n => { nowTeam[n] = lb; }));
+            const moved = Object.keys(nowTeam).filter(n => baseTeam[n] && baseTeam[n] !== nowTeam[n]);
+            const added = Object.keys(nowTeam).filter(n => !baseTeam[n]);
+            const gone = Object.keys(baseTeam).filter(n => !nowTeam[n]);
+            const items = [], used = new Set();
+            moved.forEach(a => {   // 2人が反対に動いていれば「A⇄B」にまとめる
+                if (used.has(a)) return;
+                const b = moved.find(x => !used.has(x) && x !== a && baseTeam[x] === nowTeam[a] && nowTeam[x] === baseTeam[a]);
+                if (b) { used.add(a); used.add(b); items.push(`${escapeHtml(a)}⇄${escapeHtml(b)}`); }
+            });
+            moved.filter(n => !used.has(n)).forEach(n => items.push(`${escapeHtml(n)}→${escapeHtml(nowTeam[n])}`));
+            added.forEach(n => items.push(`+${escapeHtml(n)}（${escapeHtml(nowTeam[n])}）`));
+            gone.forEach(n => items.push(`−${escapeHtml(n)}`));
+            return items;
+        }
+        // ------- 記録したゲームを、あとで直す(勝ち・点差・メンバー) -------
+        var matchEdit = null;   // { date, id, win, diff, teamOf: {名前: 0|1|-1}, all: この組のほかのゲームも同じメンバーにする }
+        function matchEditOpen(date, id) {
+            const m = (matchesByDate[date] || []).find(x => x.id === id); if (!m || !realAdmin()) return;
+            const teamOf = {}; m.teams.forEach((t, k) => t.forEach(n => { teamOf[n] = k; }));
+            matchEdit = { date, id, win: m.win, diff: m.diff || 0, teamOf, all: false };
+            matchRerender(date);
+        }
+        function matchEditSet(k, v) { if (!matchEdit) return; matchEdit[k] = v; matchRerender(matchEdit.date); }
+        function matchEditMem(name, k) { if (!matchEdit) return; matchEdit.teamOf[name] = k; matchRerender(matchEdit.date); }
+        function matchEditAdd(k) {
+            const sel = document.getElementById("mtEdAdd"), n = sel && sel.value; if (!n || !matchEdit) return;
+            matchEdit.teamOf[n] = k; matchRerender(matchEdit.date);
+        }
+        function matchEditCancel() { const d = matchEdit && matchEdit.date; matchEdit = null; if (d) matchRerender(d); }
+        function matchEditSave() {
+            const e = matchEdit; if (!e || !realAdmin()) return;
+            const list = matchesByDate[e.date] || [], m = list.find(x => x.id === e.id); if (!m) { matchEditCancel(); return; }
+            const dEl = document.getElementById("mtEdDiff"); if (dEl) e.diff = Math.max(0, Math.min(99, parseInt(dEl.value, 10) || 0));
+            const teams = [0, 1].map(k => Object.keys(e.teamOf).filter(n => e.teamOf[n] === k));
+            if (!teams[0].length || !teams[1].length) { alert("どちらのチームにも1人以上入れてください。"); return; }
+            m.teams = teams; m.win = e.win; m.diff = e.diff;
+            if (e.all) { const gk = matchKeyOf(m); list.forEach(x => { if (x !== m && matchKeyOf(x) === gk) { x.teams = x.labels.map((lb, k) => { const i = m.labels.indexOf(lb); return i >= 0 ? teams[i].slice() : x.teams[k]; }); } }); }
+            matchEdit = null;
+            saveMatches(); matchRerender(e.date);
+            if (typeof renderRosterStats === "function") renderRosterStats();
+        }
+        function matchRerender(date) {
+            if (date === selectedDate) renderMatchBox();
+            const h = document.getElementById("matchHistory"); if (h && h.closest("details") && h.closest("details").open) renderMatchHistory();
+        }
+        function matchEditHtml(m) {
+            const e = matchEdit, lb = m.labels;
+            const names = Object.keys(e.teamOf);
+            const seg = (n) => [0, 1, -1].map(k => `<button type="button" class="${e.teamOf[n] === k ? "on" : ""}" onclick="matchEditMem(decodeURIComponent('${encodeURIComponent(n)}'), ${k})">${k < 0 ? "外す" : escapeHtml(lb[k])}</button>`).join("");
+            const cands = roster.map(r => r.name).filter(n => !(n in e.teamOf));
+            return `<div class="mt-ed">
+                <div class="mt-ed-row"><span>勝ち</span>${[0, 1].map(k => `<button type="button" class="mt-wb${e.win === k ? " on" : ""}" onclick="matchEditSet('win', ${k})">${escapeHtml(lb[k])}</button>`).join("")}</div>
+                <div class="mt-ed-row"><span>点差</span><input type="number" id="mtEdDiff" min="0" max="99" inputmode="numeric" value="${e.diff}"></div>
+                <div class="mt-ed-h">メンバー</div>
+                ${names.map(n => `<div class="mt-ed-mem"><span>${escapeHtml(n)}</span><span class="mt-ed-seg">${seg(n)}</span></div>`).join("")}
+                ${cands.length ? `<div class="mt-ed-mem"><select id="mtEdAdd"><option value="">名簿から足す</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select><span class="mt-ed-seg">${[0, 1].map(k => `<button type="button" onclick="matchEditAdd(${k})">${escapeHtml(lb[k])}へ</button>`).join("")}</span></div>` : ""}
+                <label class="mt-ed-all"><input type="checkbox" ${e.all ? "checked" : ""} onchange="matchEdit.all=this.checked"> この組のほかのゲームも同じメンバーにする</label>
+                <div class="mt-ed-row"><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()">やめる</button><button type="button" class="mt-add" onclick="matchEditSave()">保存</button></div>
+            </div>`;
+        }
+        // この組のチームを、チーム分けの画面に戻す(その日を開いているとき。あとで入れ替えたり、続きのゲームを記録したりできる)
+        function matchToTeamSplit(date, gkey) {
+            if (!isAdmin() || date !== selectedDate) return;
+            const g = matchGroupsOf(matchesByDate[date] || []).find(x => x.key === gkey); if (!g) return;
+            const last = g.games[g.games.length - 1].m;
+            const order = last.labels.map((lb, k) => ({ lb, t: last.teams[k] })).sort((a, b) => a.lb.localeCompare(b.lb, "ja", { numeric: true }));
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === date && !confirm("今のチーム分けを、この組のチームに置きかえますか？")) return;
+            const at = Date.now();
+            lastTeamSplitResult = teamRestore({ teams: order.map(x => x.t), lineups: null, at, round: last.round || at, manual: true }, date);
+            swapSel = null; swapNotice = "記録した組のチームを戻しました。";
+            const n = document.getElementById("teamCountInput"); if (n) n.value = order.length;
+            document.getElementById("teamSplitBtn").style.display = "none";
+            document.getElementById("teamRerunBtn").style.display = "block";
+            document.getElementById("teamResetBtn").style.display = "block";
+            renderSwapBar(); renderTeamResults();
+            const v = document.getElementById("teamResults"); if (v) scrollBelowHeader(v, 4);
+        }
         function matchGroupsHtml(date, list, canDel) {
             const rule = matchRule(), groups = matchGroupsOf(list);
             return groups.map((g, gi) => {
                 const st = matchGroupState(g, rule);
                 const opts = (m) => groups.map((x, xi) => `<option value="${escapeHtml(x.key)}"${x.key === g.key ? " selected" : ""}>組${xi + 1}</option>`).join("") + `<option value="new">新しい組</option>${m.grp ? `<option value="auto">自動に戻す</option>` : ""}`;
-                // 最初のゲームとメンバーが違うゲーム(手で入れ替えた・人を足した・組を手で直した): 違う人を(+足された人 −抜けた人)で出す
                 let anyDiff = false;
-                const diffOf = (m) => m.labels.map((lb, k) => {
-                    const base = new Set(g.names[lb] || []), now = new Set(m.teams[k]);
-                    const add = m.teams[k].filter(n => !base.has(n)), out = (g.names[lb] || []).filter(n => !now.has(n));
-                    if (!add.length && !out.length) return "";
-                    anyDiff = true;
-                    return `<span class="mt-diff">${escapeHtml(lb)}（${[...add.map(n => "+" + escapeHtml(n)), ...out.map(n => "−" + escapeHtml(n))].join(" ")}）</span>`;
-                }).filter(Boolean).join("");
-                const rows = g.games.map(({ m }, j) => `<div class="mt-top"><span class="mt-no">${j + 1}ゲーム</span><span class="mt-team win">${escapeHtml(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>${(() => { const df = j ? diffOf(m) : ""; return df ? `<div class="mt-diffrow">${df}</div>` : ""; })()}`).join("");
+                const rows = g.games.map(({ m }, j) => {
+                    const items = j ? matchDiffItems(g, m) : [];
+                    if (items.length) anyDiff = true;
+                    const editing = matchEdit && matchEdit.id === m.id && matchEdit.date === date;
+                    return `<div class="mt-top"><span class="mt-no">${j + 1}ゲーム</span><span class="mt-team win">${escapeHtml(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="勝ち・点差・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
+                        + (items.length ? `<div class="mt-diffrow">（${items.join("　")}）</div>` : "")
+                        + (editing ? matchEditHtml(m) : "");
+                }).join("");
                 const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb)}</b><span>${(g.names[lb] || []).map(escapeHtml).join("・")}</span></div>`;
-                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${anyDiff ? `<span class="mt-dnote">メンバーが違うゲームあり</span>` : ""}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
+                const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key)}'))">チーム分けに戻す</button>` : "";
+                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${anyDiff ? `<span class="mt-dnote">メンバーが違うゲームあり</span>` : ""}${back}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
             }).join("");
         }
         function renderMatchBox() {
