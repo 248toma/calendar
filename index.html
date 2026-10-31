@@ -2824,6 +2824,25 @@
         .rs-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; opacity: .35; }
         .rs-bar.c { background: #2fb380; } .rs-bar.a { background: #3b82f6; } .rs-bar.w { background: #f59e0b; }
         .rs-c b small { font-size: 9px; font-weight: 600; color: var(--ink-3); margin-left: 1px; }
+        .team-sync-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+        .team-sync-btn .tsync-l { font-size: 11px; font-weight: 800; }
+        .team-sync-btn.synced { color: var(--accent); }
+        .tsync-note { font-size: 11.5px; color: var(--ink-3); margin: -4px 2px 8px; }
+        .tsync-note:empty { display: none; }
+        /* チーム分けのあとに「来る」になった人 */
+        .late-box { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-sm); }
+        .late-h { font-size: 12.5px; font-weight: 800; color: var(--ink-2); margin-bottom: 6px; }
+        .late-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+        .late-name { font-size: 13px; font-weight: 700; margin-right: 4px; }
+        .late-row button { height: 30px; padding: 0 12px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--accent); font-size: 12px; font-weight: 700; }
+        /* 試合の記録: 同じ組み合わせ(同じメンバー同士)をまとめる */
+        .mt-grp { padding: 9px 10px; border-radius: 10px; background: rgba(128, 128, 128, .08); }
+        .mt-grp.warn { box-shadow: inset 0 0 0 1.5px #e08a00; }
+        .mt-gt { display: flex; align-items: baseline; gap: 6px; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
+        .mt-gt b { flex: none; font-size: 12px; color: var(--ink); }
+        .mt-gg { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(128, 128, 128, .3); }
+        .mt-gs { margin-top: 5px; font-size: 11px; font-weight: 700; color: var(--ink-3); }
+        .mt-grp.warn .mt-gs { color: #b06a00; }
         .mt-card { margin-top: 12px; padding: 14px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-sm); }
         .mt-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; font-weight: 800; margin-bottom: 10px; }
         .mt-h span { font-size: 12px; font-weight: 600; color: var(--ink-3); }
@@ -4131,7 +4150,9 @@ await main();
                 <button class="team-rerun-btn" id="teamRerunBtn" onclick="runTeamSplit()" title="もう一度分ける(過去と重複しない組み合わせ)" aria-label="もう一度分ける" style="display:none;"><i class="ic ic-shuffle"></i><span id="dupMark"></span></button>
                 <button type="button" class="team-rerun-btn team-eye-btn admin-only" id="hideParamsBtn" onclick="toggleHideTeamParams()" title="パラメータを隠す" aria-label="パラメータを隠す" aria-pressed="false"><i class="ic ic-eye"></i><i class="ic ic-eyeoff"></i></button>
                 <button class="team-rerun-btn team-reset-btn" id="teamResetBtn" onclick="resetTeamSplit()" title="リセット" aria-label="リセット" style="display:none;"><i class="ic ic-undo"></i></button>
+                <button type="button" class="team-rerun-btn team-sync-btn admin-only" id="teamSyncBtn" onclick="syncTeamSplit()" title="このチーム分けを、ほかの管理者の端末にも出す" aria-label="チーム分けを同期" style="display:none;"><i class="ic ic-refresh"></i><span class="tsync-l">同期</span></button>
             </div>
+            <div class="tsync-note" id="teamSyncNote"></div>
 
             <div class="team-legend" id="teamLegend" style="display:none;">
                 <span class="key-mark-legend" id="keyMarkLegend"></span>
@@ -8343,7 +8364,15 @@ await main();
             const splitBtn = document.getElementById("teamSplitBtn");
             splitBtn.disabled = unresolvedNames.length > 0 || comingMembers.length < 2;
 
-            if (!lastTeamSplitResult || lastTeamSplitResult.dateKey !== selectedDate) {
+            // ほかの管理者が同期したチーム分けがあれば(この端末の結果より新しければ)、それを出す
+            if (adoptSharedTeamSplit()) {
+                renderTeamResults();
+                splitBtn.style.display = "none";
+                document.getElementById("teamRerunBtn").style.display = "block";
+                document.getElementById("teamResetBtn").style.display = "block";
+                document.getElementById("dupMark").textContent = "";
+                setPredictBox("", false);
+            } else if (!lastTeamSplitResult || lastTeamSplitResult.dateKey !== selectedDate) {
                 lastTeamSplitResult = null;
                 document.getElementById("teamResults").innerHTML = "";
                 document.getElementById("dupMark").textContent = "";
@@ -8357,6 +8386,8 @@ await main();
             }
             updateSwapUi();
             try { renderMatchBox(); } catch (e) { console.warn(e); }   // チーム分けの前でも試合の記録を見られる
+            try { renderTeamSyncUi(); } catch (e) { console.warn(e); }
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate && lateMembers().length) renderTeamResults();   // あとから来る人が増えたら出す
         }
 
         function renderUnregisteredBox(names) {
@@ -9239,6 +9270,7 @@ await main();
             predictToken++;
             predictRunning = false;
             teamSplitHistory = { key: "", runs: [] };
+            { const sh = teamShareAll()[selectedDate]; if (sh) teamShareSkip[selectedDate] = sh.at; }   // 同期されたチーム分けも、この端末では出さない
             lastTeamSplitResult = null;
             swapSel = null; swapNotice = "";
             renderTeamSplitTab(); // 結果・警告・予測・ボタンの表示を初期状態に戻す
@@ -9285,7 +9317,7 @@ await main();
             const { teams, excludedKeys } = split;
             lastTeamSplitResult = {
                 teams, excludedKeys, dateKey: selectedDate, ignoreParams,
-                lineups: teams.map(arrangeTeamLineup)
+                lineups: teams.map(arrangeTeamLineup), at: Date.now()
             };
             lastTeamSplitResult.history = recordTeamSplitHistory(teams, ignoreParams);
             lastTeamSplitResult.history.noNew = !foundNew; // 重複しない組み合わせが見つからなかった
@@ -9317,8 +9349,85 @@ await main();
             saveIgnoreParams();
         }
 
+        // ------- チーム分けの同期(管理者が「同期」を押すと、共有データに入れて、ほかの管理者の端末にも同じチーム分けを出す) -------
+        // 共有データ: { "日付": { at: 時刻, teams: [[名前…]…], lineups: [{ slots: {番号: 名前}, bench: [名前…] }…], manual } }
+        const TEAM_SHARE_KEY = "attendance_team_share_v1";
+        var teamShareSkip = {};   // 日付 → この端末でリセットした同期分の時刻
+        function teamShareAll() { try { const v = JSON.parse(localStorage.getItem(TEAM_SHARE_KEY) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
+        // 名前 → チーム分けで使う人(名簿から。runTeamSplit と同じ形)
+        function teamParticipant(name) {
+            const rm = findRosterByName(name);
+            if (!rm) return { name, gender: "unspecified", position: "", guest: false, params: {} };
+            return { name: rm.name, gender: rm.gender, position: teamPosOf(rm), guest: rm.position === GUEST_POS, params: effectiveParams(rm.params) };
+        }
+        function syncTeamSplit() {
+            const res = lastTeamSplitResult;
+            if (!res || !isAdmin() || res.dateKey !== selectedDate) return;
+            const all = teamShareAll(), cut = formatDateKey(new Date(Date.now() - 30 * 864e5));
+            Object.keys(all).forEach(k => { if (k < cut) delete all[k]; });   // 30日より前は消す
+            const at = res.at || Date.now(); res.at = at; res.syncedAt = at;
+            const nm = p => p && p.name;
+            all[selectedDate] = {
+                at, manual: !!res.manualEdited,
+                teams: res.teams.map(t => t.map(nm)),
+                lineups: (res.lineups || []).map(l => l ? { slots: Object.fromEntries(Object.entries(l.slots || {}).filter(([, p]) => p).map(([no, p]) => [no, p.name])), bench: (l.bench || []).map(nm) } : null)
+            };
+            try { localStorage.setItem(TEAM_SHARE_KEY, JSON.stringify(all)); } catch (e) { console.warn(e); }
+            renderTeamSyncUi("同期しました。ほかの管理者の端末にも、このチーム分けが出ます。");
+        }
+        // 共有データのチーム分けを、この端末の結果にする(この端末の結果より新しいとき)
+        function adoptSharedTeamSplit() {
+            const sh = teamShareAll()[selectedDate];
+            if (!sh || !Array.isArray(sh.teams) || sh.teams.length < 2) return false;
+            const cur = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
+            if (cur && (cur.at || 0) >= sh.at) return false;
+            if ((teamShareSkip[selectedDate] || 0) >= sh.at) return false;   // この端末でリセットした同期分は出さない
+            const pool = {};
+            const P = name => pool[name] || (pool[name] = teamParticipant(name));
+            const teams = sh.teams.map(t => t.map(P));
+            const lineups = teams.map((t, i) => {
+                const l = sh.lineups && sh.lineups[i];
+                if (!l) return arrangeTeamLineup(t);
+                const slots = {}; Object.entries(l.slots || {}).forEach(([no, n]) => { slots[no] = P(n); });
+                return { ...arrangeTeamLineup(t), slots, bench: (l.bench || []).map(P) };
+            });
+            lastTeamSplitResult = { teams, excludedKeys: new Set(), dateKey: selectedDate, ignoreParams, lineups, at: sh.at, syncedAt: sh.at, manualEdited: !!sh.manual, fromShare: true };
+            swapSel = null; swapNotice = "";
+            const n = document.getElementById("teamCountInput"); if (n) n.value = teams.length;
+            return true;
+        }
+        function renderTeamSyncUi(msg) {
+            const b = document.getElementById("teamSyncBtn"), note = document.getElementById("teamSyncNote");
+            const res = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
+            if (b) { b.style.display = res && isAdmin() ? "" : "none"; b.classList.toggle("synced", !!(res && res.syncedAt && res.syncedAt === res.at)); }
+            if (note) note.textContent = msg || (res && res.fromShare && res.syncedAt === res.at ? "ほかの管理者が同期したチーム分けを表示中です。" : res && res.syncedAt && res.syncedAt !== res.at && isAdmin() ? "同期のあとに変更があります。ほかの管理者に出すには、もう一度「同期」を押してください。" : "");
+        }
+        // チーム分けのあとに「来る」になった人(名簿から足した人など): まだどのチームにもいない
+        function lateMembers() {
+            const res = lastTeamSplitResult; if (!res || res.dateKey !== selectedDate) return [];
+            const inTeam = new Set(res.teams.flat().map(p => p.name));
+            return (attendanceByDate[selectedDate] || []).filter(m => m.status === "来る" && !inTeam.has(m.name)).map(m => m.name);
+        }
+        function addLateMember(name, k) {
+            const res = lastTeamSplitResult; if (!res || !res.teams[k] || !isAdmin()) return;
+            if (res.teams.some(t => t.some(p => p.name === name))) return;
+            const p = teamParticipant(name);
+            res.teams[k].push(p);
+            if (res.lineups && res.lineups[k]) lineupAdd(res.lineups[k], p);
+            res.manualEdited = true; res.at = Date.now();
+            swapNotice = `${escapeHtml(name)}をチーム${k + 1}に入れました。`;
+            refreshDupAfterEdit();
+            renderSwapBar();
+            renderTeamResults();
+        }
+        function lateBoxHtml() {
+            const late = lateMembers(); if (!late.length) return "";
+            const res = lastTeamSplitResult;
+            return `<div class="late-box"><div class="late-h">チーム分けのあとに「来る」になった人</div>${late.map(n => `<div class="late-row"><span class="late-name">${escapeHtml(n)}</span>${isAdmin() ? res.teams.map((_, k) => `<button type="button" onclick="addLateMember(decodeURIComponent('${encodeURIComponent(n)}'), ${k})">チーム${k + 1}へ</button>`).join("") : `<span class="mt-unit">（管理者がチームに入れます）</span>`}</div>`).join("")}</div>`;
+        }
         function renderTeamResults() {
             try { renderMatchBox(); } catch (e) { console.warn(e); }
+            try { renderTeamSyncUi(); } catch (e) { console.warn(e); }
             const resultsEl = document.getElementById("teamResults");
             if (!lastTeamSplitResult) { resultsEl.innerHTML = ""; return; }
             const { teams } = lastTeamSplitResult;
@@ -9352,7 +9461,7 @@ await main();
                 }
             }
 
-            resultsEl.innerHTML = html;
+            resultsEl.innerHTML = lateBoxHtml() + html;
 
             // 凡例は、結果にいる性別だけ出す
             const present = new Set(teams.flat().map(p => p.gender || "unspecified"));
@@ -9406,6 +9515,27 @@ await main();
             return `<div class="mt-row"><div class="mt-top"><span class="mt-no">#${i + 1}</span><span class="mt-team win">${escapeHtml(m.labels[w])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "勝ち"}</span><span class="mt-team">${escapeHtml(m.labels[l])}</span>${canDel ? `<button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>
                 <div class="mt-mem"><span class="mt-w">勝</span>${names(w)}</div><div class="mt-mem"><span class="mt-l">負</span>${names(l)}</div></div>`;
         }
+        // 同じメンバー同士の試合をまとめる(ふだんは同じ組み合わせで2試合。1試合だけなら記入忘れかも)
+        function matchTeamKey(names) { return names.slice().sort().join("\u0001"); }
+        function matchGroupsHtml(date, list, canDel) {
+            const groups = [], byKey = {};
+            list.forEach((m, i) => {
+                const ka = matchTeamKey(m.teams[0]), kb = matchTeamKey(m.teams[1]), gk = [ka, kb].sort().join("\u0002");
+                let g = byKey[gk];
+                if (!g) { g = byKey[gk] = { keys: [ka, kb], names: [m.teams[0], m.teams[1]], labels: [m.labels[0], m.labels[1]], games: [] }; groups.push(g); }
+                g.games.push({ m, i });
+            });
+            return groups.map(g => {
+                const n = g.games.length, odd = n % 2 === 1;
+                const rows = g.games.map(({ m, i }, j) => {
+                    const wk = matchTeamKey(m.teams[m.win]), w = wk === g.keys[0] ? 0 : 1;
+                    return `<div class="mt-top"><span class="mt-no">${j + 1}試合目</span><span class="mt-team win">${escapeHtml(g.labels[w])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`;
+                }).join("");
+                const team = k => `<div class="mt-gt"><b>${escapeHtml(g.labels[k])}</b><span>${g.names[k].map(escapeHtml).join("・")}</span></div>`;
+                const st = odd ? `⚠ ${n}試合（あと1試合の記入忘れ？）` : `${n}試合 ✓`;
+                return `<div class="mt-grp${odd ? " warn" : ""}">${team(0)}${team(1)}<div class="mt-gg">${rows}</div><div class="mt-gs">${st}</div></div>`;
+            }).join("");
+        }
         function renderMatchBox() {
             const box = document.getElementById("matchBox"); if (!box) return;
             const list = matchesByDate[selectedDate] || [], teams = matchTeamsNow(), adm = realAdmin();
@@ -9434,7 +9564,7 @@ await main();
                     <div class="mt-rt"><div class="mt-rr mt-rh"><span>名前</span><span>累計</span><span>この日</span></div>${mem.map(x => `<div class="mt-rr"><span class="mt-rn">${escapeHtml(x.n)}</span>${cell(x.a)}${cell(x.d)}</div>`).join("")}</div></details>`;
             }
             box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}試合</span>` : ""}</div>${form}
-                ${list.length ? `<div class="mt-list">${list.map((m, i) => matchRowHtml(selectedDate, m, i, adm)).join("")}</div>` : (teams ? "" : `<div class="mt-empty">この日の試合はまだありません</div>`)}
+                ${list.length ? `<div class="mt-list">${matchGroupsHtml(selectedDate, list, adm)}</div>` : (teams ? "" : `<div class="mt-empty">この日の試合はまだありません</div>`)}
                 ${rates}</div>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
@@ -9448,7 +9578,7 @@ await main();
         function renderMatchHistory() {
             const el = document.getElementById("matchHistory"); if (!el) return;
             const ds = Object.keys(matchesByDate).filter(d => (matchesByDate[d] || []).length).sort().reverse();
-            el.innerHTML = ds.length ? ds.map(d => { const [y, m, dd] = d.split("-").map(Number); return `<div class="mt-day">${y}/${m}/${dd}(${WEEKDAYS[new Date(y, m - 1, dd).getDay()]})</div>` + matchesByDate[d].map((x, i) => matchRowHtml(d, x, i, realAdmin())).join(""); }).join("") : `<div class="acc-desc">まだ試合の記録はありません。</div>`;
+            el.innerHTML = ds.length ? ds.map(d => { const [y, m, dd] = d.split("-").map(Number); return `<div class="mt-day">${y}/${m}/${dd}(${WEEKDAYS[new Date(y, m - 1, dd).getDay()]})</div>` + `<div class="mt-list">${matchGroupsHtml(d, matchesByDate[d], realAdmin())}</div>`; }).join("") : `<div class="acc-desc">まだ試合の記録はありません。</div>`;
         }
 
         // ------- チームの手動入れ替え・並べ替え -------
@@ -9572,7 +9702,7 @@ await main();
             const res = lastTeamSplitResult;
             const pa = res.teams[teamIdx][miA], pb = res.teams[teamIdx][miB];
             if (!pa || !pb || !lineupSwapPlayers(res.lineups[teamIdx], pa, pb)) return;
-            res.manualEdited = true;
+            res.manualEdited = true; res.at = Date.now();
             swapNotice = `${escapeHtml(pa.name)} と ${escapeHtml(pb.name)} の位置を入れ替えました。`;
             swapSel = null;
             renderSwapBar();
@@ -9585,7 +9715,7 @@ await main();
             if (!res || !swapSel || swapSel.teamIdx !== teamIdx) return;
             const p = res.teams[teamIdx][swapSel.mi];
             if (!p || !lineupMoveToSlot(res.lineups[teamIdx], p, no)) return;
-            res.manualEdited = true;
+            res.manualEdited = true; res.at = Date.now();
             swapNotice = `${escapeHtml(p.name)}を ${no} の位置へ移動しました。`;
             swapSel = null;
             renderSwapBar();
@@ -9631,7 +9761,7 @@ await main();
             res.teams[b.teamIdx][b.mi] = pa;
             if (locA) lineupPut(la, locA, pb);
             if (locB) lineupPut(lb, locB, pa);
-            res.manualEdited = true;
+            res.manualEdited = true; res.at = Date.now();
             swapNotice = `${escapeHtml(pa.name)}(チーム${a.teamIdx + 1}→${b.teamIdx + 1})と ${escapeHtml(pb.name)}(チーム${b.teamIdx + 1}→${a.teamIdx + 1})を入れ替えました。`;
             refreshDupAfterEdit();
         }
@@ -9664,7 +9794,7 @@ await main();
                     res.teams[toIdx].push(p);
                     lineupRemove(res.lineups[from], p);
                     lineupAdd(res.lineups[toIdx], p);
-                    res.manualEdited = true;
+                    res.manualEdited = true; res.at = Date.now();
                     swapNotice = `${escapeHtml(p.name)}をチーム${from + 1}からチーム${toIdx + 1}へ移動しました。`;
                     swapSel = null;
                     refreshDupAfterEdit();
