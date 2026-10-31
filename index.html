@@ -3115,7 +3115,77 @@
         #protoSv .psv-in { -webkit-appearance: none; appearance: none; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; min-width: 0; height: 100% !important; border-radius: 0 !important; color: inherit !important; font: 500 12.5px 'Noto Sans JP', system-ui, sans-serif !important; }
         #protoSv .psv-in::placeholder { color: inherit; opacity: .3; }
         #protoSv select { -webkit-appearance: none; appearance: none; border: 0; outline: none; background: transparent; color: inherit; font: 600 14px 'Noto Sans JP', system-ui, sans-serif; padding: 0 6px; height: 100%; }
-    </style>
+    
+        /* ===== チーム分け: シンプルな操作(上=チーム数と分ける / 下=文字つきの小さなボタン) ===== */
+        #teamsView .tb2 { display: flex !important; flex-wrap: nowrap; align-items: center; gap: 10px; margin: 0 2px 8px; }
+        #teamsView .tc-step { flex: none; display: inline-flex; align-items: center; height: 46px; padding: 0 4px; border-radius: 23px; background: var(--bg); box-shadow: var(--sink); }
+        #teamsView .tc-step button { width: 34px; height: 34px; border: none; border-radius: 17px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 18px; font-weight: 700; line-height: 1; padding: 0; }
+        #teamsView .tc-num { display: inline-flex; align-items: baseline; gap: 2px; padding: 0 6px; }
+        #teamsView .tc-num input { width: 20px !important; min-height: 0 !important; height: auto !important; padding: 0 !important; border: none !important; background: transparent !important; box-shadow: none !important; text-align: right; font-size: 18px !important; font-weight: 800; color: var(--ink); pointer-events: none; -moz-appearance: textfield; }
+        #teamsView .tc-num input::-webkit-inner-spin-button, #teamsView .tc-num input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        #teamsView .tc-num small { font-size: 11px; font-weight: 700; color: var(--ink-3); }
+        #teamsView .tb2 .team-split-btn, #teamsView .tb2 .team-rerun-btn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; min-height: 46px; margin: 0; padding: 0 14px; border-radius: 23px; font-size: 14.5px; font-weight: 800; width: auto; }
+        #teamsView .tb2 .team-split-btn { background: var(--accent); color: #fff; box-shadow: var(--raise-sm); }
+        #teamsView .tb2 .team-rerun-btn { background: var(--bg); color: var(--ink); box-shadow: var(--raise-sm); }
+        #teamsView .tb2 .team-split-btn[style*="none"], #teamsView .tb2 .team-rerun-btn[style*="none"] { display: none !important; }
+        #teamsView .team-subbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0 2px 10px; }
+        #teamsView .tsub-gap { flex: 1; }
+        #teamsView .tchip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; margin: 0; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 11.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        #teamsView .tchip .ic { width: 14px; height: 14px; }
+        #teamsView .tchip input { display: none; }
+        #teamsView label.tchip > span { display: inline-flex; align-items: center; gap: 5px; }
+        #teamsView .tchip:has(input:checked), #teamsView .tchip[aria-pressed="true"] { background: var(--accent); color: #fff; box-shadow: none; }
+        #teamsView .tchip[style*="none"] { display: none !important; }
+        #teamsView .tchip.team-sync-btn.synced { color: var(--accent); }
+        #teamsView .tchip:active { box-shadow: var(--sink); }
+        /* 選んでいる間だけ、画面の下に出るバー */
+        .swap-float { position: fixed; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 60; max-width: 520px; margin: 0 auto; padding: 10px 12px; border-radius: 16px; background: var(--ink-fill, #1f2124); color: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); display: flex; align-items: center; gap: 10px; animation: sfIn .18s ease-out; }
+        @keyframes sfIn { from { transform: translateY(12px); opacity: 0; } }
+        .swap-float .sf-t { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; }
+        .swap-float .sf-t small { display: block; font-size: 11px; opacity: .7; }
+        .swap-float .sf-a { display: flex; gap: 6px; flex: none; }
+        .swap-float button { height: 32px; padding: 0 12px; border: none; border-radius: 10px; background: rgba(255, 255, 255, .16); color: #fff; font-size: 12px; font-weight: 700; }
+        .swap-float .sf-x { background: transparent; opacity: .8; }
+        body:not(.nv-full) .swap-float { display: none; }
+        /* 名簿から追加: ふだんは閉じる */
+        .late-box.quiet { padding: 6px 12px; box-shadow: none; background: transparent; }
+        .late-add > summary { font-size: 12.5px; font-weight: 700; color: var(--accent); cursor: pointer; list-style: none; padding: 4px 0; }
+        .late-add > summary::-webkit-details-marker { display: none; }
+        /* 試合の記録: 点差 → 勝ったチームを押すだけ */
+        .mt-h { align-items: center; }
+        .mt-h .mt-rule { margin: 0; }
+        .mt-rec { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .mt-dstep { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--ink-3); }
+        .mt-dstep button { width: 32px; height: 32px; border: none; border-radius: 16px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 16px; font-weight: 700; padding: 0; }
+        #matchBox .mt-dstep input { width: 56px !important; height: 34px !important; min-height: 0 !important; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 16px !important; font-weight: 800; text-align: center; padding: 0 !important; }
+        .mt-rec .mt-form { margin: 0; }
+        .mt-rec .mt-wb { height: 48px; font-size: 13px; font-weight: 600; }
+        .mt-rec .mt-wb b { font-weight: 800; }
+        .mt-rec .mt-wb:active { background: var(--accent); color: #fff; box-shadow: none; }
+
+        /* 文字を減らした版 */
+        #teamsView .tc-num { align-items: center; gap: 4px; }
+        #teamsView .tc-num .ic { width: 15px; height: 15px; color: var(--ink-3); }
+        #teamsView .tb2 .team-split-btn .ic, #teamsView .tb2 .team-rerun-btn .ic { width: 22px; height: 22px; }
+        #teamsView .tchip { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 18px; }
+        #teamsView .tchip .ic { width: 16px; height: 16px; }
+        .swap-float { padding: 8px 8px 8px 16px; }
+        .swap-float .sf-t { font-size: 14px; }
+        .swap-float button { min-width: 44px; font-size: 13px; }
+        .late-new { font-size: 9px; font-weight: 800; color: #fff; background: var(--accent); border-radius: 6px; padding: 1px 5px; }
+        .late-row button { min-width: 44px; }
+        .late-add > summary { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 16px; background: var(--bg); box-shadow: var(--raise-xs); font-size: 18px; padding: 0; }
+        .late-add[open] > summary { box-shadow: var(--sink); }
+        .late-box.quiet { padding: 0 2px 8px; }
+        .mt-rec { flex-direction: row; align-items: center; gap: 8px; }
+        .mt-rec .mt-wb { flex: 1; height: 44px; font-size: 15px; font-weight: 800; }
+        .mt-gt b { min-width: 1em; }
+        .mt-no { min-width: 1.2em; }
+        .mt-back { font-size: 14px; width: 28px; padding: 0; }
+        .mt-ed-row .mt-wb { flex: 1; }
+        .mt-ed-all { margin-right: auto; }
+        .mt-ed-seg button { min-width: 30px; }
+</style>
 </head>
 <body>
 
@@ -4165,20 +4235,25 @@ await main();
         <div id="teamsView" style="display:none;">
             <div id="unregisteredBox"></div>
 
-            <div class="team-toolbar">
-                <div class="team-controls">
-                    <label for="teamCountInput" aria-label="チーム数"><i class="ic ic-users"></i></label>
-                    <input type="number" id="teamCountInput" min="2" max="8" value="2">
+            <!-- チーム分けの操作: 上の段 = チーム数と「分ける」 / 下の段 = 分け方の切り替えと、分けたあとの操作(文字つき) -->
+            <div class="team-toolbar tb2">
+                <div class="tc-step" role="group" aria-label="チーム数">
+                    <button type="button" onclick="teamCountStep(-1)" aria-label="チームを減らす">−</button>
+                    <span class="tc-num"><i class="ic ic-users"></i><input type="number" id="teamCountInput" min="2" max="8" value="2" readonly tabindex="-1" aria-label="チーム数"></span>
+                    <button type="button" onclick="teamCountStep(1)" aria-label="チームを増やす">＋</button>
                 </div>
-                <label class="param-visibility-toggle random-toggle" title="ランダム(パラメータを使わず分ける)">
+                <button class="team-split-btn" id="teamSplitBtn" onclick="runTeamSplit()" aria-label="チームを分ける"><i class="ic ic-shuffle"></i></button>
+                <button class="team-rerun-btn" id="teamRerunBtn" onclick="runTeamSplit()" title="もう一度分ける(過去と重複しない組み合わせ)" aria-label="分け直す" style="display:none;"><i class="ic ic-shuffle"></i><span id="dupMark"></span></button>
+            </div>
+            <div class="team-subbar">
+                <label class="tchip" title="ランダム" aria-label="ランダム">
                     <input type="checkbox" id="ignoreParamsToggle" onchange="toggleIgnoreParams()">
                     <span><i class="ic ic-dice"></i></span>
                 </label>
-                <button class="team-split-btn" id="teamSplitBtn" onclick="runTeamSplit()" aria-label="チーム分け"><i class="ic ic-shuffle"></i></button>
-                <button class="team-rerun-btn" id="teamRerunBtn" onclick="runTeamSplit()" title="もう一度分ける(過去と重複しない組み合わせ)" aria-label="もう一度分ける" style="display:none;"><i class="ic ic-shuffle"></i><span id="dupMark"></span></button>
-                <button type="button" class="team-rerun-btn team-eye-btn admin-only" id="hideParamsBtn" onclick="toggleHideTeamParams()" title="パラメータを隠す" aria-label="パラメータを隠す" aria-pressed="false"><i class="ic ic-eye"></i><i class="ic ic-eyeoff"></i></button>
-                <button class="team-rerun-btn team-reset-btn" id="teamResetBtn" onclick="resetTeamSplit()" title="リセット" aria-label="リセット" style="display:none;"><i class="ic ic-undo"></i></button>
-                <button type="button" class="team-rerun-btn team-sync-btn admin-only" id="teamSyncBtn" onclick="syncTeamSplit()" title="このチーム分けを、ほかの管理者の端末にも出す" aria-label="チーム分けを同期" style="display:none;"><i class="ic ic-refresh"></i><span class="tsync-l">同期</span></button>
+                <button type="button" class="tchip admin-only" id="hideParamsBtn" onclick="toggleHideTeamParams()" title="コートの数値を隠す" aria-pressed="false"><i class="ic ic-eyeoff"></i></button>
+                <span class="tsub-gap"></span>
+                <button type="button" class="tchip" id="teamResetBtn" onclick="resetTeamSplit()" title="リセット" style="display:none;"><i class="ic ic-undo"></i></button>
+                <button type="button" class="tchip team-sync-btn admin-only" id="teamSyncBtn" onclick="syncTeamSplit()" title="このチーム分けを、ほかの管理者の端末にも出す" style="display:none;"><i class="ic ic-refresh"></i></button>
             </div>
             <div class="tsync-note" id="teamSyncNote"></div>
 
@@ -5747,6 +5822,7 @@ await main();
         // userTap=true(タブを押した時)だけ、タブ+中身がちょうど見える位置へスクロールする
         function switchView(view, userTap) {
             currentView = view;
+            if (view !== "teams") { const f = document.getElementById("swapFloat"); if (f) f.remove(); if (typeof swapSel !== "undefined") swapSel = null; }
             const isMember = view === "member";
             document.getElementById("tabMemberBtn").classList.toggle("active", isMember);
             document.getElementById("memberView").style.display = isMember ? "block" : "none";
@@ -9306,6 +9382,11 @@ await main();
             flushPendingRemote();
         }
 
+        function teamCountStep(d) {
+            const el = document.getElementById("teamCountInput"); if (!el) return;
+            el.value = Math.max(2, Math.min(8, (parseInt(el.value, 10) || 2) + d));
+            if (typeof predictSplitPatterns === "function" && lastTeamSplitResult) { /* 予測は次に分けたときに */ }
+        }
         function runTeamSplit() {
             if (lastTeamSplitResult && lastTeamSplitResult.manualEdited &&
                 !confirm("手動で入れ替えた結果は破棄されます。もう一度分けますか?")) return;
@@ -9454,7 +9535,8 @@ await main();
             const b = document.getElementById("teamSyncBtn"), note = document.getElementById("teamSyncNote");
             const res = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
             if (b) { b.style.display = res && isAdmin() ? "" : "none"; b.classList.toggle("synced", !!(res && res.syncedAt && res.syncedAt === res.at)); }
-            if (note) note.textContent = msg || (res && res.fromShare && res.syncedAt === res.at ? "ほかの管理者が同期したチーム分けを表示中です。" : res && res.syncedAt && res.syncedAt !== res.at && isAdmin() ? "同期のあとに変更があります。ほかの管理者に出すには、もう一度「同期」を押してください。" : "");
+            if (note) note.textContent = "";
+            if (false) note.textContent = msg || (res && res.fromShare && res.syncedAt === res.at ? "ほかの管理者が同期したチーム分けを表示中です。" : res && res.syncedAt && res.syncedAt !== res.at && isAdmin() ? "同期のあとに変更があります。ほかの管理者に出すには、もう一度「同期」を押してください。" : res && isAdmin() ? "選手をタップすると、入れ替え・移動ができます。" : "");
         }
         // チーム分けのあとに「来る」になった人: まだどのチームにもいない
         function lateMembers() {
@@ -9488,15 +9570,16 @@ await main();
             try { renderRoster(); } catch (e) { console.warn(e); }
             try { renderCalendar(); } catch (e) { console.warn(e); }
         }
+        var teamAddOpen = false;
         function lateBoxHtml() {
             const res = lastTeamSplitResult, late = lateMembers();
             const coming = new Set((attendanceByDate[selectedDate] || []).filter(m => m.status === "来る").map(m => m.name));
             const cands = isAdmin() ? roster.filter(r => !coming.has(r.name)).map(r => r.name) : [];
             if (!late.length && !cands.length) return "";
-            const teamBtns = (onclick) => res.teams.map((_, k) => `<button type="button" onclick="${onclick(k)}">チーム${k + 1}へ</button>`).join("");
-            const lateHtml = late.length ? `<div class="late-h">チーム分けのあとに「来る」になった人</div>${late.map(n => `<div class="late-row"><span class="late-name">${escapeHtml(n)}</span>${isAdmin() ? teamBtns(k => `addLateMember(decodeURIComponent('${encodeURIComponent(n)}'), ${k})`) : `<span class="mt-unit">（管理者がチームに入れます）</span>`}</div>`).join("")}` : "";
-            const addHtml = cands.length ? `<div class="late-h"${late.length ? ' style="margin-top:10px"' : ""}>名簿から追加（「来る」にしてチームへ）</div><div class="late-row"><select id="teamAddSel" class="late-sel"><option value="">名前を選ぶ</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select>${teamBtns(k => `teamAddFromRoster(${k})`)}</div>` : "";
-            return `<div class="late-box">${lateHtml}${addHtml}</div>`;
+            const teamBtns = (onclick) => res.teams.map((_, k) => `<button type="button" onclick="${onclick(k)}" aria-label="チーム${k + 1}へ">→ ${k + 1}</button>`).join("");
+            const lateHtml = late.length ? late.map(n => `<div class="late-row"><span class="late-new">NEW</span><span class="late-name">${escapeHtml(n)}</span>${isAdmin() ? teamBtns(k => `addLateMember(decodeURIComponent('${encodeURIComponent(n)}'), ${k})`) : ""}</div>`).join("") : "";
+            const addHtml = cands.length ? `<details class="late-add"${teamAddOpen ? " open" : ""} ontoggle="teamAddOpen=this.open"${late.length ? ' style="margin-top:8px"' : ""}><summary aria-label="名簿から追加">＋</summary><div class="late-row"><select id="teamAddSel" class="late-sel"><option value="">名簿</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select>${teamBtns(k => `teamAddFromRoster(${k})`)}</div></details>` : "";
+            return `<div class="late-box${late.length ? "" : " quiet"}">${lateHtml}${addHtml}</div>`;
         }
         function renderTeamResults() {
             try { teamPersistLocal(); } catch (e) { console.warn(e); }
@@ -9552,7 +9635,7 @@ await main();
         function loadMatches() { try { const v = JSON.parse(localStorage.getItem(MATCH_KEY) || "{}"); matchesByDate = v && typeof v === "object" ? v : {}; } catch (e) { matchesByDate = {}; } }
         function saveMatches() { try { localStorage.setItem(MATCH_KEY, JSON.stringify(matchesByDate)); } catch (e) { console.warn(e); } }
         let matchForm = { a: 0, b: 1, win: null };
-        let matchRatesOpen = true;
+        let matchRatesOpen = false;   // 勝率の表は、ふだんは閉じておく
         function matchTeamsNow() { const r = lastTeamSplitResult; return r && r.teams && r.teams.length >= 2 && (!r.dateKey || r.dateKey === selectedDate) ? r.teams : null; }
         function setMatchForm(k, v) {
             matchForm[k] = v;
@@ -9561,6 +9644,8 @@ await main();
             if (k !== "win") matchForm.win = null;
             renderMatchBox();
         }
+        function matchDiffStep(d) { const el = document.getElementById("matchDiff"); if (el) el.value = Math.max(0, Math.min(99, (parseInt(el.value, 10) || 0) + d)); }
+        function matchRecordWin(i) { matchForm.win = i; addMatch(); const el = document.getElementById("matchDiff"); if (el) el.value = ""; }
         function addMatch() {
             const teams = matchTeamsNow(); if (!teams || !realAdmin()) return;
             if (matchForm.win == null) { alert("勝ったチームを選んでください。"); return; }
@@ -9619,13 +9704,13 @@ await main();
         function matchGroupState(g, rule) {
             const wins = {}; g.games.forEach(({ m }) => { const lb = m.labels[m.win]; wins[lb] = (wins[lb] || 0) + 1; });
             const n = g.games.length, lbs = g.labels.slice(0, 2), score = lbs.map(lb => wins[lb] || 0);
-            if (rule.type === "first" ? score.filter(x => x >= rule.n).length > 1 || n > rule.n * 2 - 1 : n > rule.n) return { done: false, text: `${score.join(" - ")}　⚠ ゲームが多すぎます（組を確認）` };
+            if (rule.type === "first" ? score.filter(x => x >= rule.n).length > 1 || n > rule.n * 2 - 1 : n > rule.n) return { done: false, text: `${score.join(" - ")}　⚠` };
             if (rule.type === "first") {
                 const top = Math.max(...score), done = top >= rule.n, w = done ? lbs[score.indexOf(top)] : "";
-                return { done, text: done ? `${score.join(" - ")}　${w}の勝ち ✓` : `${score.join(" - ")}　⚠ まだ決着していません（記入忘れ？）` };
+                return { done, text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
             }
             const done = n >= rule.n;
-            return { done, text: done ? `${score.join(" - ")}　${n}ゲーム ✓` : `${score.join(" - ")}　⚠ ${n}/${rule.n}ゲーム（記入忘れ？）` };
+            return { done, text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
         }
         // 組を手で直す: その試合を別の組へ / 新しい組へ / 自動に戻す
         function setMatchGroup(date, id, v) {
@@ -9690,16 +9775,13 @@ await main();
         function matchEditHtml(m) {
             const e = matchEdit, lb = m.labels;
             const names = Object.keys(e.teamOf);
-            const seg = (n) => [0, 1, -1].map(k => `<button type="button" class="${e.teamOf[n] === k ? "on" : ""}" onclick="matchEditMem(decodeURIComponent('${encodeURIComponent(n)}'), ${k})">${k < 0 ? "外す" : escapeHtml(lb[k])}</button>`).join("");
+            const seg = (n) => [0, 1, -1].map(k => `<button type="button" class="${e.teamOf[n] === k ? "on" : ""}" onclick="matchEditMem(decodeURIComponent('${encodeURIComponent(n)}'), ${k})" aria-label="${k < 0 ? "外す" : escapeHtml(lb[k])}">${k < 0 ? "✕" : escapeHtml(lb[k].replace("チーム", ""))}</button>`).join("");
             const cands = roster.map(r => r.name).filter(n => !(n in e.teamOf));
             return `<div class="mt-ed">
-                <div class="mt-ed-row"><span>勝ち</span>${[0, 1].map(k => `<button type="button" class="mt-wb${e.win === k ? " on" : ""}" onclick="matchEditSet('win', ${k})">${escapeHtml(lb[k])}</button>`).join("")}</div>
-                <div class="mt-ed-row"><span>点差</span><input type="number" id="mtEdDiff" min="0" max="99" inputmode="numeric" value="${e.diff}"></div>
-                <div class="mt-ed-h">メンバー</div>
+                <div class="mt-ed-row">${[0, 1].map(k => `<button type="button" class="mt-wb${e.win === k ? " on" : ""}" onclick="matchEditSet('win', ${k})">🏆 ${escapeHtml(lb[k].replace("チーム", ""))}</button>`).join("")}<span>+</span><input type="number" id="mtEdDiff" min="0" max="99" inputmode="numeric" value="${e.diff}"></div>
                 ${names.map(n => `<div class="mt-ed-mem"><span>${escapeHtml(n)}</span><span class="mt-ed-seg">${seg(n)}</span></div>`).join("")}
-                ${cands.length ? `<div class="mt-ed-mem"><select id="mtEdAdd"><option value="">名簿から足す</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select><span class="mt-ed-seg">${[0, 1].map(k => `<button type="button" onclick="matchEditAdd(${k})">${escapeHtml(lb[k])}へ</button>`).join("")}</span></div>` : ""}
-                <label class="mt-ed-all"><input type="checkbox" ${e.all ? "checked" : ""} onchange="matchEdit.all=this.checked"> この組のほかのゲームも同じメンバーにする</label>
-                <div class="mt-ed-row"><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()">やめる</button><button type="button" class="mt-add" onclick="matchEditSave()">保存</button></div>
+                ${cands.length ? `<div class="mt-ed-mem"><select id="mtEdAdd"><option value="">＋ 名簿</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select><span class="mt-ed-seg">${[0, 1].map(k => `<button type="button" onclick="matchEditAdd(${k})" aria-label="${escapeHtml(lb[k])}へ">→ ${escapeHtml(lb[k].replace("チーム", ""))}</button>`).join("")}</span></div>` : ""}
+                <div class="mt-ed-row"><label class="mt-ed-all"><input type="checkbox" ${e.all ? "checked" : ""} onchange="matchEdit.all=this.checked"> 組ぜんぶ</label><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()" aria-label="やめる">✕</button><button type="button" class="mt-add" onclick="matchEditSave()" aria-label="保存">✓</button></div>
             </div>`;
         }
         // この組のチームを、チーム分けの画面に戻す(その日を開いているとき。あとで入れ替えたり、続きのゲームを記録したりできる)
@@ -9729,13 +9811,13 @@ await main();
                     const items = j ? matchDiffItems(g, m) : [];
                     if (items.length) anyDiff = true;
                     const editing = matchEdit && matchEdit.id === m.id && matchEdit.date === date;
-                    return `<div class="mt-top"><span class="mt-no">${j + 1}ゲーム</span><span class="mt-team win">${escapeHtml(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="勝ち・点差・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
-                        + (items.length ? `<div class="mt-diffrow">（${items.join("　")}）</div>` : "")
+                    return `<div class="mt-top"><span class="mt-no">${j + 1}</span><span class="mt-team win">🏆 ${escapeHtml(m.labels[m.win].replace("チーム", ""))}</span><span class="mt-vs">${m.diff ? "+" + m.diff : ""}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="勝ち・点差・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
+                        + (items.length ? `<div class="mt-diffrow">${items.join("　")}</div>` : "")
                         + (editing ? matchEditHtml(m) : "");
                 }).join("");
-                const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb)}</b><span>${(g.names[lb] || []).map(escapeHtml).join("・")}</span></div>`;
-                const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key)}'))">チーム分けに戻す</button>` : "";
-                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${anyDiff ? `<span class="mt-dnote">メンバーが違うゲームあり</span>` : ""}${back}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
+                const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb.replace("チーム", ""))}</b><span>${(g.names[lb] || []).map(escapeHtml).join("・")}</span></div>`;
+                const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key)}'))" aria-label="チーム分けに戻す" title="チーム分けに戻す">↩</button>` : "";
+                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${back}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
             }).join("");
         }
         function renderMatchBox() {
@@ -9749,9 +9831,11 @@ await main();
                 if (matchForm.b >= n || matchForm.b === matchForm.a) matchForm.b = matchForm.a === 0 ? 1 : 0;
                 const sel = (k) => `<select onchange="setMatchForm('${k}', +this.value)">${teams.map((_, i) => `<option value="${i}"${matchForm[k] === i ? " selected" : ""}>チーム${i + 1}</option>`).join("")}</select>`;
                 const pick = n > 2 ? `<div class="mt-pick">${sel("a")}<span>対</span>${sel("b")}</div>` : "";
-                const wb = i => `<button type="button" class="mt-wb${matchForm.win === i ? " on" : ""}" onclick="setMatchForm('win', ${i})">チーム${i + 1}の勝ち</button>`;
-                form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-form">${wb(matchForm.a)}${wb(matchForm.b)}</div>
-                    <div class="mt-form"><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="点差"><span class="mt-unit">点差</span><button type="button" class="mt-add" onclick="addMatch()">記録</button></div>`;
+                // 点差を入れて(入れなくてもよい)、勝ったチームを押すだけで1ゲーム記録
+                const wb = i => `<button type="button" class="mt-wb" onclick="matchRecordWin(${i})" aria-label="チーム${i + 1}の勝ちを記録">🏆 ${i + 1}</button>`;
+                form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-rec">
+                    <div class="mt-dstep"><button type="button" onclick="matchDiffStep(-1)" aria-label="点差を減らす">−</button><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="0"><button type="button" onclick="matchDiffStep(1)" aria-label="点差を増やす">＋</button></div>
+                    ${wb(matchForm.a)}${wb(matchForm.b)}</div>`;
             }
             // 管理者アカウント: この日の「来る」メンバーの勝率(全期間)
             let rates = "";
@@ -9762,13 +9846,13 @@ await main();
                 const rt = o => o.g ? o.w / o.g : -1;
                 mem.sort((x, y) => (rt(y.a) - rt(x.a)) || y.a.g - x.a.g || (rt(y.d) - rt(x.d)));
                 const cell = o => o.g ? `<span class="mt-rc"><i style="width:${Math.round(o.w / o.g * 100)}%"></i><b>${Math.round(o.w / o.g * 100)}%</b><small>${o.w}勝${o.g - o.w}敗</small></span>` : `<span class="mt-rc none">—</span>`;
-                if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>この日のメンバーの勝率${admMark()}</summary>
+                if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>勝率${admMark()}</summary>
                     <div class="mt-rt"><div class="mt-rr mt-rh"><span>名前</span><span>累計</span><span>この日</span></div>${mem.map(x => `<div class="mt-rr"><span class="mt-rn">${escapeHtml(x.n)}</span>${cell(x.a)}${cell(x.d)}</div>`).join("")}</div></details>`;
             }
             const rule = matchRule();
-            const ruleHtml = isAdmin() ? `<div class="mt-rule"><span>ルール</span><select onchange="setMatchRule(this.value)">${MATCH_RULES.map(([t, n, lb]) => `<option value="${t}:${n}"${rule.type === t && rule.n === n ? " selected" : ""}>${lb}</option>`).join("")}</select></div>` : `<div class="mt-rule"><span>ルール　${matchRuleLabel(rule)}</span></div>`;
-            box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}ゲーム</span>` : ""}</div>${ruleHtml}${form}
-                ${list.length ? `<div class="mt-list">${matchGroupsHtml(selectedDate, list, adm)}</div>` : (teams ? "" : `<div class="mt-empty">この日の試合はまだありません</div>`)}
+            const ruleHtml = isAdmin() ? `<div class="mt-rule"><select onchange="setMatchRule(this.value)">${MATCH_RULES.map(([t, n, lb]) => `<option value="${t}:${n}"${rule.type === t && rule.n === n ? " selected" : ""}>${lb}</option>`).join("")}</select></div>` : `<div class="mt-rule"><span>${matchRuleLabel(rule)}</span></div>`;
+            box.innerHTML = `<div class="mt-card"><div class="mt-h">試合${ruleHtml}</div>${form}
+                ${list.length ? `<div class="mt-list">${matchGroupsHtml(selectedDate, list, adm)}</div>` : (teams ? "" : "")}
                 ${rates}</div>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
@@ -9822,27 +9906,22 @@ await main();
             const bar = document.getElementById("swapBar");
             if (!bar) return;
             const res = lastTeamSplitResult;
-            if (!res) { bar.innerHTML = ""; return; }
+            let fl = document.getElementById("swapFloat");
+            if (!res) { bar.innerHTML = ""; if (fl) fl.remove(); return; }
 
             let sel = swapSel && res.teams[swapSel.teamIdx] && res.teams[swapSel.teamIdx][swapSel.mi];
             if (swapSel && !sel) swapSel = null;
-            let html = "";
+            // 選んでいる間は、画面の下に小さなバー(どこまでスクロールしても見える)
             if (sel) {
-                html += `<div><span class="swap-title">入れ替え:</span> <span class="swap-sel">${escapeHtml(sel.name)}</span>(チーム${swapSel.teamIdx + 1})を選択中。入れ替え先をタップ(同じチーム=位置、別チーム=メンバー)。</div>`;
+                if (!fl) { fl = document.createElement("div"); fl.id = "swapFloat"; fl.className = "swap-float"; document.body.appendChild(fl); }
                 const canMove = res.teams[swapSel.teamIdx].length > 1;
-                html += `<div class="swap-bar-actions">`;
-                if (canMove) {
-                    res.teams.forEach((_, k) => {
-                        if (k !== swapSel.teamIdx) html += `<button type="button" onclick="moveSelectedTo(${k})">チーム${k + 1}へ移動</button>`;
-                    });
-                }
-                html += `<button type="button" onclick="clearSwapSelection()">選択を解除</button></div>`;
-            }
-            if (swapNotice) html += `<div class="swap-ok">${swapNotice}</div>`;
+                const moves = canMove ? res.teams.map((_, k) => k === swapSel.teamIdx ? "" : `<button type="button" onclick="moveSelectedTo(${k})" aria-label="チーム${k + 1}へ移す">→ ${k + 1}</button>`).join("") : "";
+                fl.innerHTML = `<div class="sf-t"><b>${escapeHtml(sel.name)}</b></div><div class="sf-a">${moves}<button type="button" class="sf-x" onclick="clearSwapSelection()" aria-label="やめる">✕</button></div>`;
+            } else if (fl) fl.remove();
+            let html = "";
             if (res.manualEdited) {
                 const bad = pairViolations();
                 if (bad.length) html += `<div class="swap-warn">⚠ ペア設定(同じチーム)を満たしていません: ${pairLabelsHtml(bad)}</div>`;
-                if (!sel) html += `<div class="swap-ok">手動で入れ替えた結果を表示中です。</div>`;
             }
             bar.innerHTML = html;
         }
