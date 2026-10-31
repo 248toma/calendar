@@ -2836,6 +2836,14 @@
         .late-name { font-size: 13px; font-weight: 700; margin-right: 4px; }
         .late-row button { height: 30px; padding: 0 12px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--accent); font-size: 12px; font-weight: 700; }
         /* 試合の記録: 同じ組み合わせ(同じメンバー同士)をまとめる */
+        .mt-rule { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; font-size: 12px; color: var(--ink-3); font-weight: 700; }
+        .mt-rule select { height: 30px; border-radius: 9px; border: none; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink); padding: 0 8px; font-size: 12.5px; font-weight: 700; }
+        .mt-gno { font-size: 11px; font-weight: 800; color: var(--ink-3); margin-bottom: 3px; }
+        .mt-gsel { margin-left: auto; height: 24px; border-radius: 7px; border: none; background: transparent; color: var(--ink-3); font-size: 11px; padding: 0 2px; }
+        .mt-gsel + .mt-del { margin-left: 4px; }
+        #matchBox select.mt-gsel, #matchHistory select.mt-gsel { height: 24px !important; min-height: 0 !important; width: auto !important; max-width: 7em; box-shadow: none !important; background: rgba(128, 128, 128, .1) !important; padding: 0 6px !important; font-size: 11px !important; border-radius: 7px !important; -webkit-appearance: none; appearance: none; }
+        #matchBox .mt-rule select { height: 30px !important; min-height: 0 !important; width: auto !important; padding: 0 10px !important; font-size: 12.5px !important; }
+        .late-sel { flex: 1; min-width: 120px; height: 32px; border-radius: 9px; border: none; background: var(--bg); box-shadow: var(--sink); color: var(--ink); padding: 0 8px; font-size: 13px; }
         .mt-grp { padding: 9px 10px; border-radius: 10px; background: rgba(128, 128, 128, .08); }
         .mt-grp.warn { box-shadow: inset 0 0 0 1.5px #e08a00; }
         .mt-gt { display: flex; align-items: baseline; gap: 6px; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
@@ -8387,7 +8395,7 @@ await main();
             updateSwapUi();
             try { renderMatchBox(); } catch (e) { console.warn(e); }   // チーム分けの前でも試合の記録を見られる
             try { renderTeamSyncUi(); } catch (e) { console.warn(e); }
-            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate && lateMembers().length) renderTeamResults();   // あとから来る人が増えたら出す
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) renderTeamResults();   // あとから来る人・名簿から追加の欄も出す   // あとから来る人が増えたら出す
         }
 
         function renderUnregisteredBox(names) {
@@ -9270,7 +9278,8 @@ await main();
             predictToken++;
             predictRunning = false;
             teamSplitHistory = { key: "", runs: [] };
-            { const sh = teamShareAll()[selectedDate]; if (sh) teamShareSkip[selectedDate] = sh.at; }   // 同期されたチーム分けも、この端末では出さない
+            { const sh = teamShareAll()[selectedDate]; if (sh) teamShareSkip[selectedDate] = sh.at; }
+            teamForgetLocal(selectedDate);   // 同期されたチーム分けも、この端末では出さない
             lastTeamSplitResult = null;
             swapSel = null; swapNotice = "";
             renderTeamSplitTab(); // 結果・警告・予測・ボタンの表示を初期状態に戻す
@@ -9319,6 +9328,7 @@ await main();
                 teams, excludedKeys, dateKey: selectedDate, ignoreParams,
                 lineups: teams.map(arrangeTeamLineup), at: Date.now()
             };
+            lastTeamSplitResult.round = lastTeamSplitResult.at;   // チーム分けボタンを押した = 新しい試合の組
             lastTeamSplitResult.history = recordTeamSplitHistory(teams, ignoreParams);
             lastTeamSplitResult.history.noNew = !foundNew; // 重複しない組み合わせが見つからなかった
             renderDupWarning(lastTeamSplitResult.history);
@@ -9350,38 +9360,28 @@ await main();
         }
 
         // ------- チーム分けの同期(管理者が「同期」を押すと、共有データに入れて、ほかの管理者の端末にも同じチーム分けを出す) -------
-        // 共有データ: { "日付": { at: 時刻, teams: [[名前…]…], lineups: [{ slots: {番号: 名前}, bench: [名前…] }…], manual } }
+        // 共有データ: { "日付": { at: 時刻, round: チーム分けボタンを押した時刻, teams: [[名前…]…], lineups: [{ slots: {番号: 名前}, bench: [名前…] }…], manual } }
+        // この端末にも同じ形で保存しておき、開き直し・更新・メンバーの増減があってもチーム分けが消えないようにする
         const TEAM_SHARE_KEY = "attendance_team_share_v1";
+        const TEAM_LOCAL_KEY = "team_local_v1";   // この端末だけ(共有しない)
         var teamShareSkip = {};   // 日付 → この端末でリセットした同期分の時刻
-        function teamShareAll() { try { const v = JSON.parse(localStorage.getItem(TEAM_SHARE_KEY) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
+        const teamJsonGet = (key) => { try { const v = JSON.parse(localStorage.getItem(key) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } };
+        function teamShareAll() { return teamJsonGet(TEAM_SHARE_KEY); }
         // 名前 → チーム分けで使う人(名簿から。runTeamSplit と同じ形)
         function teamParticipant(name) {
             const rm = findRosterByName(name);
             if (!rm) return { name, gender: "unspecified", position: "", guest: false, params: {} };
             return { name: rm.name, gender: rm.gender, position: teamPosOf(rm), guest: rm.position === GUEST_POS, params: effectiveParams(rm.params) };
         }
-        function syncTeamSplit() {
-            const res = lastTeamSplitResult;
-            if (!res || !isAdmin() || res.dateKey !== selectedDate) return;
-            const all = teamShareAll(), cut = formatDateKey(new Date(Date.now() - 30 * 864e5));
-            Object.keys(all).forEach(k => { if (k < cut) delete all[k]; });   // 30日より前は消す
-            const at = res.at || Date.now(); res.at = at; res.syncedAt = at;
+        function teamSerialize(res) {
             const nm = p => p && p.name;
-            all[selectedDate] = {
-                at, manual: !!res.manualEdited,
+            return {
+                at: res.at || Date.now(), round: res.round || res.at || 0, manual: !!res.manualEdited,
                 teams: res.teams.map(t => t.map(nm)),
                 lineups: (res.lineups || []).map(l => l ? { slots: Object.fromEntries(Object.entries(l.slots || {}).filter(([, p]) => p).map(([no, p]) => [no, p.name])), bench: (l.bench || []).map(nm) } : null)
             };
-            try { localStorage.setItem(TEAM_SHARE_KEY, JSON.stringify(all)); } catch (e) { console.warn(e); }
-            renderTeamSyncUi("同期しました。ほかの管理者の端末にも、このチーム分けが出ます。");
         }
-        // 共有データのチーム分けを、この端末の結果にする(この端末の結果より新しいとき)
-        function adoptSharedTeamSplit() {
-            const sh = teamShareAll()[selectedDate];
-            if (!sh || !Array.isArray(sh.teams) || sh.teams.length < 2) return false;
-            const cur = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
-            if (cur && (cur.at || 0) >= sh.at) return false;
-            if ((teamShareSkip[selectedDate] || 0) >= sh.at) return false;   // この端末でリセットした同期分は出さない
+        function teamRestore(sh, date) {
             const pool = {};
             const P = name => pool[name] || (pool[name] = teamParticipant(name));
             const teams = sh.teams.map(t => t.map(P));
@@ -9391,9 +9391,43 @@ await main();
                 const slots = {}; Object.entries(l.slots || {}).forEach(([no, n]) => { slots[no] = P(n); });
                 return { ...arrangeTeamLineup(t), slots, bench: (l.bench || []).map(P) };
             });
-            lastTeamSplitResult = { teams, excludedKeys: new Set(), dateKey: selectedDate, ignoreParams, lineups, at: sh.at, syncedAt: sh.at, manualEdited: !!sh.manual, fromShare: true };
+            return { teams, excludedKeys: new Set(), dateKey: date, ignoreParams, lineups, at: sh.at, round: sh.round || sh.at, manualEdited: !!sh.manual };
+        }
+        // 変わるたびに、この端末に保存(30日より前は消す)
+        function teamPersistLocal() {
+            const res = lastTeamSplitResult; if (!res || !res.dateKey || !res.teams) return;
+            const all = teamJsonGet(TEAM_LOCAL_KEY), cut = formatDateKey(new Date(Date.now() - 30 * 864e5));
+            Object.keys(all).forEach(k => { if (k < cut) delete all[k]; });
+            if (all[res.dateKey] && all[res.dateKey].at === res.at) return;
+            all[res.dateKey] = teamSerialize(res);
+            try { localStorage.setItem(TEAM_LOCAL_KEY, JSON.stringify(all)); } catch (e) { /* ignore */ }
+        }
+        function teamForgetLocal(date) { const all = teamJsonGet(TEAM_LOCAL_KEY); if (all[date]) { delete all[date]; try { localStorage.setItem(TEAM_LOCAL_KEY, JSON.stringify(all)); } catch (e) { /* ignore */ } } }
+        function syncTeamSplit() {
+            const res = lastTeamSplitResult;
+            if (!res || !isAdmin() || res.dateKey !== selectedDate) return;
+            const all = teamShareAll(), cut = formatDateKey(new Date(Date.now() - 30 * 864e5));
+            Object.keys(all).forEach(k => { if (k < cut) delete all[k]; });   // 30日より前は消す
+            if (!res.at) res.at = Date.now();
+            res.syncedAt = res.at;
+            all[selectedDate] = teamSerialize(res);
+            try { localStorage.setItem(TEAM_SHARE_KEY, JSON.stringify(all)); } catch (e) { console.warn(e); }
+            renderTeamSyncUi("同期しました。ほかの管理者の端末にも、このチーム分けが出ます。");
+        }
+        // この端末の結果・この端末に保存した結果・共有(同期)された結果のうち、いちばん新しいものを出す
+        function adoptSharedTeamSplit() {
+            const cur = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
+            let best = null, from = "";
+            const loc = teamJsonGet(TEAM_LOCAL_KEY)[selectedDate];
+            if (!cur && loc && Array.isArray(loc.teams) && loc.teams.length >= 2) { best = loc; from = "local"; }
+            const sh = teamShareAll()[selectedDate];
+            if (sh && Array.isArray(sh.teams) && sh.teams.length >= 2 && (teamShareSkip[selectedDate] || 0) < sh.at && sh.at > Math.max(cur ? cur.at || 0 : 0, best ? best.at : 0)) { best = sh; from = "share"; }
+            if (!best) return false;
+            lastTeamSplitResult = teamRestore(best, selectedDate);
+            if (from === "share") { lastTeamSplitResult.syncedAt = best.at; lastTeamSplitResult.fromShare = true; }
+            else if (sh && sh.at === best.at) lastTeamSplitResult.syncedAt = best.at;
             swapSel = null; swapNotice = "";
-            const n = document.getElementById("teamCountInput"); if (n) n.value = teams.length;
+            const n = document.getElementById("teamCountInput"); if (n) n.value = lastTeamSplitResult.teams.length;
             return true;
         }
         function renderTeamSyncUi(msg) {
@@ -9402,7 +9436,7 @@ await main();
             if (b) { b.style.display = res && isAdmin() ? "" : "none"; b.classList.toggle("synced", !!(res && res.syncedAt && res.syncedAt === res.at)); }
             if (note) note.textContent = msg || (res && res.fromShare && res.syncedAt === res.at ? "ほかの管理者が同期したチーム分けを表示中です。" : res && res.syncedAt && res.syncedAt !== res.at && isAdmin() ? "同期のあとに変更があります。ほかの管理者に出すには、もう一度「同期」を押してください。" : "");
         }
-        // チーム分けのあとに「来る」になった人(名簿から足した人など): まだどのチームにもいない
+        // チーム分けのあとに「来る」になった人: まだどのチームにもいない
         function lateMembers() {
             const res = lastTeamSplitResult; if (!res || res.dateKey !== selectedDate) return [];
             const inTeam = new Set(res.teams.flat().map(p => p.name));
@@ -9414,18 +9448,38 @@ await main();
             const p = teamParticipant(name);
             res.teams[k].push(p);
             if (res.lineups && res.lineups[k]) lineupAdd(res.lineups[k], p);
-            res.manualEdited = true; res.at = Date.now();
+            res.manualEdited = true; res.at = Date.now();   // 人を足しても、試合の組(round)は変えない
             swapNotice = `${escapeHtml(name)}をチーム${k + 1}に入れました。`;
             refreshDupAfterEdit();
             renderSwapBar();
             renderTeamResults();
         }
+        // チーム分けの画面から、名簿の人を「来る」にしてチームへ入れる(メンバーの画面へ行かなくてよい)
+        function teamAddFromRoster(k) {
+            const sel = document.getElementById("teamAddSel"), name = sel && sel.value;
+            if (!name || !isAdmin()) return;
+            const d = selectedDate;
+            if (!attendanceByDate[d]) attendanceByDate[d] = [];
+            let m = attendanceByDate[d].find(x => x.name === name);
+            if (!m) { m = { id: nextId++, name, status: "来る", updated: nowStamp() }; attendanceByDate[d].push(m); }
+            else { m.status = "来る"; m.updated = nowStamp(); }
+            saveData();
+            addLateMember(name, k);
+            try { renderRoster(); } catch (e) { console.warn(e); }
+            try { renderCalendar(); } catch (e) { console.warn(e); }
+        }
         function lateBoxHtml() {
-            const late = lateMembers(); if (!late.length) return "";
-            const res = lastTeamSplitResult;
-            return `<div class="late-box"><div class="late-h">チーム分けのあとに「来る」になった人</div>${late.map(n => `<div class="late-row"><span class="late-name">${escapeHtml(n)}</span>${isAdmin() ? res.teams.map((_, k) => `<button type="button" onclick="addLateMember(decodeURIComponent('${encodeURIComponent(n)}'), ${k})">チーム${k + 1}へ</button>`).join("") : `<span class="mt-unit">（管理者がチームに入れます）</span>`}</div>`).join("")}</div>`;
+            const res = lastTeamSplitResult, late = lateMembers();
+            const coming = new Set((attendanceByDate[selectedDate] || []).filter(m => m.status === "来る").map(m => m.name));
+            const cands = isAdmin() ? roster.filter(r => !coming.has(r.name)).map(r => r.name) : [];
+            if (!late.length && !cands.length) return "";
+            const teamBtns = (onclick) => res.teams.map((_, k) => `<button type="button" onclick="${onclick(k)}">チーム${k + 1}へ</button>`).join("");
+            const lateHtml = late.length ? `<div class="late-h">チーム分けのあとに「来る」になった人</div>${late.map(n => `<div class="late-row"><span class="late-name">${escapeHtml(n)}</span>${isAdmin() ? teamBtns(k => `addLateMember(decodeURIComponent('${encodeURIComponent(n)}'), ${k})`) : `<span class="mt-unit">（管理者がチームに入れます）</span>`}</div>`).join("")}` : "";
+            const addHtml = cands.length ? `<div class="late-h"${late.length ? ' style="margin-top:10px"' : ""}>名簿から追加（「来る」にしてチームへ）</div><div class="late-row"><select id="teamAddSel" class="late-sel"><option value="">名前を選ぶ</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select>${teamBtns(k => `teamAddFromRoster(${k})`)}</div>` : "";
+            return `<div class="late-box">${lateHtml}${addHtml}</div>`;
         }
         function renderTeamResults() {
+            try { teamPersistLocal(); } catch (e) { console.warn(e); }
             try { renderMatchBox(); } catch (e) { console.warn(e); }
             try { renderTeamSyncUi(); } catch (e) { console.warn(e); }
             const resultsEl = document.getElementById("teamResults");
@@ -9493,7 +9547,8 @@ await main();
             const el = document.getElementById("matchDiff"), diff = Math.max(0, Math.min(99, parseInt(el && el.value, 10) || 0));
             const a = matchForm.a, b = matchForm.b;
             const list = matchesByDate[selectedDate] || (matchesByDate[selectedDate] = []);
-            list.push({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: matchForm.win === a ? 0 : 1, diff });
+            const rd = lastTeamSplitResult && lastTeamSplitResult.round;
+            list.push({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: matchForm.win === a ? 0 : 1, diff, ...(rd ? { round: rd, pair: ["チーム" + (a + 1), "チーム" + (b + 1)] } : {}) });
             saveMatches();
             matchForm.win = null;
             renderMatchBox();
@@ -9515,25 +9570,61 @@ await main();
             return `<div class="mt-row"><div class="mt-top"><span class="mt-no">#${i + 1}</span><span class="mt-team win">${escapeHtml(m.labels[w])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "勝ち"}</span><span class="mt-team">${escapeHtml(m.labels[l])}</span>${canDel ? `<button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>
                 <div class="mt-mem"><span class="mt-w">勝</span>${names(w)}</div><div class="mt-mem"><span class="mt-l">負</span>${names(l)}</div></div>`;
         }
-        // 同じメンバー同士の試合をまとめる(ふだんは同じ組み合わせで2試合。1試合だけなら記入忘れかも)
+        // ------- 試合の組(チーム分けボタンを押すたびに新しい組。人を足したり入れ替えたりしても同じ組) -------
+        // ルール(共有): { type: "first" = Nゲーム先取 / "games" = Nゲームマッチ, n }
+        const MATCH_RULE_KEY = "attendance_match_rule_v1";
+        const MATCH_RULES = [["first", 2, "2ゲーム先取"], ["first", 3, "3ゲーム先取"], ["first", 1, "1ゲーム"], ["games", 2, "2ゲームマッチ"], ["games", 3, "3ゲームマッチ"]];
+        function matchRule() { const v = teamJsonGet(MATCH_RULE_KEY); return v.type === "games" || v.type === "first" ? { type: v.type, n: Math.max(1, Math.min(9, +v.n || 2)) } : { type: "first", n: 2 }; }
+        function setMatchRule(v) { const [type, n] = String(v).split(":"); try { localStorage.setItem(MATCH_RULE_KEY, JSON.stringify({ type, n: +n })); } catch (e) { /* ignore */ } renderMatchBox(); const h = document.getElementById("matchHistory"); if (h && h.closest("details") && h.closest("details").open) renderMatchHistory(); }
+        function matchRuleLabel(r) { const f = MATCH_RULES.find(x => x[0] === r.type && x[1] === r.n); return f ? f[2] : r.type === "first" ? `${r.n}ゲーム先取` : `${r.n}ゲームマッチ`; }
         function matchTeamKey(names) { return names.slice().sort().join("\u0001"); }
-        function matchGroupsHtml(date, list, canDel) {
+        // 自動の組: チーム分けボタンを押した時刻(round)と、対戦したチームの番号。round の無い古い記録は、メンバーが同じかどうかで
+        function matchAutoKey(m) {
+            if (m.round) return `r${m.round}:${(m.pair || m.labels).slice().sort().join("-")}`;
+            return [matchTeamKey(m.teams[0]), matchTeamKey(m.teams[1])].sort().join("\u0002");
+        }
+        const matchKeyOf = m => m.grp || matchAutoKey(m);
+        function matchGroupsOf(list) {
             const groups = [], byKey = {};
             list.forEach((m, i) => {
-                const ka = matchTeamKey(m.teams[0]), kb = matchTeamKey(m.teams[1]), gk = [ka, kb].sort().join("\u0002");
+                const gk = matchKeyOf(m);
                 let g = byKey[gk];
-                if (!g) { g = byKey[gk] = { keys: [ka, kb], names: [m.teams[0], m.teams[1]], labels: [m.labels[0], m.labels[1]], games: [] }; groups.push(g); }
+                if (!g) { g = byKey[gk] = { key: gk, labels: [m.labels[0], m.labels[1]], names: {}, games: [] }; groups.push(g); }
+                m.labels.forEach((lb, k) => { if (!g.labels.includes(lb)) g.labels.push(lb); g.names[lb] = m.teams[k]; });   // メンバーは、その組の最後の試合のもの
                 g.games.push({ m, i });
             });
-            return groups.map(g => {
-                const n = g.games.length, odd = n % 2 === 1;
-                const rows = g.games.map(({ m, i }, j) => {
-                    const wk = matchTeamKey(m.teams[m.win]), w = wk === g.keys[0] ? 0 : 1;
-                    return `<div class="mt-top"><span class="mt-no">${j + 1}試合目</span><span class="mt-team win">${escapeHtml(g.labels[w])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`;
-                }).join("");
-                const team = k => `<div class="mt-gt"><b>${escapeHtml(g.labels[k])}</b><span>${g.names[k].map(escapeHtml).join("・")}</span></div>`;
-                const st = odd ? `⚠ ${n}試合（あと1試合の記入忘れ？）` : `${n}試合 ✓`;
-                return `<div class="mt-grp${odd ? " warn" : ""}">${team(0)}${team(1)}<div class="mt-gg">${rows}</div><div class="mt-gs">${st}</div></div>`;
+            return groups;
+        }
+        // 組の進み具合: 先取なら どちらかが N勝で決着 / マッチなら N試合で終わり
+        function matchGroupState(g, rule) {
+            const wins = {}; g.games.forEach(({ m }) => { const lb = m.labels[m.win]; wins[lb] = (wins[lb] || 0) + 1; });
+            const n = g.games.length, lbs = g.labels.slice(0, 2), score = lbs.map(lb => wins[lb] || 0);
+            if (rule.type === "first" ? score.filter(x => x >= rule.n).length > 1 || n > rule.n * 2 - 1 : n > rule.n) return { done: false, text: `${score.join(" - ")}　⚠ ゲームが多すぎます（組を確認）` };
+            if (rule.type === "first") {
+                const top = Math.max(...score), done = top >= rule.n, w = done ? lbs[score.indexOf(top)] : "";
+                return { done, text: done ? `${score.join(" - ")}　${w}の勝ち ✓` : `${score.join(" - ")}　⚠ まだ決着していません（記入忘れ？）` };
+            }
+            const done = n >= rule.n;
+            return { done, text: done ? `${score.join(" - ")}　${n}ゲーム ✓` : `${score.join(" - ")}　⚠ ${n}/${rule.n}ゲーム（記入忘れ？）` };
+        }
+        // 組を手で直す: その試合を別の組へ / 新しい組へ / 自動に戻す
+        function setMatchGroup(date, id, v) {
+            const m = (matchesByDate[date] || []).find(x => x.id === id); if (!m || !realAdmin()) return;
+            if (v === "new") m.grp = "g" + Date.now();
+            else if (v === "auto") delete m.grp;
+            else m.grp = v;
+            if (m.grp === matchAutoKey(m)) delete m.grp;
+            saveMatches(); renderMatchBox();
+            const h = document.getElementById("matchHistory"); if (h && h.closest("details") && h.closest("details").open) renderMatchHistory();
+        }
+        function matchGroupsHtml(date, list, canDel) {
+            const rule = matchRule(), groups = matchGroupsOf(list);
+            return groups.map((g, gi) => {
+                const st = matchGroupState(g, rule);
+                const opts = (m) => groups.map((x, xi) => `<option value="${escapeHtml(x.key)}"${x.key === g.key ? " selected" : ""}>組${xi + 1}</option>`).join("") + `<option value="new">新しい組</option>${m.grp ? `<option value="auto">自動に戻す</option>` : ""}`;
+                const rows = g.games.map(({ m }, j) => `<div class="mt-top"><span class="mt-no">${j + 1}ゲーム</span><span class="mt-team win">${escapeHtml(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? m.diff + "点差で勝ち" : "の勝ち"}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`).join("");
+                const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb)}</b><span>${(g.names[lb] || []).map(escapeHtml).join("・")}</span></div>`;
+                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
             }).join("");
         }
         function renderMatchBox() {
@@ -9563,7 +9654,9 @@ await main();
                 if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>この日のメンバーの勝率${admMark()}</summary>
                     <div class="mt-rt"><div class="mt-rr mt-rh"><span>名前</span><span>累計</span><span>この日</span></div>${mem.map(x => `<div class="mt-rr"><span class="mt-rn">${escapeHtml(x.n)}</span>${cell(x.a)}${cell(x.d)}</div>`).join("")}</div></details>`;
             }
-            box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}試合</span>` : ""}</div>${form}
+            const rule = matchRule();
+            const ruleHtml = adm ? `<div class="mt-rule"><span>ルール</span><select onchange="setMatchRule(this.value)">${MATCH_RULES.map(([t, n, lb]) => `<option value="${t}:${n}"${rule.type === t && rule.n === n ? " selected" : ""}>${lb}</option>`).join("")}</select></div>` : `<div class="mt-rule"><span>ルール　${matchRuleLabel(rule)}</span></div>`;
+            box.innerHTML = `<div class="mt-card"><div class="mt-h">試合の記録${list.length ? `<span>${list.length}ゲーム</span>` : ""}</div>${ruleHtml}${form}
                 ${list.length ? `<div class="mt-list">${matchGroupsHtml(selectedDate, list, adm)}</div>` : (teams ? "" : `<div class="mt-empty">この日の試合はまだありません</div>`)}
                 ${rates}</div>`;
         }
