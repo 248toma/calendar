@@ -3199,6 +3199,16 @@
         .mt-unit-seg { display: inline-flex; gap: 2px; margin-left: 8px; padding: 2px; border-radius: 9px; background: var(--bg); box-shadow: var(--sink); vertical-align: middle; }
         .mt-unit-seg button { height: 22px; padding: 0 9px; border: none; border-radius: 7px; background: transparent; color: var(--ink-3); font-size: 11px; font-weight: 700; }
         .mt-unit-seg button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
+
+        /* 自分のチーム */
+        .me-team { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 10px; padding: 8px 12px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; }
+        .me-team b { font-size: 16px; font-weight: 800; }
+        .team-result-card.has-me { box-shadow: 0 0 0 2px var(--accent), var(--raise-sm); }
+        .me-badge { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 800; vertical-align: 2px; }
+        .court-cell.is-me { box-shadow: inset 0 0 0 2px var(--accent) !important; }
+        .court-cell.is-me .court-name { color: var(--accent); }
+        .bench-chip.is-me { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
+        .mt-me { text-decoration: none; font-weight: 800; color: var(--accent); }
 </style>
 </head>
 <body>
@@ -9176,13 +9186,13 @@ await main();
                     inner = `<div class="court-name">${genderDot}${escapeHtml(p.name)}${memberKeyBadgesHtml(p)}</div>${posTag}${params}`;
                     pk = pickOf(p);
                 }
-                return `<div class="court-cell ${c.row}${pk.cls}"${pk.attr}><span class="court-slot-no">${c.no}</span>${inner}</div>`;
+                return `<div class="court-cell ${c.row}${pk.cls}${p && p.name === teamMeName() ? " is-me" : ""}"${pk.attr}><span class="court-slot-no">${c.no}</span>${inner}</div>`;
             }).join("");
 
             const benchHtml = bench.length
                 ? `<div class="court-bench"><span class="bench-label">控え</span>${bench.map(p => {
                     const pk = pickOf(p);
-                    return `<span class="bench-chip${pk.cls}"${pk.attr}>${escapeHtml(p.name)}${paramsVisible() ? courtParamsHtml(p) : ""}</span>`;
+                    return `<span class="bench-chip${pk.cls}${p.name === teamMeName() ? " is-me" : ""}"${pk.attr}>${escapeHtml(p.name)}${paramsVisible() ? courtParamsHtml(p) : ""}</span>`;
                 }).join("")}</div>` : "";
 
             return `
@@ -9264,6 +9274,39 @@ await main();
         // (チーム番号の違いは同じ分け方として数える。履歴の比較と同じ基準)
         // 「分ける」時、履歴にある組み合わせと重複しない結果が出るまで試す最大回数
         const NO_DUPLICATE_MAX_TRIES = 30;
+        const TEAM_SPREAD_TRIES = 40;   // 過去の組み合わせがあるときに作る候補の数
+        // その日の今までのチーム(分け直す前のチーム・この端末に保存。30日より前は消す)
+        const TEAM_PAST_KEY = "team_past_v1";
+        function teamPastAdd(date, teams) {
+            const all = teamJsonGet(TEAM_PAST_KEY), cut = formatDateKey(new Date(Date.now() - 30 * 864e5));
+            Object.keys(all).forEach(k => { if (k < cut) delete all[k]; });
+            const list = all[date] || (all[date] = []), sig = JSON.stringify(teams.map(t => t.slice().sort()).sort());
+            if (list.length && JSON.stringify(list[list.length - 1].map(t => t.slice().sort()).sort()) === sig) return;
+            list.push(teams); if (list.length > 20) list.shift();
+            try { localStorage.setItem(TEAM_PAST_KEY, JSON.stringify(all)); } catch (e) { /* ignore */ }
+        }
+        // 2人がその日に同じチームだった重み(新しいものほど重い)。分け直す前のチーム + 記録した試合のチーム
+        function teamPairWeights(date, names) {
+            const sets = [], seen = new Set();
+            const push = (t) => { const k = t.slice().sort().join("\u0001"); if (seen.has(k)) { const i = sets.findIndex(x => x.k === k); if (i >= 0) sets.push(sets.splice(i, 1)[0]); return; } seen.add(k); sets.push({ k, t }); };
+            (matchesByDate[date] || []).forEach(m => m.teams.forEach(push));
+            (teamJsonGet(TEAM_PAST_KEY)[date] || []).forEach(ts => ts.forEach(push));
+            const w = {}, n = sets.length;
+            sets.forEach(({ t }, i) => {
+                const wt = 0.5 + (i + 1) / n;   // 古いもの 0.5〜 新しいもの 1.5
+                const ms = t.filter(x => names.has(x));
+                for (let a = 0; a < ms.length; a++) for (let b = a + 1; b < ms.length; b++) {
+                    const key = ms[a] < ms[b] ? ms[a] + "\u0001" + ms[b] : ms[b] + "\u0001" + ms[a];
+                    w[key] = (w[key] || 0) + wt;
+                }
+            });
+            return w;
+        }
+        function teamPairScore(teams, w) {
+            let sc = 0;
+            teams.forEach(t => { const ns = t.map(p => p.name); for (let a = 0; a < ns.length; a++) for (let b = a + 1; b < ns.length; b++) { const key = ns[a] < ns[b] ? ns[a] + "\u0001" + ns[b] : ns[b] + "\u0001" + ns[a]; const v = w[key] || 0; sc += v * v; } });   // 何度も一緒の2人ほど強く避ける
+            return sc;
+        }
         const PREDICT_SAMPLES = 150;
         const PREDICT_MIN_SAMPLES = 30;
         const PREDICT_TIME_LIMIT_MS = 3000;
@@ -9393,6 +9436,8 @@ await main();
             flushPendingRemote();
         }
 
+        // 自分(ログイン・ゲストで選んだ名前)
+        function teamMeName() { try { return typeof myMemberName === "function" ? myMemberName() || "" : ""; } catch (e) { return ""; } }
         function teamCountStep(d) {
             const el = document.getElementById("teamCountInput"); if (!el) return;
             el.value = Math.max(2, Math.min(8, (parseInt(el.value, 10) || 2) + d));
@@ -9424,17 +9469,25 @@ await main();
                 return;
             }
 
-            // 履歴にある組み合わせと重複しない結果が出るまで、最大 NO_DUPLICATE_MAX_TRIES 回やり直す
+            // 分け直すときは、今までの組み合わせを覚えておく(その日のうち)
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) teamPastAdd(selectedDate, lastTeamSplitResult.teams.map(t => t.map(p => p.name)));
+            // 候補をたくさん作り、「その日すでに同じチームになった2人」がなるべく少ない分け方を選ぶ(同じ3人が残り続けないように)
+            // 過去とまったく同じ分け方は、ほかに候補があれば選ばない
             const known = new Set(
                 teamSplitHistory.key === teamSplitHistoryKey(participants, teamCount, ignoreParams)
                     ? teamSplitHistory.runs.map(r => r.all) : []
             );
-            let split = null;
-            let foundNew = false;
-            for (let tries = 0; tries < NO_DUPLICATE_MAX_TRIES && !foundNew; tries++) {
-                split = splitIntoTeams(participants, teamCount);
-                foundNew = !known.has(partitionSignature(split.teams, () => true));
+            const pw = teamPairWeights(selectedDate, new Set(participants.map(p => p.name)));
+            const hasPast = Object.keys(pw).length > 0;
+            let split = null, bestScore = Infinity;
+            for (let tries = 0; tries < (hasPast ? TEAM_SPREAD_TRIES : NO_DUPLICATE_MAX_TRIES); tries++) {
+                const sp = splitIntoTeams(participants, teamCount);
+                const dup = known.has(partitionSignature(sp.teams, () => true));
+                const sc = (dup ? 1e6 : 0) + teamPairScore(sp.teams, pw);
+                if (sc < bestScore) { split = sp; bestScore = sc; }
+                if (!hasPast && !dup) break;
             }
+            const foundNew = !known.has(partitionSignature(split.teams, () => true));
             const { teams, excludedKeys } = split;
             lastTeamSplitResult = {
                 teams, excludedKeys, dateKey: selectedDate, ignoreParams,
@@ -9613,9 +9666,10 @@ await main();
                     avgLineHtml = `<div class="team-avg-line">平均　${avgStr}</div>`;
                 }
 
+                const mine = team.some(p => p.name === teamMeName());
                 return `
-                    <div class="team-result-card">
-                        <div class="team-result-title"><span>チーム${i + 1}</span><span>${team.length}名</span></div>
+                    <div class="team-result-card${mine ? " has-me" : ""}">
+                        <div class="team-result-title"><span>チーム${i + 1}${mine ? `<span class="me-badge">あなた</span>` : ""}</span><span>${team.length}名</span></div>
                         ${avgLineHtml}
                         ${renderCourtHtml(i)}
                     </div>
@@ -9629,7 +9683,8 @@ await main();
                 }
             }
 
-            resultsEl.innerHTML = lateBoxHtml() + html;
+            const meIdx = teams.findIndex(t => t.some(p => p.name === teamMeName()));
+            resultsEl.innerHTML = (meIdx >= 0 ? `<div class="me-team"><span>あなた</span><b>チーム${meIdx + 1}</b></div>` : "") + lateBoxHtml() + html;
 
             // 凡例は、結果にいる性別だけ出す
             const present = new Set(teams.flat().map(p => p.gender || "unspecified"));
@@ -9826,7 +9881,7 @@ await main();
                         + (items.length ? `<div class="mt-diffrow">${items.join("　")}</div>` : "")
                         + (editing ? matchEditHtml(m) : "");
                 }).join("");
-                const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb.replace("チーム", ""))}</b><span>${(g.names[lb] || []).map(escapeHtml).join("・")}</span></div>`;
+                const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb.replace("チーム", ""))}</b><span>${(g.names[lb] || []).map(n => n === teamMeName() ? `<u class="mt-me">${escapeHtml(n)}</u>` : escapeHtml(n)).join("・")}</span></div>`;
                 const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key)}'))" aria-label="チーム分けに戻す" title="チーム分けに戻す">↩</button>` : "";
                 return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${back}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
             }).join("");
