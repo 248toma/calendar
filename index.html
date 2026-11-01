@@ -14875,10 +14875,9 @@ const namesBtn = isAdmin() && dates.length > 0
                     const word = t => protoPlanStyle === "en" ? planEnglish(t) : t;
                     const row = (col, l, r, label, span) => `<span class="pr-lt"><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}${span > 1 ? `;max-width:calc(${span * 100}% - 8px)` : ""}">${esc(word(label))}</b>` : ""}</span>`;
                     const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : "", x.span || 1).replace('class="pr-lt"', 'class="pr-lt pr-lt-lane"'));
-                    // 情報を減らす: バレーは文字にせず日付の右上の小さな輪 / 1日の予定は線なしで題名だけ / 2行まで(残りは右上に +N) / 過ぎた日は薄く
-                    const sg = dots.filter(x => !x.vol).map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"><b style="color:${x.col}">${esc(word(x.t || ""))}</b></span>`);
-                    const all = laneRows.concat(sg), room = 2;
-                    volMark = v ? `<i class="pr-volmark" style="border-color:${v.col}"></i>` : "";
+                    // 1日の予定(バレーも)は線なしで題名だけ / 3行まで(残りは右上に +N) / 過ぎた日は薄く
+                    const sg = dots.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"><b style="color:${x.col}">${esc(word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
+                    const all = laneRows.concat(sg), room = 3;
                     tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}${k < todayKey ? " past" : ""}">${all.slice(0, room).join("")}</span>${all.length > room && sg.length ? `<span class="pr-fit-more">+${all.length - room}</span>` : ""}`;
                 }
                 const moreTag = "";
