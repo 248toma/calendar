@@ -3326,13 +3326,26 @@
         #protoUI .pr-lt > b { position: relative; max-width: calc(100% - 8px); padding: 0 2px; background: var(--pr-bg, #e9ecf2); font-size: 7px; font-weight: 700; line-height: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #protoUI .pr-lts.en .pr-lt > b, #protoUI .pr-lt.en > b { font-family: 'Montserrat', system-ui, sans-serif; letter-spacing: .02em; }
         #protoUI .pr-lt-lane { justify-content: flex-start; padding-left: 4px; }   /* 何日も続く予定: 題名は線の始まりに寄せる */
-        #protoUI .pr-lt-lane > b { z-index: 1; padding: 0 2px 0 1px; }   /* 続く日の上まで題名をのばせる(線の続く日数まで) */
+        #protoUI .pr-lt-lane > b { z-index: 1; padding: 0 2px 0 1px; flex-shrink: 0; }   /* 続く日の上まで題名をのばせる(線の続く日数まで) */
         #protoUI .pr-cell:has(.pr-lt-lane > b) { overflow: visible; }
         #protoUI .pr-lt-more { font-size: 7px; font-weight: 700; opacity: .45; }
         #protoUI .pr-fit-more { position: absolute; top: 3px; right: 4px; font-size: 8px; font-weight: 700; opacity: .5; pointer-events: none; font-family: 'Montserrat', system-ui, sans-serif; }
         #protoUI .pr-lt-solo > b { position: relative; max-width: calc(100% - 4px); padding: 0; background: none; font-size: 7px; font-weight: 700; line-height: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #protoUI .pr-lts.past { opacity: .45; }
         #protoUI .pr-volmark { position: absolute; top: 1px; right: -3px; width: 6px; height: 6px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid; }
+        /* 試し: 文字を1色に(色は小さな点だけ) */
+        #protoUI.pr-mono-dot .pr-lt-solo > b { color: var(--pr-ink2, #4a5262) !important; font-weight: 600; }
+        #protoUI.pr-mono-dot .pr-lt-solo > b::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 3px; vertical-align: 1px; }
+        #protoUI.pr-mono .pr-lt-solo > b { color: var(--pr-ink2, #4a5262) !important; font-weight: 600; }
+        #protoUI.pr-mono .pr-lt-lane > b, #protoUI.pr-mono-dot .pr-lt-lane > b { color: var(--pr-ink2, #4a5262) !important; }
+        /* カレンダーの小さな題名のフォント: 英字は Montserrat、日本語は iPhone の標準(ヒラギノ角ゴ)の細め。小さくてもつぶれにくい */
+        #protoUI .pr-lt > b, #protoUI .pr-lt-solo > b { font-family: 'Montserrat', -apple-system, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif !important; font-weight: 500 !important; font-size: 7.5px !important; letter-spacing: .03em !important; -webkit-font-smoothing: antialiased; font-feature-settings: "palt"; }
+        #protoUI .pr-lts.en .pr-lt > b { font-weight: 600 !important; font-size: 7px !important; }
+        /* 文字は1色(色は続く予定の線だけ)。長い題名は「…」を付けずに切る(幅がそろって静かに見える) */
+        #protoUI .pr-lt-solo > b, #protoUI .pr-lt-lane > b { color: var(--pr-ink2, #4a5262) !important; text-overflow: clip !important; }
+        #protoUI .pr-lts.past .pr-lt > b { color: var(--pr-ink3, #8a909a) !important; }
+        /* 文字は1色のまま、予定の色は題名の頭の小さな点で(続く予定は線の色) */
+        #protoUI .pr-lt-solo > b::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 2.5px; vertical-align: .5px; }
 </style>
 </head>
 <body>
@@ -14876,7 +14889,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const row = (col, l, r, label, span) => `<span class="pr-lt"><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}${span > 1 ? `;max-width:calc(${span * 100}% - 8px)` : ""}">${esc(word(label))}</b>` : ""}</span>`;
                     const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : "", x.span || 1).replace('class="pr-lt"', 'class="pr-lt pr-lt-lane"'));
                     // 1日の予定(バレーも)は線なしで題名だけ / 3行まで(残りは右上に +N) / 過ぎた日は薄く
-                    const sg = dots.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"><b style="color:${x.col}">${esc(word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
+                    const sg = dots.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"><b style="color:${x.col};--c:${x.col}">${esc(word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
                     const all = laneRows.concat(sg), room = 3;
                     tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}${k < todayKey ? " past" : ""}">${all.slice(0, room).join("")}</span>${all.length > room && sg.length ? `<span class="pr-fit-more">+${all.length - room}</span>` : ""}`;
                 }
@@ -15054,7 +15067,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 return;
             }
             root.style.background = P.bg;   // 横画面などで板の外側が空いても、後ろの画面が見えないように
-            root.style.setProperty("--pr-bg", P.bg);   // カレンダーの線の上の文字の下地
+            root.style.setProperty("--pr-bg", P.bg);
+            root.style.setProperty("--pr-ink2", P.ink2);
+            root.style.setProperty("--pr-ink3", P.ink3);   // カレンダーの線の上の文字の下地
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">${pin ? headPin : headHtml}${calHtml}${dockHtml}</div>`;
             protoLandFit();
             protoFitCells();
