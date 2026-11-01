@@ -3319,6 +3319,13 @@
         #protoUI .pr-tiny i { display: block; font-style: normal; font-size: 7.5px; font-weight: 600; line-height: 9.5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
         #protoUI .pr-tiny.en i { font-family: 'Montserrat', system-ui, sans-serif; font-size: 7px; font-weight: 700; letter-spacing: .06em; }
         #protoUI .pr-tiny-more { color: inherit !important; opacity: .45; }
+        #protoUI .pr-lanes { display: flex; flex-direction: column; gap: 3px; min-height: 3px; }   /* 線の段の高さをどの日も同じにして、文字の高さをそろえる */
+        #protoUI .pr-lts { display: flex; flex-direction: column; gap: 1px; width: 100%; }
+        #protoUI .pr-lt { position: relative; display: flex; justify-content: center; align-items: center; height: 10px; min-width: 0; }
+        #protoUI .pr-lt > i { position: absolute; top: 50%; height: 2px; margin-top: -1px; border-radius: 1px; }
+        #protoUI .pr-lt > b { position: relative; max-width: calc(100% - 8px); padding: 0 2px; background: var(--pr-bg, #e9ecf2); font-size: 7px; font-weight: 700; line-height: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #protoUI .pr-lts.en .pr-lt > b, #protoUI .pr-lt.en > b { font-family: 'Montserrat', system-ui, sans-serif; letter-spacing: .05em; }
+        #protoUI .pr-lt-more { font-size: 7px; font-weight: 700; opacity: .45; }
 </style>
 </head>
 <body>
@@ -14855,11 +14862,14 @@ const namesBtn = isAdmin() && dates.length > 0
                     : `<i style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
                 let tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
                 if (protoCalPlans) {
-                    // 予定の題名を、ごく小さな文字で(時間は上の板)。"en" は英語に置きかえ(辞書にない言葉はそのまま)。3つまで、それ以上は +N
-                    const its = items.filter(x => x.t || x.vol).map(x => ({ t: x.vol ? "バレー" : String(x.t).trim(), col: x.col }));
+                    // 「点」の細い線の上に、題名を重ねる(線は文字のところだけ切れる)。連続予定は日をつなぐ線で、題名は始まりの日と週のはじめだけ
+                    // 1日の予定は短い線。"en" は英語に置きかえ(辞書にない言葉はそのまま)
                     const word = t => protoPlanStyle === "en" ? planEnglish(t) : t;
-                    tags = its.length ? `<span class="pr-tiny${protoPlanStyle === "en" ? " en" : ""}">${its.slice(0, 3).map(x => `<i style="color:${x.col}">${esc(word(x.t))}</i>`).join("")}${its.length > 3 ? `<i class="pr-tiny-more">+${its.length - 3}</i>` : ""}</span>` : "";
-                    if (pin && !pin.empty && k >= pin.sd && k <= (pin.ed || pin.sd)) tags = `<span class="pr-tiny"><i style="color:${C[planColor] || C[0]}">●</i></span>` + tags;
+                    const row = (col, l, r, label) => `<span class="pr-lt"><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}">${esc(word(label))}</b>` : ""}</span>`;
+                    const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : ""));
+                    const sg = dots.map(x => row(x.col, true, true, x.vol ? "バレー" : x.t || (x.pin ? "" : "")));
+                    const room = Math.max(1, 3 - laneRows.length);
+                    tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}">${laneRows.join("")}${sg.slice(0, room).join("")}${sg.length > room ? `<span class="pr-lt pr-lt-more">+${sg.length - room}</span>` : ""}</span>`;
                 }
                 const moreTag = "";
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
@@ -15035,6 +15045,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 return;
             }
             root.style.background = P.bg;   // 横画面などで板の外側が空いても、後ろの画面が見えないように
+            root.style.setProperty("--pr-bg", P.bg);   // カレンダーの線の上の文字の下地
             root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">${pin ? headPin : headHtml}${calHtml}${dockHtml}</div>`;
             protoLandFit();
             const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * 26;
@@ -15283,7 +15294,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         pvSync();
         // 題名を英語に(よく使う言葉だけ。辞書にない言葉はそのまま)
-        const PLAN_EN = [["美容院", "SALON"], ["美容室", "SALON"], ["カット", "HAIRCUT"], ["散髪", "HAIRCUT"], ["飲み会", "DRINKS"], ["飲み", "DRINKS"], ["歓迎会", "WELCOME"], ["送別会", "FAREWELL"], ["忘年会", "PARTY"], ["新年会", "PARTY"], ["パーティ", "PARTY"], ["旅行", "TRIP"], ["出張", "BIZ TRIP"], ["帰省", "HOME"], ["実家", "HOME"], ["歯医者", "DENTIST"], ["歯科", "DENTIST"], ["病院", "CLINIC"], ["バレー", "VOLLEY"], ["ランチ", "LUNCH"], ["昼ごはん", "LUNCH"], ["ディナー", "DINNER"], ["夕食", "DINNER"], ["ご飯", "MEAL"], ["ごはん", "MEAL"], ["ピザ", "PIZZA"], ["カフェ", "CAFE"], ["買い物", "SHOPPING"], ["仕事", "WORK"], ["会議", "MTG"], ["打ち合わせ", "MTG"], ["ミーティング", "MTG"], ["面接", "INTERVIEW"], ["誕生日", "B-DAY"], ["デート", "DATE"], ["映画", "MOVIE"], ["ライブ", "LIVE"], ["コンサート", "LIVE"], ["ジム", "GYM"], ["筋トレ", "GYM"], ["休み", "OFF"], ["休日", "OFF"], ["有給", "OFF"], ["結婚式", "WEDDING"], ["引越", "MOVING"], ["試験", "EXAM"], ["テスト", "EXAM"], ["飛行機", "FLIGHT"], ["フライト", "FLIGHT"], ["新幹線", "TRAIN"], ["キャンプ", "CAMP"], ["温泉", "ONSEN"], ["掃除", "CLEANING"], ["洗車", "CAR WASH"], ["車検", "CAR"], ["ハロウィン", "HALLOWEEN"], ["クリスマス", "XMAS"], ["ゴルフ", "GOLF"], ["サッカー", "SOCCER"], ["バスケ", "BASKETBALL"], ["テニス", "TENNIS"], ["練習", "PRACTICE"], ["試合", "GAME"], ["大会", "TOURNAMENT"]];
+        const PLAN_EN = [["美容院", "SALON"], ["美容室", "SALON"], ["カット", "HAIRCUT"], ["散髪", "HAIRCUT"], ["飲み会", "DRINKS"], ["飲み", "DRINKS"], ["歓迎会", "WELCOME"], ["送別会", "FAREWELL"], ["忘年会", "PARTY"], ["新年会", "PARTY"], ["パーティ", "PARTY"], ["旅行", "TRIP"], ["出張", "BIZ TRIP"], ["帰省", "HOME"], ["実家", "HOME"], ["歯医者", "DENTIST"], ["歯科", "DENTIST"], ["病院", "CLINIC"], ["バレー", "VOLLEY"], ["ランチ", "LUNCH"], ["昼ごはん", "LUNCH"], ["ディナー", "DINNER"], ["夕食", "DINNER"], ["ご飯", "MEAL"], ["ごはん", "MEAL"], ["ピザ", "PIZZA"], ["カフェ", "CAFE"], ["買い物", "SHOP"], ["仕事", "WORK"], ["会議", "MTG"], ["打ち合わせ", "MTG"], ["ミーティング", "MTG"], ["面接", "INTVW"], ["誕生日", "B-DAY"], ["デート", "DATE"], ["映画", "MOVIE"], ["ライブ", "LIVE"], ["コンサート", "LIVE"], ["ジム", "GYM"], ["筋トレ", "GYM"], ["休み", "OFF"], ["休日", "OFF"], ["有給", "OFF"], ["結婚式", "WEDDING"], ["引越", "MOVING"], ["試験", "EXAM"], ["テスト", "EXAM"], ["飛行機", "FLIGHT"], ["フライト", "FLIGHT"], ["新幹線", "TRAIN"], ["キャンプ", "CAMP"], ["温泉", "ONSEN"], ["掃除", "CLEANING"], ["洗車", "CAR WASH"], ["車検", "CAR"], ["ハロウィン", "HALLOWEEN"], ["クリスマス", "XMAS"], ["ゴルフ", "GOLF"], ["サッカー", "SOCCER"], ["バスケ", "HOOPS"], ["テニス", "TENNIS"], ["練習", "PRACTICE"], ["試合", "GAME"], ["大会", "CUP"]];
         function planEnglish(t) { const s0 = String(t || ""); const hit = PLAN_EN.find(([jp]) => s0.includes(jp)); return hit ? hit[1] : /^[\x20-\x7e]+$/.test(s0) ? s0.toUpperCase() : s0; }
         function protoHapHtml() { return !hapOn || navigator.vibrate ? "" : `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`; }
         // スイッチが押された: 触覚はスイッチが鳴らす。本来のボタンの処理は、スイッチの切り替えが終わってから呼ぶ(すぐ描き直すとスイッチが消えて鳴らないため)
