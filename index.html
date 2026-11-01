@@ -3242,6 +3242,18 @@
         .mt-trash[open] > summary { box-shadow: var(--sink); }
         .mt-trow { display: grid; grid-template-columns: 3.2em 3.6em 1fr 32px; align-items: center; gap: 4px; margin-top: 6px; padding: 4px 8px; border-radius: 8px; background: rgba(128, 128, 128, .08); font-size: 12.5px; color: var(--ink-3); }
         .mt-trow button { height: 26px; border: none; border-radius: 8px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--accent); font-size: 14px; font-weight: 800; }
+
+        /* 勝ったチームには 🏆 だけ(色は付けない) */
+        .tm-chip { display: inline-block; min-width: 1em; font-weight: 800; color: var(--ink); flex: none; }
+        .mt-gt { align-items: center; }
+        .mt-crown { font-style: normal; font-size: 12px; margin-right: 3px; }
+        .mt-team.win { display: inline-flex; align-items: center; gap: 3px; color: var(--ink); }
+        .mt-ok { flex: none; width: 48px; height: 44px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 20px; font-weight: 800; box-shadow: var(--raise-xs); }
+        .mt-ok:disabled { background: var(--bg); color: var(--ink-3); opacity: .5; box-shadow: var(--raise-xs); }
+        .mt-tdet > summary { list-style: none; cursor: pointer; }
+        .mt-tdet > summary::-webkit-details-marker { display: none; }
+        .mt-tmem { padding: 6px 8px 2px; }
+        .mt-tdet[open] > summary { background: rgba(128, 128, 128, .14); }
 </style>
 </head>
 <body>
@@ -9777,8 +9789,14 @@ await main();
             if (k !== "win") matchForm.win = null;
             renderMatchBox();
         }
-        function matchDiffStep(d) { const el = document.getElementById("matchDiff"); if (el) el.value = Math.max(0, Math.min(99, (parseInt(el.value, 10) || 0) + d)); }
-        function matchRecordWin(i) { matchForm.win = i; addMatch(); const el = document.getElementById("matchDiff"); if (el) el.value = ""; }
+        // チームの色(1=青 / 2=オレンジ / 3〜): 試合の記録・入力・チーム分けで同じ色
+        const TEAM_COLS = ["#4677c4", "#e0803a", "#5d9487", "#9c3d68", "#8a7a3d", "#6a5acd", "#7f848c", "#c0504d"];
+        function teamColOf(lbOrIdx) { const i = typeof lbOrIdx === "number" ? lbOrIdx : (parseInt(String(lbOrIdx).replace(/\D/g, ""), 10) || 1) - 1; return TEAM_COLS[((i % TEAM_COLS.length) + TEAM_COLS.length) % TEAM_COLS.length]; }
+        function teamChip(lb) { return `<b class="tm-chip">${escapeHtml(String(lb).replace("チーム", ""))}</b>`; }   // 色は付けない(番号だけ)
+        function matchDiffStep(d) { const el = document.getElementById("matchDiff"); if (el) { el.value = Math.max(0, Math.min(99, (parseInt(el.value, 10) || 0) + d)); matchForm.diff = el.value; } }
+        function matchPickWin(i) { const el = document.getElementById("matchDiff"); if (el) matchForm.diff = el.value; matchForm.win = matchForm.win === i ? null : i; renderMatchBox(); }
+        function matchRecordSelected() { if (matchForm.win == null) return; addMatch(); matchForm.diff = ""; const el = document.getElementById("matchDiff"); if (el) el.value = ""; renderMatchBox(); }
+        function matchRecordWin(i) { matchForm.win = i; addMatch(); matchForm.diff = ""; const el = document.getElementById("matchDiff"); if (el) el.value = ""; }
         function addMatch() {
             const teams = matchTeamsNow(); if (!teams || !realAdmin()) return;
             if (matchForm.win == null) { alert("勝ったチームを選んでください。"); return; }
@@ -9814,7 +9832,8 @@ await main();
         function matchTrashHtml() {
             if (!realAdmin()) return "";
             const tr = matchTrash(); if (!tr.length) return "";
-            return `<details class="mt-trash"><summary aria-label="消したゲーム">🗑 ${tr.length}</summary>${tr.map(x => `<div class="mt-trow"><span>${+x.date.slice(5, 7)}/${+x.date.slice(8)}</span><span class="mt-team win">🏆 ${escapeHtml(x.m.labels[x.m.win].replace("チーム", ""))}</span><span class="mt-vs">${x.m.diff ? "+" + x.m.diff : ""}</span><button type="button" onclick="restoreMatch(${x.at})" aria-label="元に戻す" title="元に戻す">↶</button></div>`).join("")}</details>`;
+            const mem = m => m.labels.map((lb, k) => `<div class="mt-gt">${teamChip(lb)}<span>${k === m.win ? `<i class="mt-crown">🏆</i>` : ""}${m.teams[k].map(escapeHtml).join("・")}</span></div>`).join("");
+            return `<details class="mt-trash"><summary aria-label="消したゲーム">🗑 ${tr.length}</summary>${tr.map(x => `<details class="mt-tdet"><summary class="mt-trow"><span>${+x.date.slice(5, 7)}/${+x.date.slice(8)}</span><span class="mt-team win">🏆 ${teamChip(x.m.labels[x.m.win])}</span><span class="mt-vs">${x.m.diff ? "+" + x.m.diff : ""}</span><button type="button" onclick="event.preventDefault();event.stopPropagation();restoreMatch(${x.at})" aria-label="元に戻す" title="元に戻す">↶</button></summary><div class="mt-tmem">${mem(x.m)}</div></details>`).join("")}</details>`;
         }
         function deleteMatch(date, id) {
             if (!realAdmin()) return;
@@ -9970,11 +9989,11 @@ await main();
                     const items = j ? matchDiffItems(g, m) : [];
                     if (items.length) anyDiff = true;
                     const editing = matchEdit && matchEdit.id === m.id && matchEdit.date === date;
-                    return `<div class="mt-top"><span class="mt-no">${j + 1}</span><span class="mt-team win">🏆 ${escapeHtml(m.labels[m.win].replace("チーム", ""))}</span><span class="mt-vs">${m.diff ? "+" + m.diff : ""}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="勝ち・点差・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
+                    return `<div class="mt-top"><span class="mt-no">${j + 1}</span><span class="mt-team win">🏆 ${teamChip(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? "+" + m.diff : ""}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="勝ち・点差・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
                         + (items.length ? `<div class="mt-diffrow">${items.join("　")}</div>` : "")
                         + (editing ? matchEditHtml(m) : "");
                 }).join("");
-                const team = lb => `<div class="mt-gt"><b>${escapeHtml(lb.replace("チーム", ""))}</b><span>${(g.names[lb] || []).map(n => n === teamMeName() ? `<u class="mt-me">${escapeHtml(n)}</u>` : escapeHtml(n)).join("・")}</span></div>`;
+                const team = lb => `<div class="mt-gt">${teamChip(lb)}<span>${st.win === lb ? `<i class="mt-crown">🏆</i>` : ""}${(g.names[lb] || []).map(n => n === teamMeName() ? `<u class="mt-me">${escapeHtml(n)}</u>` : escapeHtml(n)).join("・")}</span></div>`;
                 const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key)}'))" aria-label="チーム分けに戻す" title="チーム分けに戻す">↩</button>` : "";
                 return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${back}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
             }).join("");
@@ -9990,11 +10009,11 @@ await main();
                 if (matchForm.b >= n || matchForm.b === matchForm.a) matchForm.b = matchForm.a === 0 ? 1 : 0;
                 const sel = (k) => `<select onchange="setMatchForm('${k}', +this.value)">${teams.map((_, i) => `<option value="${i}"${matchForm[k] === i ? " selected" : ""}>チーム${i + 1}</option>`).join("")}</select>`;
                 const pick = n > 2 ? `<div class="mt-pick">${sel("a")}<span>対</span>${sel("b")}</div>` : "";
-                // 点差を入れて(入れなくてもよい)、勝ったチームを押すだけで1ゲーム記録
-                const wb = i => `<button type="button" class="mt-wb" onclick="matchRecordWin(${i})" aria-label="チーム${i + 1}の勝ちを記録">🏆 ${i + 1}</button>`;
+                // 勝ったチームを選び(点差は入れなくてもよい)、✓ で1ゲーム記録
+                const wb = i => `<button type="button" class="mt-wb${matchForm.win === i ? " on" : ""}" onclick="matchPickWin(${i})" aria-label="チーム${i + 1}の勝ち" aria-pressed="${matchForm.win === i}">🏆 ${i + 1}</button>`;
                 form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-rec">
-                    <div class="mt-dstep"><button type="button" onclick="matchDiffStep(-1)" aria-label="点差を減らす">−</button><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="0"><button type="button" onclick="matchDiffStep(1)" aria-label="点差を増やす">＋</button></div>
-                    ${wb(matchForm.a)}${wb(matchForm.b)}</div>`;
+                    <div class="mt-dstep"><button type="button" onclick="matchDiffStep(-1)" aria-label="点差を減らす">−</button><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="0" value="${escapeHtml(String(matchForm.diff || ""))}" oninput="matchForm.diff=this.value"><button type="button" onclick="matchDiffStep(1)" aria-label="点差を増やす">＋</button></div>
+                    ${wb(matchForm.a)}${wb(matchForm.b)}<button type="button" class="mt-ok" onclick="matchRecordSelected()" ${matchForm.win == null ? "disabled" : ""} aria-label="記録">✓</button></div>`;
             }
             // 管理者アカウント: この日の「来る」メンバーの勝率(全期間)
             let rates = "";
