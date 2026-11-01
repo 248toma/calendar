@@ -3254,6 +3254,59 @@
         .mt-tdet > summary::-webkit-details-marker { display: none; }
         .mt-tmem { padding: 6px 8px 2px; }
         .mt-tdet[open] > summary { background: rgba(128, 128, 128, .14); }
+        #matchBox .mt-ed-all input[type="checkbox"] { width: 16px !important; height: 16px !important; min-height: 0 !important; margin: 0; padding: 0 !important; box-shadow: none !important; -webkit-appearance: checkbox; appearance: auto; accent-color: var(--accent); }
+
+        /* ===== 節約の記録 ===== */
+        #addChooser .ac-yen { display: inline-flex; width: 18px; justify-content: center; font-weight: 800; color: var(--accent); }
+        body:not(.is-admin-mode) #acSaving { }
+        .sv-total-host:empty { display: none; }
+        .sv-total { margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
+        #protoUI .sv-total { margin-left: -4px; font-size: 11px; }
+        #savingOv { position: fixed; inset: 0; z-index: 9000; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.35); }
+        .sv-box { width: 100%; max-width: 520px; max-height: 86vh; overflow-y: auto; padding: 16px 18px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.25); color: var(--ink); }
+        .sv-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 16px; }
+        .sv-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--bg); box-shadow: var(--sink); }
+        .sv-tabs button { height: 28px; padding: 0 14px; border: none; border-radius: 9px; background: transparent; color: var(--ink-3); font-size: 12.5px; font-weight: 700; }
+        .sv-tabs button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
+        .sv-x { margin-left: auto; width: 32px; height: 32px; border: none; border-radius: 16px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); }
+        .sv-date input { height: 32px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--sink); color: var(--ink-2); font-size: 13px; padding: 0 10px; font-family: inherit; }
+        .sv-amt { display: flex; align-items: baseline; gap: 6px; margin: 12px 0 10px; padding: 6px 14px; border-radius: 14px; background: var(--bg); box-shadow: var(--sink); }
+        .sv-amt span { font-size: 22px; font-weight: 800; color: var(--ink-3); }
+        .sv-amt input { flex: 1; min-width: 0; height: 48px; border: none !important; background: transparent !important; box-shadow: none !important; font-size: 30px !important; font-weight: 800; color: var(--ink); padding: 0 !important; font-variant-numeric: tabular-nums; }
+        .sv-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .sv-cats button { height: 34px; padding: 0 14px; border: none; border-radius: 17px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 13px; font-weight: 700; }
+        .sv-cats button.on { background: var(--accent); color: #fff; box-shadow: none; }
+        .sv-cats.shake { animation: svShake .3s; }
+        @keyframes svShake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .sv-line { display: flex; align-items: center; gap: 8px; }
+        .sv-line input { flex: 1; min-width: 0; height: 40px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 14px; padding: 0 12px; font-family: inherit; }
+        .sv-share { display: inline-flex; align-items: center; gap: 4px; height: 40px; max-width: 8em; padding: 0 10px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+        .sv-share .ic { width: 15px; height: 15px; flex: none; }
+        .sv-share span { overflow: hidden; text-overflow: ellipsis; }
+        .sv-share.on { background: var(--accent); color: #fff; box-shadow: none; }
+        .sv-ok { flex: none; width: 52px; height: 40px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 20px; font-weight: 800; }
+        .sv-day { margin-top: 14px; }
+        .sv-dh { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--ink-3); margin: 0 2px 4px; }
+        .sv-row { display: grid; grid-template-columns: auto 4.2em minmax(0, 1fr) auto auto 26px; align-items: center; gap: 8px; padding: 7px 10px; margin-top: 4px; border-radius: 10px; background: rgba(128, 128, 128, .08); font-size: 13px; }
+        .sv-row:not(:has(.sv-d)) { grid-template-columns: 4.2em minmax(0, 1fr) auto auto 26px; }
+        .sv-row.on { box-shadow: inset 0 0 0 2px var(--accent); }
+        .sv-d { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+        .sv-cat { font-weight: 700; color: var(--ink-2); }
+        .sv-memo { color: var(--ink-3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sv-row b { font-variant-numeric: tabular-nums; }
+        .sv-row button { width: 26px; height: 26px; border: none; background: none; color: var(--ink-3); font-size: 13px; }
+        .sv-to .ic { width: 13px; height: 13px; color: var(--accent); }
+        .sv-to, .sv-from, .sv-sp { min-width: 0; }
+        .sv-from { font-size: 10px; font-weight: 800; color: var(--accent); }
+        .sv-yr { display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 14px; font-weight: 800; color: var(--ink-2); }
+        .sv-yr button { width: 30px; height: 30px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 16px; }
+        .sv-big { text-align: center; font-size: 32px; font-weight: 800; margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
+        .sv-bars { display: flex; flex-direction: column; gap: 6px; }
+        .sv-bar { display: grid; grid-template-columns: 4em 1fr 6em; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+        .sv-bar i { height: 10px; border-radius: 5px; background: rgba(128, 128, 128, .14); overflow: hidden; }
+        .sv-bar i b { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
+        .sv-bar em { font-style: normal; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .sv-empty { text-align: center; font-size: 12.5px; color: var(--ink-3); margin: 10px 0; }
 </style>
 </head>
 <body>
@@ -4134,9 +4187,11 @@ await main();
                     <li class="dev-only"><b>平均値</b>:平均値パラメータをチーム間で揃える。背反設定の人は除外。希望者のいないチームは平均を高く。6人未満のチームがある場合は、そのチームの平均を高く(希望者の補正は無視)</li>
                     <li><b>性別</b>:偏りを減らす</li>
                     <li><b>配置</b>:コート位置を設定した人はその位置へ、他は前衛・後衛でレシーブ・スパイク(機動力補正後)が偏らないよう並べる。結果画面で手動の並べ替えもできる</li>
-                    <li><b>もう一度分ける</b>:過去と重複しない結果を最大30回探す(重複したら警告を表示)</li>
+                    <li><b>もう一度分ける</b>:候補を40通り作り、その日すでに同じチームになった2人がいちばん少ない分け方を選ぶ(何度も一緒の2人ほど強く避け、直前の組み合わせほど重く数える。数えるのは分け直す前のチームと、記録した試合のチーム)。過去とまったく同じ分け方は、ほかに候補があれば選ばない(重複したら警告を表示)。その日1回目は、重複しない結果を最大30回探す</li>
+                    <li><b>ベンチ</b>:早退・けがなどで一時的に抜ける人。チームから外し、その日のうちは分け直しても入れない(出欠・精算は「来る」のまま)</li>
                     <li class="admin-only"><b>分け方の予測</b>:分けるたびに自動で計算し、「30回分けると約N通り」と表示</li>
                     <li><b>チーム分けをリセット</b>:結果・過去の分け方の記録・予測を消して、最初からやり直す</li>
+                    <li class="admin-only"><b>同期</b>:今のチーム分け(入れ替え・ベンチを含む)を、ほかの管理者の端末にも出す</li>
                 </ol>
                 「ランダム」をONにすると、キー・平均値・配置の数値調整をせず、ペア・希望ポジション・性別・人数だけで分けます。
             </div>
@@ -4155,7 +4210,7 @@ await main();
                 <button type="button" class="settle-due" id="settleDueBtn" onclick="openSettleDue()" style="display:none"></button>
                 <span class="total-balance dev-only" id="totalBalance" title="精算で回収済みの金額 − コート代の合計(薄字は従来の予測収支)"></span>
             </div>
-            <div class="ch-mid"><span class="month-label" id="monthLabel"></span><button type="button" class="upd-dot" id="updDot" onclick="refreshApp()" aria-label="更新があります(タップで反映)" title="更新があります(タップで反映)"></button></div>
+            <div class="ch-mid"><span class="month-label" id="monthLabel"></span><span class="sv-total-host" id="savingTotal"></span><button type="button" class="upd-dot" id="updDot" onclick="refreshApp()" aria-label="更新があります(タップで反映)" title="更新があります(タップで反映)"></button></div>
             <div class="ch-right header-btns">
                 <button class="settings-btn" id="calExportBtn" onclick="openBulkAdd()" aria-label="予約をカレンダーアプリに一括追加(.ics)" title="予約をGoogle・iPhoneカレンダーに一括追加"><i class="ic ic-caldown"></i></button>
                 <button class="settings-btn" data-panel="settingsPanel" onclick="toggleSettings()" title="設定" aria-label="設定"><i class="ic ic-sliders"></i></button>
@@ -4181,6 +4236,7 @@ await main();
         <div class="ac-box" role="menu" aria-label="追加するもの">
             <button type="button" id="acVolley" onclick="addChooseVolley()"><i class="ic ic-ball"></i><span>Volley</span></button>
             <button type="button" onclick="addChoosePlan()"><i class="ic ic-cal"></i><span>予定</span></button>
+            <button type="button" id="acSaving" onclick="openSaving()"><span class="ac-yen">¥</span><span>節約</span></button>
         </div>
     </div>
 
@@ -6427,7 +6483,112 @@ await main();
             ac.classList.toggle("open");
             document.getElementById("addFab").classList.toggle("open", ac.classList.contains("open"));
         }
-        function closeAddChooser() { document.getElementById("addChooser").classList.remove("open"); document.getElementById("addFab").classList.remove("open"); }
+        function closeAddChooser() { const ac = document.getElementById("addChooser"), fb = document.getElementById("addFab"); if (ac) ac.classList.remove("open"); if (fb) fb.classList.remove("open"); }
+        // ======================================================================
+        // 節約の記録(管理者だけ。バレーとは関係ない)
+        //   ＋ →「節約」: 金額と項目(朝・昼・夜・飲み物・ご飯・消耗品・その他)を記録。ペアモードの相手に共有できる
+        //   今年の合計を、カレンダーの年の横に小さく出す(押すと一覧)
+        //   共有データ: [{ id, date, amount, cat, memo, owner, to: [名簿id…] }]
+        // ======================================================================
+        const SAVING_KEY = "attendance_saving_v1";
+        const SAVING_CATS = ["朝", "昼", "夜", "飲み物", "ご飯", "消耗品", "その他"];
+        function savingAll() { try { const v = JSON.parse(localStorage.getItem(SAVING_KEY) || "[]"); return Array.isArray(v) ? v.filter(x => x && x.id && x.date) : []; } catch (e) { return []; } }
+        function savingSaveAll(arr) { try { localStorage.setItem(SAVING_KEY, JSON.stringify(arr)); } catch (e) { console.warn(e); } }
+        // 見えるもの: 自分が入れたもの / 自分に共有されたもの(管理者モードのときだけ)
+        function savingMine(r) { return r.owner === planAuthorKey(); }
+        function savingVisible(r) { if (!isAdmin()) return false; const me = myRosterId(); return savingMine(r) || (me != null && (r.to || []).includes(me)); }
+        function savingList() { return savingAll().filter(savingVisible); }
+        function savingYearTotal(y) { return savingList().filter(r => r.date.slice(0, 4) === String(y)).reduce((t, r) => t + (+r.amount || 0), 0); }
+        const svYen = n => "¥" + Math.round(n).toLocaleString("ja-JP");
+        // 年の横の小さな合計(今年。押すと一覧)
+        function savingTotalHtml(y) {
+            if (!isAdmin()) return "";
+            const t = savingYearTotal(y); if (!t) return "";
+            return `<span class="sv-total" role="button" tabindex="0" onclick="event.stopPropagation();openSaving('list')" title="${y}年の節約の合計">${svYen(t)}</span>`;
+        }
+        function renderSavingTotal() {
+            const el = document.getElementById("savingTotal"); if (!el) return;
+            const y = (typeof viewMonth !== "undefined" && viewMonth) ? viewMonth.getFullYear() : new Date().getFullYear();
+            el.innerHTML = (typeof calListMode !== "undefined" && calListMode) || (typeof calTimeMode !== "undefined" && calTimeMode) ? "" : savingTotalHtml(y);
+        }
+        // ---- 入力の画面 ----
+        var savingForm = null;   // { id, date, amount, cat, memo, share, mode: "add" | "list" }
+        function openSaving(mode) {
+            closeAddChooser();
+            if (!isAdmin()) return;
+            savingForm = { id: null, date: selectedDate, amount: "", cat: "", memo: "", share: pairActive(), mode: mode === "list" ? "list" : "add" };
+            let ov = document.getElementById("savingOv");
+            if (!ov) { ov = document.createElement("div"); ov.id = "savingOv"; ov.onclick = (e) => { if (e.target === ov) closeSaving(); }; document.body.appendChild(ov); }
+            renderSaving(); ov.style.display = "flex";
+            if (savingForm.mode === "add") setTimeout(() => { const a = document.getElementById("svAmt"); if (a) a.focus(); }, 60);
+        }
+        function closeSaving() { const ov = document.getElementById("savingOv"); if (ov) ov.style.display = "none"; savingForm = null; }
+        function savingReadForm() {
+            const f = savingForm; if (!f) return;
+            const a = document.getElementById("svAmt"), m = document.getElementById("svMemo"), d = document.getElementById("svDate");
+            if (a) f.amount = String(a.value).normalize("NFKC").replace(/[^\d]/g, "");
+            if (m) f.memo = m.value;
+            if (d && d.value) f.date = d.value;
+        }
+        function savingSet(k, v) { savingReadForm(); savingForm[k] = v; renderSaving(); }
+        function savingSubmit() {
+            savingReadForm();
+            const f = savingForm; if (!f) return;
+            const amount = parseInt(f.amount, 10);
+            if (!amount || amount <= 0) { const a = document.getElementById("svAmt"); if (a) a.focus(); return; }
+            if (!f.cat) { const c = document.querySelector("#savingOv .sv-cats"); if (c) { c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); } return; }
+            const all = savingAll();
+            const rec = { id: f.id || Date.now(), date: f.date, amount, cat: f.cat, memo: (f.memo || "").trim().slice(0, 40), owner: planAuthorKey(), to: f.share ? pairIds() : [] };
+            const i = all.findIndex(x => x.id === rec.id);
+            if (i >= 0) { if (!savingMine(all[i])) return; all[i] = rec; } else all.push(rec);
+            savingSaveAll(all);
+            savingForm = { id: null, date: f.date, amount: "", cat: "", memo: "", share: f.share, mode: "add" };
+            renderSaving(); afterSavingChange();
+        }
+        function savingEdit(id) {
+            const r = savingAll().find(x => x.id === id); if (!r || !savingMine(r)) return;
+            savingForm = { id: r.id, date: r.date, amount: String(r.amount), cat: r.cat, memo: r.memo || "", share: (r.to || []).length > 0, mode: "add" };
+            renderSaving();
+        }
+        function savingDelete(id) {
+            const all = savingAll(), r = all.find(x => x.id === id); if (!r || !savingMine(r)) return;
+            if (!confirm(`${svYen(r.amount)}(${r.cat})を消しますか？`)) return;
+            savingSaveAll(all.filter(x => x.id !== id));
+            if (savingForm && savingForm.id === id) savingForm.id = null;
+            renderSaving(); afterSavingChange();
+        }
+        function afterSavingChange() { renderSavingTotal(); if (typeof protoOn !== "undefined" && protoOn) renderProto(); }
+        function savingRowHtml(r) {
+            const who = savingMine(r) ? ((r.to || []).length ? `<span class="sv-to" title="共有">${IC("users")}</span>` : "") : `<span class="sv-from">共有</span>`;
+            return `<div class="sv-row${savingForm && savingForm.id === r.id ? " on" : ""}"${savingMine(r) ? ` role="button" tabindex="0" onclick="savingEdit(${r.id})"` : ""}><span class="sv-cat">${escapeHtml(r.cat)}</span><span class="sv-memo">${escapeHtml(r.memo || "")}</span>${who}<b>${svYen(r.amount)}</b>${savingMine(r) ? `<button type="button" onclick="event.stopPropagation();savingDelete(${r.id})" aria-label="消す">✕</button>` : `<i class="sv-sp"></i>`}</div>`;
+        }
+        function renderSaving() {
+            const ov = document.getElementById("savingOv"), f = savingForm; if (!ov || !f) return;
+            const md = k => `${+k.slice(5, 7)}/${+k.slice(8)}`;
+            const tabs = `<div class="sv-tabs"><button type="button" class="${f.mode === "add" ? "on" : ""}" onclick="savingSet('mode','add')">記録</button><button type="button" class="${f.mode === "list" ? "on" : ""}" onclick="savingSet('mode','list')">一覧</button></div>`;
+            let body = "";
+            if (f.mode === "add") {
+                const day = savingList().filter(r => r.date === f.date).sort((a, b) => a.id - b.id);
+                const pairNames = pairIds().map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
+                body = `<div class="sv-date"><input type="date" id="svDate" value="${f.date}" onchange="savingSet('date', this.value)"></div>
+                    <div class="sv-amt"><span>¥</span><input type="text" id="svAmt" inputmode="numeric" autocomplete="off" placeholder="0" value="${escapeHtml(f.amount)}" onkeydown="if(event.key==='Enter'){event.preventDefault();savingSubmit();}"></div>
+                    <div class="sv-cats">${SAVING_CATS.map(c => `<button type="button" class="${f.cat === c ? "on" : ""}" onclick="savingSet('cat', '${c}')">${c}</button>`).join("")}</div>
+                    <div class="sv-line"><input type="text" id="svMemo" placeholder="メモ" maxlength="40" value="${escapeHtml(f.memo)}">${pairNames.length ? `<button type="button" class="sv-share${f.share ? " on" : ""}" onclick="savingSet('share', ${!f.share})" title="ペアの相手(${escapeHtml(pairNames.join("・"))})に共有" aria-pressed="${f.share}">${IC("users")}<span>${escapeHtml(pairNames.length > 1 ? pairNames[0] + " 他" : pairNames[0])}</span></button>` : ""}<button type="button" class="sv-ok" onclick="savingSubmit()" aria-label="${f.id ? "直す" : "記録"}">✓</button></div>
+                    ${day.length ? `<div class="sv-day"><div class="sv-dh"><span>${md(f.date)}</span><b>${svYen(day.reduce((t, r) => t + r.amount, 0))}</b></div>${day.map(savingRowHtml).join("")}</div>` : ""}`;
+            } else {
+                const y = +(f.date || selectedDate).slice(0, 4), list = savingList().filter(r => r.date.slice(0, 4) === String(y)).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+                const total = list.reduce((t, r) => t + r.amount, 0);
+                const byCat = SAVING_CATS.map(c => [c, list.filter(r => r.cat === c).reduce((t, r) => t + r.amount, 0)]).filter(x => x[1] > 0);
+                const max = Math.max(1, ...byCat.map(x => x[1]));
+                const byMonth = {}; list.forEach(r => { const k = r.date.slice(0, 7); (byMonth[k] = byMonth[k] || []).push(r); });
+                body = `<div class="sv-yr"><button type="button" onclick="savingSet('date','${y - 1}-12-31')" aria-label="前の年">‹</button><span>${y}</span><button type="button" onclick="savingSet('date','${y + 1}-01-01')" aria-label="次の年">›</button></div>
+                    <div class="sv-big">${svYen(total)}</div>
+                    ${byCat.length ? `<div class="sv-bars">${byCat.map(([c, v]) => `<div class="sv-bar"><span>${c}</span><i><b style="width:${Math.round(v / max * 100)}%"></b></i><em>${svYen(v)}</em></div>`).join("")}</div>` : `<div class="sv-empty">まだ記録はありません</div>`}
+                    ${Object.keys(byMonth).map(k => `<div class="sv-day"><div class="sv-dh"><span>${+k.slice(5)}月</span><b>${svYen(byMonth[k].reduce((t, r) => t + r.amount, 0))}</b></div>${byMonth[k].map(r => savingRowHtml(r).replace('<span class="sv-cat">', `<span class="sv-d">${md(r.date)}</span><span class="sv-cat">`)).join("")}</div>`).join("")}`;
+            }
+            ov.innerHTML = `<div class="sv-box" role="dialog" aria-label="節約"><div class="sv-head"><b>節約</b>${tabs}<button type="button" class="sv-x" onclick="closeSaving()" aria-label="閉じる">✕</button></div>${body}</div>`;
+        }
+
         function addChoosePlan() { closeAddChooser(); planDetailId = null; if (protoOn) { protoOpenInput(null); return; } openNewPlan(); }
         // バレーの画面: 日付の横の「削除」で、この日をバレーなしに戻す
         function deleteVolleyDay() {
@@ -7833,6 +7994,7 @@ await main();
         function renderCalendar() {
             videoDateSet = buildVideoDateSet();
             applyCalListMode();
+            try { renderSavingTotal(); } catch (e) { /* ignore */ }
             document.getElementById("monthLabel").textContent = calListMode ? "Booked" :
                 calTimeMode ? weekLabel(viewWeekStart, 7) :
                 `${viewMonth.getFullYear()}.${String(viewMonth.getMonth() + 1).padStart(2, "0")}`;
@@ -14713,7 +14875,7 @@ const namesBtn = isAdmin() && dates.length > 0
               <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchmove="protoTM(event)" ontouchend="protoTE(event)" ontouchcancel="protoTC()" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px;touch-action:pan-y;${protoAnim}">
                 <div style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
 
-                  <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${MEN[m - 1]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span></div>
+                  <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${MEN[m - 1]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span>${typeof savingTotalHtml === "function" ? savingTotalHtml(y) : ""}</div>
 
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
