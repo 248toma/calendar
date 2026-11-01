@@ -3209,6 +3209,16 @@
         .court-cell.is-me .court-name { color: var(--accent); }
         .bench-chip.is-me { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
         .mt-me { text-decoration: none; font-weight: 800; color: var(--accent); }
+
+        /* 精算が終わっていない日(ヘッダー) */
+        /* 普通の画面: 月の表示にかぶらないよう、2段の小さな札(上に「精算」、下に日付) */
+        .settle-due { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; height: 34px; min-width: 42px; padding: 0 7px; margin-left: 6px; border: none; border-radius: 10px; background: var(--notcome-soft, #fdebec); color: var(--notcome-ink, #b4232a); line-height: 1.1; white-space: nowrap; cursor: pointer; }
+        .settle-due .sd-l { font-size: 9px; font-weight: 700; opacity: .8; }
+        .settle-due b { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .settle-due .sd-more { position: absolute; top: -5px; right: -6px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: var(--notcome-ink, #b4232a); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
+        #protoUI .pr-settle-due { position: absolute; top: 12px; right: 14px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: none; border-radius: 13px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        #protoUI .pr-settle-due .sd-l { font-size: 10px; opacity: .85; }
+        #protoUI .pr-settle-due .sd-more { font-size: 10px; opacity: .8; }
 </style>
 </head>
 <body>
@@ -4107,6 +4117,7 @@ await main();
             <button class="cal-nav-btn" id="calPrevBtn" onclick="changeMonth(-1)" aria-label="前の月">‹</button>
             <div class="ch-left">
                 <button type="button" class="pair-btn" id="pairBtn" onclick="openPairPanel()" aria-label="ペアモード" style="display:none"></button>
+                <button type="button" class="settle-due" id="settleDueBtn" onclick="openSettleDue()" style="display:none"></button>
                 <span class="total-balance dev-only" id="totalBalance" title="精算で回収済みの金額 − コート代の合計(薄字は従来の予測収支)"></span>
             </div>
             <div class="ch-mid"><span class="month-label" id="monthLabel"></span><button type="button" class="upd-dot" id="updDot" onclick="refreshApp()" aria-label="更新があります(タップで反映)" title="更新があります(タップで反映)"></button></div>
@@ -11170,8 +11181,51 @@ const namesBtn = isAdmin() && dates.length > 0
             return { oks, warns, pastIncomplete, memberShortSoon, memberVeryShort, reserveMissing, myUnanswered: false, mySettleUnpaid: false };
         }
 
+        // 精算が終わっていないバレーの日(過去90日。今日はバレーの終わりの時刻を過ぎてから)
+        //   管理者: 全員の回収が済んでいない(「精算完了」にチェックしていない)日 / 閲覧者: 自分の精算が済んでいない日
+        function settleDueDays() {
+            const todayKey = formatDateKey(new Date()), from = formatDateKey(new Date(Date.now() - 90 * 864e5));
+            const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+            const ended = d => {
+                if (d < todayKey) return true;
+                const prs = (reservations[d] || []).map(r => parseTimeRangeMin(r.time)).filter(Boolean);
+                if (!prs.length) return false;
+                return nowMin >= Math.max(...prs.map(x => x.e));
+            };
+            const admin = isAdmin(), me = admin ? "" : myMemberName();
+            if (!admin && !me) return [];
+            return Object.keys(events).filter(d => events[d] && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= from && d <= todayKey && ended(d)).sort().filter(d => {
+                const t = settleDayStats(d);
+                if (t.done) return false;
+                if (admin) return !(t.n > 0 && t.paidCount === t.n);
+                const mine = (attendanceByDate[d] || []).find(m => m.name === me);
+                return !!mine && mine.status === "来る" && t.amount > 0 && !t.paid[mine.id];
+            });
+        }
+        function settleDueLabel(days) {
+            if (!days.length) return "";
+            const md = k => `${+k.slice(5, 7)}/${+k.slice(8)}`;
+            return `<span class="sd-l">精算</span><b>${md(days[0])}</b>${days.length > 1 ? `<span class="sd-more">+${days.length - 1}</span>` : ""}`;
+        }
+        function renderSettleDue() {
+            const b = document.getElementById("settleDueBtn"); if (!b) return;
+            const days = settleDueDays();
+            b.style.display = days.length ? "" : "none";
+            b.innerHTML = settleDueLabel(days);
+            b.title = days.length ? `精算が終わっていない日: ${days.map(k => `${+k.slice(5, 7)}/${+k.slice(8)}`).join("・")}` : "";
+        }
+        // いちばん古い「精算が終わっていない日」の精算の画面へ
+        function openSettleDue() {
+            const d = settleDueDays()[0]; if (!d) return;
+            const [y, m] = d.split("-").map(Number);
+            if (typeof protoOn !== "undefined" && protoOn) protoYM = [y, m];
+            selectDate(d);
+            openVolleyFull();
+            switchView("settle", true);
+        }
         function updateTabProgress() {
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }
+            try { renderSettleDue(); } catch (e) { /* ignore */ }
             const st = dayTaskState(selectedDate);
             let chain = true;
             TASK_TAB_IDS.forEach((id, i) => {
@@ -14523,7 +14577,8 @@ const namesBtn = isAdmin() && dates.length > 0
             protoSlide = 0;
 
             const headHtml = `
-              <div class="pr-head" style="border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
+              <div class="pr-head" style="position:relative;border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
+                ${(() => { const dd = typeof settleDueDays === "function" ? settleDueDays() : []; return dd.length ? `<button type="button" class="pr-settle-due" onclick="openSettleDue()" style="color:${P.red};${raiseS}" title="精算が終わっていない日">${settleDueLabel(dd)}</button>` : ""; })()}
                 <div class="pr-headrow" style="display:flex;align-items:center;gap:18px;height:200px">
                   <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${upRing}${hand}
