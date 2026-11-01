@@ -3307,6 +3307,18 @@
         .sv-bar i b { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
         .sv-bar em { font-style: normal; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
         .sv-empty { text-align: center; font-size: 12.5px; color: var(--ink-3); margin: 10px 0; }
+
+        /* 試作UI: カレンダーのマスに予定の題名 */
+        #protoUI .pr-lb { display: block; height: 13px; margin: 0 2px; padding: 0 3px; border-radius: 3px; font-style: normal; font-size: 9.5px; font-weight: 600; line-height: 13px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: clip; color: inherit; }
+        #protoUI .pr-bar { padding: 0 3px; }
+        #protoUI .pr-more { color: inherit; opacity: .55; text-align: center; }
+        #protoUI .pr-ini { display: flex; justify-content: center; gap: 3px; font-size: 11px; line-height: 14px; margin-top: 1px; }
+        #protoUI .pr-ini b { font-weight: 800; }
+        #protoUI .pr-ini-more { color: inherit; opacity: .4; }
+        #protoUI .pr-tiny { display: flex; flex-direction: column; align-items: stretch; width: 100%; min-width: 0; padding: 0 3px; margin-top: 1px; }
+        #protoUI .pr-tiny i { display: block; font-style: normal; font-size: 7.5px; font-weight: 600; line-height: 9.5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
+        #protoUI .pr-tiny.en i { font-family: 'Montserrat', system-ui, sans-serif; font-size: 7px; font-weight: 700; letter-spacing: .06em; }
+        #protoUI .pr-tiny-more { color: inherit !important; opacity: .45; }
 </style>
 </head>
 <body>
@@ -3923,6 +3935,7 @@ await main();
             <div class="st-row"><span class="st-lbl">試作UI</span><span class="st-seg" id="protoSeg"><button type="button" data-v="0" onclick="setProtoUI(false)">オフ</button><button type="button" data-v="1" onclick="setProtoUI(true)">オン</button></span></div>
             <div class="st-row pr-only"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
             <div class="st-row pr-only"><span class="st-lbl">アニメーション</span><span class="st-seg" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)">オフ</button><button type="button" data-v="1" onclick="setAnim(true)">オン</button></span></div>
+            <div class="st-row pr-only"><span class="st-lbl">カレンダーの予定</span><span class="st-seg" id="pvSeg"><button type="button" data-v="dot" onclick="setProtoPlanView('dot')">点</button><button type="button" data-v="text" onclick="setProtoPlanView('text')">文字</button><button type="button" data-v="en" onclick="setProtoPlanView('en')">EN</button></span></div>
             <div class="st-row pr-only"><span class="st-lbl">リングの時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
             <div class="st-row"><span class="st-lbl">使い方</span><span class="st-seg st-guide"><button type="button" onclick="startTutorial()">説明</button><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
         </div>
@@ -14840,7 +14853,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 const dotHtml = dots.slice(0, MAXD).map(x => x.vol
                     ? `<i style="width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:2px solid ${x.col}"></i>`
                     : `<i style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
-                const tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
+                let tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
+                if (protoCalPlans) {
+                    // 予定の題名を、ごく小さな文字で(時間は上の板)。"en" は英語に置きかえ(辞書にない言葉はそのまま)。3つまで、それ以上は +N
+                    const its = items.filter(x => x.t || x.vol).map(x => ({ t: x.vol ? "バレー" : String(x.t).trim(), col: x.col }));
+                    const word = t => protoPlanStyle === "en" ? planEnglish(t) : t;
+                    tags = its.length ? `<span class="pr-tiny${protoPlanStyle === "en" ? " en" : ""}">${its.slice(0, 3).map(x => `<i style="color:${x.col}">${esc(word(x.t))}</i>`).join("")}${its.length > 3 ? `<i class="pr-tiny-more">+${its.length - 3}</i>` : ""}</span>` : "";
+                    if (pin && !pin.empty && k >= pin.sd && k <= (pin.ed || pin.sd)) tags = `<span class="pr-tiny"><i style="color:${C[planColor] || C[0]}">●</i></span>` + tags;
+                }
                 const moreTag = "";
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
@@ -15250,6 +15270,21 @@ const namesBtn = isAdmin() && dates.length > 0
             if (typeof protoOn !== "undefined" && protoOn) renderProto();
         }
         dialSync();
+        // 設定の「予定の表示」: ヘッダー = 上の板に予定の一覧(今まで) / カレンダー = カレンダーのマスに題名を出し、上の板を細く
+        const PLAN_VIEW_KEY = "proto_plan_view_v1";
+        var protoPlanStyle = "dot", protoCalPlans = false;   // "dot" = 点(前のまま) / "text" = 小さな題名 / "en" = 小さな英語
+        try { const v = localStorage.getItem(PLAN_VIEW_KEY); protoPlanStyle = v === "text" || v === "en" ? v : "dot"; protoCalPlans = protoPlanStyle !== "dot"; } catch (e) { /* ignore */ }
+        function pvSync() { document.querySelectorAll("#pvSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === protoPlanStyle)); }
+        function setProtoPlanView(v) {
+            protoPlanStyle = v === "text" || v === "en" ? v : "dot"; protoCalPlans = protoPlanStyle !== "dot";
+            try { localStorage.setItem(PLAN_VIEW_KEY, protoPlanStyle); } catch (e) { /* ignore */ }
+            pvSync();
+            if (typeof protoOn !== "undefined" && protoOn) renderProto();
+        }
+        pvSync();
+        // 題名を英語に(よく使う言葉だけ。辞書にない言葉はそのまま)
+        const PLAN_EN = [["美容院", "SALON"], ["美容室", "SALON"], ["カット", "HAIRCUT"], ["散髪", "HAIRCUT"], ["飲み会", "DRINKS"], ["飲み", "DRINKS"], ["歓迎会", "WELCOME"], ["送別会", "FAREWELL"], ["忘年会", "PARTY"], ["新年会", "PARTY"], ["パーティ", "PARTY"], ["旅行", "TRIP"], ["出張", "BIZ TRIP"], ["帰省", "HOME"], ["実家", "HOME"], ["歯医者", "DENTIST"], ["歯科", "DENTIST"], ["病院", "CLINIC"], ["バレー", "VOLLEY"], ["ランチ", "LUNCH"], ["昼ごはん", "LUNCH"], ["ディナー", "DINNER"], ["夕食", "DINNER"], ["ご飯", "MEAL"], ["ごはん", "MEAL"], ["ピザ", "PIZZA"], ["カフェ", "CAFE"], ["買い物", "SHOPPING"], ["仕事", "WORK"], ["会議", "MTG"], ["打ち合わせ", "MTG"], ["ミーティング", "MTG"], ["面接", "INTERVIEW"], ["誕生日", "B-DAY"], ["デート", "DATE"], ["映画", "MOVIE"], ["ライブ", "LIVE"], ["コンサート", "LIVE"], ["ジム", "GYM"], ["筋トレ", "GYM"], ["休み", "OFF"], ["休日", "OFF"], ["有給", "OFF"], ["結婚式", "WEDDING"], ["引越", "MOVING"], ["試験", "EXAM"], ["テスト", "EXAM"], ["飛行機", "FLIGHT"], ["フライト", "FLIGHT"], ["新幹線", "TRAIN"], ["キャンプ", "CAMP"], ["温泉", "ONSEN"], ["掃除", "CLEANING"], ["洗車", "CAR WASH"], ["車検", "CAR"], ["ハロウィン", "HALLOWEEN"], ["クリスマス", "XMAS"], ["ゴルフ", "GOLF"], ["サッカー", "SOCCER"], ["バスケ", "BASKETBALL"], ["テニス", "TENNIS"], ["練習", "PRACTICE"], ["試合", "GAME"], ["大会", "TOURNAMENT"]];
+        function planEnglish(t) { const s0 = String(t || ""); const hit = PLAN_EN.find(([jp]) => s0.includes(jp)); return hit ? hit[1] : /^[\x20-\x7e]+$/.test(s0) ? s0.toUpperCase() : s0; }
         function protoHapHtml() { return !hapOn || navigator.vibrate ? "" : `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`; }
         // スイッチが押された: 触覚はスイッチが鳴らす。本来のボタンの処理は、スイッチの切り替えが終わってから呼ぶ(すぐ描き直すとスイッチが消えて鳴らないため)
         function protoHapTap(ev, el) {
