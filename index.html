@@ -3216,9 +3216,12 @@
         .settle-due .sd-l { font-size: 9px; font-weight: 700; opacity: .8; }
         .settle-due b { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
         .settle-due .sd-more { position: absolute; top: -5px; right: -6px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: var(--notcome-ink, #b4232a); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
-        #protoUI .pr-settle-due { position: absolute; top: 12px; right: 14px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: none; border-radius: 13px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-        #protoUI .pr-settle-due .sd-l { font-size: 10px; opacity: .85; }
-        #protoUI .pr-settle-due .sd-more { font-size: 10px; opacity: .8; }
+        /* 試作UI: 板の左上の角(リングの外の空き)に、2段の小さな札 */
+        #protoUI .pr-settle-due { position: absolute; top: 10px; left: 12px; z-index: 2; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 40px; height: 32px; padding: 0 6px; border: none; border-radius: 10px; line-height: 1.1; white-space: nowrap; }
+        #protoUI .pr-settle-due .sd-l { font-size: 8.5px; font-weight: 700; opacity: .8; }
+        #protoUI .pr-settle-due b { font-size: 11.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        #protoUI .pr-settle-due .sd-more { position: absolute; top: -5px; right: -6px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: currentColor; font-size: 9px; font-weight: 800; line-height: 15px; text-align: center; box-sizing: border-box; }
+        #protoUI .pr-settle-due .sd-more::after { content: attr(data-n); color: #fff; }
 </style>
 </head>
 <body>
@@ -14578,7 +14581,7 @@ const namesBtn = isAdmin() && dates.length > 0
 
             const headHtml = `
               <div class="pr-head" style="position:relative;border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
-                ${(() => { const dd = typeof settleDueDays === "function" ? settleDueDays() : []; return dd.length ? `<button type="button" class="pr-settle-due" onclick="openSettleDue()" style="color:${P.red};${raiseS}" title="精算が終わっていない日">${settleDueLabel(dd)}</button>` : ""; })()}
+                ${(() => { const dd = typeof settleDueDays === "function" ? settleDueDays() : []; return dd.length ? `<button type="button" class="pr-settle-due" onclick="openSettleDue()" style="color:${P.red};${raiseS}" title="精算が終わっていない日">${settleDueLabel(dd).replace(/<span class="sd-more">\+(\d+)<\/span>/, '<span class="sd-more" data-n="+$1"></span>')}</button>` : ""; })()}
                 <div class="pr-headrow" style="display:flex;align-items:center;gap:18px;height:200px">
                   <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${upRing}${hand}
