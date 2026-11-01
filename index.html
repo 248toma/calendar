@@ -3330,6 +3330,9 @@
         #protoUI .pr-cell:has(.pr-lt-lane > b) { overflow: visible; }
         #protoUI .pr-lt-more { font-size: 7px; font-weight: 700; opacity: .45; }
         #protoUI .pr-fit-more { position: absolute; top: 3px; right: 4px; font-size: 8px; font-weight: 700; opacity: .5; pointer-events: none; font-family: 'Montserrat', system-ui, sans-serif; }
+        #protoUI .pr-lt-solo > b { position: relative; max-width: calc(100% - 4px); padding: 0; background: none; font-size: 7px; font-weight: 700; line-height: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #protoUI .pr-lts.past { opacity: .45; }
+        #protoUI .pr-volmark { position: absolute; top: 1px; right: -3px; width: 6px; height: 6px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid; }
 </style>
 </head>
 <body>
@@ -14864,6 +14867,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const dotHtml = dots.slice(0, MAXD).map(x => x.vol
                     ? `<i style="width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:2px solid ${x.col}"></i>`
                     : `<i style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
+                let volMark = "";
                 let tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
                 if (protoCalPlans) {
                     // 「点」の細い線の上に、題名を重ねる(線は文字のところだけ切れる)。連続予定は日をつなぐ線で、題名は始まりの日と週のはじめだけ
@@ -14871,15 +14875,17 @@ const namesBtn = isAdmin() && dates.length > 0
                     const word = t => protoPlanStyle === "en" ? planEnglish(t) : t;
                     const row = (col, l, r, label, span) => `<span class="pr-lt"><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}${span > 1 ? `;max-width:calc(${span * 100}% - 8px)` : ""}">${esc(word(label))}</b>` : ""}</span>`;
                     const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : "", x.span || 1).replace('class="pr-lt"', 'class="pr-lt pr-lt-lane"'));
-                    const sg = dots.map(x => row(x.col, true, true, x.vol ? "バレー" : x.t || (x.pin ? "" : "")));
-                    const room = Math.max(1, 3 - laneRows.length);
-                    tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}">${laneRows.join("")}${sg.slice(0, room).join("")}${sg.length > room ? `<span class="pr-lt pr-lt-more">+${sg.length - room}</span>` : ""}</span>`;
+                    // 情報を減らす: バレーは文字にせず日付の右上の小さな輪 / 1日の予定は線なしで題名だけ / 2行まで(残りは右上に +N) / 過ぎた日は薄く
+                    const sg = dots.filter(x => !x.vol).map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"><b style="color:${x.col}">${esc(word(x.t || ""))}</b></span>`);
+                    const all = laneRows.concat(sg), room = 2;
+                    volMark = v ? `<i class="pr-volmark" style="border-color:${v.col}"></i>` : "";
+                    tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}${k < todayKey ? " past" : ""}">${all.slice(0, room).join("")}</span>${all.length > room && sg.length ? `<span class="pr-fit-more">+${all.length - room}</span>` : ""}`;
                 }
                 const moreTag = "";
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
-                    <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
+                    <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${volMark}${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
                     <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${markAn != null ? `animation:prMarkIn .3s ease-out both;animation-delay:${(protoMarkDir > 0 ? col7 : 6 - col7) * 28 + Math.floor(i / 7) * 4 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
