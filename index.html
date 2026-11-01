@@ -6516,7 +6516,7 @@ await main();
         function openSaving(mode) {
             closeAddChooser();
             if (!isAdmin()) return;
-            savingForm = { id: null, date: selectedDate, amount: "", cat: "", memo: "", share: pairActive(), mode: mode === "list" ? "list" : "add" };
+            savingForm = { id: null, date: selectedDate, amount: "", cat: "", memo: "", share: false, mode: mode === "list" ? "list" : "add" };   // 共有は、押したときだけ
             let ov = document.getElementById("savingOv");
             if (!ov) { ov = document.createElement("div"); ov.id = "savingOv"; ov.onclick = (e) => { if (e.target === ov) closeSaving(); }; document.body.appendChild(ov); }
             renderSaving(); ov.style.display = "flex";
