@@ -6492,8 +6492,20 @@ await main();
         // ======================================================================
         const SAVING_KEY = "attendance_saving_v1";
         const SAVING_CATS = ["朝", "昼", "夜", "飲み物", "ご飯", "消耗品", "その他"];
-        function savingAll() { try { const v = JSON.parse(localStorage.getItem(SAVING_KEY) || "[]"); return Array.isArray(v) ? v.filter(x => x && x.id && x.date) : []; } catch (e) { return []; } }
-        function savingSaveAll(arr) { try { localStorage.setItem(SAVING_KEY, JSON.stringify(arr)); } catch (e) { console.warn(e); } }
+        // 共有しない記録は、この端末だけに保存(共有データには入れない)。ペアの相手に共有する記録だけ共有データへ
+        const SAVING_LOCAL_KEY = "saving_local_v1";
+        const svRead = key => { try { const v = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(v) ? v.filter(x => x && x.id && x.date) : []; } catch (e) { return []; } };
+        function savingAll() { const sh = svRead(SAVING_KEY), lo = svRead(SAVING_LOCAL_KEY), ids = new Set(lo.map(x => x.id)); return lo.concat(sh.filter(x => !ids.has(x.id))); }
+        function savingSaveAll(arr) {
+            const isLocal = r => savingMine(r) && !(r.to || []).length;
+            try {
+                localStorage.setItem(SAVING_LOCAL_KEY, JSON.stringify(arr.filter(isLocal)));
+                const sh = arr.filter(r => !isLocal(r)), before = localStorage.getItem(SAVING_KEY) || "[]", next = JSON.stringify(sh);
+                if (before !== next && !(before === "[]" && !sh.length)) localStorage.setItem(SAVING_KEY, next);   // 共有データは変わったときだけ書く
+            } catch (e) { console.warn(e); }
+        }
+        // 前の版で共有データに入れてしまった「共有しない記録」を、この端末へ移す
+        function savingMigrateLocal() { if (svRead(SAVING_KEY).some(r => savingMine(r) && !(r.to || []).length)) savingSaveAll(savingAll()); }
         // 見えるもの: 自分が入れたもの / 自分に共有されたもの(管理者モードのときだけ)
         function savingMine(r) { return r.owner === planAuthorKey(); }
         function savingVisible(r) { if (!isAdmin()) return false; const me = myRosterId(); return savingMine(r) || (me != null && (r.to || []).includes(me)); }
@@ -6516,6 +6528,7 @@ await main();
         function openSaving(mode) {
             closeAddChooser();
             if (!isAdmin()) return;
+            try { savingMigrateLocal(); } catch (e) { /* ignore */ }
             savingForm = { id: null, date: selectedDate, amount: "", cat: "", memo: "", share: false, mode: mode === "list" ? "list" : "add" };   // 共有は、押したときだけ
             let ov = document.getElementById("savingOv");
             if (!ov) { ov = document.createElement("div"); ov.id = "savingOv"; ov.onclick = (e) => { if (e.target === ov) closeSaving(); }; document.body.appendChild(ov); }
