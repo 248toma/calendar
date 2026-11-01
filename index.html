@@ -9818,7 +9818,8 @@ await main();
             const lim = Date.now() - MATCH_TRASH_DAYS * 864e5;
             return (Array.isArray(v) ? v : []).filter(x => x && x.m && x.date && x.at >= lim);
         }
-        function matchTrashSave(arr) { try { localStorage.setItem(MATCH_TRASH_KEY, JSON.stringify(arr.slice(0, MATCH_TRASH_MAX))); } catch (e) { console.warn(e); } }
+        // 日付ごとに新しい3つまで
+        function matchTrashSave(arr) { const cnt = {}; arr = arr.filter(x => (cnt[x.date] = (cnt[x.date] || 0) + 1) <= MATCH_TRASH_MAX); try { localStorage.setItem(MATCH_TRASH_KEY, JSON.stringify(arr)); } catch (e) { console.warn(e); } }
         function restoreMatch(at) {
             if (!realAdmin()) return;
             const tr = matchTrash(), i = tr.findIndex(x => x.at === at); if (i < 0) return;
@@ -9831,9 +9832,9 @@ await main();
         }
         function matchTrashHtml() {
             if (!realAdmin()) return "";
-            const tr = matchTrash(); if (!tr.length) return "";
+            const tr = matchTrash().filter(x => x.date === selectedDate); if (!tr.length) return "";   // 開いている日のぶんだけ
             const mem = m => m.labels.map((lb, k) => `<div class="mt-gt">${teamChip(lb)}<span>${k === m.win ? `<i class="mt-crown">🏆</i>` : ""}${m.teams[k].map(escapeHtml).join("・")}</span></div>`).join("");
-            return `<details class="mt-trash"><summary aria-label="消したゲーム">🗑 ${tr.length}</summary>${tr.map(x => `<details class="mt-tdet"><summary class="mt-trow"><span>${+x.date.slice(5, 7)}/${+x.date.slice(8)}</span><span class="mt-team win">🏆 ${teamChip(x.m.labels[x.m.win])}</span><span class="mt-vs">${x.m.diff ? "+" + x.m.diff : ""}</span><button type="button" onclick="event.preventDefault();event.stopPropagation();restoreMatch(${x.at})" aria-label="元に戻す" title="元に戻す">↶</button></summary><div class="mt-tmem">${mem(x.m)}</div></details>`).join("")}</details>`;
+            return `<details class="mt-trash"><summary aria-label="消したゲーム">🗑 ${tr.length}</summary>${tr.map(x => `<details class="mt-tdet"><summary class="mt-trow"><span>${new Date(x.at).getHours()}:${String(new Date(x.at).getMinutes()).padStart(2, "0")}</span><span class="mt-team win">🏆 ${teamChip(x.m.labels[x.m.win])}</span><span class="mt-vs">${x.m.diff ? "+" + x.m.diff : ""}</span><button type="button" onclick="event.preventDefault();event.stopPropagation();restoreMatch(${x.at})" aria-label="元に戻す" title="元に戻す">↶</button></summary><div class="mt-tmem">${mem(x.m)}</div></details>`).join("")}</details>`;
         }
         function deleteMatch(date, id) {
             if (!realAdmin()) return;
@@ -14677,9 +14678,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const protoAnim = protoSlide ? `animation: prSlide${protoSlide > 0 ? "L" : "R"} .42s cubic-bezier(.16,1,.3,1)` : "";
             protoSlide = 0;
 
+            const sdue = !pin && typeof settleDueDays === "function" ? settleDueDays() : [];   // 精算が終わっていない日(予定の行と同じ見た目で、いちばん下に1行)
             const headHtml = `
               <div class="pr-head" style="position:relative;border-radius:28px;padding:18px 20px;margin:0 -10px;${raise}">
-                ${(() => { const dd = typeof settleDueDays === "function" ? settleDueDays() : []; return dd.length ? `<button type="button" class="pr-settle-due" onclick="openSettleDue()" style="color:${P.red};${raiseS}" title="精算が終わっていない日">${settleDueLabel(dd).replace(/<span class="sd-more">\+(\d+)<\/span>/, '<span class="sd-more" data-n="+$1"></span>')}</button>` : ""; })()}
                 <div class="pr-headrow" style="display:flex;align-items:center;gap:18px;height:200px">
                   <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${upRing}${hand}
@@ -14697,9 +14698,10 @@ const namesBtn = isAdmin() && dates.length > 0
                     ${up ? `<div role="button" tabindex="0" aria-label="次のバレーの日へ" onclick="protoPick('${upKey}')" style="display:flex;align-items:center;gap:6px;min-width:0;font-family:${en};font-size:11px;color:${P.ink3};cursor:pointer;white-space:nowrap;overflow:hidden">
                       <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
                     <div style="position:relative">
-                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 52 : 78}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
+                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${Math.max(26, 78 - (up ? 26 : 0) - (sdue.length ? 26 : 0))}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
                         ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;background:${r.col}"></i><span style="width:44px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:26px">予定なし</span>`}
                       </div>
+                      ${sdue.length ? `<div role="button" tabindex="0" onclick="openSettleDue()" title="精算が終わっていない日" style="display:flex;align-items:center;gap:8px;min-width:0;height:26px;cursor:pointer"><i style="width:7px;height:7px;border-radius:4px;flex:none;box-sizing:border-box;border:1.5px solid ${P.red}"></i><span style="width:44px;flex:none;font-family:${en};font-size:11.5px;font-weight:600;color:${P.red};white-space:nowrap">${+sdue[0].slice(5, 7)}/${+sdue[0].slice(8)}</span><span style="flex:1;min-width:0;font-size:13px;font-weight:600;color:${P.red};white-space:nowrap">精算${sdue.length > 1 ? `<span style="font-family:${en};font-size:11px;font-weight:600;color:${P.ink3};margin-left:6px">+${sdue.length - 1}</span>` : ""}</span></div>` : ""}
                       <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
                     </div>
                   </div>
