@@ -2814,6 +2814,26 @@
         .rs-seg2 button.on { color: var(--accent); box-shadow: var(--sink); }
         .rs-days { font-size: 11px; color: var(--ink-3); }
         .rs-tbl { display: flex; flex-direction: column; gap: 2px; }
+        /* 相性の図(円に並べて線で結ぶ) */
+        .chem { margin-top: 10px; }
+        .chem-svg { display: block; width: 100%; max-width: 340px; margin: 4px auto 0; touch-action: manipulation; }
+        .chem-svg text { font-size: 9.5px; font-weight: 600; fill: var(--ink-2); cursor: pointer; }
+        .chem-svg text.on { fill: var(--ink); font-weight: 800; }
+        .chem-svg text.dim { opacity: .35; }
+        .chem-svg .nd { fill: var(--ink-3); }
+        .chem-svg .nd.on { fill: var(--ink); }
+        .chem-svg line { stroke-linecap: round; transition: opacity .2s; }
+        .chem-svg line.good { stroke: var(--accent); }
+        .chem-svg line.bad { stroke: var(--ink-3); stroke-dasharray: 2 4; }
+        .chem-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin: 8px 2px 0; font-size: 12px; }
+        .chem-list h5 { grid-column: 1 / -1; margin: 6px 0 0; font-size: 10.5px; color: var(--ink-3); font-weight: 700; letter-spacing: .04em; }
+        .chem-list div { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+        .chem-list div span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chem-list div b { font-size: 11px; font-variant-numeric: tabular-nums; }
+        .chem-list div b.g { color: var(--accent); }
+        .chem-list div b.b { color: var(--ink-3); }
+        .chem-list div small { font-size: 10px; color: var(--ink-3); }
+        .chem-hint { text-align: center; font-size: 11px; color: var(--ink-3); margin-top: 2px; }
         .rs-row { display: grid; grid-template-columns: 4.6em 1fr 1fr 1fr; gap: 6px; align-items: center; min-height: 26px; font-size: 12px; color: var(--ink-2); }
         .rs-head { font-size: 11px; color: var(--ink-3); }
         .rs-h { border: none; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
@@ -3099,6 +3119,11 @@
         @property --pp { syntax: '<number>'; inherits: false; initial-value: 1; }
         @keyframes prArc { from { --pp: 0; } to { --pp: 1; } }
         @keyframes prSweepIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+        /* 前に見たときから増えた人のマス: ポンと灯る + リングから波紋 */
+        @keyframes prFreshIn { 0% { opacity: 0; filter: brightness(1.6) saturate(1.4); } 35% { opacity: 1; filter: brightness(1.45) saturate(1.3); } 100% { opacity: 1; filter: none; } }
+        @keyframes prRipple { 0% { transform: scale(.94); opacity: .55; } 100% { transform: scale(1.32); opacity: 0; } }
+        #protoUI .pr-ripple { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--rc); pointer-events: none; opacity: 0; animation: prRipple 900ms cubic-bezier(.2,.7,.3,1) both; }
+        body.pr-noanim #protoUI .pr-ripple { display: none; }
         /* iPhone の触覚: ボタンの上に透明なスイッチを重ね、指で直接切り替えてもらう(iOS 26.5 からは、指で押したスイッチでしか鳴らない) */
         .pr-hap { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; z-index: 2; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         @keyframes prNumPop { 0% { opacity: .35; } 100% { opacity: 1; } }
@@ -10993,9 +11018,10 @@ const namesBtn = isAdmin() && dates.length > 0
             if (c - d > 40 * 864e5) c = new Date(d.getFullYear() - 1, +m[1] - 1, +m[2]);   // 年をまたいだ回答
             return c;
         }
+        function rosterStatsFrom() { const t = new Date(); return rstatPeriod ? formatDateKey(new Date(t.getFullYear(), t.getMonth() - rstatPeriod, t.getDate())) : "0000"; }
         function rosterStatsData() {
-            const today = formatDateKey(new Date()), t = new Date();
-            const from = rstatPeriod ? formatDateKey(new Date(t.getFullYear(), t.getMonth() - rstatPeriod, t.getDate())) : "0000";
+            const today = formatDateKey(new Date());
+            const from = rosterStatsFrom();
             // 「来る」が1人もいない日は、出欠を記録していない日として数えない
             const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && events[d] && d < today && d >= from && (attendanceByDate[d] || []).some(m => m.status === "来る")).sort();
             const mst = matchStatsFrom(from);
@@ -11016,6 +11042,114 @@ const namesBtn = isAdmin() && dates.length > 0
             });
             return { days: days.length, rows };
         }
+        // ------- 相性(同じチームのとき勝ちやすい2人 / 当たると負けやすい相手) -------
+        // 2人の「個人の勝率から予想される勝率」と、実際に組んだときの勝率の差。少ない回数はふつう(差0)寄りに補正。3回未満の組は出さない
+        var chemFocus = "";
+        function chemRecords(from) {   // [{ teams:[[名前],[名前]], win:0|1 }] (勝率の数え方に合わせる)
+            const out = [];
+            Object.keys(matchesByDate).filter(d => d >= from).forEach(d => {
+                const list = matchesByDate[d] || [];
+                if (matchRateUnit !== "match") { list.forEach(m => { if (m.teams && m.teams.length >= 2 && (m.win === 0 || m.win === 1)) out.push({ teams: [m.teams[0], m.teams[1]], win: m.win }); }); return; }
+                const rule = matchRule();
+                matchGroupsOf(list).forEach(g => {
+                    const s0 = matchGroupState(g, rule); if (!s0.done) return;
+                    const tm = g.labels.slice(0, 2).map(lb => { const names = new Set(); g.games.forEach(({ m }) => { const k = m.labels.indexOf(lb); if (k >= 0) m.teams[k].forEach(n => names.add(n)); }); return [...names]; });
+                    if (tm.length === 2 && s0.win) out.push({ teams: tm, win: s0.win === g.labels[0] ? 0 : 1 });   // 引き分けは数えない
+                });
+            });
+            return out;
+        }
+        // 一人ひとりの強さ(チームの強さ = メンバーの強さの合計、その差で勝つ確率が決まるとみなす)を試合から推定する
+        function chemFit(recs, st0, iters, skip) {
+            const st = { ...st0 }, sig = x => 1 / (1 + Math.exp(-x)), cnt = {};
+            recs.forEach((r, ri) => { if (skip && skip(r, ri)) return; r.teams.forEach(t => t.forEach(n => { cnt[n] = (cnt[n] || 0) + 1; })); });
+            for (let it = 0; it < iters; it++) {
+                const gr = {}; Object.keys(st).forEach(n => { gr[n] = -0.15 * st[n]; });   // 極端な値にならないよう、0 に引っぱる
+                recs.forEach((r, ri) => { if (skip && skip(r, ri)) return; const p = sig(r.teams[0].reduce((a, n) => a + st[n], 0) - r.teams[1].reduce((a, n) => a + st[n], 0)), e = (r.win === 0 ? 1 : 0) - p; r.teams[0].forEach(n => { gr[n] += e; }); r.teams[1].forEach(n => { gr[n] -= e; }); });
+                Object.keys(st).forEach(n => { st[n] += 0.2 * gr[n] / Math.max(1, cnt[n] || 0); });
+            }
+            return st;
+        }
+        var chemCache = null;
+        function chemData(from) {
+            const ck = from + "|" + matchRateUnit + "|" + JSON.stringify(matchRule()) + "|" + JSON.stringify(matchesByDate).length + "|" + Object.keys(matchesByDate).length;
+            if (chemCache && chemCache.k === ck) return chemCache.v;
+            const v = chemDataCalc(from); chemCache = { k: ck, v }; return v;
+        }
+        function chemDataCalc(from) {
+            const recs = chemRecords(from), ind = {}, st0 = {};
+            recs.forEach(r => r.teams.forEach((t, k) => t.forEach(n => { const o = ind[n] || (ind[n] = { g: 0, w: 0 }); o.g++; if (k === r.win) o.w++; st0[n] = 0; })));
+            const sig = x => 1 / (1 + Math.exp(-x)), K = 3, MIN = 3;
+            const base = chemFit(recs, st0, 200);
+            const pr = (st, r) => sig(r.teams[0].reduce((a, n) => a + st[n], 0) - r.teams[1].reduce((a, n) => a + st[n], 0));
+            // 2人の組ごとに: その2人が「一緒にいない」試合だけで強さを出し直し、それで予想した勝つ確率と実際の差(少ない回数は 0 寄り)
+            const key = (a, b) => a < b ? a + "\u0000" + b : b + "\u0000" + a, mate = {}, vs = {};
+            recs.forEach((r, ri) => {
+                r.teams.forEach((t, k) => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { const kk = key(t[i], t[j]); (mate[kk] || (mate[kk] = { a: t[i] < t[j] ? t[i] : t[j], b: t[i] < t[j] ? t[j] : t[i], rs: [] })).rs.push([ri, k]); } });
+                r.teams[0].forEach(x => r.teams[1].forEach(z => { const [a, b, k] = x < z ? [x, z, 0] : [z, x, 1], kk = a + "\u0000" + b; (vs[kk] || (vs[kk] = { a, b, rs: [] })).rs.push([ri, k]); }));   // k = a のいたチーム
+            });
+                // 速さのため: ほかの人の強さはそのままにして、その2人の強さだけを出し直す
+            const D = recs.map(r => r.teams[0].reduce((a, n) => a + base[n], 0) - r.teams[1].reduce((a, n) => a + base[n], 0));
+            const side = recs.map(r => { const m = {}; r.teams[0].forEach(n => { m[n] = 1; }); r.teams[1].forEach(n => { m[n] = -1; }); return m; });
+            const byName = {}; recs.forEach((r, ri) => r.teams.forEach(t => t.forEach(n => { (byName[n] || (byName[n] = [])).push(ri); })));
+            const score = o => {
+                const set = new Set(o.rs.map(x => x[0])), a = o.a, b = o.b;
+                const use = [...new Set((byName[a] || []).concat(byName[b] || []))].filter(ri => !set.has(ri));
+                let xa = 0, xb = 0; const ca = Math.max(1, use.filter(ri => side[ri][a]).length), cb = Math.max(1, use.filter(ri => side[ri][b]).length);
+                for (let it = 0; it < 40; it++) {
+                    let ga = -0.15 * (base[a] + xa), gb = -0.15 * (base[b] + xb);
+                    use.forEach(ri => { const sa = side[ri][a] || 0, sb = side[ri][b] || 0, p = sig(D[ri] + sa * xa + sb * xb), e = (recs[ri].win === 0 ? 1 : 0) - p; ga += sa * e; gb += sb * e; });
+                    xa += 0.2 * ga / ca; xb += 0.2 * gb / cb;
+                }
+                let w = 0, e = 0;
+                o.rs.forEach(([ri, k]) => { const r = recs[ri], p0 = sig(D[ri] + (side[ri][a] || 0) * xa + (side[ri][b] || 0) * xb), p = k === 0 ? p0 : 1 - p0, y = r.win === k ? 1 : 0; w += y; e += y - p; });
+                return { a, b, g: o.rs.length, w, c: e / (o.rs.length + K) };
+            };
+            const pairs = Object.values(mate).filter(o => o.rs.length >= MIN).map(score);
+            const rivals = Object.values(vs).filter(o => o.rs.length >= MIN).map(score);
+            return { ind, pairs, rivals, games: recs.length };
+        }
+        function chemFocusSet(n) { chemFocus = chemFocus === n ? "" : n; renderRosterStats(); }
+        function chemHtml(from) {
+            const { ind, pairs, rivals } = chemData(from);
+            const guests = new Set(roster.filter(r => r.position === GUEST_POS).map(r => r.name));
+            const names = Object.keys(ind).filter(n => !guests.has(n) && pairs.some(p => p.a === n || p.b === n));
+            if (names.length < 3) return `<details class="note-details chem"><summary>相性</summary><div class="acc-desc">一緒に3回以上試合をした組が増えると、ここに出ます。</div></details>`;
+            const order = roster.map(r => r.name).filter(n => names.includes(n)).concat(names.filter(n => !roster.some(r => r.name === n)));
+            if (chemFocus && !order.includes(chemFocus)) chemFocus = "";
+            const W = 340, cx = W / 2, cy = W / 2, R = W / 2 - 62, N = order.length, pos = {};
+            order.forEach((n, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / N; pos[n] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a), a }; });
+            const maxG = Math.max(...pairs.map(p => p.g)), f = chemFocus;
+            let shown = pairs.filter(p => pos[p.a] && pos[p.b] && Math.abs(p.c) >= 0.015 && (!f || p.a === f || p.b === f)).sort((x, y) => Math.abs(y.c) - Math.abs(x.c));
+            if (!f) shown = shown.slice(0, Math.max(8, Math.round(N * 1.2)));   // 全体表示は、差の大きい組だけ(線だらけにしない)
+            shown.reverse();   // 濃い線を上に
+            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], good = p.c > 0, op = Math.min(1, 0.25 + Math.abs(p.c) * 6) * (f ? 1 : 0.85), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
+                return `<line class="${good ? "good" : "bad"}" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke-width="${(good ? w : Math.max(1, w * 0.7)).toFixed(2)}" opacity="${op.toFixed(2)}"></line>`; }).join("");
+            const linked = new Set(); if (f) shown.forEach(p => { linked.add(p.a); linked.add(p.b); });
+            const labels = order.map(n => { const P0 = pos[n], c = Math.cos(P0.a), s = Math.sin(P0.a), lx = cx + (R + 9) * c, ly = cy + (R + 9) * s, anc = Math.abs(c) < 0.25 ? "middle" : c > 0 ? "start" : "end", dy = Math.abs(c) < 0.25 ? (s > 0 ? 9 : -3) : 3.5;
+                const cls = f ? (n === f ? "on" : linked.has(n) ? "" : "dim") : "";
+                const nm = n.length > 6 ? n.slice(0, 6) + "…" : n;
+                return `<g onclick="chemFocusSet(${escapeHtml(JSON.stringify(n))})"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="14" fill="transparent"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}">${escapeHtml(nm)}</text></g>`; }).join("");
+            const pct = v => (v > 0 ? "+" : "−") + Math.round(Math.abs(v) * 100) + "%";
+            let list = "";
+            if (f) {
+                const mine = pairs.filter(p => p.a === f || p.b === f).map(p => ({ n: p.a === f ? p.b : p.a, c: p.c, g: p.g, w: p.w }));
+                const best = mine.filter(x => x.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 3), worst = mine.filter(x => x.c < -0.01).sort((a, b) => a.c - b.c).slice(0, 2);
+                const rv = rivals.filter(o => o.a === f || o.b === f).map(o => ({ n: o.a === f ? o.b : o.a, c: o.a === f ? o.c : -o.c, g: o.g, w: o.a === f ? o.w : o.g - o.w }));
+                const tough = rv.filter(x => x.c < -0.01).sort((a, b) => a.c - b.c).slice(0, 2), easy = rv.filter(x => x.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 2);
+                const it = (x, cls) => `<div><span>${escapeHtml(x.n)}</span><b class="${cls}">${pct(x.c)}</b><small>${x.w}-${x.g - x.w}</small></div>`;
+                const sec = (t, arr, cls) => arr.length ? `<h5>${t}</h5>${arr.map(x => it(x, cls)).join("")}` : "";
+                list = `<div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">まだ目立った相性はありません</div>`);
+            } else {
+                const top = pairs.filter(p => p.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 4);
+                list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${pct(p.c)}</b><small>${p.w}-${p.g - p.w}</small></div>`).join("")}</div>` : "";
+                list += `<div class="chem-hint">名前を押すと、その人の相性</div>`;
+            }
+            return `<details class="note-details chem"${chemOpen ? " open" : ""} ontoggle="chemOpen=this.open"><summary>相性</summary>
+                <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${labels}</svg>${list}
+                <div class="acc-desc rs-note">緑=組むと勝ちやすい / 点線=組むと負けやすい(一人ひとりの強さを差し引いた差)。太さ=一緒に出た数</div></details>`;
+        }
+        var chemOpen = false;
         function setRstat(k, v) { if (k === "p") rstatPeriod = v; else rstatSort = v; renderRosterStats(); }
         function renderRosterStats() {
             const el = document.getElementById("rosterStats"); if (!el) return;
@@ -11031,6 +11165,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="rs-unit">勝率${matchUnitSegHtml()}</div>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
+                ${chemHtml(rosterStatsFrom())}
                 <details class="note-details" style="margin-top:10px;" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
                 <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
         }
@@ -14787,7 +14922,15 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (shownKey !== protoRingShown && !protoCapMode) {
                     protoRingShown = shownKey;
                     const answering = protoRingAnim && protoRingAnim.d === nextKey && !protoRingAnim.sweep && Date.now() - protoRingAnim.at < PROTO_RING_MS;   // ○✖△で答えた直後は、その動きのまま
-                    if (vv.n > 0 && !answering) { protoRingAnim = { d: nextKey, from: 0, at: protoBoot ? Date.now() : Date.now() + 1e7, sweep: true }; if (protoBoot) protoSweepBuzz(vv.n); }   // 開いた直後は、画面が出るまで待ってから始める
+                    const seen = protoSeenGet(nextKey);   // 前に開いたときの人数(増えていたら、そのぶんをポンと灯す)
+                    if (vv.n > 0 && !answering) { protoRingAnim = { d: nextKey, from: 0, at: protoBoot ? Date.now() : Date.now() + 1e7, sweep: true, fresh: seen != null && seen < vv.n ? seen : null }; if (protoBoot) protoSweepBuzz(vv.n); }   // 開いた直後は、画面が出るまで待ってから始める
+                }
+                // 開いている間に、ほかの人の回答で人数が変わった(同期): 変わったマスだけ動かし、増えたら波紋
+                if (!protoCapMode) {
+                    const last = protoRingNs[nextKey]; protoRingNs[nextKey] = vv.n;
+                    const busy = last != null && !!protoRingAnimFor(nextKey, last);   // まだ前の動き(開いた直後の埋まり・自分の回答)の途中
+                    if (last != null && last !== vv.n && !busy) protoRingAnim = { d: nextKey, from: last, at: Date.now(), fresh: last < vv.n ? last : null };
+                    if (protoBoot) protoSeenSet(nextKey, vv.n);
                 }
                 hAn = protoRingAnimFor(nextKey, vv.n);
                 // 12人を超えたぶん(2周目)は、同じマスを濃い色で塗り直す(1周目は淡く、2周目は濃く)
@@ -14943,7 +15086,7 @@ const namesBtn = isAdmin() && dates.length > 0
               <div class="pr-head" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${raise}">
                 <div class="pr-headrow" style="display:flex;align-items:center;gap:20px;height:${up ? 164 : 158}px">
                   <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
-                    ${dial.map(L).join("")}${upRing}${hand}
+                    ${dial.map(L).join("")}${upRing}${hand}${vv ? protoRippleHtml(hAn, vv.col) : ""}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
                       <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
                       <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
@@ -15483,7 +15626,19 @@ const namesBtn = isAdmin() && dates.length > 0
                 navigator.vibrate(pat);
             } catch (e) { }
         }
-        function protoSweepLen(a) { return PROTO_SWEEP_MS + Math.max(0, a.cells.length - 1) * PROTO_SWEEP_STEP; }
+        function protoSweepLen(a) { return PROTO_SWEEP_MS + Math.max(0, a.cells.length - 1) * PROTO_SWEEP_STEP + (a.fresh != null ? PROTO_FRESH_GAP + 900 : 0); }
+        const PROTO_FRESH_GAP = 260;   // 前から来ていた人のマスが埋まってから、増えた人のマスが灯るまでの間
+        var protoRingNs = {};   // 画面に出した人数(日ごと)
+        const SEEN_KEY = "proto_seen_v1";   // 前に開いたときの人数(この端末だけ)
+        function protoSeenGet(d) { try { const o = JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); return typeof o[d] === "number" ? o[d] : null; } catch (e) { return null; } }
+        function protoSeenSet(d, n) { try { const o = JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); if (o[d] === n) return; o[d] = n; const ks = Object.keys(o).sort(); while (ks.length > 8) delete o[ks.shift()]; localStorage.setItem(SEEN_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } }
+        // 波紋: 増えた人のマスが灯るのと同時に、リングの外へ1回
+        function protoRippleHtml(an, col) {
+            if (!an || an.fresh == null) return "";
+            const start = an.sweep ? (an.fresh - an.base) * PROTO_SWEEP_STEP + PROTO_FRESH_GAP : 0, d = start - an.el;
+            if (d < -900) return "";
+            return `<i class="pr-ripple" style="--rc:${col};animation-delay:${Math.round(d)}ms"></i>`;
+        }
         // 触覚フィードバック(ブルッ)。Android は vibrate、iPhone は「スイッチ」の切り替えで鳴る触覚を借りる(iOS 18 ごろから。押した操作の中でだけ動く)
         var protoHapAt = 0;
         // ボタンの中に入れる透明スイッチ(Android は vibrate で鳴らすので入れない)
@@ -15589,7 +15744,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const el = Date.now() - a.at;
             const lo = Math.min(a.from, n), hi = Math.max(a.from, n), cells = [];
             for (let i = lo; i < hi; i++) cells.push(i);
-            const r = { base: lo, inc: n > a.from, cells, el, sweep: !!a.sweep };
+            const r = { base: lo, inc: n > a.from, cells, el, sweep: !!a.sweep, fresh: a.fresh != null && a.fresh < n ? a.fresh : null };
             if (el >= (r.sweep ? protoSweepLen(r) : PROTO_RING_MS)) { if (a.sweep) protoRingAnim = null; return null; }
             return r;
         }
@@ -15597,6 +15752,8 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoCellLayer(ringBoxFn, maskFn, size, th, i, col, gap, anim) {
             const a = (i % 12) * 30;
             const mk = maskFn(th);
+            const fresh = anim.fresh != null && i >= anim.fresh;
+            if (fresh) return `${ringBoxFn(size)}background:conic-gradient(transparent 0deg ${a + gap / 2}deg, ${col} ${a + gap / 2}deg ${a + 30 - gap / 2}deg, transparent ${a + 30 - gap / 2}deg 360deg);-webkit-mask:${mk};mask:${mk};animation:prFreshIn 700ms ease-out both;animation-delay:${Math.round((anim.sweep ? (anim.fresh - anim.base) * PROTO_SWEEP_STEP + PROTO_FRESH_GAP : 0) + (i - anim.fresh) * 70 - anim.el)}ms`;   // 増えた人: 少しずつずらしてポンと灯る
             return `${ringBoxFn(size)}background:conic-gradient(transparent 0deg ${a + gap / 2}deg, ${col} ${a + gap / 2}deg ${a + 30 - gap / 2}deg, transparent ${a + 30 - gap / 2}deg 360deg);-webkit-mask:${mk};mask:${mk};${anim.sweep
                 ? `animation:prSweepIn ${PROTO_SWEEP_MS}ms ease-in-out both;animation-delay:${(i - anim.base) * PROTO_SWEEP_STEP - anim.el}ms`
                 : `animation:${anim.inc ? "prCellIn" : "prCellOut"} ${PROTO_RING_MS}ms cubic-bezier(.2,.8,.2,1) both;animation-delay:-${anim.el}ms`}`;
