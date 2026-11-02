@@ -3346,6 +3346,36 @@
         #protoUI .pr-lts.past .pr-lt > b { color: var(--pr-ink3, #8a909a) !important; }
         /* 文字は1色のまま、予定の色は題名の頭の小さな点で(続く予定は線の色) */
         #protoUI .pr-lt-solo > b::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 2.5px; vertical-align: .5px; }
+        /* 長押しメニュー(試作UI) */
+        body.proto-on #protoUI { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        #prRadial { position: fixed; inset: 0; z-index: 70; display: none; }
+        #prRadial.open { display: block; }
+        #prRadial .prr-back { position: absolute; inset: 0; background: rgba(20, 24, 32, .12); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); animation: prrFade .15s ease-out; }
+        #prRadial .prr-center { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--rbg); box-shadow: inset 2px 2px 4px rgba(0,0,0,.18), inset -2px -2px 4px rgba(255,255,255,.7); }
+        #prRadial .prr-item { position: absolute; width: 58px; height: 58px; margin: -29px 0 0 -29px; border: none; border-radius: 50%; background: var(--rbg); color: var(--rink); box-shadow: 5px 5px 12px rgba(0,0,0,.16), -4px -4px 10px rgba(255,255,255,.8); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; animation: prrIn .26s cubic-bezier(.2,.9,.3,1.2) both; transition: transform .12s ease, box-shadow .12s ease, color .12s; }
+        #prRadial .prr-item span { font-size: 8.5px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+        #prRadial .prr-item.main { color: #2f6fe0; }
+        #prRadial .prr-item.on { transform: scale(1.18); color: #0e8a6a; box-shadow: inset 3px 3px 7px rgba(0,0,0,.16), inset -3px -3px 7px rgba(255,255,255,.75); }
+        @keyframes prrIn { from { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; } }
+        @keyframes prrFade { from { opacity: 0; } }
+        body.pr-noanim #prRadial .prr-item, body.pr-noanim #prRadial .prr-back { animation: none; }
+        /* 長押しメニューがあるので、下のボタンは出さない */
+        body.proto-on #protoUI .pr-dock { display: none !important; }
+        body.proto-on #protoUI .pr-cal { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important; }
+        @media (orientation: landscape) and (max-height: 620px) {
+            #protoUI .pr-wrap { grid-template-columns: var(--hw) minmax(0, 1fr) !important; }
+            #protoUI .pr-wrap::after { display: none !important; }
+        }
+        #prRadial .prr-badge { position: absolute; top: 6px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 0 2px var(--rbg); }
+        #protoUI .pr-svdot { display: none; margin-left: 8px; width: 9px; height: 9px; padding: 0; border: none; border-radius: 50%; background: #e5484d; cursor: pointer; vertical-align: middle; }
+        #protoUI .pr-svdot.on { display: inline-block; }
+        #protoUI .pr-svdot.later { background: #e08a00; }
+        #protoUI .pr-svdot.notes { background: #0e8a6a; }
+        .pr-hint { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); transform: translateX(-50%); z-index: 65; padding: 8px 14px; border-radius: 16px; background: rgba(31, 33, 36, .82); color: #fff; font-size: 12px; font-weight: 700; pointer-events: none; animation: prHint 3.6s ease both; }
+        @keyframes prHint { 0% { opacity: 0; transform: translate(-50%, 8px); } 10%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+        /* 予定の入力を下に出すとき: カレンダーが上、入力が下 */
+        #protoUI .pr-wrap.pin-bottom { gap: 12px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+        #protoUI .pr-wrap.pin-bottom > .pr-cal { padding-bottom: 0 !important; }
 </style>
 </head>
 <body>
@@ -14940,7 +14970,7 @@ const namesBtn = isAdmin() && dates.length > 0
               <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchmove="protoTM(event)" ontouchend="protoTE(event)" ontouchcancel="protoTC()" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px;touch-action:pan-y;${protoAnim}">
                 <div style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
 
-                  <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${MEN[m - 1]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span>${typeof savingTotalHtml === "function" ? savingTotalHtml(y) : ""}</div>
+                  <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${MEN[m - 1]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span>${typeof savingTotalHtml === "function" ? savingTotalHtml(y) : ""}<button type="button" class="pr-svdot" id="prSvDot" onclick="event.stopPropagation();openSurvey()" aria-label="アンケートの知らせ"></button></div>
 
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
@@ -15070,14 +15100,19 @@ const namesBtn = isAdmin() && dates.length > 0
             root.style.setProperty("--pr-bg", P.bg);
             root.style.setProperty("--pr-ink2", P.ink2);
             root.style.setProperty("--pr-ink3", P.ink3);   // カレンダーの線の上の文字の下地
-            root.innerHTML = `<div class="pr-wrap" style="background:${P.bg};color:${P.ink}">${pin ? headPin : headHtml}${calHtml}${dockHtml}</div>`;
+            const pinBottom = pin && protoPinBottom;   // 予定の入力を下に出す(長押しメニューを下半分で使ったとき)
+            root.innerHTML = `<div class="pr-wrap${pinBottom ? " pin-bottom" : ""}" style="background:${P.bg};color:${P.ink}">${pinBottom ? calHtml + headPin : (pin ? headPin : headHtml) + calHtml}${dockHtml}</div>`;
+            protoVV();
             protoLandFit();
             protoFitCells();
+            if (!protoCapMode) { try { if (!localStorage.getItem("pr_hold_hint_v1")) { localStorage.setItem("pr_hold_hint_v1", "1"); const h = document.createElement("div"); h.className = "pr-hint"; h.textContent = "画面を長押しでメニュー"; document.body.appendChild(h); setTimeout(() => h.remove(), 3800); } } catch (e) { /* ignore */ } }
             const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * 26;
             protoSvBtnSync();
         }
         // 下のアンケートボタンの印は、今の画面のアンケートボタンと同じ(赤=今月・来月の未回答 / オレンジ=その先 / 緑=新しいひとこと / 点滅)
         function protoSvBtnSync() {
+            const o0 = document.getElementById("surveyBtn"), dot = document.getElementById("prSvDot");
+            if (dot && o0) { const al = o0.classList.contains("alert"), nt = o0.classList.contains("notes"); dot.classList.toggle("on", al || nt); dot.classList.toggle("later", al && o0.classList.contains("later") && !o0.classList.contains("urgent")); dot.classList.toggle("notes", !al && nt); dot.title = o0.title || "出欠の回答"; }
             const b = document.getElementById("prSvBtn"), o = document.getElementById("surveyBtn"); if (!b || !o) return;
             ["alert", "later", "notes", "pulse", "urgent"].forEach(c => b.classList.toggle(c, o.classList.contains(c)));
             [["sv-badge", "surveyBadge"], ["sv-badge2", "surveyBadge2"], ["sv-badge3", "surveyBadge3"]].forEach(([c, id]) => { const t = b.querySelector("." + c), f = document.getElementById(id); if (t && f) { t.textContent = f.textContent; t.title = f.title || ""; } });
@@ -15214,6 +15249,158 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (extra > 0) { const t = document.createElement("span"); t.className = "pr-fit-more"; t.textContent = "+" + extra; c.appendChild(t); }
             });
         }
+        // ------- 長押しメニュー(試作UI): 画面のどこでも長押しすると、下のボタンが指のまわりに円く並ぶ -------
+        //   指を離さずにすべらせて、選んで離すと実行 / その場で離すとメニューが開いたままになり、タップで選べる
+        const PR_RAD_ICONS = {
+            today: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"></circle></svg>`,
+            cal: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path></svg>`,
+            survey: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg>`,
+            settings: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle></svg>`,
+            add: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`
+        };
+        const PR_RAD_ITEMS = [
+            { k: "add", label: "追加", run: () => { if (!isAdmin()) { protoAdd(); return; } prRadSub(); } },   // 管理者は、その場で「Volley / 予定 / 節約」を出す
+            { k: "cal", label: "カレンダー", run: () => openBulkAdd() },
+            { k: "survey", label: "アンケート", run: () => openSurvey() },
+            { k: "settings", label: "設定", run: () => toggleSettings() },
+            { k: "today", label: "Today", run: () => protoToday() }
+        ];
+        const PR_RAD_SUB = [
+            { k: "volley", label: "Volley", run: () => addChooseVolley() },
+            { k: "plan", label: "予定", run: () => addChoosePlan() },
+            { k: "saving", label: "節約", run: () => openSaving() }
+        ];
+        PR_RAD_ICONS.volley = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5c-1.5 4 .5 8 5.5 9.5M5 7.5c3.5 2.5 8 2 10.5-2.5M5.5 16.5c2-3.5 6.5-5 10-3.5"></path></svg>`;
+        PR_RAD_ICONS.plan = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path></svg>`;
+        PR_RAD_ICONS.saving = `<b style="font-size:17px;font-weight:800;line-height:1">¥</b>`;
+        const PR_RAD_HOLD = 450;
+        var prRad = null;   // { x, y, sx, sy, timer, open, sel, tap }
+        function prRadAllowed(t) {
+            if (typeof protoOn === "undefined" || !protoOn) return false;
+            const ui = document.getElementById("protoUI");
+            if (!ui || !ui.offsetParent && getComputedStyle(ui).display === "none") return false;
+            if (!t || !t.closest || !t.closest("#protoUI")) return false;
+            if (t.closest("input:not(.pr-hap), textarea, select, [contenteditable]")) return false;
+            return true;
+        }
+        // 扇の並べ方: 左側で押したら右上へ、右側で押したら左上へ(片手の親指で選びやすく、指で隠れない)。上の端に近いときは下向き
+        function prRadLayout(x, y, n) {
+            const W = window.innerWidth, H = window.innerHeight;
+            const step = (n >= 5 ? 27 : 34) * Math.PI / 180, R = Math.max(96, 66 / (2 * Math.sin(step / 2)));
+            const left = x < W / 2, down = y - R < 70;
+            const mid = (left ? -45 : -135) * Math.PI / 180 * (down ? -1 : 1);
+            const angs = Array.from({ length: n }, (_, i) => mid + (i - (n - 1) / 2) * step * (left !== down ? 1 : -1));
+            let cx = x, cy = y;
+            const pts = () => angs.map(a => [cx + R * Math.cos(a), cy + R * Math.sin(a)]);
+            // 画面からはみ出す分だけ、まとめてずらす
+            let ps = pts(), m = 36;
+            const dx = Math.max(0, m - Math.min(...ps.map(p => p[0]))) - Math.max(0, Math.max(...ps.map(p => p[0])) - (W - m));
+            const dy = Math.max(0, m - Math.min(...ps.map(p => p[1]))) - Math.max(0, Math.max(...ps.map(p => p[1])) - (H - m));
+            cx += dx; cy += dy;
+            return { cx, cy, R, angs, step, pts: pts() };
+        }
+        function prRadRender(items, x, y) {
+            const lay = prRadLayout(x, y, items.length);
+            prRad.items = items; prRad.lay = lay; prRad.cx = lay.cx; prRad.cy = lay.cy; prRad.sel = -1;
+            const ui = document.getElementById("protoUI"), cs = getComputedStyle(ui);
+            let ov = document.getElementById("prRadial");
+            if (!ov) { ov = document.createElement("div"); ov.id = "prRadial"; document.body.appendChild(ov); }
+            ov.style.setProperty("--rbg", cs.getPropertyValue("--pr-bg").trim() || "#e9ecf2");
+            ov.style.setProperty("--rink", cs.getPropertyValue("--pr-ink2").trim() || "#4a5262");
+            const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
+            ov.innerHTML = `<div class="prr-back" onclick="prRadClose()"></div><i class="prr-center" style="left:${lay.cx}px;top:${lay.cy}px"></i>` + items.map((it, i) => {
+                const [ix, iy] = lay.pts[i];
+                return `<button type="button" class="prr-item${it.k === "add" ? " main" : ""}" data-i="${i}" style="left:${ix}px;top:${iy}px;--dx:${(lay.cx - ix).toFixed(1)}px;--dy:${(lay.cy - iy).toFixed(1)}px;animation-delay:${i * 18}ms" onclick="prRadClick(${i})" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="prr-badge"></i>` : ""}${prRad && prRad.tap ? protoHapHtml() : ""}</button>`;   // タップで選ぶときは、iPhone でも触覚(透明スイッチ)
+            }).join("");
+            ov.classList.add("open");
+        }
+        function prRadOpen(x, y) {
+            prRad.open = true;
+            protoSkipClick = Date.now();
+            try { protoPressOff(); } catch (e) { /* ignore */ }
+            protoDrag = null;
+            prRadRender(PR_RAD_ITEMS, x, y);
+            try { if (hapOn && navigator.vibrate) navigator.vibrate(10); } catch (e) { /* ignore */ }
+        }
+        // 「追加」の中身(Volley / 予定 / 節約)を、同じ場所に出す(タップで選ぶ)
+        function prRadSub() {
+            const x = prRad ? prRad.cx : (prRadLast ? prRadLast[0] : innerWidth / 2), y = prRad ? prRad.cy : (prRadLast ? prRadLast[1] : innerHeight / 2);
+            prRad = { open: true, tap: true, sel: -1 };
+            prRadRender(PR_RAD_SUB, x, y);
+        }
+        var prRadLast = null;
+        var prRadBottom = false;   // 長押しメニューを下半分で使ったか(予定の入力を下に出す)
+        function prRadPick(x, y) {
+            if (!prRad || !prRad.open) return;
+            const dx = x - prRad.cx, dy = y - prRad.cy, dist = Math.hypot(dx, dy), lay = prRad.lay;
+            let sel = -1;
+            if (dist > 30 && lay) {   // 指の向きにいちばん近い扇のボタン(離れすぎていたら選ばない)
+                const a = Math.atan2(dy, dx); let best = Infinity;
+                lay.angs.forEach((b, i) => { let d = Math.abs(a - b); if (d > Math.PI) d = 2 * Math.PI - d; if (d < best) { best = d; sel = i; } });
+                if (best > lay.step * 0.9) sel = -1;
+            }
+            if (sel !== prRad.sel) {
+                prRad.sel = sel;
+                document.querySelectorAll("#prRadial .prr-item").forEach(b => b.classList.toggle("on", +b.dataset.i === sel));
+                if (sel >= 0) { try { if (hapOn && navigator.vibrate) navigator.vibrate(6); } catch (e) { /* ignore */ } }
+            }
+        }
+        function prRadClose() {
+            const ov = document.getElementById("prRadial"); if (ov) { ov.classList.remove("open"); ov.innerHTML = ""; }
+            prRad = null;
+        }
+        function prRadRun(i) {
+            if (!prRad || prRad.done) return;   // 2回呼ばれても1回だけ(タップと触覚のスイッチの両方から来る)
+            const it = prRad.items ? prRad.items[i] : PR_RAD_ITEMS[i];
+            if (prRad) prRadLast = [prRad.cx, prRad.cy];
+            if (it && it.k === "add" && isAdmin()) { prRadSub(); return; }   // 追加は、その場で中身を出す
+            if (prRad) { prRad.done = true; prRadBottom = prRad.cy > innerHeight / 2; }   // 下半分で選んだら、入力は下に出す
+            prRadClose();
+            if (it) setTimeout(() => { try { it.run(); } catch (e) { console.warn(e); } prRadBottom = false; }, 0);
+        }
+        var prRadTapRunAt = 0;
+        function prRadClick(i) { if (Date.now() - prRadTapRunAt < 600) return; prRadRun(i); }   // 指を離したときに選んだ直後のクリックは無視(サブメニューを二重に押さない)
+        var prRadTap = null;   // 開いたままのメニューをタップしたとき(指を置いた位置)
+        function prRadStart(x, y, t) {
+            if (prRad && prRad.open) { prRadTap = { x, y, t }; return; }
+            if (!prRadAllowed(t)) return;
+            prRad = { sx: x, sy: y, x, y, open: false, sel: -1 };
+            prRad.timer = setTimeout(() => { if (prRad && !prRad.open) prRadOpen(prRad.x, prRad.y); }, PR_RAD_HOLD);
+        }
+        function prRadMove(x, y) {
+            if (!prRad) return false;
+            prRad.x = x; prRad.y = y;
+            if (!prRad.open) { if (Math.hypot(x - prRad.sx, y - prRad.sy) > 10) { clearTimeout(prRad.timer); prRad = null; } return false; }
+            if (prRad.tap) return false;
+            prRadPick(x, y); return true;
+        }
+        function prRadEnd(x, y) {
+            if (!prRad) return false;
+            // 開いたままのメニュー: ボタンの上で指を離したら、その場で選ぶ(タップ1回で確実に反応するように。触覚のスイッチは少し後で鳴らす)
+            if (prRad.open && prRad.tap && prRadTap && x != null && Math.hypot(x - prRadTap.x, y - prRadTap.y) < 12) {
+                const el = document.elementFromPoint(x, y), b = el && el.closest && el.closest("#prRadial .prr-item");
+                prRadTap = null;
+                if (b) { const i = +b.dataset.i, cur = prRad; setTimeout(() => { if (prRad === cur && !cur.done) { prRadTapRunAt = Date.now(); prRadRun(i); } }, 40); }   // クリックが先に来て処理済みなら何もしない
+                return false;
+            }
+            if (!prRad.open) { clearTimeout(prRad.timer); prRad = null; return false; }
+            if (prRad.tap) return false;
+            protoSkipClick = Date.now();
+            if (prRad.sel >= 0) { prRadRun(prRad.sel); return true; }
+            prRad.tap = true;   // 選ばずに離した: 開いたまま、タップで選ぶ
+            setTimeout(() => { if (prRad && prRad.tap && prRad.items) { const it = prRad.items; prRadRender(it, prRad.cx, prRad.cy); document.querySelectorAll("#prRadial .prr-item").forEach(b => { b.style.animation = "none"; }); } }, 0);   // iPhone の触覚用のスイッチを入れる
+            return true;
+        }
+        document.addEventListener("touchstart", e => { if (e.touches.length !== 1) { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } return; } const t = e.touches[0]; prRadStart(t.clientX, t.clientY, e.target); }, { capture: true, passive: true });
+        document.addEventListener("touchmove", e => { if (!prRad) return; const t = e.touches[0]; if (prRadMove(t.clientX, t.clientY)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchend", e => { const t = e.changedTouches && e.changedTouches[0]; if (prRadEnd(t ? t.clientX : null, t ? t.clientY : null)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchcancel", () => { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } }, { capture: true });
+        // マウス(パソコン)でも同じ
+        document.addEventListener("pointerdown", e => { if (e.pointerType === "mouse" && e.button === 0) prRadStart(e.clientX, e.clientY, e.target); }, true);
+        document.addEventListener("pointermove", e => { if (e.pointerType === "mouse" && prRad) prRadMove(e.clientX, e.clientY); }, true);
+        document.addEventListener("pointerup", e => { if (e.pointerType === "mouse" && prRadEnd()) { e.stopPropagation(); } }, true);
+        document.addEventListener("click", e => { if (prRad && prRad.open && !prRad.tap) { e.stopPropagation(); e.preventDefault(); } }, true);
+        document.addEventListener("contextmenu", e => { if (prRad) e.preventDefault(); }, true);
         // 横画面: リングを左の高さいっぱいまで大きくする(カレンダーが1マス40pxより細くならない範囲で)
         function protoLandFit() {
             const wrap = document.querySelector("#protoUI .pr-wrap"), row = document.querySelector("#protoUI .pr-headrow");
@@ -15223,7 +15410,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const cs = getComputedStyle(wrap), padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
             const INFO = 150 + 16 + 40;   // 右の文字の幅 + すき間 + 板の左右の余白
             const byH = row.clientHeight - 4;                                         // 高さいっぱい
-            const byW = wrap.clientWidth - padX - 20 * 2 - 52 - 7 * 40 - INFO;       // カレンダーを 1マス40px は残す
+            const byW = wrap.clientWidth - padX - 20 - 7 * 40 - INFO;       // カレンダーを 1マス40px は残す(下のボタンの列は無い)
             const ring = Math.max(138, Math.min(byH, byW));
             wrap.style.setProperty("--dz", String(ring / 138));
             wrap.style.setProperty("--hw", Math.round(ring + INFO) + "px");
@@ -15447,6 +15634,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return { empty, sd, ed: ed0 && ed0 > sd ? ed0 : "", st: planAllDay ? "" : $op("opStart").value, et: planAllDay ? "" : $op("opEnd").value, allDay: planAllDay, title: [$op("opTitle").value, $op("opMemo").value].filter(Boolean).join(" ") };
         }
         function protoOpenInput(id) {
+            protoPinBottom = prRadBottom && !(window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches); prRadBottom = false;   // 横画面は今のまま
             planDetailId = null; pinShareOpen = false; pinColOpen = false; pinSetOpen = false; pinRange = false; pinGhost = { d: "", h: "" };
             pinEditId = id != null ? id : null;
             const p = pinEditId != null ? planList.find(x => x.id === pinEditId) : null;
@@ -15470,7 +15658,16 @@ const namesBtn = isAdmin() && dates.length > 0
             setTimeout(() => { try { t.focus(); } catch (e) { /* ignore */ } }, 30);
         }
         var protoNtfWatch = false;
+        // 入力を下に出しているときは、試作UIの高さをキーボードの上までにする(入力欄がキーボードのすぐ上に来る)
+        var protoPinBottom = false;
+        function protoVV() {
+            const root = document.getElementById("protoUI"), vv = window.visualViewport; if (!root) return;
+            if (pinOpen && protoPinBottom && vv) { root.style.top = vv.offsetTop + "px"; root.style.height = vv.height + "px"; root.style.bottom = "auto"; }
+            else { root.style.top = ""; root.style.height = ""; root.style.bottom = ""; }
+        }
+        if (window.visualViewport) { visualViewport.addEventListener("resize", protoVV); visualViewport.addEventListener("scroll", protoVV); }
         function protoCloseInput() {
+            protoPinBottom = false;
             pinOpen = false; pinEditId = null; pinShareOpen = false; pinColOpen = false; pinSetOpen = false; pinRange = false;
             planEditId = null; planFormDate = "";
             const [y, m] = selectedDate.split("-").map(Number); protoYM = [y, m];
