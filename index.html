@@ -11248,7 +11248,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const gOf = (a, b) => mateG[a < b ? a + "\u0000" + b : b + "\u0000" + a] || 0;
             // ねらう特徴: 平均の特徴のうち、比べられた試合がいちばん少なく、この日のメンバーで差がつけられるもの
             const { F, P } = whyFactors();
-            const avgF = F.filter(([lb]) => /の平均$|ばらつき/.test(lb));   // 総合は強さの五分とぶつかるので、ねらわない
+            const avgF = F.filter(([lb]) => /の平均$|格差/.test(lb));   // 総合は強さの五分とぶつかるので、ねらわない
             const counts = whyCounts(recs, avgF).filter(x => { const vs = names.map(n => x.f([n])).filter(v => v != null); return vs.length && Math.max(...vs) - Math.min(...vs) >= 1; });
             const target = counts.sort((a, b) => a.n - b.n)[0] || null;
             const units = buildUnits(names.map(teamParticipant)).map(u => u.members.map(m => m.name));
@@ -11277,7 +11277,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function proposeNoteHtml(info) {
             const bits = [];
             if (info.win != null) bits.push(`勝つ見込み ${Math.round(info.win * 100)} : ${100 - Math.round(info.win * 100)}`);
-            if (info.target) bits.push(`${info.target}に差 ${info.tdiff.toFixed(1)}`);
+            if (info.target) bits.push(`${info.target.replace("チーム内格差あり", "チーム内格差")}に差 ${info.tdiff.toFixed(1)}`);
             if (info.fresh) bits.push(`初めて組む2人 ${info.fresh}組`);
             return `<b>提案</b>　${bits.join("　/　")}`;
         }
@@ -11360,7 +11360,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["機動力の平均", t => mean(t, x => x.mob), 0.05],
                 ["特化型の人数", t => cnt(t, x => x.spr >= WHY_SPEC), 1],
                 ["オールラウンダーの人数", t => cnt(t, x => x.spr <= WHY_ALL), 1],
-                ["実力のばらつき", t => sd(t), 0.05],
+                ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
                 ["人数", t => t.length, 1]
             ];
