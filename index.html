@@ -15178,8 +15178,16 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoPressT = 0;
         function protoPressOn(t) { protoPressOff(); const c = t && t.closest && t.closest("#prCal .pr-cell"); if (c) protoPressT = setTimeout(() => c.classList.add("pressing"), 90); }
         function protoPressOff() { clearTimeout(protoPressT); document.querySelectorAll("#prCal .pr-cell.pressing").forEach(c => c.classList.remove("pressing")); }
+        // 画面のいちばん下(iPhone のホームバーのあたり)から始まった指は、アプリの切り替えなどの操作なので、カレンダーは動かさない
+        var protoSafeB = -1;
+        function protoBottomEdge(y) {
+            if (protoSafeB < 0) { const p = document.createElement("div"); p.style.cssText = "position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none"; document.body.appendChild(p); protoSafeB = p.offsetHeight || 0; p.remove(); }
+            return y > innerHeight - Math.max(40, protoSafeB + 22);
+        }
+        addEventListener("orientationchange", () => { protoSafeB = -1; });
         function protoTS(e) {
             if (e.touches.length !== 1) { protoPressOff(); protoTC(); return; }
+            if (protoBottomEdge(e.touches[0].clientY)) { protoDrag = null; return; }
             protoPressOn(e.target);
             const t = e.touches[0];
             protoDrag = { x: t.clientX, y: t.clientY, lock: 0, lx: t.clientX, lt: e.timeStamp, v: 0 };
@@ -15280,6 +15288,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const ui = document.getElementById("protoUI");
             if (!ui || !ui.offsetParent && getComputedStyle(ui).display === "none") return false;
             if (!t || !t.closest || !t.closest("#protoUI")) return false;
+            if (arguments[1] != null && protoBottomEdge(arguments[1])) return false;   // ホームバーのあたりは長押しメニューも出さない
             if (t.closest("input:not(.pr-hap), textarea, select, [contenteditable]")) return false;
             return true;
         }
@@ -15366,7 +15375,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var prRadTap = null;   // 開いたままのメニューをタップしたとき(指を置いた位置)
         function prRadStart(x, y, t) {
             if (prRad && prRad.open) { prRadTap = { x, y, t }; return; }
-            if (!prRadAllowed(t)) return;
+            if (!prRadAllowed(t, y)) return;
             prRad = { sx: x, sy: y, x, y, open: false, sel: -1 };
             prRad.timer = setTimeout(() => { if (prRad && !prRad.open) prRadOpen(prRad.x, prRad.y); }, PR_RAD_HOLD);
         }
