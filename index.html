@@ -2666,6 +2666,25 @@
         .ch-right .settings-btn.panel-on, .ch-right .settings-btn:active { box-shadow: var(--sink); }
         .ch-right .settings-btn.survey-btn.alert { background: var(--bg); box-shadow: var(--raise-xs), 0 0 0 2px #e5484d; }
         /* 設定: 画面いっぱいの重ね表示。いちばん上は誰でも使う設定 */
+        /* 試作UI: 名簿・分析は設定から外して、それぞれ単独の画面で出す(設定パネルの一部だけを見せる) */
+        body.proto-on #settingsPanel:not([data-solo]) #rosterAcc { display: none; }
+        #settingsPanel[data-solo] > :not(.panel-sticky):not(#rosterAcc) { display: none !important; }
+        #settingsPanel[data-solo] #rosterAcc { border: none; background: none; box-shadow: none; }
+        #settingsPanel[data-solo] #rosterAcc > summary { display: none; }
+        #settingsPanel[data-solo] #setSaved { display: none; }
+        #settingsPanel[data-solo="roster"] #rosterStatsAcc { display: none; }
+        #settingsPanel[data-solo="ana"] #rosterAcc .acc-body > :not(#rosterPanel), #settingsPanel[data-solo="ana"] #rosterPanel > :not(#rosterStatsAcc) { display: none !important; }
+        #settingsPanel[data-solo="ana"] #rosterStatsAcc > summary { display: none; }
+        #settingsPanel[data-solo="ana"] #rosterStatsAcc { border: none; background: none; padding: 0; margin: 0; }
+        /* 強さ(パラメータ → 試合結果で補正) */
+        .stg-row { display: grid; grid-template-columns: 4.6em 1fr 2.4em 3em; gap: 8px; align-items: center; min-height: 24px; font-size: 12px; color: var(--ink-2); }
+        .stg-row .rs-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stg-bar { position: relative; height: 14px; border-radius: 4px; background: rgba(128, 128, 128, .1); }
+        .stg-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--ink-3); opacity: .45; }
+        .stg-bar b { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); opacity: .55; }
+        .stg-v { text-align: right; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+        .stg-d { text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+        .stg-d.up { color: var(--accent); }
         #settingsPanel.open { position: fixed; inset: 0; z-index: 9500; margin: 0; border-radius: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
         body.viewer-mode #settingsPanel > :not(.panel-sticky):not(#setTop) { display: none !important; }
         body.viewer-mode #settingsPanel .panel-save { display: none !important; }
@@ -5303,6 +5322,7 @@ await main();
         function toggleSettings() {
             const panel = document.getElementById("settingsPanel");
             const opening = !panel.classList.contains("open");
+            if (!opening) { delete panel.dataset.solo; const h = panel.querySelector(".panel-head h3"); if (h) h.textContent = "設定"; }
             if (!opening) panel.querySelectorAll("details.acc[open]").forEach(d => { d.open = false; });   // 閉じるときは、開いていた項目も閉じる
             if (!opening) panel.scrollTop = 0;
             if (opening) closeOtherPanels("settingsPanel");
@@ -11061,6 +11081,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // 一人ひとりの強さ(チームの強さ = メンバーの強さの合計、その差で勝つ確率が決まるとみなす)を試合から推定する
         // ベースの強さ = 名簿のパラメータ(サーブ・レシーブ・セット・スパイク。機動力の補正込み)の平均。3 が真ん中
+        const CHEM_PULL = 10;   // パラメータへの引っぱりの強さ(試合 約10回ぶん。少ない試合の偶然で大きく動かさない)
         const CHEM_PARAM_W = 0.35;   // パラメータ1の差 → 強さの差(6人のチーム全員が1ずつ上なら、約8割勝つくらい)
         function chemPrior(n) {
             const r = roster.find(x => x.name === n); if (!r) return 0;
@@ -11071,9 +11092,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const st = { ...st0 }, sig = x => 1 / (1 + Math.exp(-x)), cnt = {};
             recs.forEach((r, ri) => { if (skip && skip(r, ri)) return; r.teams.forEach(t => t.forEach(n => { cnt[n] = (cnt[n] || 0) + 1; })); });
             for (let it = 0; it < iters; it++) {
-                const gr = {}; Object.keys(st).forEach(n => { gr[n] = -0.15 * (st[n] - (prior ? prior[n] || 0 : 0)); });   // 試合が少ないうちは、パラメータから決めたベースの強さに引っぱる
+                const gr = {}; Object.keys(st).forEach(n => { gr[n] = -CHEM_PULL * (st[n] - (prior ? prior[n] || 0 : 0)); });   // 試合が少ないうちは、パラメータから決めたベースの強さに引っぱる
                 recs.forEach((r, ri) => { if (skip && skip(r, ri)) return; const p = sig(r.teams[0].reduce((a, n) => a + st[n], 0) - r.teams[1].reduce((a, n) => a + st[n], 0)), e = (r.win === 0 ? 1 : 0) - p; r.teams[0].forEach(n => { gr[n] += e; }); r.teams[1].forEach(n => { gr[n] -= e; }); });
-                Object.keys(st).forEach(n => { st[n] += 0.2 * gr[n] / Math.max(1, cnt[n] || 0); });
+                Object.keys(st).forEach(n => { st[n] += 0.5 * gr[n] / ((cnt[n] || 0) + CHEM_PULL); });
             }
             return st;
         }
@@ -11106,9 +11127,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 const use = [...new Set((byName[a] || []).concat(byName[b] || []))].filter(ri => !set.has(ri));
                 let xa = 0, xb = 0; const ca = Math.max(1, use.filter(ri => side[ri][a]).length), cb = Math.max(1, use.filter(ri => side[ri][b]).length);
                 for (let it = 0; it < 40; it++) {
-                    let ga = -0.15 * (base[a] + xa - prior[a]), gb = -0.15 * (base[b] + xb - prior[b]);
+                    let ga = -CHEM_PULL * (base[a] + xa - prior[a]), gb = -CHEM_PULL * (base[b] + xb - prior[b]);
                     use.forEach(ri => { const sa = side[ri][a] || 0, sb = side[ri][b] || 0, p = sig(D[ri] + sa * xa + sb * xb), e = (recs[ri].win === 0 ? 1 : 0) - p; ga += sa * e; gb += sb * e; });
-                    xa += 0.2 * ga / ca; xb += 0.2 * gb / cb;
+                    xa += 0.5 * ga / (ca + CHEM_PULL); xb += 0.5 * gb / (cb + CHEM_PULL);
                 }
                 let w = 0, e = 0;
                 o.rs.forEach(([ri, k]) => { const r = recs[ri], p0 = sig(D[ri] + (side[ri][a] || 0) * xa + (side[ri][b] || 0) * xb), p = k === 0 ? p0 : 1 - p0, y = r.win === k ? 1 : 0; w += y; e += y - p; });
@@ -11159,7 +11180,18 @@ const namesBtn = isAdmin() && dates.length > 0
                 <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${labels}</svg>${list}
                 <div class="acc-desc rs-note">緑=組むと勝ちやすい / 点線=組むと負けやすい(強さ=名簿のパラメータをベースに試合結果で補正。それを差し引いた差)。太さ=一緒に出た数</div></details>`;
         }
-        var chemOpen = false;
+        var chemOpen = false, stgOpen = false;
+        // 強さ: 名簿のパラメータ(ベース)を、試合結果で補正したもの。パラメータと同じ 1〜5 のものさしで出す
+        function strengthHtml(from) {
+            const { ind, base, prior } = chemData(from);
+            const guests = new Set(roster.filter(r => r.position === GUEST_POS).map(r => r.name));
+            const rows = Object.keys(ind).filter(n => !guests.has(n) && roster.some(r => r.name === n)).map(n => ({ n, g: ind[n].g, v: 3 + (base[n] || 0) / CHEM_PARAM_W, p: 3 + (prior[n] || 0) / CHEM_PARAM_W })).sort((a, b) => b.v - a.v);
+            if (!rows.length) return "";
+            const x = v => Math.max(0, Math.min(100, (v - 1) / 4 * 100)).toFixed(1);
+            return `<details class="note-details chem"${stgOpen ? " open" : ""} ontoggle="stgOpen=this.open"><summary>強さ</summary>
+                <div class="rs-tbl" style="margin-top:8px">${rows.map(r => { const d = r.v - r.p; return `<div class="stg-row"><span class="rs-nm">${escapeHtml(r.n)}</span><span class="stg-bar"><i style="width:${x(r.v)}%"></i><b style="left:${x(r.p)}%"></b></span><span class="stg-v">${r.v.toFixed(1)}</span><span class="stg-d${d > 0.05 ? " up" : ""}">${Math.abs(d) < 0.05 ? "±0" : (d > 0 ? "+" : "−") + Math.abs(d).toFixed(1)}</span></div>`; }).join("")}</div>
+                <div class="acc-desc rs-note">名簿のパラメータ(縦線)をベースに、試合結果で補正した強さ(1〜5)。右は補正の量。強いチームに入って勝っているだけの人は上がりにくい</div></details>`;
+        }
         function setRstat(k, v) { if (k === "p") rstatPeriod = v; else rstatSort = v; renderRosterStats(); }
         function renderRosterStats() {
             const el = document.getElementById("rosterStats"); if (!el) return;
@@ -11175,6 +11207,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="rs-unit">勝率${matchUnitSegHtml()}</div>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
+                ${strengthHtml(rosterStatsFrom())}
                 ${chemHtml(rosterStatsFrom())}
                 <details class="note-details" style="margin-top:10px;" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
                 <div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div>`;
@@ -15424,6 +15457,8 @@ const namesBtn = isAdmin() && dates.length > 0
             today: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"></circle></svg>`,
             cal: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path></svg>`,
             survey: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg>`,
+            roster: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="3"></circle><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"></path><circle cx="16.5" cy="8" r="2.4"></circle><path d="M16 13.2c2.4 0 4 1.4 4.5 4"></path></svg>`,
+            ana: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="16" r="2"></circle><circle cx="12" cy="7" r="2"></circle><circle cx="18" cy="14" r="2"></circle><path d="M7.2 14.3 10.8 8.7M13.6 8.3l3.2 4.2M8 16.2l8-1.7"></path></svg>`,
             settings: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle></svg>`,
             add: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`
         };
@@ -15431,9 +15466,26 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "add", label: "追加", run: () => { if (!isAdmin()) { protoAdd(); return; } prRadSub(); } },   // 管理者は、その場で「Volley / 予定 / 節約」を出す
             { k: "cal", label: "カレンダー", run: () => openBulkAdd() },
             { k: "survey", label: "アンケート", run: () => openSurvey() },
-            { k: "settings", label: "設定", run: () => toggleSettings() },
+            { k: "roster", label: "名簿", adm: true, run: () => protoSolo("roster") },
+            { k: "ana", label: "分析", adm: true, run: () => protoSolo("ana") },
+            { k: "settings", label: "設定", run: () => protoSolo("") },
             { k: "today", label: "Today", run: () => protoToday() }
         ];
+        function prRadItems() { return PR_RAD_ITEMS.filter(it => !it.adm || isAdmin()); }
+        // 設定パネルの一部だけを、単独の画面として開く(""=ふつうの設定 / "roster"=名簿 / "ana"=分析)
+        function protoSolo(kind) {
+            const panel = document.getElementById("settingsPanel"); if (!panel) return;
+            if (panel.classList.contains("open")) toggleSettings();
+            toggleSettings();
+            const h = panel.querySelector(".panel-head h3");
+            if (!kind) return;
+            panel.dataset.solo = kind;
+            if (h) h.textContent = kind === "roster" ? "名簿" : "分析";
+            const acc = document.getElementById("rosterAcc"); if (acc) acc.open = true;
+            if (kind === "roster") { try { renderRosterPanel(); } catch (e) { console.warn(e); } }
+            else { const st = document.getElementById("rosterStatsAcc"); if (st) st.open = true; try { renderRosterStats(); } catch (e) { console.warn(e); } }
+            panel.scrollTop = 0;
+        }
         const PR_RAD_SUB = [
             { k: "volley", label: "Volley", run: () => addChooseVolley() },
             { k: "plan", label: "予定", run: () => addChoosePlan() },
@@ -15489,7 +15541,7 @@ const namesBtn = isAdmin() && dates.length > 0
             protoSkipClick = Date.now();
             try { protoPressOff(); } catch (e) { /* ignore */ }
             protoDrag = null;
-            prRadRender(PR_RAD_ITEMS, x, y);
+            prRadRender(prRadItems(), x, y);
             try { if (hapOn && navigator.vibrate) navigator.vibrate(10); } catch (e) { /* ignore */ }
         }
         // 「追加」の中身(Volley / 予定 / 節約)を、同じ場所に出す(タップで選ぶ)
@@ -15524,7 +15576,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function prRadInItem(t) { return !!(t && t.closest && t.closest("#prRadial .prr-item")); }
         function prRadRun(i) {
             if (!prRad || prRad.done) return;   // 2回呼ばれても1回だけ(タップと触覚のスイッチの両方から来る)
-            const it = prRad.items ? prRad.items[i] : PR_RAD_ITEMS[i];
+            const it = prRad.items ? prRad.items[i] : prRadItems()[i];
             if (prRad) prRadLast = [prRad.cx, prRad.cy];
             if (it && it.k === "add" && isAdmin()) { prRadSub(); return; }   // 追加は、その場で中身を出す
             if (prRad) { prRad.done = true; prRadBottom = prRad.cy > innerHeight / 2; }   // 下半分で選んだら、入力は下に出す
