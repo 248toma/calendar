@@ -14940,8 +14940,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const coin = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 7.5 12 12l3.5-4.5M12 12v5M9 13h6M9 15.5h6"></path></svg>`;
             const sdueHtml = sdue.length ? `<span role="button" tabindex="0" onclick="event.stopPropagation();openSettleDue()" title="精算が終わっていない日${sdue.length > 1 ? `(ほか${sdue.length - 1}日)` : ""}" style="display:inline-flex;align-items:center;gap:2px;margin-left:7px;flex:none;color:${P.red};font-family:${en};font-size:11px;font-weight:700;cursor:pointer">${coin}${nextKey && nextKey !== sel && vv ? "" : `${+sdue[0].slice(5, 7)}/${+sdue[0].slice(8)}`}</span>` : "";   // 「NEXT 11/7」で幅が足りないときはアイコンだけ
             const headHtml = `
-              <div class="pr-head" style="position:relative;border-radius:28px;padding:12px 20px;margin:0 -10px;${raise}">
-                <div class="pr-headrow" style="display:flex;align-items:center;gap:18px;height:${up ? 154 : 146}px">
+              <div class="pr-head" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${raise}">
+                <div class="pr-headrow" style="display:flex;align-items:center;gap:20px;height:${up ? 164 : 158}px">
                   <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${upRing}${hand}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
