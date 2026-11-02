@@ -11118,7 +11118,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const out = [];
             Object.keys(matchesByDate).filter(d => d >= from).forEach(d => {
                 const list = matchesByDate[d] || [];
-                if (matchRateUnit !== "match") { list.forEach(m => { if (m.teams && m.teams.length >= 2 && (m.win === 0 || m.win === 1)) { const sc = chemWinScore(m.diff); out.push({ teams: [m.teams[0], m.teams[1]], win: m.win, diff: +m.diff || 0, y: m.win === 0 ? sc : 1 - sc }); } }); return; }
+                const ctx = [...new Set(list.flatMap(m => (m.teams || []).flat()))];   // その日に試合に出た人(その日の👑を決めるため)
+                if (matchRateUnit !== "match") { list.forEach(m => { if (m.teams && m.teams.length >= 2 && (m.win === 0 || m.win === 1)) { const sc = chemWinScore(m.diff); out.push({ teams: [m.teams[0], m.teams[1]], win: m.win, diff: +m.diff || 0, y: m.win === 0 ? sc : 1 - sc, d, ctx }); } }); return; }
                 const rule = matchRule();
                 matchGroupsOf(list).forEach(g => {
                     const s0 = matchGroupState(g, rule); if (!s0.done) return;
@@ -11129,7 +11130,7 @@ const namesBtn = isAdmin() && dates.length > 0
                         const known = g.games.every(({ m }) => (parseInt(m.diff, 10) || 0) > 0);
                         const net = known ? g.games.reduce((a, { m }) => a + (m.labels[m.win] === s0.win ? 1 : -1) * (parseInt(m.diff, 10) || 0), 0) : 0;
                         const sc = chemWinScore(net > 0 ? net : 0);
-                        out.push({ teams: tm, win: w, diff: net, y: w === 0 ? sc : 1 - sc });
+                        out.push({ teams: tm, win: w, diff: net, y: w === 0 ? sc : 1 - sc, d, ctx });
                     }   // 引き分けは数えない
                 });
             });
@@ -11249,7 +11250,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // ねらう特徴: 平均の特徴のうち、比べられた試合がいちばん少なく、この日のメンバーで差がつけられるもの
             const { F, P } = whyFactors();
             const avgF = F.filter(([lb]) => /の平均$|格差/.test(lb));   // 総合は強さの五分とぶつかるので、ねらわない
-            const counts = whyCounts(recs, avgF).filter(x => { const vs = names.map(n => x.f([n])).filter(v => v != null); return vs.length && Math.max(...vs) - Math.min(...vs) >= 1; });
+            const counts = whyCounts(recs, avgF).filter(x => { const vs = names.map(n => x.f([n], names)).filter(v => v != null); return vs.length && Math.max(...vs) - Math.min(...vs) >= 1; });
             const target = counts.sort((a, b) => a.n - b.n)[0] || null;
             const units = buildUnits(names.map(teamParticipant)).map(u => u.members.map(m => m.name));
             const setters = names.filter(n => (P(n) || {}).setter).length, males = names.filter(n => (P(n) || {}).male).length;
@@ -11266,12 +11267,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (setters >= teamCount) sc += teams.filter(t => !t.some(n => (P(n) || {}).setter)).length;
                 let nov = 0, np = 0; teams.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { nov += 1 / (1 + gOf(t[i], t[j])); np++; } });
                 sc -= 0.8 * nov / Math.max(1, np);
-                if (target) { const v = teams.map(t => target.f(t)); sc -= 1.0 * Math.min(1, (Math.max(...v) - Math.min(...v)) / 0.3); }
+                if (target) { const v = teams.map(t => target.f(t, names)); sc -= 1.0 * Math.min(1, (Math.max(...v) - Math.min(...v)) / 0.3); }
                 if (sc < bestSc) { bestSc = sc; best = teams; }
             }
             const sums = best.map(t => t.reduce((a, n) => a + st(n), 0));
             let fresh = 0; best.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) if (!gOf(t[i], t[j])) fresh++; });
-            const tv = target ? best.map(t => target.f(t)) : null;
+            const tv = target ? best.map(t => target.f(t, names)) : null;
             return { teams: best, info: { win: teamCount === 2 ? 1 / (1 + Math.exp(-(sums[0] - sums[1]))) : null, fresh, target: target ? target.lb : "", tdiff: tv ? Math.max(...tv) - Math.min(...tv) : 0, tn: target ? target.n : 0 } };
         }
         function proposeNoteHtml(info) {
@@ -11292,7 +11293,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // 要因だけから見た勝ちやすさ(総合の差は入れない): 差がついている特徴 × 効き目 の合計
             const wm = whyModel("0000");
             let zw = 0, used = 0;
-            wm.rows.forEach(x => { if (!x.ok) return; const a = x.f(A), b = x.f(B); if (a == null || b == null || a === b) return; zw += x.b * (a - b); used++; });
+            wm.rows.forEach(x => { if (!x.ok) return; const ctx = A.concat(B), a = x.f(A, ctx), b = x.f(B, ctx); if (a == null || b == null || a === b) return; zw += x.b * (a - b); used++; });
             const pWhy = used ? clamp(sig(zw)) : null;
             // 3) 相性: チーム内の2人の相性の平均の差 + 相手との相性(当たると強い・弱い)
             const pk = (a, b) => a < b ? [a, b] : [b, a];
@@ -11341,9 +11342,17 @@ const namesBtn = isAdmin() && dates.length > 0
             const r = roster.find(x => x.name === n); if (!r) return null;
             // 要因の分析は、機動力を混ぜる前の「元の値」で見る(補正後の値はレシーブ・セットに機動力が混ざっていて、項目どうしが似た動きになり切り分けられないため)
             const raw = r.params || {}, v = ROLE_PARAM_DEFS.map(d => raw[d.key] ?? 3), avg = v.reduce((a, b) => a + b, 0) / v.length, spr = Math.max(...v) - Math.min(...v);
-            const o = { avg, spr, mob: (r.params || {}).mobility ?? 3, setter: r.position === "セッター", male: r.gender === "male" };
+            const eff = effectiveParams(r.params || {});
+            const o = { avg, spr, mob: (r.params || {}).mobility ?? 3, setter: r.position === "セッター", male: r.gender === "male", eff };
             ROLE_PARAM_DEFS.forEach((d, i) => { o[d.key] = v[i]; });
             return o;
+        }
+        const whyTopMemo = new Map();
+        function whyTop(ctx, k, P) {   // その日のメンバー(ctx)の中の、キーパラメータ k のいちばん高い値
+            const mk = k + "|" + ctx.join(","); if (whyTopMemo.has(mk)) return whyTopMemo.get(mk);
+            const vs = ctx.map(P).filter(Boolean).map(x => x.eff[k] ?? 3), v = vs.length ? Math.max(...vs) : null;
+            if (whyTopMemo.size > 500) whyTopMemo.clear();
+            whyTopMemo.set(mk, v); return v;
         }
         function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
@@ -11354,7 +11363,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["総合", t => mean(t, x => x.avg), 0.05],
                 ...ROLE_PARAM_DEFS.map(d => [d.label + "の平均", t => mean(t, x => x[d.key]), 0.05]),
                 ["機動力の平均", t => mean(t, x => x.mob), 0.05],
-                ["特化型の人数", t => cnt(t, x => x.spr >= WHY_SPEC), 1],
+                // 👑 = その日のメンバーの中で、キーパラメータ(チーム分けの設定)の値がいちばん高い人(同じ値なら全員)。補正後の値で
+                ...paramRoles.key.map(k => { const d = PARAM_DEFS.find(x => x.key === k); return [(d ? d.label : k) + "👑の人数", (t, ctx) => { const top = whyTop(ctx || t, k, P); return top == null ? null : cnt(t, x => (x.eff[k] ?? 3) === top); }, 1]; }),
                 ["オールラウンダーの人数", t => cnt(t, x => x.spr <= WHY_ALL), 1],
                 ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
@@ -11363,7 +11373,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return { F, prof, P };
         }
         function whyCounts(recs, F) {
-            return F.map(([lb, f, min]) => { let n = 0; recs.forEach(r => { const a = f(r.teams[0]), b = f(r.teams[1]); if (a != null && b != null && Math.abs(a - b) >= min - 1e-9) n++; }); return { lb, f, min, n }; });
+            return F.map(([lb, f, min]) => { let n = 0; recs.forEach(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a != null && b != null && Math.abs(a - b) >= min - 1e-9) n++; }); return { lb, f, min, n }; });
         }
         // 勝ち負けの要因(より正確に): 「ほかの特徴が同じだったとしても」その特徴の差で勝ちやすさが変わるかを、全部の特徴まとめて推定する
         //   勝つ確率の見込み = Σ 特徴ごとの効き目 × その特徴の差   … を、全試合(点差込み)にいちばん合うように決める
@@ -11371,13 +11381,13 @@ const namesBtn = isAdmin() && dates.length > 0
         var whyCache = null;
         const WHY_UNIT = lb => /格差/.test(lb) ? 0.5 : 1;   // 「1高いと / 1人多いと / 格差が0.5大きいと」
         function whyModel(from) {
-            const ck = "why|" + from + "|" + matchRateUnit + "|" + JSON.stringify(matchesByDate).length + "|" + roster.length;
+            const ck = "why|" + from + "|" + matchRateUnit + "|" + JSON.stringify(matchesByDate).length + "|" + roster.length + "|" + paramRoles.key.join(",");
             if (whyCache && whyCache.k === ck) return whyCache.v;
             const recs = chemRecords(from), { F, prof, P } = whyFactors();
             const Fx = F.filter(([lb]) => lb !== "総合");
             const st = n => chemPrior(n);
             const cols = Fx.map(([lb, f, min]) => {
-                let n = 0; const x = recs.map(r => { const a = f(r.teams[0]), b = f(r.teams[1]); if (a == null || b == null) return 0; if (Math.abs(a - b) >= min - 1e-9) n++; return a - b; });
+                let n = 0; const x = recs.map(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a == null || b == null) return 0; if (Math.abs(a - b) >= min - 1e-9) n++; return a - b; });
                 return { lb, f, min, n, x };
             });
             const use = cols.filter(c => c.n >= 5), LAM = 0.25, sig = z => 1 / (1 + Math.exp(-z));
@@ -11404,13 +11414,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const m = whyModel(from); if (m.recs < 5) return "";
             const sp = Object.values(m.prof).filter(Boolean), nSpec = sp.filter(x => x.spr >= WHY_SPEC).length, nAll = sp.filter(x => x.spr <= WHY_ALL).length;
             const ok = m.rows.filter(x => x.ok).sort((a, b) => (Math.abs(b.z) >= 1) - (Math.abs(a.z) >= 1) || Math.abs(b.eff) - Math.abs(a.eff));
-            const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: (x.lb === "特化型の人数" && !nSpec) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
+            const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
             const unitTxt = lb => /人数/.test(lb) ? "1人多い" : /格差/.test(lb) ? "格差0.5大" : "1高い";
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="rs-tbl" style="margin-top:8px">${ok.map(x => { const pct = Math.round(x.eff * 100), up = x.eff >= 0, wv = Math.min(50, Math.abs(x.eff) * 100), sure = Math.abs(x.z) >= 1;
                     return `<div class="stg-row" style="grid-template-columns:9.6em 1fr 3.4em 2.4em;${sure ? "" : "opacity:.45"}"><span class="rs-nm">${escapeHtml(x.lb)}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && sure ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pct > 0 ? "+" : pct < 0 ? "−" : "±"}${Math.abs(pct)}%</span><span class="stg-d">${x.n}</span></div>`; }).join("")}
                 ${ng.map(x => `<div class="stg-row" style="grid-template-columns:9.6em 1fr;color:var(--ink-3)"><span class="rs-nm">${escapeHtml(x.lb)}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
-                <div class="acc-desc rs-note">ほかの特徴が同じだったとして、その特徴が「平均が1高い / 1人多い / 格差が0.5大きい」と、勝つ確率が何%変わるか(点差込み、特徴どうしの重なりは差し引き済み)。薄い行=まだはっきりしない。右端は差がついた試合の数(5試合以上で計算)。特化型=4項目の差が${WHY_SPEC}以上(${nSpec}人)、オールラウンダー=差が${WHY_ALL}以下(${nAll}人)。パラメータは今の名簿の元の値(機動力の補正前)</div></details>`;
+                <div class="acc-desc rs-note">ほかの特徴が同じだったとして、その特徴が「平均が1高い / 1人多い / 格差が0.5大きい」と、勝つ確率が何%変わるか(点差込み、特徴どうしの重なりは差し引き済み)。薄い行=まだはっきりしない。右端は差がついた試合の数(5試合以上で計算)。👑=その日のメンバーの中で、キーパラメータ(補正後)がいちばん高い人(同じ値なら全員)、オールラウンダー=差が${WHY_ALL}以下(${nAll}人)。パラメータは今の名簿の元の値(機動力の補正前)</div></details>`;
         }
         // 強さ: 名簿のパラメータ(ベース)を、試合結果で補正したもの。パラメータと同じ 1〜5 のものさしで出す
         function strengthHtml(from) {
