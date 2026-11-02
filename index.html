@@ -3348,7 +3348,7 @@
         #protoUI .pr-lt-solo > b::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 2.5px; vertical-align: .5px; }
         /* 長押しメニュー(試作UI) */
         body.proto-on #protoUI { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-        #prRadial { position: fixed; inset: 0; z-index: 70; display: none; }
+        #prRadial { position: fixed; inset: 0; z-index: 70; display: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
         #prRadial.open { display: block; }
         #prRadial .prr-back { position: absolute; inset: 0; background: rgba(20, 24, 32, .12); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); animation: prrFade .15s ease-out; }
         #prRadial .prr-center { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--rbg); box-shadow: inset 2px 2px 4px rgba(0,0,0,.18), inset -2px -2px 4px rgba(255,255,255,.7); }
@@ -15273,7 +15273,7 @@ const namesBtn = isAdmin() && dates.length > 0
         PR_RAD_ICONS.volley = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5c-1.5 4 .5 8 5.5 9.5M5 7.5c3.5 2.5 8 2 10.5-2.5M5.5 16.5c2-3.5 6.5-5 10-3.5"></path></svg>`;
         PR_RAD_ICONS.plan = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path></svg>`;
         PR_RAD_ICONS.saving = `<b style="font-size:17px;font-weight:800;line-height:1">¥</b>`;
-        const PR_RAD_HOLD = 450;
+        const PR_RAD_HOLD = 300;
         var prRad = null;   // { x, y, sx, sy, timer, open, sel, tap }
         function prRadAllowed(t) {
             if (typeof protoOn === "undefined" || !protoOn) return false;
@@ -15348,7 +15348,10 @@ const namesBtn = isAdmin() && dates.length > 0
         function prRadClose() {
             const ov = document.getElementById("prRadial"); if (ov) { ov.classList.remove("open"); ov.innerHTML = ""; }
             prRad = null;
+            prRadBlockUntil = Date.now() + 350;   // 閉じた直後のクリックが、後ろのカレンダーに当たらないように
         }
+        var prRadBlockUntil = 0, prRadOut = false;
+        function prRadInItem(t) { return !!(t && t.closest && t.closest("#prRadial .prr-item")); }
         function prRadRun(i) {
             if (!prRad || prRad.done) return;   // 2回呼ばれても1回だけ(タップと触覚のスイッチの両方から来る)
             const it = prRad.items ? prRad.items[i] : PR_RAD_ITEMS[i];
@@ -15387,19 +15390,21 @@ const namesBtn = isAdmin() && dates.length > 0
             if (prRad.tap) return false;
             protoSkipClick = Date.now();
             if (prRad.sel >= 0) { prRadRun(prRad.sel); return true; }
+            prRadBlockUntil = Date.now() + 350;
             prRad.tap = true;   // 選ばずに離した: 開いたまま、タップで選ぶ
             setTimeout(() => { if (prRad && prRad.tap && prRad.items) { const it = prRad.items; prRadRender(it, prRad.cx, prRad.cy); document.querySelectorAll("#prRadial .prr-item").forEach(b => { b.style.animation = "none"; }); } }, 0);   // iPhone の触覚用のスイッチを入れる
             return true;
         }
-        document.addEventListener("touchstart", e => { if (e.touches.length !== 1) { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } return; } const t = e.touches[0]; prRadStart(t.clientX, t.clientY, e.target); }, { capture: true, passive: true });
-        document.addEventListener("touchmove", e => { if (!prRad) return; const t = e.touches[0]; if (prRadMove(t.clientX, t.clientY)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
-        document.addEventListener("touchend", e => { const t = e.changedTouches && e.changedTouches[0]; if (prRadEnd(t ? t.clientX : null, t ? t.clientY : null)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
-        document.addEventListener("touchcancel", () => { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } }, { capture: true });
+        document.addEventListener("touchstart", e => { if (prRad && prRad.open && !prRadInItem(e.target)) { prRadOut = true; e.stopPropagation(); return; } if (e.touches.length !== 1) { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } return; } const t = e.touches[0]; prRadStart(t.clientX, t.clientY, e.target); }, { capture: true, passive: true });
+        document.addEventListener("touchmove", e => { if (!prRad) return; if (prRad.open && prRad.tap) { e.preventDefault(); e.stopPropagation(); return; } const t = e.touches[0]; if (prRadMove(t.clientX, t.clientY)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchend", e => { if (prRadOut) { prRadOut = false; e.preventDefault(); e.stopPropagation(); if (!e.touches.length) prRadClose(); return; } const t = e.changedTouches && e.changedTouches[0]; if (prRadEnd(t ? t.clientX : null, t ? t.clientY : null)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchcancel", () => { prRadOut = false; if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } }, { capture: true });
         // マウス(パソコン)でも同じ
-        document.addEventListener("pointerdown", e => { if (e.pointerType === "mouse" && e.button === 0) prRadStart(e.clientX, e.clientY, e.target); }, true);
+        document.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse" || e.button !== 0) return; if (prRad && prRad.open && !prRadInItem(e.target)) { prRadOut = true; e.stopPropagation(); return; } prRadStart(e.clientX, e.clientY, e.target); }, true);
         document.addEventListener("pointermove", e => { if (e.pointerType === "mouse" && prRad) prRadMove(e.clientX, e.clientY); }, true);
-        document.addEventListener("pointerup", e => { if (e.pointerType === "mouse" && prRadEnd()) { e.stopPropagation(); } }, true);
-        document.addEventListener("click", e => { if (prRad && prRad.open && !prRad.tap) { e.stopPropagation(); e.preventDefault(); } }, true);
+        document.addEventListener("pointerup", e => { if (e.pointerType !== "mouse") return; if (prRadOut) { prRadOut = false; e.stopPropagation(); prRadClose(); return; } if (prRadEnd()) { e.stopPropagation(); } }, true);
+        // メニューが出ている間(と閉じた直後)は、選択肢以外のクリックを後ろに通さない
+        document.addEventListener("click", e => { if (((prRad && prRad.open) || Date.now() < prRadBlockUntil) && !prRadInItem(e.target)) { e.stopPropagation(); e.preventDefault(); } }, true);
         document.addEventListener("contextmenu", e => { if (prRad) e.preventDefault(); }, true);
         // 横画面: リングを左の高さいっぱいまで大きくする(カレンダーが1マス40pxより細くならない範囲で)
         function protoLandFit() {
