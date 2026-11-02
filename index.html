@@ -5568,7 +5568,7 @@ await main();
 
         function paramSelectOptionsHtml(selected) {
             let html = "";
-            for (let v = 1; v <= 5; v++) {
+            for (let v = 1; v <= 10; v++) {   // 10まで選べる(入力済みの値はそのまま)
                 html += `<option value="${v}" ${selected === v ? "selected" : ""}>${v}</option>`;
             }
             return html;
@@ -10300,7 +10300,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const guests = new Set(roster.filter(r => r.position === GUEST_POS).map(r => r.name));
             const rows = Object.keys(ind).filter(n => !guests.has(n) && roster.some(r => r.name === n)).map(n => ({ n, g: ind[n].g, v: 3 + (base[n] || 0) / CHEM_PARAM_W, p: 3 + (prior[n] || 0) / CHEM_PARAM_W })).sort((a, b) => b.v - a.v);
             if (!rows.length) return "";
-            const x = v => Math.max(0, Math.min(100, (v - 1) / 4 * 100)).toFixed(1);
+            const top = Math.max(5, ...rows.map(r => Math.max(r.v, r.p))), x = v => Math.max(0, Math.min(100, (v - 1) / (top - 1) * 100)).toFixed(1);
             return `<details class="note-details chem"${stgOpen ? " open" : ""} ontoggle="stgOpen=this.open"><summary>強さ</summary>
                 <div class="rs-tbl" style="margin-top:8px">${rows.map(r => { const d = r.v - r.p; return `<div class="stg-row"><span class="rs-nm">${escapeHtml(r.n)}</span><span class="stg-bar"><i style="width:${x(r.v)}%"></i><b style="left:${x(r.p)}%"></b></span><span class="stg-v">${r.v.toFixed(1)}</span><span class="stg-d${d > 0.05 ? " up" : ""}">${Math.abs(d) < 0.05 ? "±0" : (d > 0 ? "+" : "−") + Math.abs(d).toFixed(1)}</span></div>`; }).join("")}</div>
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">名簿のパラメータ(縦線)をベースに、試合結果(点差込み)で補正した強さ(1〜5)。右は補正の量。強いチームに入って勝っているだけの人は上がりにくい</div></details></details>`;
