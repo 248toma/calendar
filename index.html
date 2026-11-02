@@ -11076,7 +11076,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 matchGroupsOf(list).forEach(g => {
                     const s0 = matchGroupState(g, rule); if (!s0.done) return;
                     const tm = g.labels.slice(0, 2).map(lb => { const names = new Set(); g.games.forEach(({ m }) => { const k = m.labels.indexOf(lb); if (k >= 0) m.teams[k].forEach(n => names.add(n)); }); return [...names]; });
-                    if (tm.length === 2 && s0.win) { const w = s0.win === g.labels[0] ? 0 : 1; out.push({ teams: tm, win: w, diff: 0, y: w === 0 ? 1 : 0 }); }   // 引き分けは数えない
+                    if (tm.length === 2 && s0.win) {
+                        const w = s0.win === g.labels[0] ? 0 : 1;
+                        // 点差: その試合の全ゲームの点差を、勝ったチームから見て足し引き(入っていないゲームがあれば点差なしとして扱う)
+                        const known = g.games.every(({ m }) => (parseInt(m.diff, 10) || 0) > 0);
+                        const net = known ? g.games.reduce((a, { m }) => a + (m.labels[m.win] === s0.win ? 1 : -1) * (parseInt(m.diff, 10) || 0), 0) : 0;
+                        const sc = chemWinScore(net > 0 ? net : 0);
+                        out.push({ teams: tm, win: w, diff: net, y: w === 0 ? sc : 1 - sc });
+                    }   // 引き分けは数えない
                 });
             });
             return out;
@@ -11201,12 +11208,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const cnt = (t, f) => t.map(P).filter(x => x && f(x)).length;
             const sd = (t) => { const xs = t.map(P).filter(Boolean).map(x => x.avg); if (xs.length < 2) return null; const m = xs.reduce((a, b) => a + b, 0) / xs.length; return Math.sqrt(xs.reduce((a, b) => a + (b - m) * (b - m), 0) / xs.length); };
             const F = [
-                ["総合", t => mean(t, x => x.avg), 0.1],
-                ...ROLE_PARAM_DEFS.map(d => [d.label + "の平均", t => mean(t, x => x[d.key]), 0.1]),
-                ["機動力の平均", t => mean(t, x => x.mob), 0.1],
+                ["総合", t => mean(t, x => x.avg), 0.05],
+                ...ROLE_PARAM_DEFS.map(d => [d.label + "の平均", t => mean(t, x => x[d.key]), 0.05]),
+                ["機動力の平均", t => mean(t, x => x.mob), 0.05],
                 ["特化型の人数", t => cnt(t, x => x.spr >= WHY_SPEC), 1],
                 ["オールラウンダーの人数", t => cnt(t, x => x.spr <= WHY_ALL), 1],
-                ["実力のばらつき", t => sd(t), 0.1],
+                ["実力のばらつき", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
                 ["人数", t => t.length, 1]
             ];
@@ -11214,13 +11221,16 @@ const namesBtn = isAdmin() && dates.length > 0
                 let n = 0, w = 0;
                 recs.forEach(r => { const a = f(r.teams[0]), b = f(r.teams[1]); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return; n++; w += a > b ? r.y : 1 - r.y; });   // 上のチームの勝ちっぷり(点差込み)
                 return { lb, n, r: n ? w / n : 0.5 };
-            }).filter(x => x.n >= 5).sort((a, b) => Math.abs(b.r - 0.5) - Math.abs(a.r - 0.5));
-            if (!rows.length) return "";
-            const sp = Object.values(prof).filter(Boolean);
+            });
+            const sp = Object.values(prof).filter(Boolean), nSpec = sp.filter(x => x.spr >= WHY_SPEC).length, nAll = sp.filter(x => x.spr <= WHY_ALL).length;
+            const ok = rows.filter(x => x.n >= 5).sort((a, b) => Math.abs(b.r - 0.5) - Math.abs(a.r - 0.5));
+            // 比べられなかった特徴: 理由を出す(チーム分けで揃えているので差がつかない / 当てはまる人がいない)
+            const ng = rows.filter(x => x.n < 5).map(x => ({ ...x, why: (x.lb === "特化型の人数" && !nSpec) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
-                <div class="rs-tbl" style="margin-top:8px">${rows.map(x => { const pct = Math.round(x.r * 100), hi = x.r >= 0.5, wv = Math.abs(x.r - 0.5) * 200;
-                    return `<div class="stg-row" style="grid-template-columns:8.5em 1fr 2.8em 2.6em"><span class="rs-nm">${escapeHtml(x.lb)}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${hi ? 50 : 50 - wv / 2}%;width:${wv / 2}%;${hi ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pct}%</span><span class="stg-d">${x.n}</span></div>`; }).join("")}</div>
-                <div class="acc-desc rs-note">その特徴が「上」のチームが勝った割合(点差があれば大差の勝ちほど重く)。50%より右(緑)=多い・高いほうが勝ちやすい、左=少ない・低いほうが勝ちやすい。右端は比べられた試合の数。特化型=4項目の差が${WHY_SPEC}以上(${sp.filter(x => x.spr >= WHY_SPEC).length}人)、オールラウンダー=差が${WHY_ALL}以下(${sp.filter(x => x.spr <= WHY_ALL).length}人)。パラメータは今の名簿の値</div></details>`;
+                <div class="rs-tbl" style="margin-top:8px">${ok.map(x => { const pct = Math.round(x.r * 100), hi = x.r >= 0.5, wv = Math.abs(x.r - 0.5) * 200;
+                    return `<div class="stg-row" style="grid-template-columns:9.6em 1fr 2.8em 2.4em"><span class="rs-nm">${escapeHtml(x.lb)}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${hi ? 50 : 50 - wv / 2}%;width:${wv / 2}%;${hi ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pct}%</span><span class="stg-d">${x.n}</span></div>`; }).join("")}
+                ${ng.map(x => `<div class="stg-row" style="grid-template-columns:9.6em 1fr;color:var(--ink-3)"><span class="rs-nm">${escapeHtml(x.lb)}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
+                <div class="acc-desc rs-note">その特徴が「上」のチームが勝った割合(点差があれば大差の勝ちほど重く)。50%より右(緑)=多い・高いほうが勝ちやすい、左=少ない・低いほうが勝ちやすい。右端は比べられた試合の数(5試合以上で表示)。特化型=4項目の差が${WHY_SPEC}以上(${nSpec}人)、オールラウンダー=差が${WHY_ALL}以下(${nAll}人)。パラメータは今の名簿の値</div></details>`;
         }
         // 強さ: 名簿のパラメータ(ベース)を、試合結果で補正したもの。パラメータと同じ 1〜5 のものさしで出す
         function strengthHtml(from) {
@@ -11231,7 +11241,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const x = v => Math.max(0, Math.min(100, (v - 1) / 4 * 100)).toFixed(1);
             return `<details class="note-details chem"${stgOpen ? " open" : ""} ontoggle="stgOpen=this.open"><summary>強さ</summary>
                 <div class="rs-tbl" style="margin-top:8px">${rows.map(r => { const d = r.v - r.p; return `<div class="stg-row"><span class="rs-nm">${escapeHtml(r.n)}</span><span class="stg-bar"><i style="width:${x(r.v)}%"></i><b style="left:${x(r.p)}%"></b></span><span class="stg-v">${r.v.toFixed(1)}</span><span class="stg-d${d > 0.05 ? " up" : ""}">${Math.abs(d) < 0.05 ? "±0" : (d > 0 ? "+" : "−") + Math.abs(d).toFixed(1)}</span></div>`; }).join("")}</div>
-                <div class="acc-desc rs-note">名簿のパラメータ(縦線)をベースに、試合結果で補正した強さ(1〜5)。右は補正の量。強いチームに入って勝っているだけの人は上がりにくい</div></details>`;
+                <div class="acc-desc rs-note">名簿のパラメータ(縦線)をベースに、試合結果(点差込み)で補正した強さ(1〜5)。右は補正の量。強いチームに入って勝っているだけの人は上がりにくい</div></details>`;
         }
         function setRstat(k, v) { if (k === "p") rstatPeriod = v; else rstatSort = v; renderRosterStats(); }
         function renderRosterStats() {
