@@ -15119,8 +15119,17 @@ const namesBtn = isAdmin() && dates.length > 0
             b.title = o.title || "出欠の回答";
         }
         // 同じ日をもう一度押すと: バレーの日はバレーの画面、それ以外はその日の予定の入力
+        // 指の動きを覚えておく(iPhone の透明スイッチは、指をすべらせても切り替わって「押した」ことになるため)
+        var protoFing = { y: 0, moved: 0, edge: false, at: 0 };
+        document.addEventListener("touchstart", e => { const t = e.touches[0]; if (!t || e.touches.length !== 1) return; protoFing = { x: t.clientX, y: t.clientY, moved: 0, edge: protoBottomEdge(t.clientY), at: Date.now() }; }, { capture: true, passive: true });
+        document.addEventListener("touchmove", e => { const t = e.touches[0]; if (!t) return; protoFing.moved = Math.max(protoFing.moved, Math.hypot(t.clientX - protoFing.x, t.clientY - protoFing.y)); }, { capture: true, passive: true });
+        var protoBackAt = 0;
+        document.addEventListener("visibilitychange", () => { protoBackAt = Date.now(); });
+        addEventListener("pageshow", () => { protoBackAt = Date.now(); });
         function protoPick(k) {
             if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
+            if (Date.now() - protoFing.at < 2000 && (protoFing.edge || protoFing.moved > 12)) return;   // ホームバーから上げた・指をすべらせた(タップではない)
+            if (Date.now() - protoBackAt < 700) return;   // アプリに戻ってきた直後
             protoHaptic();   // 日付を押したら「トン」(iPhone はマスに重ねた透明スイッチが鳴らす)
             protoPressK = k; protoPressAt = Date.now();   // 描き直したあとも、押したマスがふわっと戻るように
             if (pinOpen) {   // 入力中: 押した日が予定の日(→ を押したあとは終わりの日)
