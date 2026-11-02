@@ -15060,21 +15060,20 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             // 入力中のヘッダー: ふだんのヘッダーと同じ並び(左に文字盤、右に文字)。入力欄は線だけの1行
             const headPin = `
-              <div style="height:236px;box-sizing:border-box;border-radius:28px;padding:16px 18px 14px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
+              <div style="position:relative;height:${up ? 204 : 198}px;box-sizing:border-box;border-radius:28px;padding:16px 20px 12px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
                 <div style="display:flex;align-items:center;gap:18px;flex:1;min-height:0">
                   <div id="prPinDial" style="flex:none">${pinDialH}</div>
                   <div style="display:flex;flex-direction:column;min-width:0;flex:1">
-                    <div style="display:flex;align-items:center;height:18px">
-                      <span style="flex:1"></span>
-                      <button type="button" aria-label="閉じる" onclick="protoCloseInput()" style="width:26px;height:26px;margin-right:-6px;display:flex;align-items:center;justify-content:center;color:${P.ink3}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+                    <div style="position:absolute;top:10px;right:14px">
+                      <button type="button" aria-label="閉じる" onclick="protoCloseInput()" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:${P.ink3}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                     </div>
-                    <div id="prPinLine" style="height:36px;display:flex;align-items:center;border-bottom:1.5px solid ${pinLine}">
+                    <div id="prPinLine" style="height:34px;margin-right:22px;display:flex;align-items:center;border-bottom:1.5px solid ${pinLine}">
                       <input id="pinT" class="pin-in" type="text" enterkeyhint="next" autocomplete="off" spellcheck="false" aria-label="題名" placeholder="タイトル" oninput="pinInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();document.getElementById('pinH').focus();}">
                     </div>
                     <div style="height:30px;margin-top:6px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="3"></rect><path d="M4 10h16M9 3.5v4M15 3.5v4"></path></svg>
                       <div id="prPinInfo" style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;color:${P.ink}">${pinInfo}</div>
                     </div>
-                    <div style="height:30px;margin:6px 0 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5V12l3 2"></path></svg>
+                    <div style="height:30px;margin:6px 0 4px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5V12l3 2"></path></svg>
                       <div style="position:relative;flex:1;min-width:0;height:100%;color:${P.ink}"><input id="pinH" class="pin-in" type="text" inputmode="numeric" maxlength="8" placeholder="17001800" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="時間(4桁ずつ: 17001800 = 17:00-18:00。空なら終日)" oninput="pinInput()" onblur="pinTidy('h')" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();this.blur();pinSave();}"><span id="pinHG" style="position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.06em;color:${P.ink3};pointer-events:none;white-space:nowrap">${pinGhost.h}</span></div>
                     </div>
                   </div>
