@@ -11060,11 +11060,18 @@ const namesBtn = isAdmin() && dates.length > 0
             return out;
         }
         // 一人ひとりの強さ(チームの強さ = メンバーの強さの合計、その差で勝つ確率が決まるとみなす)を試合から推定する
-        function chemFit(recs, st0, iters, skip) {
+        // ベースの強さ = 名簿のパラメータ(サーブ・レシーブ・セット・スパイク。機動力の補正込み)の平均。3 が真ん中
+        const CHEM_PARAM_W = 0.35;   // パラメータ1の差 → 強さの差(6人のチーム全員が1ずつ上なら、約8割勝つくらい)
+        function chemPrior(n) {
+            const r = roster.find(x => x.name === n); if (!r) return 0;
+            const e = effectiveParams(r.params || {}), vs = ROLE_PARAM_DEFS.map(d => e[d.key] ?? 3);
+            return (vs.reduce((a, b) => a + b, 0) / vs.length - 3) * CHEM_PARAM_W;
+        }
+        function chemFit(recs, st0, iters, skip, prior) {
             const st = { ...st0 }, sig = x => 1 / (1 + Math.exp(-x)), cnt = {};
             recs.forEach((r, ri) => { if (skip && skip(r, ri)) return; r.teams.forEach(t => t.forEach(n => { cnt[n] = (cnt[n] || 0) + 1; })); });
             for (let it = 0; it < iters; it++) {
-                const gr = {}; Object.keys(st).forEach(n => { gr[n] = -0.15 * st[n]; });   // 極端な値にならないよう、0 に引っぱる
+                const gr = {}; Object.keys(st).forEach(n => { gr[n] = -0.15 * (st[n] - (prior ? prior[n] || 0 : 0)); });   // 試合が少ないうちは、パラメータから決めたベースの強さに引っぱる
                 recs.forEach((r, ri) => { if (skip && skip(r, ri)) return; const p = sig(r.teams[0].reduce((a, n) => a + st[n], 0) - r.teams[1].reduce((a, n) => a + st[n], 0)), e = (r.win === 0 ? 1 : 0) - p; r.teams[0].forEach(n => { gr[n] += e; }); r.teams[1].forEach(n => { gr[n] -= e; }); });
                 Object.keys(st).forEach(n => { st[n] += 0.2 * gr[n] / Math.max(1, cnt[n] || 0); });
             }
@@ -11078,9 +11085,11 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function chemDataCalc(from) {
             const recs = chemRecords(from), ind = {}, st0 = {};
-            recs.forEach(r => r.teams.forEach((t, k) => t.forEach(n => { const o = ind[n] || (ind[n] = { g: 0, w: 0 }); o.g++; if (k === r.win) o.w++; st0[n] = 0; })));
+            const prior = {};
+            recs.forEach(r => r.teams.forEach((t, k) => t.forEach(n => { const o = ind[n] || (ind[n] = { g: 0, w: 0 }); o.g++; if (k === r.win) o.w++; if (!(n in prior)) prior[n] = chemPrior(n); st0[n] = prior[n]; })));
             const sig = x => 1 / (1 + Math.exp(-x)), K = 3, MIN = 3;
-            const base = chemFit(recs, st0, 200);
+            // パラメータをベースに、試合結果で補正した強さ(パラメータは弱いけど、強いチームに入って勝っているだけの人は上がりすぎない)
+            const base = chemFit(recs, st0, 200, null, prior);
             const pr = (st, r) => sig(r.teams[0].reduce((a, n) => a + st[n], 0) - r.teams[1].reduce((a, n) => a + st[n], 0));
             // 2人の組ごとに: その2人が「一緒にいない」試合だけで強さを出し直し、それで予想した勝つ確率と実際の差(少ない回数は 0 寄り)
             const key = (a, b) => a < b ? a + "\u0000" + b : b + "\u0000" + a, mate = {}, vs = {};
@@ -11097,7 +11106,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const use = [...new Set((byName[a] || []).concat(byName[b] || []))].filter(ri => !set.has(ri));
                 let xa = 0, xb = 0; const ca = Math.max(1, use.filter(ri => side[ri][a]).length), cb = Math.max(1, use.filter(ri => side[ri][b]).length);
                 for (let it = 0; it < 40; it++) {
-                    let ga = -0.15 * (base[a] + xa), gb = -0.15 * (base[b] + xb);
+                    let ga = -0.15 * (base[a] + xa - prior[a]), gb = -0.15 * (base[b] + xb - prior[b]);
                     use.forEach(ri => { const sa = side[ri][a] || 0, sb = side[ri][b] || 0, p = sig(D[ri] + sa * xa + sb * xb), e = (recs[ri].win === 0 ? 1 : 0) - p; ga += sa * e; gb += sb * e; });
                     xa += 0.2 * ga / ca; xb += 0.2 * gb / cb;
                 }
@@ -11107,11 +11116,11 @@ const namesBtn = isAdmin() && dates.length > 0
             };
             const pairs = Object.values(mate).filter(o => o.rs.length >= MIN).map(score);
             const rivals = Object.values(vs).filter(o => o.rs.length >= MIN).map(score);
-            return { ind, pairs, rivals, games: recs.length };
+            return { ind, pairs, rivals, games: recs.length, base, prior };
         }
         function chemFocusSet(n) { chemFocus = chemFocus === n ? "" : n; renderRosterStats(); }
         function chemHtml(from) {
-            const { ind, pairs, rivals } = chemData(from);
+            const { ind, pairs, rivals, base, prior } = chemData(from);
             const guests = new Set(roster.filter(r => r.position === GUEST_POS).map(r => r.name));
             const names = Object.keys(ind).filter(n => !guests.has(n) && pairs.some(p => p.a === n || p.b === n));
             if (names.length < 3) return `<details class="note-details chem"><summary>相性</summary><div class="acc-desc">一緒に3回以上試合をした組が増えると、ここに出ます。</div></details>`;
@@ -11139,7 +11148,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 const tough = rv.filter(x => x.c < -0.01).sort((a, b) => a.c - b.c).slice(0, 2), easy = rv.filter(x => x.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 2);
                 const it = (x, cls) => `<div><span>${escapeHtml(x.n)}</span><b class="${cls}">${pct(x.c)}</b><small>${x.w}-${x.g - x.w}</small></div>`;
                 const sec = (t, arr, cls) => arr.length ? `<h5>${t}</h5>${arr.map(x => it(x, cls)).join("")}` : "";
-                list = `<div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">まだ目立った相性はありません</div>`);
+                const gap = (base[f] || 0) - (prior[f] || 0), gl = gap > 0.12 ? "パラメータより強い" : gap < -0.12 ? "パラメータより弱い" : "パラメータどおり";
+                list = `<div class="chem-hint">${escapeHtml(f)}　<b style="color:var(--ink-2)">${gl}</b></div><div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">まだ目立った相性はありません</div>`);
             } else {
                 const top = pairs.filter(p => p.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 4);
                 list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${pct(p.c)}</b><small>${p.w}-${p.g - p.w}</small></div>`).join("")}</div>` : "";
@@ -11147,7 +11157,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             return `<details class="note-details chem"${chemOpen ? " open" : ""} ontoggle="chemOpen=this.open"><summary>相性</summary>
                 <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${labels}</svg>${list}
-                <div class="acc-desc rs-note">緑=組むと勝ちやすい / 点線=組むと負けやすい(一人ひとりの強さを差し引いた差)。太さ=一緒に出た数</div></details>`;
+                <div class="acc-desc rs-note">緑=組むと勝ちやすい / 点線=組むと負けやすい(強さ=名簿のパラメータをベースに試合結果で補正。それを差し引いた差)。太さ=一緒に出た数</div></details>`;
         }
         var chemOpen = false;
         function setRstat(k, v) { if (k === "p") rstatPeriod = v; else rstatSort = v; renderRosterStats(); }
