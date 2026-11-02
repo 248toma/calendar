@@ -3358,6 +3358,13 @@
         #settingsPanel .mob-in-roster[open] > summary { border-bottom: 1px solid var(--line); }
         #settingsPanel .mob-in-roster .mob-wrap { padding: 8px 16px 14px !important; }
         #settingsPanel .mob-in-roster .note-details { border: none; background: none; box-shadow: none; }
+        .why-help { padding: 10px 2px 4px; font-size: 12.5px; line-height: 1.7; color: var(--ink-2); }
+        .why-help h6 { margin: 14px 0 4px; font-size: 12px; font-weight: 800; color: var(--ink); letter-spacing: .04em; }
+        .why-help h6:first-child { margin-top: 0; }
+        .why-help p { margin: 0 0 8px; }
+        .why-help ul { margin: 0 0 8px; padding-left: 1.2em; }
+        .why-help li { margin: 0 0 4px; }
+        .why-help b { color: var(--ink); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -10210,9 +10217,8 @@ const namesBtn = isAdmin() && dates.length > 0
         const WHY_SPEC = 1.5, WHY_ALL = 0.6;   // 特化型 = 4項目の最大と最小の差が 1.5 以上 / オールラウンダー = 差が 0.6 以下
         function whyProfile(n) {
             const r = roster.find(x => x.name === n); if (!r) return null;
-            // 要因の分析は、機動力を混ぜる前の「元の値」で見る(補正後の値はレシーブ・セットに機動力が混ざっていて、項目どうしが似た動きになり切り分けられないため)
-            const raw = r.params || {}, v = ROLE_PARAM_DEFS.map(d => raw[d.key] ?? 3), avg = v.reduce((a, b) => a + b, 0) / v.length, spr = Math.max(...v) - Math.min(...v);
-            const eff = effectiveParams(r.params || {});
+            // 分析では、チーム分けと同じ「機動力の補正を入れた値」を使う(機動力そのものは元の値)
+            const eff = effectiveParams(r.params || {}), v = ROLE_PARAM_DEFS.map(d => eff[d.key] ?? 3), avg = v.reduce((a, b) => a + b, 0) / v.length, spr = Math.max(...v) - Math.min(...v);
             const o = { avg, spr, mob: (r.params || {}).mobility ?? 3, setter: r.position === "セッター", male: r.gender === "male", eff };
             ROLE_PARAM_DEFS.forEach((d, i) => { o[d.key] = v[i]; });
             return o;
@@ -10226,6 +10232,20 @@ const namesBtn = isAdmin() && dates.length > 0
             if (whyChampMemo.size > 500) whyChampMemo.clear();
             whyChampMemo.set(mk, v); return v;
         }
+        // その日のメンバー(ctx)の中で、項目 k が単独で最下位の人(同率の最下位なら null)
+        function whyWorst(ctx, k, P) {
+            const mk = "w|" + k + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
+            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.eff[k] ?? 3]).sort((a, b) => a[1] - b[1]);
+            const v = vs.length && (vs.length === 1 || vs[0][1] < vs[1][1]) ? vs[0][0] : null;
+            whyChampMemo.set(mk, v); return v;
+        }
+        // その日のメンバー(ctx)の中で、項目 k が低い順の2人(2番目と同じ値の人も含む)
+        function whyBottom2(ctx, k, P) {
+            const mk = "b|" + k + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
+            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.eff[k] ?? 3]).sort((a, b) => a[1] - b[1]);
+            const v = vs.length >= 3 ? new Set(vs.filter(x => x[1] <= vs[1][1]).map(x => x[0])) : null;
+            whyChampMemo.set(mk, v); return v;
+        }
         function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
             const mean = (t, f) => { const xs = t.map(P).filter(Boolean).map(f); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
@@ -10237,6 +10257,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["機動力の平均", t => mean(t, x => x.mob), 0.05],
                 // その日のメンバーの中のスパイク1位・セット1位(同率は除く。キーパラメータの設定とは関係なし)が、そのチームにいるか
                 ...[["spike", "スパイク"], ["set", "セット"]].map(([k, lb]) => [lb + "1位がいる", (t, ctx) => { const c = whyChamp(ctx || t, k, P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1]),
+                // その日のレシーブ最下位(同率は除く)がいるか / レシーブが低い順の2人(2番目と同じ値の人も含む)のうち2人以上が同じチームか
+                ["レシーブ最下位がいる", (t, ctx) => { const c = whyWorst(ctx || t, "receive", P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1],
+                ["レシーブ下位2人が同じチーム", (t, ctx) => { const b = whyBottom2(ctx || t, "receive", P); return b == null ? null : (t.filter(n => b.has(n)).length >= 2 ? 1 : 0); }, 1],
                 ["オールラウンダーの人数", t => cnt(t, x => x.spr <= WHY_ALL), 1],
                 ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
@@ -10264,16 +10287,29 @@ const namesBtn = isAdmin() && dates.length > 0
             });
             const use = cols.filter(c => c.n >= 5), LAM = 0.25, sig = z => 1 / (1 + Math.exp(-z));
             const off = recs.map(() => 0);   // 総合は入れず、各項目をまとめて推定(ほかの項目が同じだったら、で比べる)
-            const beta = use.map(() => 0);
-            let H = use.map(() => LAM);
-            for (let it = 0; it < 120; it++) {
+            // ニュートン法(項目どうしの重なりもまとめて解く。少し0に寄せて、重なりが大きくても暴れないように)
+            const K = use.length, beta = use.map(() => 0);
+            const solve = (A, bv) => {   // 連立方程式 A x = b(ガウスの消去法)
+                const n = bv.length, M = A.map((r, i) => r.concat([bv[i]]));
+                for (let c = 0; c < n; c++) {
+                    let piv = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+                    [M[c], M[piv]] = [M[piv], M[c]];
+                    const d = M[c][c] || 1e-9;
+                    for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / d; if (f) for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; }
+                }
+                return M.map((r, i) => r[n] / (r[i] || 1e-9));
+            };
+            let Hm = null;
+            for (let it = 0; it < 30; it++) {
                 const p = recs.map((r, ri) => sig(off[ri] + use.reduce((a, c, k) => a + beta[k] * c.x[ri], 0)));
-                use.forEach((c, k) => {
-                    let g = -LAM * beta[k], h = LAM;
-                    recs.forEach((r, ri) => { g += (r.y - p[ri]) * c.x[ri]; h += p[ri] * (1 - p[ri]) * c.x[ri] * c.x[ri]; });
-                    beta[k] += 0.5 * g / h; H[k] = h;
-                });
+                const g = use.map((c, k) => -LAM * beta[k] + recs.reduce((a, r, ri) => a + (r.y - p[ri]) * c.x[ri], 0));
+                Hm = use.map((ck, a) => use.map((cl, b) => (a === b ? LAM : 0) + recs.reduce((t, r, ri) => t + p[ri] * (1 - p[ri]) * ck.x[ri] * cl.x[ri], 0)));
+                const step = solve(Hm, g);
+                let mx = 0; step.forEach((d, k) => { beta[k] += d; mx = Math.max(mx, Math.abs(d)); });
+                if (mx < 1e-6) break;
             }
+            // ばらつき(標準誤差): 逆行列の対角
+            const H = use.map((_, k) => { const e = use.map((__, j) => j === k ? 1 : 0), col = K ? solve(Hm, e) : []; return 1 / Math.max(1e-9, col[k]); });
             const rows = cols.map(c => { const k = use.indexOf(c); if (k < 0) return { lb: c.lb, n: c.n, ok: false };
                 const u = WHY_UNIT(c.lb), b = beta[k], se = 1 / Math.sqrt(H[k]);
                 return { lb: c.lb, n: c.n, ok: true, b, se, z: b / se, eff: sig(b * u) - 0.5, f: c.f };
@@ -10282,17 +10318,54 @@ const namesBtn = isAdmin() && dates.length > 0
             whyCache = { k: ck, v };
             return v;
         }
+        // 「勝ち負けの要因」の説明(「?」を押すと出る)
+        const WHY_HELP = `<div class="why-help">
+            <h6>何がわかるか</h6>
+            <p>「どんなチームが勝ちやすいか」を、これまでの試合の記録から探します。たとえば「スパイク1位がいるチームは勝ちやすい?」「レシーブが低い人が固まると負けやすい?」を、数字で確かめます。</p>
+            <h6>数字の読み方</h6>
+            <ul>
+                <li><b>+15%</b> … その特徴があると(平均なら1高いと)、五分五分の試合が <b>50% → 65%</b> の勝ちやすさになる、という意味です。</li>
+                <li><b>−10%</b> … 逆に <b>50% → 40%</b> に下がる(負けやすくなる)。</li>
+                <li><b>緑で右へ</b>=有利、<b>灰色で左へ</b>=不利。棒が長いほど効き目が大きい。</li>
+                <li><b>濃い行</b>=はっきりしている。<b>薄い行</b>=まだはっきりしない(たまたまの可能性が高い)。薄い行の数字は、あまり信じないでください。</li>
+                <li><b>右端の数字</b>=その特徴で2チームに差がついた試合の数。少ないほど当てになりません(5試合未満は計算しない)。</li>
+            </ul>
+            <h6>どう計算しているか</h6>
+            <p><b>① 試合ごとに、2チームの特徴を比べる</b><br>例: チーム1のレシーブ平均 4.2、チーム2は 3.6 → 差は +0.6。スパイク1位はチーム1にいる → +1。</p>
+            <p><b>② 勝ち負けを「どれだけはっきり勝ったか」にする</b><br>点差があれば、大差の勝ちほど重く数えます(1点差の勝ちはほぼ互角、10点差はほぼ完勝)。点差がないゲームは、ふつうの勝ちとして数えます。</p>
+            <p><b>③ 全部の特徴を、まとめて同時に当てはめる</b><br>「勝ちやすさ = スパイク1位の効き目×差 + レシーブ平均の効き目×差 + …」という式を作り、すべての試合の結果にいちばん合うように、それぞれの効き目を決めます。</p>
+            <p><b>なぜ「まとめて」なのか</b><br>特徴どうしは重なっています。たとえば、レシーブが低い2人がいるチームは、レシーブの平均も低くなります。1つずつ数えると、本当はどちらが効いているのか分かりません。まとめて当てはめると、<b>「ほかの特徴が同じだったとしても、その特徴だけでどれだけ変わるか」</b>に切り分けられます。</p>
+            <p><b>④ データが少ないうちは控えめに</b><br>効き目は少しだけ0に寄せています。数試合の偶然で、極端な数字が出ないようにするためです。そのぶん、試合がたまるほど本当の効き目に近づきます。</p>
+            <h6>それぞれの特徴</h6>
+            <ul>
+                <li><b>〇〇の平均</b> … チームの平均(機動力の補正を入れた値)。平均が1高いと何%か。</li>
+                <li><b>スパイク1位・セット1位がいる</b> … その日来たメンバーの中で、その項目が単独1位の人がいるか。同率1位の日は数えない。</li>
+                <li><b>レシーブ最下位がいる</b> … その日のメンバーで、レシーブが単独で一番低い人がいるか。</li>
+                <li><b>レシーブ下位2人が同じチーム</b> … その日のレシーブが低い順の2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。</li>
+                <li><b>チーム内格差あり</b> … チームの中の実力差(強い人と弱い人の差)。格差が1大きいと何%か。</li>
+                <li><b>オールラウンダーの人数</b> … 4項目の差が小さい人(${WHY_ALL}以下)が何人いるか。</li>
+                <li><b>セッターの人数</b> … 名簿の希望ポジションがセッターの人の数(セットの値とは別)。</li>
+            </ul>
+            <h6>読み解くときのコツ</h6>
+            <ul>
+                <li>まず<b>濃い行だけ</b>を見る。薄い行は「まだ分からない」。</li>
+                <li>灰色の行(「差がつかない」「比べられない」)は、チーム分けでいつも揃っているなどで、比べる材料がないもの。チーム分けの「提案」を使うと、比べる材料が増えます。</li>
+                <li>これは「一緒に起きやすい」ことを示すもので、原因だと決めつけるものではありません。気になる結果は、チーム分けで確かめてみてください。</li>
+                <li>パラメータは今の名簿の値で見ています。途中で名簿を変えると、昔の試合も今の値で判断されます。</li>
+                <li>期間(3か月など)と「ゲーム/試合」の切り替えで、使う試合が変わります。</li>
+            </ul>
+        </div>`;
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
             const sp = Object.values(m.prof).filter(Boolean), nSpec = sp.filter(x => x.spr >= WHY_SPEC).length, nAll = sp.filter(x => x.spr <= WHY_ALL).length;
             const ok = m.rows.filter(x => x.ok).sort((a, b) => (Math.abs(b.z) >= 1) - (Math.abs(a.z) >= 1) || Math.abs(b.eff) - Math.abs(a.eff));
-            const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: /1位がいる/.test(x.lb) ? "1位が同率の日ばかりで比べられない" : (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
-            const unitTxt = lb => /1位がいる/.test(lb) ? "いる" : /人数/.test(lb) ? "1人多い" : /格差/.test(lb) ? "格差0.5大" : "1高い";
+            const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "その日の下位2人が分かれてばかりで比べられない" : (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
+            const unitTxt = lb => /がいる|同じチーム/.test(lb) ? "いる" : /人数/.test(lb) ? "1人多い" : /格差/.test(lb) ? "格差0.5大" : "1高い";
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="rs-tbl" style="margin-top:8px">${ok.map(x => { const pct = Math.round(x.eff * 100), up = x.eff >= 0, wv = Math.min(50, Math.abs(x.eff) * 100), sure = Math.abs(x.z) >= 1;
                     return `<div class="stg-row" style="grid-template-columns:9.6em 1fr 3.4em 2.4em;${sure ? "" : "opacity:.45"}"><span class="rs-nm">${escapeHtml(x.lb)}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && sure ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pct > 0 ? "+" : pct < 0 ? "−" : "±"}${Math.abs(pct)}%</span><span class="stg-d">${x.n}</span></div>`; }).join("")}
                 ${ng.map(x => `<div class="stg-row" style="grid-template-columns:9.6em 1fr;color:var(--ink-3)"><span class="rs-nm">${escapeHtml(x.lb)}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ほかの特徴が同じだったとして、その特徴が「平均が1高い / 1人多い / 1位がいる / 格差が0.5大きい」と、勝つ確率が何%変わるか(点差込み、特徴どうしの重なりは差し引き済み)。薄い行=まだはっきりしない。右端は差がついた試合の数(5試合以上で計算)。「1位がいる」=その日のメンバーの中でスパイク・セット(補正後)が単独1位の人がいるチーム(同率1位の日は数えない)、オールラウンダー=差が${WHY_ALL}以下(${nAll}人)。パラメータは今の名簿の元の値(機動力の補正前)</div></details></details>`;
+                <details class="rs-help"><summary>?</summary>${WHY_HELP}</details></details>`;
         }
         // 強さ: 名簿のパラメータ(ベース)を、試合結果で補正したもの。パラメータと同じ 1〜5 のものさしで出す
         function strengthHtml(from) {
@@ -14201,6 +14274,8 @@ const namesBtn = isAdmin() && dates.length > 0
         // カレンダーの予定の線がマスからはみ出す日は、入るぶんだけ出して、残りの数をマスの右上に「+N」(画面が小さい端末向け)
         function protoFitCells() {
             if (!protoCalPlans) return;
+            const cal = document.getElementById("prCal");
+            if (!cal || !cal.offsetHeight) return;   // 画面が隠れている間(設定などを開いているとき)は測れないので、何もしない(戻ったときに描き直す)
             document.querySelectorAll("#prCal .pr-cell").forEach(c => {
                 const box = c.querySelector(".pr-lts"); if (!box) return;
                 const bottom = c.getBoundingClientRect().bottom - 1;
@@ -14946,8 +15021,16 @@ const namesBtn = isAdmin() && dates.length > 0
         (function initProtoUI() {
             const host = document.createElement("div"); host.id = "protoUI"; document.body.appendChild(host);
             // 設定・名簿などのパネルが見えている間は、試作UIを引っこめて今の画面を出す
-            const sync = () => { const open = [...document.querySelectorAll(".settings-panel.open, .roster-panel.open, .copy-panel.open")].some(e => e.offsetHeight > 0); document.body.classList.toggle("proto-panel", open); };
+            const sync = () => {
+                const open = [...document.querySelectorAll(".settings-panel.open, .roster-panel.open, .copy-panel.open")].some(e => e.offsetHeight > 0);
+                const was = document.body.classList.contains("proto-panel");
+                document.body.classList.toggle("proto-panel", open);
+                if (was && !open) renderProto();   // 戻ってきたら、隠れていた間の表示を描き直す
+            };
             const mo = new MutationObserver(() => requestAnimationFrame(sync));
+            // バレー画面・入力などで隠れていた画面が、また見えるようになったら描き直す(隠れている間は大きさを測れないため)
+            let shown = true;
+            new MutationObserver(() => requestAnimationFrame(() => { const v = host.offsetHeight > 0; if (v && !shown) renderProto(); shown = v; })).observe(document.body, { attributes: true, attributeFilter: ["class"] });
             document.querySelectorAll(".settings-panel, .roster-panel, .copy-panel").forEach(e => mo.observe(e, { attributes: true, attributeFilter: ["class"] }));
             setProtoUI(protoOn);
             // 文字(フォント)がそろって、画面が実際に描かれてから、リングの動きを始める
