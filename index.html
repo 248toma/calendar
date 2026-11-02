@@ -10217,12 +10217,14 @@ const namesBtn = isAdmin() && dates.length > 0
             ROLE_PARAM_DEFS.forEach((d, i) => { o[d.key] = v[i]; });
             return o;
         }
-        const whyTopMemo = new Map();
-        function whyTop(ctx, k, P) {   // その日のメンバー(ctx)の中の、キーパラメータ k のいちばん高い値
-            const mk = k + "|" + ctx.join(","); if (whyTopMemo.has(mk)) return whyTopMemo.get(mk);
-            const vs = ctx.map(P).filter(Boolean).map(x => x.eff[k] ?? 3), v = vs.length ? Math.max(...vs) : null;
-            if (whyTopMemo.size > 500) whyTopMemo.clear();
-            whyTopMemo.set(mk, v); return v;
+        // その日のメンバー(ctx)の中で、項目 k(補正後の値)が単独で1位の人。同率の1位なら null(その日は1位なし)
+        const whyChampMemo = new Map();
+        function whyChamp(ctx, k, P) {
+            const mk = k + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
+            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.eff[k] ?? 3]).sort((a, b) => b[1] - a[1]);
+            const v = vs.length && (vs.length === 1 || vs[0][1] > vs[1][1]) ? vs[0][0] : null;
+            if (whyChampMemo.size > 500) whyChampMemo.clear();
+            whyChampMemo.set(mk, v); return v;
         }
         function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
@@ -10233,8 +10235,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["総合", t => mean(t, x => x.avg), 0.05],
                 ...ROLE_PARAM_DEFS.map(d => [d.label + "の平均", t => mean(t, x => x[d.key]), 0.05]),
                 ["機動力の平均", t => mean(t, x => x.mob), 0.05],
-                // 👑 = その日のメンバーの中で、キーパラメータ(チーム分けの設定)の値がいちばん高い人(同じ値なら全員)。補正後の値で
-                ...paramRoles.key.map(k => { const d = PARAM_DEFS.find(x => x.key === k); return [(d ? d.label : k) + "👑の人数", (t, ctx) => { const top = whyTop(ctx || t, k, P); return top == null ? null : cnt(t, x => (x.eff[k] ?? 3) === top); }, 1]; }),
+                // その日のメンバーの中のスパイク1位・セット1位(同率は除く。キーパラメータの設定とは関係なし)が、そのチームにいるか
+                ...[["spike", "スパイク"], ["set", "セット"]].map(([k, lb]) => [lb + "1位がいる", (t, ctx) => { const c = whyChamp(ctx || t, k, P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1]),
                 ["オールラウンダーの人数", t => cnt(t, x => x.spr <= WHY_ALL), 1],
                 ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
@@ -10284,13 +10286,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const m = whyModel(from); if (m.recs < 5) return "";
             const sp = Object.values(m.prof).filter(Boolean), nSpec = sp.filter(x => x.spr >= WHY_SPEC).length, nAll = sp.filter(x => x.spr <= WHY_ALL).length;
             const ok = m.rows.filter(x => x.ok).sort((a, b) => (Math.abs(b.z) >= 1) - (Math.abs(a.z) >= 1) || Math.abs(b.eff) - Math.abs(a.eff));
-            const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
-            const unitTxt = lb => /人数/.test(lb) ? "1人多い" : /格差/.test(lb) ? "格差0.5大" : "1高い";
+            const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: /1位がいる/.test(x.lb) ? "1位が同率の日ばかりで比べられない" : (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
+            const unitTxt = lb => /1位がいる/.test(lb) ? "いる" : /人数/.test(lb) ? "1人多い" : /格差/.test(lb) ? "格差0.5大" : "1高い";
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="rs-tbl" style="margin-top:8px">${ok.map(x => { const pct = Math.round(x.eff * 100), up = x.eff >= 0, wv = Math.min(50, Math.abs(x.eff) * 100), sure = Math.abs(x.z) >= 1;
                     return `<div class="stg-row" style="grid-template-columns:9.6em 1fr 3.4em 2.4em;${sure ? "" : "opacity:.45"}"><span class="rs-nm">${escapeHtml(x.lb)}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && sure ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pct > 0 ? "+" : pct < 0 ? "−" : "±"}${Math.abs(pct)}%</span><span class="stg-d">${x.n}</span></div>`; }).join("")}
                 ${ng.map(x => `<div class="stg-row" style="grid-template-columns:9.6em 1fr;color:var(--ink-3)"><span class="rs-nm">${escapeHtml(x.lb)}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ほかの特徴が同じだったとして、その特徴が「平均が1高い / 1人多い / 格差が0.5大きい」と、勝つ確率が何%変わるか(点差込み、特徴どうしの重なりは差し引き済み)。薄い行=まだはっきりしない。右端は差がついた試合の数(5試合以上で計算)。👑=その日のメンバーの中で、キーパラメータ(補正後)がいちばん高い人(同じ値なら全員)、オールラウンダー=差が${WHY_ALL}以下(${nAll}人)。パラメータは今の名簿の元の値(機動力の補正前)</div></details></details>`;
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ほかの特徴が同じだったとして、その特徴が「平均が1高い / 1人多い / 1位がいる / 格差が0.5大きい」と、勝つ確率が何%変わるか(点差込み、特徴どうしの重なりは差し引き済み)。薄い行=まだはっきりしない。右端は差がついた試合の数(5試合以上で計算)。「1位がいる」=その日のメンバーの中でスパイク・セット(補正後)が単独1位の人がいるチーム(同率1位の日は数えない)、オールラウンダー=差が${WHY_ALL}以下(${nAll}人)。パラメータは今の名簿の元の値(機動力の補正前)</div></details></details>`;
         }
         // 強さ: 名簿のパラメータ(ベース)を、試合結果で補正したもの。パラメータと同じ 1〜5 のものさしで出す
         function strengthHtml(from) {
@@ -14284,6 +14286,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function prRadRender(items, x, y) {
             const lay = prRadLayout(x, y, items.length);
             prRad.items = items; prRad.lay = lay; prRad.cx = lay.cx; prRad.cy = lay.cy; prRad.sel = -1;
+            prRad.ox = x; prRad.oy = y;   // 指を置いた場所(扇は画面に収めるためにずれることがあるので、選ぶときはここから見る)
             const ui = document.getElementById("protoUI"), cs = getComputedStyle(ui);
             let ov = document.getElementById("prRadial");
             if (!ov) { ov = document.createElement("div"); ov.id = "prRadial"; document.body.appendChild(ov); }
@@ -14314,12 +14317,19 @@ const namesBtn = isAdmin() && dates.length > 0
         var prRadBottom = false;   // 長押しメニューを下半分で使ったか(予定の入力を下に出す)
         function prRadPick(x, y) {
             if (!prRad || !prRad.open) return;
-            const dx = x - prRad.cx, dy = y - prRad.cy, dist = Math.hypot(dx, dy), lay = prRad.lay;
+            // 指を置いた場所から見て: 指を動かした向きにいちばん近いボタン。ボタンの近くまで動かしたら、いちばん近いボタン
+            const ox = prRad.ox != null ? prRad.ox : prRad.cx, oy = prRad.oy != null ? prRad.oy : prRad.cy;
+            const dx = x - ox, dy = y - oy, dist = Math.hypot(dx, dy), lay = prRad.lay;
             let sel = -1;
-            if (dist > 30 && lay) {   // 指の向きにいちばん近い扇のボタン(離れすぎていたら選ばない)
-                const a = Math.atan2(dy, dx); let best = Infinity;
-                lay.angs.forEach((b, i) => { let d = Math.abs(a - b); if (d > Math.PI) d = 2 * Math.PI - d; if (d < best) { best = d; sel = i; } });
-                if (best > lay.step * 0.9) sel = -1;
+            if (dist > 28 && lay) {
+                const a = Math.atan2(dy, dx); let best = Infinity, near = Infinity, nearI = -1;
+                lay.pts.forEach(([px, py], i) => {
+                    let d = Math.abs(a - Math.atan2(py - oy, px - ox)); if (d > Math.PI) d = 2 * Math.PI - d;
+                    if (d < best) { best = d; sel = i; }
+                    const dd = Math.hypot(x - px, y - py); if (dd < near) { near = dd; nearI = i; }
+                });
+                if (near < 40) sel = nearI;   // ボタンの上(近く)まで来ていたら、そのボタン
+                else if (best > 0.45) sel = -1;   // 向きがどのボタンからも外れている
             }
             if (sel !== prRad.sel) {
                 prRad.sel = sel;
