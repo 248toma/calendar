@@ -2852,6 +2852,21 @@
         .chem-list div b.g { color: var(--accent); }
         .chem-list div b.b { color: var(--ink-3); }
         .chem-list div small { font-size: 10px; color: var(--ink-3); }
+        .prop-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+        .prop-teams h5 { margin: 0 0 4px; font-size: 10.5px; color: var(--ink-3); font-weight: 700; }
+        .prop-teams span { display: block; font-size: 12.5px; line-height: 1.7; color: var(--ink); }
+        .prop-info { margin-top: 8px; font-size: 11px; color: var(--ink-2); }
+        #teamProposeNote b { color: var(--ink); }
+        .tpred:empty { display: none; }
+        .tpred { margin: 6px 2px 4px; display: flex; flex-direction: column; gap: 5px; }
+        .tpred-row { display: grid; grid-template-columns: 3.2em 1fr 4.6em; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
+        .tpred-row b { color: var(--ink-2); font-weight: 700; }
+        .tpred-bar { position: relative; height: 6px; border-radius: 3px; background: rgba(128,128,128,.14); overflow: hidden; }
+        .tpred-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink-3); opacity: .55; }
+        .tpred-bar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--bg); }
+        .tpred-v { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); font-weight: 700; }
+        .tpred-v.na { font-weight: 400; color: var(--ink-3); }
+        .tpred-h { font-size: 10.5px; font-weight: 700; color: var(--ink-3); letter-spacing: .04em; }
         .chem-hint { text-align: center; font-size: 11px; color: var(--ink-3); margin-top: 2px; }
         .rs-row { display: grid; grid-template-columns: 4.6em 1fr 1fr 1fr; gap: 6px; align-items: center; min-height: 26px; font-size: 12px; color: var(--ink-2); }
         .rs-head { font-size: 11px; color: var(--ink-3); }
@@ -4490,9 +4505,12 @@ await main();
                 </label>
                 <button type="button" class="tchip admin-only" id="hideParamsBtn" onclick="toggleHideTeamParams()" title="コートの数値を隠す" aria-pressed="false"><i class="ic ic-eyeoff"></i></button>
                 <button type="button" class="tchip" id="teamResetBtn" onclick="resetTeamSplit()" title="リセット" style="display:none;"><i class="ic ic-undo"></i></button>
+                <button type="button" class="tchip admin-only" id="teamProposeBtn" onclick="runTeamPropose()" title="提案(分析に役立つ分け方)" aria-label="提案"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"></path></svg></button>
                 <button type="button" class="tchip team-sync-btn admin-only" id="teamSyncBtn" onclick="syncTeamSplit()" title="このチーム分けを、ほかの管理者の端末にも出す" style="display:none;"><i class="ic ic-refresh"></i></button>
             </div>
             <div class="tsync-note" id="teamSyncNote"></div>
+            <div class="tsync-note" id="teamProposeNote" style="display:none"></div>
+            <div class="tpred admin-only" id="teamPredict"></div>
 
             <div class="team-legend" id="teamLegend" style="display:none;">
                 <span class="key-mark-legend" id="keyMarkLegend"></span>
@@ -9769,6 +9787,7 @@ await main();
             teamForgetLocal(selectedDate);   // 同期されたチーム分けも、この端末では出さない
             lastTeamSplitResult = null;
             swapSel = null; swapNotice = "";
+            { const nt = document.getElementById("teamProposeNote"); if (nt) nt.style.display = "none"; }
             renderTeamSplitTab(); // 結果・警告・予測・ボタンの表示を初期状態に戻す
             flushPendingRemote();
         }
@@ -9840,10 +9859,37 @@ await main();
             document.getElementById("teamRerunBtn").style.display = "block";
             document.getElementById("teamResetBtn").style.display = "block";
             updateSwapUi();
+            { const nt = document.getElementById("teamProposeNote"); if (nt) nt.style.display = "none"; }
             predictSplitPatterns(); // 分けるたびに必ず予測して、結果を表示する
             scrollBelowHeader(document.getElementById("teamsView"), 4); // 結果が見えるようにスクロール
         }
 
+        // ------- 提案: 分析に役立つチーム分け(強さは五分のまま、まだデータの少ない組み合わせ・特徴の差を作る) -------
+        function runTeamPropose() {
+            if (!realAdmin()) return;
+            if (lastTeamSplitResult && lastTeamSplitResult.manualEdited && !confirm("手動で入れ替えた結果は破棄されます。提案の分け方にしますか?")) return;
+            const outSet = new Set(teamOutGet(selectedDate));
+            const names = (attendanceByDate[selectedDate] || []).filter(mm => mm.status === "来る" && !outSet.has(mm.name)).map(mm => mm.name);
+            if (names.some(n => !findRosterByName(n))) { alert("名簿未登録のメンバーがいます。"); return; }
+            const el = document.getElementById("teamCountInput"), teamCount = Math.max(2, Math.min(8, parseInt(el && el.value, 10) || 2));
+            if (names.length < teamCount * 2) { alert("人数が足りません。"); return; }
+            swapSel = null; swapNotice = "";
+            const pr = proposeSplit(names, teamCount);
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) teamPastAdd(selectedDate, lastTeamSplitResult.teams.map(t => t.map(p => p.name)));
+            const teams = pr.teams.map(t => t.map(teamParticipant));
+            lastTeamSplitResult = { teams, excludedKeys: [], dateKey: selectedDate, ignoreParams, lineups: teams.map(arrangeTeamLineup), at: Date.now(), proposed: true };
+            lastTeamSplitResult.round = lastTeamSplitResult.at;   // 新しい試合の組
+            lastTeamSplitResult.history = recordTeamSplitHistory(teams, ignoreParams);
+            renderDupWarning(lastTeamSplitResult.history);
+            renderTeamResults();
+            document.getElementById("teamSplitBtn").style.display = "none";
+            document.getElementById("teamRerunBtn").style.display = "block";
+            document.getElementById("teamResetBtn").style.display = "block";
+            updateSwapUi();
+            const note = document.getElementById("teamProposeNote");
+            if (note) { note.style.display = ""; note.innerHTML = proposeNoteHtml(pr.info); }
+            scrollBelowHeader(document.getElementById("teamsView"), 4);
+        }
         // 次回の「チームを分ける」から反映される(表示中の結果は変わらない)
         function applyHideTeamParams() {
             let on = false;
@@ -10018,6 +10064,7 @@ await main();
             try { teamPersistLocal(); } catch (e) { console.warn(e); }
             try { renderMatchBox(); } catch (e) { console.warn(e); }
             try { renderTeamSyncUi(); } catch (e) { console.warn(e); }
+            try { renderTeamPredict(); } catch (e) { console.warn(e); }
             const resultsEl = document.getElementById("teamResults");
             if (!lastTeamSplitResult) { resultsEl.innerHTML = ""; return; }
             const { teams } = lastTeamSplitResult;
@@ -11189,7 +11236,108 @@ const namesBtn = isAdmin() && dates.length > 0
                 <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${labels}</svg>${list}
                 <div class="acc-desc rs-note">緑=組むと勝ちやすい / 点線=組むと負けやすい(強さ=名簿のパラメータをベースに試合結果で補正。それを差し引いた差)。太さ=一緒に出た数</div></details>`;
         }
-        var chemOpen = false, stgOpen = false, whyOpen = false;
+        var chemOpen = false, stgOpen = false, whyOpen = false, propOpen = false;
+        // 提案の分け方を作る: 強さ(パラメータ+試合結果)の合計はほぼ五分のまま、
+        //   ① 一緒の試合がまだ少ない2人を同じチームに(相性のデータを増やす)
+        //   ② 比べられた試合が少ない特徴(例: レシーブの平均)に、わざと差をつける(要因のデータを増やす)
+        //   ペア設定・男女の人数・セッターはなるべく揃える
+        function proposeSplit(names, teamCount) {
+            const { base, prior } = chemData("0000"), recs = chemRecords("0000");
+            const st = n => n in base ? base[n] : (n in prior ? prior[n] : chemPrior(n));
+            const mateG = {}; recs.forEach(r => r.teams.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { const k = t[i] < t[j] ? t[i] + "\u0000" + t[j] : t[j] + "\u0000" + t[i]; mateG[k] = (mateG[k] || 0) + 1; } }));
+            const gOf = (a, b) => mateG[a < b ? a + "\u0000" + b : b + "\u0000" + a] || 0;
+            // ねらう特徴: 平均の特徴のうち、比べられた試合がいちばん少なく、この日のメンバーで差がつけられるもの
+            const { F, P } = whyFactors();
+            const avgF = F.filter(([lb]) => /の平均$|ばらつき/.test(lb));   // 総合は強さの五分とぶつかるので、ねらわない
+            const counts = whyCounts(recs, avgF).filter(x => { const vs = names.map(n => x.f([n])).filter(v => v != null); return vs.length && Math.max(...vs) - Math.min(...vs) >= 1; });
+            const target = counts.sort((a, b) => a.n - b.n)[0] || null;
+            const units = buildUnits(names.map(teamParticipant)).map(u => u.members.map(m => m.name));
+            const setters = names.filter(n => (P(n) || {}).setter).length, males = names.filter(n => (P(n) || {}).male).length;
+            const size = names.length / teamCount;
+            let best = null, bestSc = Infinity;
+            for (let tries = 0; tries < 3000; tries++) {
+                const us = units.slice().sort(() => Math.random() - 0.5), teams = Array.from({ length: teamCount }, () => []);
+                us.forEach(u => { let ti = 0; for (let i = 1; i < teamCount; i++) if (teams[i].length < teams[ti].length) ti = i; teams[ti].push(...u); });
+                if (teams.some(t => Math.abs(t.length - size) > 1)) continue;
+                const sums = teams.map(t => t.reduce((a, n) => a + st(n), 0)), mean = sums.reduce((a, b) => a + b, 0) / teamCount;
+                const dv = sums.reduce((a, x) => a + (x - mean) * (x - mean), 0);
+                let sc = 6 * dv + 60 * Math.max(0, Math.sqrt(dv) - 0.12) ** 2;   // 強さは五分(勝つ見込みが 45:55 を超えて偏る分け方は強く避ける)
+                const ml = teams.map(t => t.filter(n => (P(n) || {}).male).length); sc += 0.5 * ml.reduce((a, x) => a + (x - males / teamCount) ** 2, 0);
+                if (setters >= teamCount) sc += teams.filter(t => !t.some(n => (P(n) || {}).setter)).length;
+                let nov = 0, np = 0; teams.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { nov += 1 / (1 + gOf(t[i], t[j])); np++; } });
+                sc -= 0.8 * nov / Math.max(1, np);
+                if (target) { const v = teams.map(t => target.f(t)); sc -= 1.0 * Math.min(1, (Math.max(...v) - Math.min(...v)) / 0.3); }
+                if (sc < bestSc) { bestSc = sc; best = teams; }
+            }
+            const sums = best.map(t => t.reduce((a, n) => a + st(n), 0));
+            let fresh = 0; best.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) if (!gOf(t[i], t[j])) fresh++; });
+            const tv = target ? best.map(t => target.f(t)) : null;
+            return { teams: best, info: { win: teamCount === 2 ? 1 / (1 + Math.exp(-(sums[0] - sums[1]))) : null, fresh, target: target ? target.lb : "", tdiff: tv ? Math.max(...tv) - Math.min(...tv) : 0, tn: target ? target.n : 0 } };
+        }
+        function proposeNoteHtml(info) {
+            const bits = [];
+            if (info.win != null) bits.push(`勝つ見込み ${Math.round(info.win * 100)} : ${100 - Math.round(info.win * 100)}`);
+            if (info.target) bits.push(`${info.target}に差 ${info.tdiff.toFixed(1)}`);
+            if (info.fresh) bits.push(`初めて組む2人 ${info.fresh}組`);
+            return `<b>提案</b>　${bits.join("　/　")}`;
+        }
+        // ------- 勝率の予想(チームAがチームBに勝つ確率): 強さ / 勝敗の要因 / 相性 の3つ -------
+        function predictMatch(A, B) {
+            const sig = x => 1 / (1 + Math.exp(-x)), lg = p => Math.log(p / (1 - p)), clamp = p => Math.max(0.03, Math.min(0.97, p));
+            const { base, prior, pairs, rivals, games } = chemData("0000");
+            const st = n => n in base ? base[n] : (n in prior ? prior[n] : chemPrior(n));
+            // 1) 強さ: 強さの合計の差
+            const pStr = sig(A.reduce((a, n) => a + st(n), 0) - B.reduce((a, n) => a + st(n), 0));
+            // 2) 勝敗の要因: 差がついている特徴ごとに、過去「その特徴が上のチーム」が勝った割合を、試合数で控えめにして足し合わせる
+            const recs = chemRecords("0000"), { F } = whyFactors();
+            let zw = 0, used = 0;
+            F.forEach(([lb, f, min]) => {
+                const a = f(A), b = f(B); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return;
+                let n = 0, w = 0; recs.forEach(r => { const x = f(r.teams[0]), y = f(r.teams[1]); if (x == null || y == null || Math.abs(x - y) < min - 1e-9) return; n++; w += x > y ? r.y : 1 - r.y; });
+                if (n < 5) return;
+                const rr = (w + 0.5 * 10) / (n + 10);   // 試合が少ないほど 5割寄り
+                zw += (a > b ? 1 : -1) * lg(rr); used++;
+            });
+            const pWhy = used ? clamp(sig(zw / Math.sqrt(used))) : null;   // 特徴どうしは重なっているので、数で割って控えめに
+            // 3) 相性: チーム内の2人の相性の平均の差 + 相手との相性(当たると強い・弱い)
+            const pk = (a, b) => a < b ? [a, b] : [b, a];
+            const pm = {}; pairs.forEach(p => { pm[p.a + "\u0000" + p.b] = p.c; });
+            const rm = {}; rivals.forEach(o => { rm[o.a + "\u0000" + o.b] = o.c; });
+            const inner = t => { let s0 = 0, n = 0; for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { const [x, y] = pk(t[i], t[j]), c = pm[x + "\u0000" + y]; if (c != null) { s0 += c; n++; } } return { s: n ? s0 / n : 0, n }; };
+            const ia = inner(A), ib = inner(B);
+            let rs = 0, rn = 0; A.forEach(x => B.forEach(z => { const [a, b] = pk(x, z), c = rm[a + "\u0000" + b]; if (c != null) { rs += a === x ? c : -c; rn++; } }));
+            const nChem = ia.n + ib.n + rn;
+            const pChem = nChem >= 3 ? clamp(0.5 + (ia.s - ib.s) / 2 + (rn ? rs / rn : 0) / 2) : null;
+            return { str: games ? pStr : pStr, why: pWhy, chem: pChem, games };
+        }
+        function renderTeamPredict() {
+            const el = document.getElementById("teamPredict"); if (!el) return;
+            const r = lastTeamSplitResult;
+            if (!r || !r.teams || r.teams.length < 2 || !realAdmin()) { el.innerHTML = ""; return; }
+            const T = r.teams.map(t => t.map(p => p.name));
+            const pairsIdx = []; for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) pairsIdx.push([i, j]);
+            const row = (lb, p) => `<div class="tpred-row"><span>${lb}</span><span class="tpred-bar">${p == null ? "" : `<i style="width:${(p * 100).toFixed(1)}%"></i>`}</span><span class="tpred-v${p == null ? " na" : ""}">${p == null ? "データ不足" : `${Math.round(p * 100)} : ${100 - Math.round(p * 100)}`}</span></div>`;
+            el.innerHTML = pairsIdx.slice(0, 3).map(([i, j]) => { const p = predictMatch(T[i], T[j]);
+                return `${T.length > 2 || true ? `<div class="tpred-h">予想　チーム${i + 1} 対 チーム${j + 1}</div>` : ""}${row("強さ", p.str)}${row("要因", p.why)}${row("相性", p.chem)}`; }).join("");
+        }
+        // 分析: 次のバレーの「来る」メンバーで、提案の分け方を見せる
+        var propCache = null;
+        function proposeNextHtml() {
+            const today = formatDateKey(new Date());
+            const d = Object.keys(events).filter(k => events[k] && k >= today && (attendanceByDate[k] || []).some(m => m.status === "来る")).sort()[0];
+            if (!d) return "";
+            const outSet = new Set(teamOutGet(d));
+            const names = (attendanceByDate[d] || []).filter(m => m.status === "来る" && !outSet.has(m.name) && findRosterByName(m.name)).map(m => m.name);
+            if (names.length < 4) return "";
+            const key = d + "|" + names.join(",");
+            if (!propCache || propCache.key !== key) propCache = { key, pr: proposeSplit(names, 2) };
+            const { pr } = propCache, [, mm, dd] = d.split("-").map(Number);
+            return `<details class="note-details chem"${propOpen ? " open" : ""} ontoggle="propOpen=this.open"><summary>チーム分けの提案(${mm}/${dd}・${names.length}人)</summary>
+                <div class="prop-teams">${pr.teams.map((t, i) => `<div><h5>チーム${i + 1}</h5>${t.map(n => `<span>${escapeHtml(n)}</span>`).join("")}</div>`).join("")}</div>
+                <div class="prop-info">${proposeNoteHtml(pr.info)}</div>
+                <div style="text-align:right;margin-top:6px"><button type="button" class="st-btn" onclick="propCache=null;renderRosterStats()">別の案</button></div>
+                <div class="acc-desc rs-note">強さは五分のまま、まだデータの少ない組み合わせや特徴の差を作る分け方。その日のチーム分け画面の電球のボタンで、この考え方の分け方にできます</div></details>`;
+        }
         // ------- 勝ち負けの要因: どんなチームが勝っているか -------
         // 1試合ごとに、2チームの「特徴」を比べて、その特徴が上のチームが勝った割合を出す(点差があれば、はっきり勝ったほど重く)
         // 特徴は今の名簿のパラメータから(過去にパラメータを変えていても、今の値で見る)
@@ -11201,8 +11349,7 @@ const namesBtn = isAdmin() && dates.length > 0
             ROLE_PARAM_DEFS.forEach((d, i) => { o[d.key] = v[i]; });
             return o;
         }
-        function whyHtml(from) {
-            const recs = chemRecords(from); if (recs.length < 5) return "";
+        function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
             const mean = (t, f) => { const xs = t.map(P).filter(Boolean).map(f); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
             const cnt = (t, f) => t.map(P).filter(x => x && f(x)).length;
@@ -11217,6 +11364,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
                 ["人数", t => t.length, 1]
             ];
+            return { F, prof, P };
+        }
+        function whyCounts(recs, F) {
+            return F.map(([lb, f, min]) => { let n = 0; recs.forEach(r => { const a = f(r.teams[0]), b = f(r.teams[1]); if (a != null && b != null && Math.abs(a - b) >= min - 1e-9) n++; }); return { lb, f, min, n }; });
+        }
+        function whyHtml(from) {
+            const recs = chemRecords(from); if (recs.length < 5) return "";
+            const { F, prof } = whyFactors();
             const rows = F.map(([lb, f, min]) => {
                 let n = 0, w = 0;
                 recs.forEach(r => { const a = f(r.teams[0]), b = f(r.teams[1]); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return; n++; w += a > b ? r.y : 1 - r.y; });   // 上のチームの勝ちっぷり(点差込み)
@@ -11258,6 +11413,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="rs-unit">勝率${matchUnitSegHtml()}</div>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
+                ${proposeNextHtml()}
                 ${strengthHtml(rosterStatsFrom())}
                 ${whyHtml(rosterStatsFrom())}
                 ${chemHtml(rosterStatsFrom())}
