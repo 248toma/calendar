@@ -10151,12 +10151,19 @@ const namesBtn = isAdmin() && dates.length > 0
             const gain = x => { let q = 0; for (let a = 0; a < K; a++) { if (!x[a]) continue; let t = 0; for (let b = 0; b < K; b++) t += inv[a][b] * x[b]; q += x[a] * t; } return q; };   // 増える情報(重なっていない向きほど大きい)
             const units = buildUnits(names.map(teamParticipant)).map(u => u.members.map(m => m.name));
             const size = names.length / teamCount;
+            // 最低限のルール: 男女はチームに分かれる(どのチームも人数の差が1人まで。ペア設定で無理なときは、なるべく近く)
+            const gen = {}; names.forEach(n => { const r = findRosterByName(n); gen[n] = r ? r.gender : ""; });
+            const genGap = teams => ["male", "female"].reduce((a, g) => { const c = teams.map(t => t.filter(n => gen[n] === g).length); return a + Math.max(0, Math.max(...c) - Math.min(...c) - 1); }, 0);
+            // キーパラメータ(スパイク・セットなど)の上位2人が同じチームに重なるか。重ねるのは「それを確かめる」ときだけにする
+            const stackLbs = feats.filter(ft => /上位2人が同じチーム/.test(ft.lb) && paramRoles.key.some(k => { const d = PARAM_DEFS.find(x => x.key === k); return d && ft.lb.startsWith(d.label); }));
+            const stacks = teams => stackLbs.filter(ft => teams.some(t => ft.f(t, names) === 1)).map(ft => ft.lb);
+            const run = (allowStack) => {
             let best = null, bestSc = -Infinity, bestX = null;
             for (let tries = 0; tries < 2500; tries++) {
                 const us = units.slice().sort(() => Math.random() - 0.5), teams = Array.from({ length: teamCount }, () => []);
                 us.forEach(u => { let ti = 0; for (let i = 1; i < teamCount; i++) if (teams[i].length < teams[ti].length) ti = i; teams[ti].push(...u); });
                 if (teams.some(t => Math.abs(t.length - size) > 1)) continue;
-                let sc = 0, x0 = null;
+                let sc = -100 * genGap(teams) - (allowStack ? 0 : 100 * stacks(teams).length), x0 = null;
                 for (let a = 0; a < teamCount; a++) for (let b = a + 1; b < teamCount; b++) {
                     const x = xOf(teams[a], teams[b], names);
                     // 結果が読めすぎる試合(片方が圧勝しそう)は、勝っても負けても情報が少ない。今わかっている強さ・効き目で見込みを出し、その分だけ割り引く
@@ -10171,8 +10178,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 sc += 0.3 * nov / Math.max(1, np);
                 if (sc > bestSc) { bestSc = sc; best = teams; bestX = x0; }
             }
+            return { best, bestX };
+            };
+            const testsOf = (bx) => feats.map((ft, a) => { let t = 0; for (let b = 0; b < K; b++) t += inv[a][b] * bx[b]; return { lb: ft.lb, c: bx[a] * t, x: bx[a] }; }).filter(o => o.x && o.c > 0).sort((p, q) => q.c - p.c).slice(0, 3);
+            // まずは重なりも許して、いちばん情報が増える分け方を探す。重なっているのに、それが「ためす」特徴に入っていなければ、重ならない分け方にし直す
+            let { best, bestX } = run(true);
+            { const st0 = stacks(best), tl = testsOf(bestX).map(o => o.lb); if (st0.length && !st0.every(lb => tl.includes(lb))) ({ best, bestX } = run(false)); }
             // 何をためす分け方か: 増える情報への寄与が大きい特徴(上位3つ)と、その向き(チーム1から見て +/−)
-            const contrib = feats.map((ft, a) => { let t = 0; for (let b = 0; b < K; b++) t += inv[a][b] * bestX[b]; return { lb: ft.lb, c: bestX[a] * t, x: bestX[a] }; }).filter(o => o.x && o.c > 0).sort((p, q) => q.c - p.c).slice(0, 3);
+            const contrib = testsOf(bestX);
             let fresh = 0; best.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) if (!gOf(t[i], t[j])) fresh++; });
             const pm = teamCount === 2 ? predictMatch(best[0], best[1]) : null;
             return { teams: best, info: { win: pm ? pm.str : null, whyWin: pm ? pm.why : null, fresh, tests: contrib.map(o => ({ lb: o.lb, side: o.x > 0 ? 1 : 2 })) } };
@@ -10242,7 +10255,9 @@ const namesBtn = isAdmin() && dates.length > 0
                         <li><b>重なりをほどく</b> … これまでの試合で一緒に動いてしまっている特徴(例: スパイク1位がいるチームは、いつもレシーブの平均も高い)は、どちらが効いているか分かりません。そこで、わざと逆向きに組ませます。例: スパイク1位を、セット1位がいない・レシーブ下位2人がいるチームに入れる。</li>
                         <li><b>まだ差がついたことのない特徴</b>にも差がつくようにします。</li>
                         <li>計算では、これまでの試合の「特徴の差」の集まりに、この分け方を1試合足したとき、いちばん新しい情報が増える分け方を選んでいます。</li>
-                        <li>一緒に出た回数が少ない2人も、少しだけ同じチームにしやすくします(相性のデータ)。ペア設定とチームの人数は守ります。</li>
+                        <li>一緒に出た回数が少ない2人も、少しだけ同じチームにしやすくします(相性のデータ)。</li>
+                        <li><b>最低限のルール</b> … ペア設定とチームの人数は守り、男女はどのチームも人数の差が1人までになるように分けます。</li>
+                        <li><b>キーパラメータの上位2人</b>(スパイクなど)は、ふだんどおりバラけさせます。重ねるのは、「上位2人が同じチーム」そのものを確かめる提案のときだけです(そのときは「ためす」に出ます)。</li>
                     </ul>
                     <h6>表示の読み方</h6>
                     <ul>
@@ -10255,7 +10270,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 勝ち負けの要因: どんなチームが勝っているか -------
         // 1試合ごとに、2チームの「特徴」を比べて、その特徴が上のチームが勝った割合を出す(点差があれば、はっきり勝ったほど重く)
         // 特徴は今の名簿のパラメータから(過去にパラメータを変えていても、今の値で見る)
-        const WHY_SPEC = 1.5, WHY_ALL = 0.6, WHY_ALL_MIN = 3.5;   // オールラウンダー = 4項目の差が0.6以下 かつ 4項目すべて3.5以上(満遍なく強い)   // 特化型 = 4項目の最大と最小の差が 1.5 以上 / オールラウンダー = 差が 0.6 以下
+        const WHY_SPEC = 1.5, WHY_ALL = 0.6, WHY_ALL_MIN = 7;   // オールラウンダー = 機動力以外の4項目(機動力の補正後)がすべて7以上   // 特化型 = 4項目の最大と最小の差が 1.5 以上 / オールラウンダー = 差が 0.6 以下
         function whyProfile(n) {
             const r = roster.find(x => x.name === n); if (!r) return null;
             // 分析では、チーム分けと同じ「機動力の補正を入れた値」を使う(機動力そのものは元の値)
@@ -10287,6 +10302,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const v = vs.length >= 3 ? new Set(vs.filter(x => x[1] <= vs[1][1]).map(x => x[0])) : null;
             whyChampMemo.set(mk, v); return v;
         }
+        // その日のメンバー(ctx)の中で、項目 k が高い順の2人(2番目と同じ値の人も含む)。チーム分けのキーパラメータの「選出者」にあたる人たち
+        function whyTop2(ctx, k, P) {
+            const mk = "t|" + k + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
+            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.eff[k] ?? 3]).sort((a, b) => b[1] - a[1]);
+            const v = vs.length >= 3 ? new Set(vs.filter(x => x[1] >= vs[1][1]).map(x => x[0])) : null;
+            whyChampMemo.set(mk, v); return v;
+        }
         function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
             const mean = (t, f) => { const xs = t.map(P).filter(Boolean).map(f); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
@@ -10301,7 +10323,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 // その日のレシーブ最下位(同率は除く)がいるか / レシーブが低い順の2人(2番目と同じ値の人も含む)のうち2人以上が同じチームか
                 ["レシーブ最下位がいる", (t, ctx) => { const c = whyWorst(ctx || t, "receive", P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1],
                 ["レシーブ下位2人が同じチーム", (t, ctx) => { const b = whyBottom2(ctx || t, "receive", P); return b == null ? null : (t.filter(n => b.has(n)).length >= 2 ? 1 : 0); }, 1],
-                ["オールラウンダーの人数", t => cnt(t, x => x.spr <= WHY_ALL && x.min >= WHY_ALL_MIN), 1],
+                // スパイク・セットの上位2人(2番目と同じ値の人も含む)のうち2人以上が同じチーム。ふだんのチーム分け(キーパラメータ)ではバラけるので、提案で重なったときに別の要因として切り分ける
+                ...[["spike", "スパイク"], ["set", "セット"]].map(([k, lb]) => [lb + "上位2人が同じチーム", (t, ctx) => { const b = whyTop2(ctx || t, k, P); return b == null ? null : (t.filter(n => b.has(n)).length >= 2 ? 1 : 0); }, 1]),
+                ["オールラウンダーの人数", t => cnt(t, x => x.min >= WHY_ALL_MIN), 1],
                 ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
                 ["人数", t => t.length, 1]
@@ -10383,8 +10407,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 <li><b>スパイク1位・セット1位がいる</b> … その日来たメンバーの中で、その項目が単独1位の人がいるか。同率1位の日は数えない。</li>
                 <li><b>レシーブ最下位がいる</b> … その日のメンバーで、レシーブが単独で一番低い人がいるか。</li>
                 <li><b>レシーブ下位2人が同じチーム</b> … その日のレシーブが低い順の2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。</li>
+                <li><b>スパイク・セット上位2人が同じチーム</b> … その日の上位2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。ふだんのチーム分けではキーパラメータとしてバラけるので、提案などで重なったときの影響を、ほかの特徴と切り分けるための項目。</li>
                 <li><b>チーム内格差あり</b> … チームの中の実力差(強い人と弱い人の差)。格差が1大きいと何%か。</li>
-                <li><b>オールラウンダーの人数</b> … 満遍なく強い人(4項目の差が${WHY_ALL}以下で、4項目すべて${WHY_ALL_MIN}以上)が何人いるか。満遍なく低い人は入らない。</li>
+                <li><b>オールラウンダーの人数</b> … サーブ・レシーブ・セット・スパイク(機動力の補正後)が<b>すべて${WHY_ALL_MIN}以上</b>の人が何人いるか。多いチームが勝ちやすいかを見ます。</li>
                 <li><b>セッターの人数</b> … 名簿の希望ポジションがセッターの人の数(セットの値とは別)。</li>
             </ul>
             <h6>読み解くときのコツ</h6>
@@ -10398,7 +10423,7 @@ const namesBtn = isAdmin() && dates.length > 0
         </div>`;
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
-            const sp = Object.values(m.prof).filter(Boolean), nSpec = sp.filter(x => x.spr >= WHY_SPEC).length, nAll = sp.filter(x => x.spr <= WHY_ALL && x.min >= WHY_ALL_MIN).length;
+            const sp = Object.values(m.prof).filter(Boolean), nSpec = sp.filter(x => x.spr >= WHY_SPEC).length, nAll = sp.filter(x => x.min >= WHY_ALL_MIN).length;
             const ok = m.rows.filter(x => x.ok).sort((a, b) => (Math.abs(b.z) >= 1) - (Math.abs(a.z) >= 1) || Math.abs(b.eff) - Math.abs(a.eff));
             const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "その日の下位2人が分かれてばかりで比べられない" : (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
             const unitTxt = lb => /がいる|同じチーム/.test(lb) ? "いる" : /人数/.test(lb) ? "1人多い" : /格差/.test(lb) ? "格差0.5大" : "1高い";
