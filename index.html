@@ -15876,9 +15876,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (prRad.tap) return false;
             protoSkipClick = Date.now();
             if (prRad.sel >= 0) { prRadRun(prRad.sel); return true; }
-            prRadBlockUntil = Date.now() + 350;
-            prRad.tap = true;   // 選ばずに離した: 開いたまま、タップで選ぶ
-            setTimeout(() => { if (prRad && prRad.tap && prRad.items) { const it = prRad.items; prRadRender(it, prRad.cx, prRad.cy); document.querySelectorAll("#prRadial .prr-item").forEach(b => { b.style.animation = "none"; }); } }, 0);   // iPhone の触覚用のスイッチを入れる
+            prRadClose();   // 選ばずに離した: メニューを閉じる
             return true;
         }
         document.addEventListener("touchstart", e => { if (prRad && prRad.open && !prRadInItem(e.target)) { prRadOut = true; e.stopPropagation(); return; } if (e.touches.length !== 1) { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } return; } const t = e.touches[0]; prRadStart(t.clientX, t.clientY, e.target); }, { capture: true, passive: true });
