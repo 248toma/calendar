@@ -11058,6 +11058,16 @@ const namesBtn = isAdmin() && dates.length > 0
             const id = Date.now(), a = fxHist(); a.push({ id, at: formatDateKey(new Date()), name: label, ref: !!asRef, height: fx.height, net: fx.net, tags: { ...(fx.tags || {}) }, res: { ...fx.res, ev: undefined }, seq: fxSeq() });
             fxHistSave(a); fx.saved = true; fx.savedId = id; fxRender();
         }
+        // 読み取ったままのデータ(全員の骨格・ボールの候補)をファイルにする。動画そのものは入らない
+        async function fxExport() {
+            if (!fx || !fx.frames.length) return;
+            const r1 = v => Math.round(v * 10) / 10, r3 = v => Math.round(v * 1000) / 1000;
+            const data = { v: 1, w: fx.w, h: fx.h, rot: fx.rot || 0, dur: fx.dur, slow: fx.slow, height: fx.height, step: FX_STEP, pick: fx.pick, ev: fx.ev, diag: fx.diag,
+                frames: fx.frames.map(f => ({ t: r3(f.t), sp: f.pose ? f.people.indexOf(f.pose) : -1, people: f.people.map(p => ({ i: p.map(q => [r1(q[0]), r1(q[1]), Math.round(q[2] * 100) / 100]), w: p.world ? p.world.map(q => q.map(r3)) : null })), balls: (f.balls || []).map(b => [r1(b.x), r1(b.y), Math.round(b.s * 100) / 100]), manual: f.manual || null })) };
+            const name = `form-${Date.now()}.json`, file = new File([JSON.stringify(data)], name, { type: "application/json" });
+            try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+            const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        }
         function fxDelHist(id) { fxHistSave(fxHist().filter(x => x.id !== id)); fxRender(); }
         const fxF = (v, u, d = 2) => v == null || !isFinite(v) ? "—" : `${(+v).toFixed(d)}${u}`;
         // 読み取れた量(うまくいかないときの手がかり)
@@ -11132,6 +11142,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     ${fxResHtml(fx.res)}
                     <div class="fx-grp"><h5>印を付ける<small>あとで比べるため(保存したあとも直せます)</small></h5>${fxTagChips(fx.tags || {}, "fxTagSet")}</div>
                     <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn" onclick="fxSave(true)" ${fx.saved ? "disabled" : ""}>お手本として保存</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fxExport()">読み取りデータを書き出す(調整用)</button></div>
                     <div class="fx-note">数字の目安: 長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。頭との前後・腕の角度・振る速さは、体の3Dの形から出すので向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div>`;
             }
             ov.innerHTML = `<div class="fx-wrap">${top}<div class="fx-cvbox"><canvas id="fxCv" onclick="fxTap(event)"></canvas></div>${body}</div>`;
