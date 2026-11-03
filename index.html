@@ -11599,23 +11599,46 @@ const namesBtn = isAdmin() && dates.length > 0
             const why = !sp ? "" : fx.ev.takeoff == null ? "ジャンプが見つかりません。踏み切り・インパクトのコマで「今の画面」を押すと測れます" : "";
             return `<small class="fx-diag">${bits.join("・")}${why ? `<br>${why}` : ""}</small>`;
         }
-        // 体の使い方(目安の言葉つき)
+        // 体の使い方の言葉(目安): 打つタイミング・足・腹筋
+        function fxBodyWords(r) {
+            let tim, timSub;
+            if (r.peakGap == null && r.peakSide != null) {   // スロー(倍率不明): 秒は出さず、頂点の前か後かだけ
+                const g2 = r.peakSide;
+                tim = Math.abs(g2) <= 0.05 ? "頂点のあたり" : g2 < 0 ? "頂点の前" : "頂点の後";
+                timSub = Math.abs(g2) <= 0.05 ? "いちばん高いところで打てています(目安)" : g2 < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)`;
+            } else {
+                const g = r.peakGap;
+                tim = g == null ? null : Math.abs(g) < 0.005 ? "頂点ちょうど" : `頂点の${Math.abs(g).toFixed(2)}秒${g < 0 ? "前" : "後"}`;
+                timSub = g == null ? "" : Math.abs(g) <= 0.05 ? "いちばん高いところで打てています" : g < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)`;
+            }
+            const knee = r.kneeExt == null ? null : r.kneeExt >= 30 ? "伸ばして打てている" : r.kneeAir > 140 ? "あまり曲げていない" : "曲げたまま打っている";
+            const kneeSub = r.kneeExt == null ? "" : r.kneeExt >= 30 ? "曲げた足を、伸ばしながら打てています" : r.kneeAir > 140 ? "空中で足があまり曲がっていません(反動が使えていない)" : "足が曲がったまま打っています(伸ばしきれていない)";
+            const fold = r.fold == null ? null : r.fold >= 25 ? "折りたためている" : "折りたたみが小さい";
+            const foldSub = r.fold == null ? "" : r.fold >= 25 ? "反った体を、腹筋で折りたたんで打てています" : r.arch != null && r.arch < 5 ? "反りが小さく、体の折りたたみも小さめ(腕だけで打っている可能性)" : "反ったあとの折りたたみが小さめ";
+            return { tim, timSub, knee, kneeSub, fold, foldSub };
+        }
+        // 体の使い方(くわしい数字の中)
         function fxBodyHtml(r, row) {
             if (r.peakGap == null && r.peakSide == null && r.kneeAir == null && r.arch == null) return "";
-            if (r.peakGap == null && r.peakSide != null) {   // スロー(倍率不明): 秒は出さず、頂点の前か後かだけ
-                const g2 = r.peakSide, tim2 = Math.abs(g2) <= 0.05 ? "頂点のあたり" : g2 < 0 ? "頂点の前" : "頂点の後";
-                r = { ...r, _tim: tim2, _timSub: Math.abs(g2) <= 0.05 ? "いちばん高いところで打てています(目安)" : g2 < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)` };
-            }
-            const g = r.peakGap, tim = g == null ? "—" : Math.abs(g) < 0.005 ? "頂点ちょうど" : `頂点の${Math.abs(g).toFixed(2)}秒${g < 0 ? "前" : "後"}`;
-            const timSub = g == null ? "" : Math.abs(g) <= 0.05 ? "いちばん高いところで打てています" : g < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)`;
-            const kneeSub = r.kneeExt == null ? "" : r.kneeExt >= 30 ? "曲げた足を、伸ばしながら打てています" : r.kneeAir > 140 ? "空中で足があまり曲がっていません(反動が使えていない)" : "足が曲がったまま打っています(伸ばしきれていない)";
-            const foldSub = r.fold == null ? "" : r.fold >= 25 ? "反った体を、腹筋で折りたたんで打てています" : r.arch != null && r.arch < 5 ? "反りが小さく、体の折りたたみも小さめ(腕だけで打っている可能性)" : "反ったあとの折りたたみが小さめ";
+            const w = fxBodyWords(r);
             return `<div class="fx-grp"><h5>体の使い方<small>目安</small></h5>
-                ${row("打つタイミング", r._tim || tim, r._timSub || timSub || "ジャンプの頂点(腰がいちばん高いとき)から")}
+                ${row("打つタイミング", w.tim || "—", w.timSub || "ジャンプの頂点(腰がいちばん高いとき)から")}
                 ${row("空中でのひざ(いちばん曲げたとき)", fxF(r.kneeAir, "°", 0), "180°でまっすぐ。小さいほど曲げている")}
-                ${row("インパクトのひざ", r.kneeImp == null ? "—" : `${Math.round(r.kneeImp)}°${r.kneeExt != null ? `(${r.kneeExt >= 0 ? "+" : ""}${Math.round(r.kneeExt)}°)` : ""}`, kneeSub)}
+                ${row("インパクトのひざ", r.kneeImp == null ? "—" : `${Math.round(r.kneeImp)}°${r.kneeExt != null ? `(${r.kneeExt >= 0 ? "+" : ""}${Math.round(r.kneeExt)}°)` : ""}`, w.kneeSub)}
                 ${row("体の反り", fxF(r.arch, "°", 0), "胸を張って、肩とひざが後ろへ反った大きさ")}
-                ${row("たたみ込み(腹筋)", fxF(r.fold, "°", 0), foldSub || "反った形から、インパクトにかけて体を前に折った大きさ")}</div>`;
+                ${row("たたみ込み(腹筋)", fxF(r.fold, "°", 0), w.foldSub || "反った形から、インパクトにかけて体を前に折った大きさ")}</div>`;
+        }
+        // いちばん上に出す「結果」: 見る項目はこれだけ(あとは、閉じたカードの中)
+        function fxSummaryHtml(r) {
+            if (!r) return "";
+            const w = fxBodyWords(r), tm = r.tm, row = (k, v, sub) => v == null ? "" : `<div class="fx-row"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
+            const slowNote = r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "";
+            const tk = tm ? (tm.level === "ok" ? "ぴったり" : `あと${Math.abs(tm.delta).toFixed(2)}秒 ${tm.delta > 0 ? "遅く" : "早く"}`) : null;
+            const tkSub = tm ? (tm.level === "ok" ? "トスに合わせて、ジャンプの頂点で打てる踏み切りです" : tm.delta > 0 ? "踏み切りが早い(ボールが落ちてくる前に頂点)" : "踏み切りが遅い(頂点を過ぎてからボールが来る)") : (r.tmWhy ? "ボールが追えていないので出せません(「見つけた瞬間」でボールの位置を指定)" : "");
+            const rows = row("踏み切り", tk || (r.tmWhy ? "—" : null), tkSub) + row("打つタイミング", w.tim, w.timSub)
+                + row("ジャンプ", r.jump == null ? null : `${Math.round(r.jump * 100)}cm`, "腰が上がった高さ") + row("打点", r.hitH == null ? null : `${r.hitH.toFixed(2)}m`, "床から、打った手(ボール)まで")
+                + row("足", w.knee, w.kneeSub) + row("腹筋(折りたたみ)", w.fold, w.foldSub);
+            return rows.replace(/\s/g, "") ? `${slowNote}<div class="fx-grp"><h5>結果<small>目安</small></h5>${rows}</div>` : slowNote;
         }
         // ベストなタイミング(トスの自由落下 × ジャンプの頂点)
         function fxTimingSub(r) {
@@ -11670,7 +11693,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 + grp("インパクト", row("打点の高さ", fxF(r.hitH, "m")) + (r.ballGap == null ? "" : row("手とボール", `${Math.round(r.ballGap * 100)}cm`, r.ballGap <= 0.35 ? (r.byBall ? "ボールの軌道が変わった瞬間に、手がボールに届いています" : "手がボールに届いています") : "手とボールが離れています。インパクトのコマを確かめてください")) + row("打点の前後", r.hitFront == null ? "—" : `${Math.round(Math.abs(r.hitFront) * 100)}cm ${r.hitFront >= 0 ? "頭より前" : "頭より後ろ"}`) + (r.netDist == null ? "" : row("打点とネットの距離", `${Math.round(r.netDist * 100)}cm`)) + row("ひじの角度", fxF(r.elbow, "°", 0), "180°でまっすぐ") + row("肩の角度", fxF(r.shoulder, "°", 0), "わきの開き。180°で真上") + row("腕を振る速さ", fxF(r.swing, "m/秒", 1)));
         }
         // 開け閉めできるカード(分析ページと同じ見た目)。中の .fx-grp はカードの中身として、見出しを出さずに並べる
-        var fxOpenSt = { overlay: true, timing: true };
+        var fxOpenSt = { overlay: true, vov: true, tags: true };
         function fxCard(key, title, inner, sub) {
             if (!inner || !inner.replace(/\s/g, "")) return "";
             const open = fxOpenSt[key] != null ? fxOpenSt[key] : false;
@@ -11713,14 +11736,14 @@ const namesBtn = isAdmin() && dates.length > 0
                     <div><button type="button" class="st-btn" onclick="fxBallUndo()" ${nMan ? "" : "disabled"}>1つ戻す</button><button type="button" class="st-btn" onclick="fxBallClear()" ${nMan ? "" : "disabled"}>全部消す</button><button type="button" class="st-btn fx-go" onclick="fxBallDone()">完了</button></div></div>` : "";
                 body = `${ballBox}${ctrl}${fx.step === "result" && fx.frames.some(f => f.pose) ? play : ""}
                     <div class="fx-guide fx-sub">${fx.frames.some(f => f.pose) ? "緑の骨格がスパイカー。違う人なら、その人をタップ" : "スパイカーが見つかりません。スパイカーが写っている画面で、その人をタップ"}${fxDiagHtml()}</div>
-                    ${fxCard("ev", "見つけた瞬間", `<div class="fx-grp"><h5><small>違っていたら、コマ送りで合わせて「今の画面」</small></h5>${evs}
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender();document.getElementById('fxCv').scrollIntoView({block:'center'})">ボールの位置を指定する</button></div></div>`, fx.ev.impact != null ? `インパクト ${(fx.ev.impact / (fx.slow || 1)).toFixed(2)}秒` : "インパクトなし")}
-                    ${fxResHtml(fx.res, "main")}
-                    ${fx.res ? fxCard("timing", "ベストなタイミング", fxTimingHtml(fx.res), fxTimingSub(fx.res)) : ""}
+                    ${fx.res ? fxSummaryHtml(fx.res) : fxResHtml(null, "main")}
                     ${fx.res ? fxCard("vov", "動画を重ねて見る", fxOvHtml(), fx.ov ? (fx.ov.sync ? "重ねています" : "合わせる前") : "") : ""}
-                    ${fx.res ? fxOverlayHtml({ res: fx.res, seq: fxSeq() }, fxHist().slice().reverse()) : ""}
-                    ${fx.res ? fxCard("nums", "くわしい数字", fxResHtml(fx.res, "nums"), [fx.res.jump != null ? `ジャンプ ${Math.round(fx.res.jump * 100)}cm` : "", fx.res.hitH != null ? `打点 ${fx.res.hitH.toFixed(2)}m` : ""].filter(Boolean).join("・")) : ""}
-                    <div class="fx-grp"><h5>印を付ける<small>あとで比べるため(保存したあとも直せます)</small></h5>${fxTagChips(fx.tags || {}, "fxTagSet")}</div>
+                    ${fxCard("tags", "印を付ける", `<div class="fx-grp"><h5><small>あとで比べるため(保存したあとも直せます)</small></h5>${fxTagChips(fx.tags || {}, "fxTagSet")}</div>`)}
+                    ${fx.res ? fxCard("timing", "ベストなタイミング(図)", fxTimingHtml(fx.res), fxTimingSub(fx.res)) : ""}
+                    ${fx.res ? fxCard("ovr", "腰の動き・体の軸", fxOverlayHtml({ res: fx.res, seq: fxSeq() }, fxHist().slice().reverse()), "これまでと重ねる") : ""}
+                    ${fx.res ? fxCard("nums", "くわしい数字", fxResHtml(fx.res, "main") + fxResHtml(fx.res, "nums"), [fx.res.jump != null ? `ジャンプ ${Math.round(fx.res.jump * 100)}cm` : "", fx.res.hitH != null ? `打点 ${fx.res.hitH.toFixed(2)}m` : ""].filter(Boolean).join("・")) : ""}
+                    ${fxCard("ev", "見つけた瞬間(直す)", `<div class="fx-grp"><h5><small>違っていたら、コマ送りで合わせて「今の画面」</small></h5>${evs}
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender();document.getElementById('fxCv').scrollIntoView({block:'center'})">ボールの位置を指定する</button></div></div>`, fx.ev.impact != null ? `インパクト ${(fx.ev.impact / (fx.slow || 1)).toFixed(2)}秒` : "インパクトなし")}
                     <div class="fx-acts fx-acts-main"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn" onclick="fxSave(true)" ${fx.saved ? "disabled" : ""}>お手本にする</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
                     ${fxCard("about", "数字について・書き出し", `<div class="fx-note" style="margin:4px 0 0">長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。体の軸・腕の伸び・ひざなどは体の3Dの形から出すので、向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div><div class="fx-acts"><button type="button" class="st-btn" onclick="fxExport()">データと結果を書き出す(検証用)</button></div>`)}`;
             }
