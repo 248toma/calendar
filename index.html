@@ -3321,11 +3321,31 @@
             #protoUI .pr-wrap { grid-template-columns: var(--hw) minmax(0, 1fr) !important; }
             #protoUI .pr-wrap::after { display: none !important; }
         }
-        #prRadial .prr-badge { position: absolute; top: 6px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 0 2px var(--rbg); }
-        #protoUI .pr-svdot { display: none; margin-left: 8px; width: 9px; height: 9px; padding: 0; border: none; border-radius: 50%; background: #e5484d; cursor: pointer; vertical-align: middle; }
+        #prRadial .prr-badge { position: absolute; top: 1px; right: 1px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: #e5484d; color: #fff; font: 800 10px/18px 'Montserrat', system-ui, sans-serif; font-style: normal; text-align: center; box-shadow: 0 0 0 2px var(--rbg); animation: prrBadge 1s ease-in-out infinite; }
+        /* 未回答の知らせ: 月の横に「未回答 N」の丸いラベル(赤く脈打つ)。7日以内・月末前(lv3)はさらに大きく速く */
+        #protoUI .pr-svdot { display: none; margin-left: 8px; height: 22px; min-width: 22px; padding: 0 10px; border: none; border-radius: 11px; background: #e5484d; color: #fff; font: 800 11px/22px 'Noto Sans JP', system-ui, sans-serif; letter-spacing: .02em; white-space: nowrap; cursor: pointer; vertical-align: middle; box-shadow: 0 2px 8px rgba(229,72,77,.45); animation: prSvPulse 1.6s ease-in-out infinite; }
         #protoUI .pr-svdot.on { display: inline-block; }
-        #protoUI .pr-svdot.later { background: #e08a00; }
-        #protoUI .pr-svdot.notes { background: #0e8a6a; }
+        #protoUI .pr-svdot.lv3 { animation: prSvPulseBig 1s ease-in-out infinite; }
+        #protoUI .pr-svdot.later { background: #e08a00; box-shadow: 0 2px 8px rgba(224,138,0,.45); }
+        #protoUI .pr-svdot.notes { background: #0e8a6a; box-shadow: 0 2px 8px rgba(14,138,106,.4); animation: none; }
+        /* 画面の下に出る「未回答があります」の帯(来月分が出てから3日間 / 7日以内・月末前は、答えるまで出る。×で閉じても、未回答が増えたらまた出る) */
+        #prSvBanner { position: fixed; left: 14px; right: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 45; display: none; align-items: center; gap: 10px; max-width: 412px; margin: 0 auto; box-sizing: border-box; padding: 10px 10px 10px 12px; border-radius: 20px; background: linear-gradient(135deg, #f2595e, #d63a40); color: #fff; font-family: 'Noto Sans JP', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; box-shadow: 0 10px 26px rgba(229,72,77,.45); animation: prSvBannerIn .35s cubic-bezier(.2,.9,.3,1.2) both, prSvGlow 1.6s ease-in-out .4s infinite; }
+        #prSvBanner.show { display: flex; }
+        #prSvBanner .sb-ic { flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; font-size: 19px; transform-origin: 50% 15%; animation: prSvShake 3s ease-in-out infinite; }
+        #prSvBanner .sb-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        #prSvBanner .sb-t { font-size: 14.5px; font-weight: 800; line-height: 1.25; }
+        #prSvBanner .sb-s { font-size: 11px; line-height: 1.35; opacity: .92; }
+        #prSvBanner .sb-go { flex: none; height: 36px; padding: 0 15px; border: 0; border-radius: 18px; background: #fff; color: #d63a40; font-size: 13px; font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+        #prSvBanner .sb-x { flex: none; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.2); color: #fff; font-size: 16px; line-height: 28px; }
+        @keyframes prSvBannerIn { from { opacity: 0; transform: translateY(26px) scale(.96); } }
+        @keyframes prSvGlow { 0%, 100% { box-shadow: 0 10px 26px rgba(229,72,77,.45), 0 0 0 0 rgba(229,72,77,.55); } 50% { box-shadow: 0 10px 26px rgba(229,72,77,.45), 0 0 0 10px rgba(229,72,77,0); } }
+        @keyframes prSvShake { 0%, 58%, 100% { transform: rotate(0); } 64% { transform: rotate(-16deg); } 70% { transform: rotate(14deg); } 76% { transform: rotate(-10deg); } 82% { transform: rotate(8deg); } 88% { transform: rotate(0); } }
+        body.proto-on.nv-full #prSvBanner, body.proto-on.plan-editing #prSvBanner, body.proto-on.proto-panel #prSvBanner { display: none !important; }
+        @media (prefers-reduced-motion: reduce) { #prSvBanner, #prSvBanner .sb-ic, #protoUI .pr-svdot { animation: none; } }
+        @keyframes prrBadge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22); } }
+        @keyframes prrRing { 0% { transform: scale(.9); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+        #prRadial .prr-item.svalert:not(.on) { color: #e5484d; }
+        #prRadial .prr-item.svalert::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #e5484d; pointer-events: none; animation: prrRing 1.2s ease-out infinite; }
         .pr-hint { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); transform: translateX(-50%); z-index: 65; padding: 8px 14px; border-radius: 16px; background: rgba(31, 33, 36, .82); color: #fff; font-size: 12px; font-weight: 700; pointer-events: none; animation: prHint 3.6s ease both; }
         @keyframes prHint { 0% { opacity: 0; transform: translate(-50%, 8px); } 10%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
         /* 予定の入力を下に出すとき: カレンダーが上、入力が下 */
@@ -15461,10 +15481,31 @@ const namesBtn = isAdmin() && dates.length > 0
             const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * PROTO_ROW_H;
             protoSvBtnSync();
         }
+        // 未回答の帯(画面の下): 強さ2(来月分が出てから3日間)・3(7日以内 / 月末前)のときだけ。×で閉じたら、未回答が増えるまで出さない
+        var prSvBannerOffN = 0;
+        function protoSvBannerSync(o, n) {
+            let b = document.getElementById("prSvBanner");
+            const lv = o && o.classList.contains("alert") ? (o.classList.contains("urgent") ? 3 : o.classList.contains("pulse") ? 2 : 1) : 0;
+            if (!(document.body.classList.contains("proto-on") && lv >= 2 && n > prSvBannerOffN)) { if (b) b.classList.remove("show"); return; }
+            if (!b) { b = document.createElement("div"); b.id = "prSvBanner"; b.setAttribute("role", "alert"); document.body.appendChild(b); }
+            const k = lv + "|" + n;
+            if (b.dataset.k !== k) {   // 同じ内容のときは作り直さない(動きが途切れないように)
+                b.dataset.k = k;
+                const sub = lv === 3 ? "7日以内の日程や、月末前の来月分があります" : "来月の日程が出ています。分かる日だけでもOK";
+                b.innerHTML = `<div class="sb-ic" aria-hidden="true">📝</div><div class="sb-tx"><div class="sb-t">未回答が ${n}件 あります</div><div class="sb-s">${sub}</div></div><button type="button" class="sb-go">答える</button><button type="button" class="sb-x" aria-label="閉じる">×</button>`;
+                b.querySelector(".sb-go").onclick = () => openSurvey();
+                b.querySelector(".sb-x").onclick = () => { prSvBannerOffN = n; b.classList.remove("show"); };
+            }
+            b.classList.add("show");
+        }
         // 下のアンケートボタンの印は、今の画面のアンケートボタンと同じ(赤=今月・来月の未回答 / オレンジ=その先 / 緑=新しいひとこと / 点滅)
         function protoSvBtnSync() {
             const o0 = document.getElementById("surveyBtn"), dot = document.getElementById("prSvDot");
-            if (dot && o0) { const al = o0.classList.contains("alert"), nt = o0.classList.contains("notes"); dot.classList.toggle("on", al || nt); dot.classList.toggle("later", al && o0.classList.contains("later") && !o0.classList.contains("urgent")); dot.classList.toggle("notes", !al && nt); dot.title = o0.title || "出欠の回答"; }
+            if (dot && o0) { const al = o0.classList.contains("alert"), nt = o0.classList.contains("notes"); dot.classList.toggle("on", al || nt); dot.classList.toggle("later", al && o0.classList.contains("later") && !o0.classList.contains("urgent")); dot.classList.toggle("notes", !al && nt);
+                const bd0 = document.getElementById("surveyBadge"), n0 = bd0 ? (parseInt(bd0.textContent, 10) || 0) : 0;
+                dot.classList.toggle("lv3", o0.classList.contains("urgent"));
+                dot.textContent = al ? "未回答 " + n0 : nt ? "新しいひとこと" : "";
+                try { protoSvBannerSync(o0, n0); } catch (e) { console.warn(e); } dot.title = o0.title || "出欠の回答"; }
             const b = document.getElementById("prSvBtn"), o = document.getElementById("surveyBtn"); if (!b || !o) return;
             ["alert", "later", "notes", "pulse", "urgent"].forEach(c => b.classList.toggle(c, o.classList.contains(c)));
             [["sv-badge", "surveyBadge"], ["sv-badge2", "surveyBadge2"], ["sv-badge3", "surveyBadge3"]].forEach(([c, id]) => { const t = b.querySelector("." + c), f = document.getElementById(id); if (t && f) { t.textContent = f.textContent; t.title = f.title || ""; } });
@@ -15700,9 +15741,10 @@ const namesBtn = isAdmin() && dates.length > 0
             ov.style.setProperty("--rbg", cs.getPropertyValue("--pr-bg").trim() || "#e9ecf2");
             ov.style.setProperty("--rink", cs.getPropertyValue("--pr-ink2").trim() || "#4a5262");
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
+            const svN = (() => { const o = document.getElementById("surveyBadge"); return o ? (parseInt(o.textContent, 10) || 0) : 0; })();
             ov.innerHTML = `<div class="prr-back" onclick="prRadClose()"></div><i class="prr-center" style="left:${lay.cx}px;top:${lay.cy}px"></i>` + items.map((it, i) => {
                 const [ix, iy] = lay.pts[i];
-                return `<button type="button" class="prr-item${it.k === "add" ? " main" : ""}" data-i="${i}" style="left:${ix}px;top:${iy}px;--dx:${(lay.cx - ix).toFixed(1)}px;--dy:${(lay.cy - iy).toFixed(1)}px;animation-delay:${i * 18}ms" onclick="prRadClick(${i})" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="prr-badge"></i>` : ""}${prRad && prRad.tap ? protoHapHtml() : ""}</button>`;   // タップで選ぶときは、iPhone でも触覚(透明スイッチ)
+                return `<button type="button" class="prr-item${it.k === "add" ? " main" : ""}${it.k === "survey" && svAlert ? " svalert" : ""}" data-i="${i}" style="left:${ix}px;top:${iy}px;--dx:${(lay.cx - ix).toFixed(1)}px;--dy:${(lay.cy - iy).toFixed(1)}px;animation-delay:${i * 18}ms" onclick="prRadClick(${i})" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="prr-badge">${svN || ""}</i>` : ""}${prRad && prRad.tap ? protoHapHtml() : ""}</button>`;   // タップで選ぶときは、iPhone でも触覚(透明スイッチ)
             }).join("");
             ov.classList.add("open");
         }
