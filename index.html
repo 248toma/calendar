@@ -2916,7 +2916,7 @@
             transition: left .38s cubic-bezier(.2, .8, .2, 1), top .38s cubic-bezier(.2, .8, .2, 1), width .38s cubic-bezier(.2, .8, .2, 1), height .38s cubic-bezier(.2, .8, .2, 1), border-radius .3s; }
         #tutOv .tut-ring { position: absolute; inset: 0; border-radius: inherit; animation: tutPulse 1.4s ease-out infinite; }
         #tutOv .tut-block { position: absolute; inset: 0; z-index: 3; }
-        #tutOv .tut-hit { position: absolute; z-index: 4; display: none; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
+        #tutOv .tut-hit { position: absolute; z-index: 4; display: none; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
         #tutOv .tut-finger { position: absolute; z-index: 5; display: none; width: 40px; height: 40px; pointer-events: none; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .4)); animation: tutTap 1.1s ease-in-out infinite; }
         #tutOv .tut-finger span { display: block; font-size: 34px; line-height: 40px; transform: rotate(-18deg); }
         #tutOv .tut-tip { position: absolute; z-index: 6; box-sizing: border-box; width: min(88vw, 340px); padding: 14px 16px 14px; border-radius: 22px; background: var(--tut-bg); color: var(--tut-ink); box-shadow: 0 14px 36px rgba(0, 0, 0, .38), 0 0 0 1px var(--tut-line); animation: tutPop .22s ease both; }
@@ -16353,14 +16353,16 @@ const namesBtn = isAdmin() && dates.length > 0
         // ======================================================================
         // はじめての人向けチュートリアル(ログインしていない人が起動・更新したときに出る。閲覧モードの使い方だけ)
         // ログインしていないと、本物の画面は中身が空で回答ボタンも出ない。そこで「見本の画面」の上で、押してほしい所を光らせて案内する
-        // 流れ: ①日付をタップ → ②人数と場所 → ③📝ボタンを押す → ④○✖△で答える → ⑤サインイン / ゲストでログイン
+        // 流れ: ①日付をタップ → ②人数と場所 → ③画面を長押し → ④メニューの「アンケート」を選ぶ → ⑤○✖△で答える → ⑥サインイン / ゲストでログイン
+        // (本物の画面は下のボタンを出さず、長押しメニューで操作するので、見本にも下のボタンは置かない)
         // ======================================================================
         var tutAuthChecked, tutOpen, tutIdx, tutS, tutScreen, tutDays, tutOnResize;   // var: 起動時の認証確認から先に参照されても大丈夫なように(初期値は入れない)
         const TUT_STEPS = [
             { id: "intro", center: true, screen: "main" },
             { id: "day", target: "day", tap: true, screen: "main" },
             { id: "head", target: "head", screen: "main" },
-            { id: "svbtn", target: "svbtn", tap: true, screen: "main" },
+            { id: "hold", target: "hold", tap: true, hold: true, screen: "main" },
+            { id: "menu", target: "menusv", tap: true, screen: "main" },
             { id: "ans", target: "seg", tap: true, screen: "survey" },
             { id: "login", center: true, screen: "survey" }
         ];
@@ -16396,7 +16398,18 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${OPTS.map(([s0, svg]) => `<span style="position:relative;height:34px;display:flex;align-items:center;justify-content:center;color:${st === s0 ? AC[s0] : P.ink3};opacity:${st === s0 || idx < 0 ? 1 : 0.55}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></span>`).join("")}
             </div>`;
         }
-        // 見本のホーム画面(上: その日の人数と場所 / 中: カレンダー / 下: ボタン)
+        // 長押しメニューの見本(本物と同じ並べ方・同じアイコン。指を置いた場所のまわりに扇形)
+        function tutFanHtml(P, dark) {
+            const hp = tutS && tutS.hold; if (!hp) return "";
+            const items = PR_RAD_ITEMS.filter(it => !it.adm), lay = prRadLayout(hp.x, hp.y, items.length), { raiseS } = protoNeu(P, dark);
+            return `<div style="position:absolute;inset:0;background:rgba(20,24,32,.12);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)"></div>`
+                + `<i style="position:absolute;left:${lay.cx}px;top:${lay.cy}px;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:${P.bg};box-shadow:inset 2px 2px 4px rgba(0,0,0,.18), inset -2px -2px 4px rgba(255,255,255,.7)"></i>`
+                + items.map((it, i) => {
+                    const [ix, iy] = lay.pts[i], sv = it.k === "survey";
+                    return `<div ${sv ? 'data-tut="menusv" data-tr="29"' : ""} style="position:absolute;left:${ix}px;top:${iy}px;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:${it.k === "add" ? "#2f6fe0" : P.ink2};${raiseS};animation:tutFade .2s ease ${i * 18}ms both">${PR_RAD_ICONS[it.k] || ""}<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;line-height:1">${it.label}</span>${sv ? `<i style="position:absolute;top:6px;right:8px;width:9px;height:9px;border-radius:50%;background:#e5484d;box-shadow:0 0 0 2px ${P.bg}"></i>` : ""}</div>`;
+                }).join("");
+        }
+        // 見本のホーム画面(上: その日の人数と場所 / 下: カレンダー。ボタンは長押しメニューで出す)
         function tutMainHtml() {
             const { dark, P, LV } = protoPal(), { raise, raiseS, insetS } = protoNeu(P, dark), D = tutDays;
             let wsd = 0; try { wsd = weekStartDay === 1 ? 1 : 0; } catch (e) { wsd = 0; }
@@ -16420,8 +16433,6 @@ const namesBtn = isAdmin() && dates.length > 0
                    <span style="font-size:12px;color:${P.ink2}">稲沢総合 北</span>`
                 : `<span style="font-size:12px;color:${P.ink3}">この日のバレーはありません</span>`;
             const ico = (d, sz, sw) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-            const rb = (inner, extra) => `<div ${extra || ""} style="position:relative;width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${inner}</div>`;
-            const badge = `<span style="position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:#e5484d;color:#fff;font:700 10px/17px ${TUT_EN};text-align:center">2</span>`;
             return `<div style="position:absolute;inset:0;background:${P.bg};color:${P.ink};font-family:'Noto Sans JP',system-ui,sans-serif">
               <div style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px 0;display:flex;flex-direction:column;gap:22px;position:relative">
                 <div data-tut="head" data-tr="28" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${raise}">
@@ -16433,20 +16444,14 @@ const namesBtn = isAdmin() && dates.length > 0
                     </div>
                   </div>
                 </div>
-                <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px">
+                <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 14px)">
                   <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 2px 8px"><span style="font-family:${TUT_EN};font-size:16px;font-weight:700">${MN[D.m]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${TUT_EN};font-size:13px;font-weight:600;color:${P.ink3}">${D.y}</span></div>
                   <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${TUT_EN};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === satIdx ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
                   <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cells}</div>
                 </div>
-                <div style="position:absolute;left:22px;right:22px;bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);display:flex;align-items:center;gap:14px">
-                  <div style="height:44px;padding:0 20px;border-radius:22px;display:flex;align-items:center;font-family:${TUT_EN};font-size:13px;font-weight:700;color:${P.ink3};${raiseS}">Today</div>
-                  <span style="flex:1"></span>
-                  ${rb(ico('<rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path>', 18, 1.6))}
-                  ${rb(ico('<rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path>', 18, 1.6) + badge, 'data-tut="svbtn" data-tr="22"')}
-                  ${rb(ico('<path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle>', 18, 1.6))}
-                  <div style="width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:${P.acc};${raise}">${ico('<path d="M12 5v14M5 12h14"></path>', 20, 2)}</div>
-                </div>
+                <div data-tut="hold" data-tr="40" style="position:absolute;right:34px;bottom:calc(env(safe-area-inset-bottom, 0px) + 60px);width:80px;height:80px;border-radius:40px"></div>
               </div>
+              ${TUT_STEPS[tutIdx].id === "menu" ? tutFanHtml(P, dark) : ""}
               <div class="tut-sample">SAMPLE</div>
             </div>`;
         }
@@ -16483,10 +16488,11 @@ const namesBtn = isAdmin() && dates.length > 0
             if (id === "intro") return { ttl: "ようこそ!", msg: "出欠の見かたと答えかたを、実際に押しながら<b>30秒</b>で体験しましょう。ここから先は<b>見本の画面</b>です(本物のデータは使いません)。", btn: "はじめる" };
             if (id === "day") return { ttl: "① バレーの日をタップ", msg: "カレンダーで<b>「バレー」</b>と書いてある日が、バレーのある日です。光っている日をタップしてみましょう。" };
             if (id === "head") return { ttl: "② 人数・時間・場所が見られる", msg: "上のリングは<b>「来る」と答えた人数</b>です。マスが埋まるほど集まっています。時間と場所もここに出ます。", btn: "次へ" };
-            if (id === "svbtn") return { ttl: "③ 出欠は📝から答える", msg: "出欠の回答は、右下の<b>📝ボタン</b>から。赤い数字がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
+            if (id === "hold") return { ttl: "③ 画面を長押ししてみよう", msg: "ボタンは普段は隠れています。画面を<b>指で押したまま、少し待つ</b>と、まわりに<b>メニュー</b>が開きます(画面のどこでもOK)。光っている所を<b>長押し</b>してみましょう。" };
+            if (id === "menu") return { ttl: "④ 「アンケート」を選ぶ", msg: "出欠の回答は、メニューの<b>アンケート</b>から。赤い点がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
             if (id === "ans") return tutS.ans
                 ? { ttl: "回答できました!", msg: "答えはすぐにみんなへ共有されます。あとから何度でも変えられます。", btn: "次へ" }
-                : { ttl: "④ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
+                : { ttl: "⑤ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
             return { ttl: "最後に、ログインしましょう", msg: "出欠への回答は、<b>ログインした人</b>ができます。どちらかを選んでください。" };
         }
         function tutTip() {
@@ -16514,7 +16520,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const name = st.id === "ans" && tutS.ans ? "card" : st.target;
             const el = !st.center && name ? demo.querySelector(`[data-tut="${name}"]`) : null;
             let r = null;
-            if (el) { const b = el.getBoundingClientRect(), pad = name === "svbtn" ? 5 : 4; r = { l: b.left - pad, t: b.top - pad, w: b.width + pad * 2, h: b.height + pad * 2, rad: (+el.getAttribute("data-tr") || 14) + pad }; }
+            if (el) { const b = el.getBoundingClientRect(), pad = name === "menusv" ? 5 : 4; r = { l: b.left - pad, t: b.top - pad, w: b.width + pad * 2, h: b.height + pad * 2, rad: (+el.getAttribute("data-tr") || 14) + pad }; }
             const px = v => Math.round(v) + "px";
             if (r) { spot.style.left = px(r.l); spot.style.top = px(r.t); spot.style.width = px(r.w); spot.style.height = px(r.h); spot.style.borderRadius = px(r.rad); }
             else { spot.style.left = px(W / 2); spot.style.top = px(H / 2); spot.style.width = "1px"; spot.style.height = "1px"; spot.style.borderRadius = "0px"; }
@@ -16522,6 +16528,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const tappable = !!r && !!st.tap && !(st.id === "ans" && tutS.ans);
             if (tappable) { hit.style.display = "block"; hit.style.left = px(r.l); hit.style.top = px(r.t); hit.style.width = px(r.w); hit.style.height = px(r.h); hit.style.borderRadius = px(r.rad); }
             else hit.style.display = "none";
+            fin.style.animation = st.hold ? "none" : "";
             if (tappable) { fin.style.display = "block"; fin.style.left = px(r.l + r.w / 2 - 8); fin.style.top = px(Math.min(r.t + r.h / 2 + 2, H - 44)); }
             else fin.style.display = "none";
             const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -16553,11 +16560,13 @@ const namesBtn = isAdmin() && dates.length > 0
             requestAnimationFrame(tutPlace);
         }
         // 光っている所を押したとき
+        var tutHoldAt = 0;
         function tutTapped(e) {
             const st = TUT_STEPS[tutIdx];
+            if (st.hold || Date.now() - tutHoldAt < 600) return;   // 長押しの手順はクリックでは進まない / メニューが開いた直後の指離しは無視
             try { if (typeof protoHaptic === "function") protoHaptic(); } catch (x) { /* ignore */ }
             if (st.id === "day") { tutS.sel = tutDays.d1; tutShow(tutIdx + 1); }
-            else if (st.id === "svbtn") tutShow(tutIdx + 1);
+            else if (st.id === "menu") tutShow(tutIdx + 1);
             else if (st.id === "ans") {
                 const b = document.getElementById("tutHit").getBoundingClientRect(), x = e && e.clientX != null ? e.clientX : b.left + b.width / 2;
                 tutS.ans = ["来る", "来ない", "未定"][Math.max(0, Math.min(2, Math.floor((x - b.left) / Math.max(1, b.width) * 3)))];
@@ -16584,6 +16593,26 @@ const namesBtn = isAdmin() && dates.length > 0
             ov.addEventListener("touchmove", e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
             document.getElementById("tutSkip").onclick = tutClose;
             document.getElementById("tutHit").onclick = tutTapped;
+            // 長押し(本物と同じ長さ)でメニューを出す。短く離したら吹き出しがぷるっと揺れる
+            const hitEl = document.getElementById("tutHit"), holdMs = typeof PR_RAD_HOLD === "number" ? PR_RAD_HOLD : 300;
+            let holdTimer = null, holdPt = null, holdFired = false;
+            hitEl.addEventListener("pointerdown", e => {
+                if (!tutOpen || !TUT_STEPS[tutIdx].hold || (e.pointerType === "mouse" && e.button !== 0)) return;
+                holdFired = false; holdPt = { x: e.clientX, y: e.clientY }; clearTimeout(holdTimer);
+                holdTimer = setTimeout(() => {
+                    holdTimer = null; if (!tutOpen || !TUT_STEPS[tutIdx].hold) return;
+                    holdFired = true; tutHoldAt = Date.now(); tutS.hold = holdPt;
+                    try { if (typeof protoHaptic === "function") protoHaptic(); } catch (x) { /* ignore */ }
+                    tutShow(tutIdx + 1);
+                }, holdMs);
+            });
+            const holdEnd = () => {
+                if (!holdTimer) return;
+                clearTimeout(holdTimer); holdTimer = null;
+                if (!holdFired && tutOpen) { const t = document.getElementById("tutTip"); if (t) { t.style.animation = "none"; void t.offsetWidth; t.style.animation = "tutShake .3s"; } }
+            };
+            ["pointerup", "pointercancel", "pointerleave"].forEach(ev => hitEl.addEventListener(ev, holdEnd));
+            hitEl.addEventListener("contextmenu", e => e.preventDefault());
             document.getElementById("tutBlock").onclick = () => { const t = document.getElementById("tutTip"); if (t) { t.style.animation = "none"; void t.offsetWidth; t.style.animation = "tutShake .3s"; } };   // 光っていない所を押したら、吹き出しがぷるっと揺れる
             tutOnResize = () => tutPlace();
             window.addEventListener("resize", tutOnResize); window.addEventListener("orientationchange", tutOnResize);
