@@ -10370,7 +10370,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 await new Promise(res => { const tt = Math.min(fx.dur - 0.001, t); if (Math.abs(v.currentTime - tt) < 1e-4) { res(); return; } v.addEventListener("seeked", res, { once: true }); v.currentTime = tt; });
                 cx.drawImage(v, 0, 0, W, H);
                 const ts = Math.round(t * 1000) + 1;
-                let ball = null; const people = [];
+                let ball = null, balls = []; const people = [];
                 try {
                     // 写っている人を全員とっておく(誰がスパイカーかは、読み終わってから決める)
                     const r = fxPose.detectForVideo(cv, ts);
@@ -10384,13 +10384,12 @@ const namesBtn = isAdmin() && dates.length > 0
                     try {
                         const r = fxBall.detectForVideo(cv, ts);
                         const ds = (r.detections || []).map(d => ({ x: (d.boundingBox.originX + d.boundingBox.width / 2) * sx, y: (d.boundingBox.originY + d.boundingBox.height / 2) * sx, s: (d.categories[0] || {}).score || 0, r: d.boundingBox.width * sx / 2 }));
-                        if (ds.length) ball = ds.sort((a, b) => b.s - a.s)[0];
+                        balls = ds.sort((a, b) => b.s - a.s).slice(0, 5);   // ボールらしいものを全部(本物は、あとで放物線に乗るものだけ選ぶ)
                     } catch (e) { /* ignore */ }
                 }
-                fx.frames.push({ t, people, pose: null, ball });
+                fx.frames.push({ t, people, pose: null, ball, balls });
                 if (i % 6 === 0) msg(`読み取り中… ${Math.round(i / n * 100)}%`);
             }
-            fxCleanBall();
             const found = fx.frames.filter(f => f.people.length).length;
             if (!found) { fx.step = "ready"; fxRender(); alert("人が見つかりませんでした。明るさ・ピント・全身が写っているかを確認してください。"); return; }
             fxTrack();
@@ -10429,20 +10428,78 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             fr.forEach(f => { f.pose = null; });
             if (pick) pick.items.forEach(it => { fr[it.i].pose = it.p; });
-            fx.ev = fxDetect(fr, fx.height); fxCompute();
+            fxFitBall();
+            fx.ev = fxDetect(fr, fx.height, fx.ballSegs); fxCompute();
         }
-        // ボールの点を整える: 前後とつながらない飛び値を外す(ボールは1コマで大きくは動かない)
-        function fxCleanBall() {
-            const fr = fx.frames, mpp = fxMpp() || 0.01, maxJump = 0.6 / mpp;   // 1/60秒で 0.6m(時速130km)を超える動きは別物
-            for (let i = 0; i < fr.length; i++) {
-                const b = fr[i].ball; if (!b || b.manual) continue;
-                const nb = [fr[i - 1], fr[i + 1], fr[i - 2], fr[i + 2]].filter(f => f && f.ball);
-                if (nb.length && !nb.some(f => Math.hypot(f.ball.x - b.x, f.ball.y - b.y) < maxJump * Math.abs(f.t - fr[i].t) * 60)) fr[i].ball = null;
+        // ---- ボールの軌道: 放物線に乗る点だけを使う ----
+        //   空中のボールは、横はまっすぐ等速・縦は重力で放物線(x = a + b·t、y = c + d·t + e·t²)。読み取った点のうち、この形に乗るものだけをボールとし、
+        //   乗らないもの(照明・顔・画面のアイコンなどの見まちがい)は捨てる。パス・トス・スパイクのように、触るたびに別の放物線になる
+        //   見えなかったコマも、放物線から位置を出す。重力の強さ(e)は、スパイカーの体の大きさ(1mあたりの画素)から、だいたいの範囲を決める
+        function fxFitBall() {
+            const fr = fx.frames, H = fx.h || 1000;
+            const pts = [];
+            fr.forEach((f, fi) => { (f.balls || []).forEach(b => pts.push({ fi, t: f.t, x: b.x, y: b.y, w: 1 })); if (f.manual) pts.push({ fi, t: f.t, x: f.manual.x, y: f.manual.y, w: 5, man: true }); });
+            const ps = fxScaleSeries(fr, fx.height || 1.7), pv = [...ps.values()].sort((a, b) => a - b), ppm = pv.length ? pv[Math.floor(pv.length / 2)] : null;
+            const e0 = ppm ? 4.9 * ppm : null;   // 重力 9.8m/s² の半分 × 1mの画素
+            const eMin = e0 ? e0 * 0.35 : H * 0.3, eMax = e0 ? e0 * 2.8 : H * 6;
+            const tol = Math.max(10, ppm ? 0.18 * ppm : H * 0.015);
+            const solve3 = (A, B) => {   // 3×3
+                const M = A.map((r, i) => r.concat([B[i]]));
+                for (let c = 0; c < 3; c++) { let p = c; for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r; [M[c], M[p]] = [M[p], M[c]]; const d = M[c][c]; if (Math.abs(d) < 1e-12) return null; for (let r = 0; r < 3; r++) if (r !== c) { const f = M[r][c] / d; for (let k = c; k < 4; k++) M[r][k] -= f * M[c][k]; } }
+                return M.map((r, i) => r[3] / r[i]);
+            };
+            const fit = (P, t0) => {   // 重みつき最小二乗(t は t0 からの時間)
+                let S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], Y = [0, 0, 0], sx = [0, 0, 0, 0];
+                P.forEach(p => { const u = p.t - t0, v = [1, u, u * u]; for (let a = 0; a < 3; a++) { Y[a] += p.w * v[a] * p.y; for (let b = 0; b < 3; b++) S[a][b] += p.w * v[a] * v[b]; } sx[0] += p.w; sx[1] += p.w * u; sx[2] += p.w * u * u; sx[3] += p.w * u * p.x; });
+                const yc = solve3(S, Y); if (!yc) return null;
+                const mx = P.reduce((s, p) => s + p.w * p.x, 0) / sx[0], den = sx[2] - sx[1] * sx[1] / sx[0];
+                const b = den > 1e-9 ? (sx[3] - sx[1] * mx) / den : 0, a = mx - b * sx[1] / sx[0];
+                return { t0, a, b, c: yc[0], d: yc[1], e: yc[2] };
+            };
+            const at = (m, t) => { const u = t - m.t0; return [m.a + m.b * u, m.c + m.d * u + m.e * u * u]; };
+            const inliers = (m, pool) => {   // 1コマに1点まで(いちばん近い点)
+                const best = new Map();
+                pool.forEach(p => { const [x, y] = at(m, p.t), d = Math.hypot(x - p.x, y - p.y); if (d < tol && (!best.has(p.fi) || d < best.get(p.fi).d)) best.set(p.fi, { p, d }); });
+                // 時間がつながっている(0.15秒より空かない)いちばん長いひとかたまり
+                const L = [...best.values()].map(v => v.p).sort((a, b) => a.t - b.t);
+                let bs = 0, be = -1, cs = 0;
+                for (let i = 0; i < L.length; i++) { if (i && L[i].t - L[i - 1].t > 0.15) cs = i; if (i - cs > be - bs) { bs = cs; be = i; } }
+                return L.slice(bs, be + 1);
+            };
+            let pool = pts.slice(); const segs = [];
+            for (let round = 0; round < 5 && pool.length >= 5; round++) {
+                let best = null, bestN = 0, rnd = 1;
+                const R = () => { rnd = (rnd * 16807) % 2147483647; return rnd / 2147483647; };   // 毎回同じ結果になるように
+                for (let it = 0; it < 600; it++) {
+                    const p1 = pool[Math.floor(R() * pool.length)];
+                    const near = pool.filter(p => Math.abs(p.t - p1.t) <= 0.7 && Math.abs(p.t - p1.t) >= 0.05);
+                    if (near.length < 2) continue;
+                    const p2 = near[Math.floor(R() * near.length)], p3 = near[Math.floor(R() * near.length)];
+                    if (p2 === p3 || Math.abs(p2.t - p3.t) < 0.05) continue;
+                    const m = fit([p1, p2, p3], p1.t); if (!m || m.e < eMin || m.e > eMax) continue;
+                    const inl = inliers(m, pool), n = inl.reduce((s, p) => s + p.w, 0);
+                    if (n > bestN) { bestN = n; best = inl; }
+                }
+                if (!best || best.length < 5) break;
+                // 乗った点で作り直して、もう一度乗る点を集める(2回)
+                let m = fit(best, best[0].t), inl = best;
+                for (let r = 0; r < 2 && m; r++) { inl = inliers(m, pool); if (inl.length < 5) break; m = fit(inl, inl[0].t); }
+                if (!m || m.e < eMin || m.e > eMax || inl.length < 5) break;
+                segs.push({ ...m, t1: inl[0].t, t2: inl[inl.length - 1].t, n: inl.length });
+                const used = new Set(inl); pool = pool.filter(p => !used.has(p));
             }
+            segs.sort((a, b) => a.t1 - b.t1);
+            // 時間が重なる放物線は、点が多いほうを残す(ボールは1つ)
+            const keep = []; segs.slice().sort((a, b) => b.n - a.n).forEach(sg => { if (!keep.some(k => sg.t1 < k.t2 - 0.03 && sg.t2 > k.t1 + 0.03)) keep.push(sg); });
+            keep.sort((a, b) => a.t1 - b.t1);
+            fx.ballSegs = keep;
+            fr.forEach(f => { const sg = keep.find(s => f.t >= s.t1 - 0.02 && f.t <= s.t2 + 0.02); f.ball = sg ? (() => { const [x, y] = at(sg, f.t); return { x, y, fit: true }; })() : null; });
+            fx.ballAt = (t) => { const sg = keep.find(s => t >= s.t1 && t <= s.t2); return sg ? at(sg, t) : null; };
         }
         function fxSetBall(t, p) {
             const f = fx.frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, fx.frames[0]); if (!f) return;
-            f.ball = { x: p.x, y: p.y, s: 1, r: 10, manual: true };
+            f.manual = { x: p.x, y: p.y };   // 指定した点は、放物線を決めるときに強く効く
+            fxFitBall(); fx.ev = fxDetect(fx.frames, fx.height, fx.ballSegs); fxCompute();
         }
         // ---- 長さの基準: スパイカー自身の体(どの向きから撮っても使える) ----
         //   立っているときの「鼻からかかとまで」は、身長のおよそ 0.87 倍。画面の上下の長さは、横からでも後ろからでもほぼ同じに写るので、
@@ -10458,7 +10515,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // ---- 瞬間を見つける(骨格・ボールの動きから) ----
         //   frames: [{ t, pose: [[x,y,vis]×33] (+ world: 体の中心からの3Dの位置(m)) | null, ball: {x,y} | null }]
-        function fxDetect(frames, heightM) {
+        function fxDetect(frames, heightM, segs) {
             const ev = {};
             const P = frames.filter(f => f.pose);
             if (P.length < 5) return ev;
@@ -10504,7 +10561,18 @@ const namesBtn = isAdmin() && dates.length > 0
                 const near = frames.filter(f => f.ball && f.pose && Math.abs(f.t - T[ii]) < 0.15).map(f => ({ t: f.t, d: Math.min(...[15, 16].map(k => Math.hypot(f.pose[k][0] - f.ball.x, f.pose[k][1] - f.ball.y))) })).sort((a, b) => a.d - b.d)[0];
                 if (near && near.d / sc < 0.35) ev.impact = near.t;
             }
-            // トス: インパクトより前のボールの点で、いちばん高い点 = 頂点。そこから戻って、上がり始めた点 = 手を離れた瞬間
+            // トス: 放物線がわかっていれば、インパクトの直前で終わる放物線 = トス。その始まり = 手を離れた瞬間、てっぺん = 頂点
+            if (segs && segs.length) {
+                const cand = segs.filter(sg => ev.impact == null || (sg.t2 <= ev.impact + 0.08 && sg.t1 < ev.impact - 0.1));
+                const toss = ev.impact != null ? cand.sort((a, b) => Math.abs(a.t2 - ev.impact) - Math.abs(b.t2 - ev.impact))[0] : cand.sort((a, b) => b.n - a.n)[0];
+                if (toss) {
+                    ev.release = toss.t1;
+                    const tv = toss.t0 - toss.d / (2 * toss.e);   // 放物線のてっぺんの時刻
+                    ev.apex = Math.max(toss.t1, Math.min(toss.t2, tv));
+                    return ev;
+                }
+            }
+            // (放物線がないとき)インパクトより前のボールの点で、いちばん高い点 = 頂点。そこから戻って、上がり始めた点 = 手を離れた瞬間
             const B = frames.filter(f => f.ball && (ev.impact == null || f.t < ev.impact - 0.02));
             if (B.length >= 3) {
                 let ai = 0; B.forEach((f, i) => { if (f.ball.y < B[ai].ball.y) ai = i; });
@@ -10598,10 +10666,14 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             if (fx.pick && fx.step !== "result" && Math.abs((fx.pick.t || 0) - fx.t) < 0.05) { g.strokeStyle = "#2fd39a"; g.beginPath(); g.arc(fx.pick.x, fx.pick.y, L * 10, 0, 7); g.stroke(); }
             // ボールの軌道(読み取った点)
-            const pts = fx.frames.filter(f => f.ball);
-            if (pts.length) {
-                g.strokeStyle = "rgba(255,200,60,.85)"; g.beginPath(); pts.forEach((f, i) => { if (i) g.lineTo(f.ball.x, f.ball.y); else g.moveTo(f.ball.x, f.ball.y); }); g.stroke();
-            }
+            // 読み取ったボールらしい点(薄く)と、放物線に合わせた軌道(黄色の線)
+            g.fillStyle = "rgba(255,200,60,.35)";
+            fx.frames.forEach(f => (f.balls || []).forEach(b => { g.beginPath(); g.arc(b.x, b.y, L * 1.2, 0, 7); g.fill(); }));
+            (fx.ballSegs || []).forEach(sg => {
+                g.strokeStyle = "rgba(255,200,60,.9)"; g.beginPath();
+                for (let t = sg.t1, i = 0; t <= sg.t2 + 1e-6; t += 1 / 120, i++) { const u = t - sg.t0, x = sg.a + sg.b * u, y = sg.c + sg.d * u + sg.e * u * u; if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+                g.stroke();
+            });
             const f = fx.frames.length ? fxFrameAt(fx.t) : null;
             if (f && f.ball) { g.strokeStyle = "#ffc83c"; g.lineWidth = L * 1.5; g.beginPath(); g.arc(f.ball.x, f.ball.y, Math.max(L * 5, f.ball.r || 0), 0, 7); g.stroke(); g.lineWidth = L; }
             const E = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32]];
@@ -10622,7 +10694,7 @@ const namesBtn = isAdmin() && dates.length > 0
         const FX_HT_KEY = "form_height_v1";
         function fxHeights() { try { return JSON.parse(localStorage.getItem(FX_HT_KEY) || "{}") || {}; } catch (e) { return {}; } }
         function fxSetPlayer(n) { fx.player = n; const h = fxHeights()[n]; if (h) fx.height = h; fxRender(); }
-        function fxSetHeight(v) { const h = Math.max(1.2, Math.min(2.2, (+v || 170) / 100)); fx.height = h; if (fx.player) { const o = fxHeights(); o[fx.player] = h; try { localStorage.setItem(FX_HT_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } } if (fx.frames.length) { fx.ev = fxDetect(fx.frames, fx.height); fxCompute(); } fxRender(); }
+        function fxSetHeight(v) { const h = Math.max(1.2, Math.min(2.2, (+v || 170) / 100)); fx.height = h; if (fx.player) { const o = fxHeights(); o[fx.player] = h; try { localStorage.setItem(FX_HT_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } } if (fx.frames.length) { fxFitBall(); fx.ev = fxDetect(fx.frames, fx.height, fx.ballSegs); fxCompute(); } fxRender(); }
         function fxStepFrame(d) { if (fx && fx.video) fxSeek(fx.t + d * FX_STEP); }
         function fxSetEvent(k) { if (!fx) return; fx.ev[k] = fx.t; if (k === "takeoff" && (fx.ev.land == null || fx.ev.land <= fx.t)) fx.ev.land = fx.t + 0.5; fxCompute(); fxRender(); fxDraw(); }
         function fxGoEvent(k) { if (fx && fx.ev[k] != null) fxSeek(fx.ev[k]); }
