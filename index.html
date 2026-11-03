@@ -3390,6 +3390,7 @@
         #fxOv .fx-cvbox { border-radius: 14px; overflow: hidden; background: #000; }
         #fxOv canvas { display: block; width: 100%; height: auto; touch-action: manipulation; }
         #fxOv .fx-guide { margin: 10px 2px; font-size: 14px; font-weight: 700; color: var(--accent); text-align: center; }
+        #fxOv .fx-sub { font-size: 12px; font-weight: 600; color: var(--ink-3); }
         #fxOv .fx-ctrl { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
         #fxOv .fx-ctrl input[type=range] { flex: 1; }
         #fxOv .fx-ctrl button { width: 40px; height: 36px; border: none; border-radius: 12px; background: var(--surface); color: var(--ink); font-size: 20px; }
@@ -10300,7 +10301,7 @@ const namesBtn = isAdmin() && dates.length > 0
             { const old = document.getElementById("fxVid"); if (old) old.remove(); } v.id = "fxVid"; document.body.appendChild(v);
             v.addEventListener("loadeddata", async () => {
                 fx.video = v; fx.w = v.videoWidth; fx.h = v.videoHeight; fx.dur = v.duration; fx.t = 0;
-                fx.step = "pickSpiker"; fx.frames = []; fx.ev = {}; fx.res = null; fx.calib = {};
+                fx.step = "ready"; fx.frames = []; fx.ev = {}; fx.res = null; fx.calib = {}; fx.pick = null;
                 fxRender(); await fxSeek(0);
             }, { once: true });
             v.addEventListener("error", () => { alert("この動画は読み込めませんでした。"); }, { once: true });
@@ -10325,8 +10326,9 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!fx || !fx.video) return;
             const p = fxTapPos(e);
             if (fx.step === "calibTop") { fx.calib.top = p; fx.step = "calibFloor"; }
-            else if (fx.step === "calibFloor") { fx.calib.floor = { x: fx.calib.top.x, y: p.y }; fx.step = fx.pick ? "ready" : "pickSpiker"; }
-            else if (fx.step === "pickSpiker") { fx.pick = p; fx.step = "ready"; }
+            else if (fx.step === "calibFloor") { fx.calib.floor = { x: fx.calib.top.x, y: p.y }; fx.step = "ready"; }
+            else if (fx.step === "pickSpiker" || fx.step === "ready") { fx.pick = { ...p, t: fx.t }; fx.step = "ready"; }
+            else if (fx.step === "result") { fx.pick = { ...p, t: fx.t }; fxTrack(); }   // 読み終わったあと: タップした人を分析しなおす(読み直しはしない)
             else if (fx.step === "ballTap") { fxSetBall(fx.t, p); fx.step = "result"; fxCompute(); }
             fxRender(); fxDraw();
         }
@@ -10340,29 +10342,21 @@ const namesBtn = isAdmin() && dates.length > 0
             cv.width = W; cv.height = H; const cx = cv.getContext("2d");
             const sx = fx.w / W;
             fx.frames = [];
-            let prevHip = fx.pick ? { x: fx.pick.x, y: fx.pick.y } : null;
             const n = Math.floor(fx.dur / FX_STEP);
             for (let i = 0; i <= n; i++) {
                 const t = i * FX_STEP;
                 await new Promise(res => { const tt = Math.min(fx.dur - 0.001, t); if (Math.abs(v.currentTime - tt) < 1e-4) { res(); return; } v.addEventListener("seeked", res, { once: true }); v.currentTime = tt; });
                 cx.drawImage(v, 0, 0, W, H);
                 const ts = Math.round(t * 1000) + 1;
-                let pose = null, ball = null;
+                let ball = null; const people = [];
                 try {
+                    // 写っている人を全員とっておく(誰がスパイカーかは、読み終わってから決める)
                     const r = fxPose.detectForVideo(cv, ts);
-                    // 選んだスパイカー: 前のコマの腰にいちばん近い人(はじめはタップした場所)
-                    let best = null, bd = Infinity;
                     (r.landmarks || []).forEach((lm, k) => {
-                        const hx = (lm[23].x + lm[24].x) / 2 * fx.w, hy = (lm[23].y + lm[24].y) / 2 * fx.h;
-                        const d = prevHip ? Math.hypot(hx - prevHip.x, hy - prevHip.y) : 0;
-                        if (d < bd) { bd = d; best = k; }
+                        const pose = lm.map(p => [p.x * fx.w, p.y * fx.h, p.visibility == null ? 1 : p.visibility]);
+                        const wl = (r.worldLandmarks || [])[k]; if (wl) pose.world = wl.map(p => [p.x, p.y, p.z]);
+                        people.push(pose);
                     });
-                    if (best != null && bd < fx.h * 0.35) {
-                        const lm = r.landmarks[best], wl = (r.worldLandmarks || [])[best];
-                        pose = lm.map(p => [p.x * fx.w, p.y * fx.h, p.visibility == null ? 1 : p.visibility]);
-                        if (wl) pose.world = wl.map(p => [p.x, p.y, p.z]);
-                        prevHip = { x: (pose[23][0] + pose[24][0]) / 2, y: (pose[23][1] + pose[24][1]) / 2 };
-                    }
                 } catch (e) { console.warn(e); }
                 if (fxBall) {
                     try {
@@ -10371,12 +10365,49 @@ const namesBtn = isAdmin() && dates.length > 0
                         if (ds.length) ball = ds.sort((a, b) => b.s - a.s)[0];
                     } catch (e) { /* ignore */ }
                 }
-                fx.frames.push({ t, pose, ball });
+                fx.frames.push({ t, people, pose: null, ball });
                 if (i % 6 === 0) msg(`読み取り中… ${Math.round(i / n * 100)}%`);
             }
             fxCleanBall();
-            fx.ev = fxDetect(fx.frames, fx.height);
-            fx.step = "result"; fxCompute(); fxRender(); await fxSeek(fx.ev.impact != null ? fx.ev.impact : 0);
+            const found = fx.frames.filter(f => f.people.length).length;
+            if (!found) { fx.step = "ready"; fxRender(); alert("人が見つかりませんでした。明るさ・ピント・全身が写っているかを確認してください。"); return; }
+            fxTrack();
+            fx.step = "result"; fxRender(); await fxSeek(fx.ev.impact != null ? fx.ev.impact : (fx.pick ? fx.pick.t : 0));
+        }
+        // ---- スパイカーを決める: コマどうしで同じ人をつないで「人の通り道」を作り、その中から選ぶ ----
+        //   タップしていれば、そのコマでタップにいちばん近い人の通り道。していなければ、いちばん大きく跳んだ人(スパイカー)
+        const fxHipOf = p => [(p[23][0] + p[24][0]) / 2, (p[23][1] + p[24][1]) / 2];
+        const fxSizeOf = p => Math.max(20, Math.max(p[27][1], p[28][1]) - p[0][1]);   // 画面での体の大きさ(鼻から足首)
+        function fxTracks(frames) {
+            const tracks = [];
+            frames.forEach((f, i) => {
+                const used = new Set();
+                const cand = [];
+                (f.people || []).forEach((p, pi) => tracks.forEach((tr, ti) => {
+                    const last = tr.items[tr.items.length - 1]; if (i - last.i > 18 || i === last.i) return;   // 0.3秒までなら見失ってもつなぐ
+                    const a = fxHipOf(p), b = fxHipOf(last.p), d = Math.hypot(a[0] - b[0], a[1] - b[1]) / fxSizeOf(last.p);
+                    if (d < 0.6 + 0.05 * (i - last.i)) cand.push({ pi, ti, d });
+                }));
+                cand.sort((x, y) => x.d - y.d).forEach(c => { if (used.has("p" + c.pi) || used.has("t" + c.ti)) return; used.add("p" + c.pi); used.add("t" + c.ti); tracks[c.ti].items.push({ i, p: f.people[c.pi] }); });
+                (f.people || []).forEach((p, pi) => { if (!used.has("p" + pi)) tracks.push({ items: [{ i, p }] }); });
+            });
+            return tracks;
+        }
+        function fxTrack() {
+            const fr = fx.frames, tracks = fxTracks(fr).filter(t => t.items.length >= 5);
+            let pick = null;
+            if (fx.pick) {   // タップしたコマで、タップにいちばん近い人
+                const fi = fr.reduce((a, f, i) => Math.abs(f.t - fx.pick.t) < Math.abs(fr[a].t - fx.pick.t) ? i : a, 0);
+                let bd = Infinity;
+                tracks.forEach(tr => tr.items.forEach(it => { if (Math.abs(it.i - fi) > 3) return; const h = fxHipOf(it.p), d = Math.hypot(h[0] - fx.pick.x, h[1] - fx.pick.y) / fxSizeOf(it.p); if (d < bd) { bd = d; pick = tr; } }));
+            }
+            if (!pick) {   // いちばん大きく跳んだ人(腰の上下の動き ÷ 体の大きさ)
+                let bs = -Infinity;
+                tracks.forEach(tr => { const ys = tr.items.map(it => fxHipOf(it.p)[1]), sz = tr.items.map(it => fxSizeOf(it.p)).sort((a, b) => a - b)[Math.floor(tr.items.length / 2)]; const sc = (Math.max(...ys) - Math.min(...ys)) / sz + tr.items.length * 0.002; if (sc > bs) { bs = sc; pick = tr; } });
+            }
+            fr.forEach(f => { f.pose = null; });
+            if (pick) pick.items.forEach(it => { fr[it.i].pose = it.p; });
+            fx.ev = fxDetect(fr, fx.height); fxCompute();
         }
         // ボールの点を整える: 前後とつながらない飛び値を外す(ボールは1コマで大きくは動かない)
         function fxCleanBall() {
@@ -10543,7 +10574,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 g.beginPath(); g.moveTo(fx.calib.top.x, fx.calib.top.y); g.lineTo(fx.calib.top.x, fx.calib.floor ? fx.calib.floor.y : fx.calib.top.y + 10); g.stroke(); g.setLineDash([]);
                 g.fillStyle = "#fff"; g.beginPath(); g.arc(fx.calib.top.x, fx.calib.top.y, L * 3, 0, 7); g.fill();
             }
-            if (fx.pick && fx.step !== "result") { g.strokeStyle = "#2fd39a"; g.beginPath(); g.arc(fx.pick.x, fx.pick.y, L * 10, 0, 7); g.stroke(); }
+            if (fx.pick && fx.step !== "result" && Math.abs((fx.pick.t || 0) - fx.t) < 0.05) { g.strokeStyle = "#2fd39a"; g.beginPath(); g.arc(fx.pick.x, fx.pick.y, L * 10, 0, 7); g.stroke(); }
             // ボールの軌道(読み取った点)
             const pts = fx.frames.filter(f => f.ball);
             if (pts.length) {
@@ -10551,8 +10582,13 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const f = fx.frames.length ? fxFrameAt(fx.t) : null;
             if (f && f.ball) { g.strokeStyle = "#ffc83c"; g.lineWidth = L * 1.5; g.beginPath(); g.arc(f.ball.x, f.ball.y, Math.max(L * 5, f.ball.r || 0), 0, 7); g.stroke(); g.lineWidth = L; }
+            const E = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32]];
+            if (f && f.people) {   // 写っているほかの人(読み取れているかの確認用)
+                g.strokeStyle = "rgba(255,255,255,.45)";
+                f.people.forEach(q => { if (q === f.pose) return; E.forEach(([a, b]) => { g.beginPath(); g.moveTo(q[a][0], q[a][1]); g.lineTo(q[b][0], q[b][1]); g.stroke(); }); });
+            }
             if (f && f.pose) {
-                const p = f.pose, E = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32]];
+                const p = f.pose;
                 g.strokeStyle = "rgba(47,211,154,.95)";
                 E.forEach(([a, b]) => { g.beginPath(); g.moveTo(p[a][0], p[a][1]); g.lineTo(p[b][0], p[b][1]); g.stroke(); });
                 g.fillStyle = "#fff"; [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28].forEach(k => { g.beginPath(); g.arc(p[k][0], p[k][1], L * 1.6, 0, 7); g.fill(); });
@@ -10591,12 +10627,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 const hist = fxHist().slice().reverse();
                 ov.innerHTML = `<div class="fx-wrap">${top}
                     <label class="fx-pickbtn"><input type="file" accept="video/*" onchange="fxPickFile(this)"><span>動画を選ぶ・撮る</span></label>
-                    <div class="fx-tips"><b>撮り方</b><ul><li>横・ななめ・後ろ、<b>どの向きからでも</b>大丈夫です。スマホは<b>傾けず</b>(縦・横どちらでも)、なるべく固定して</li><li>スパイカーの<b>頭から足まで全身</b>と、トスのボールが入るように</li><li>長さは<b>スパイカーの身長</b>から測ります(選手ごとに覚えます)</li><li>スロー撮影(120・240コマ)だと細かく測れます</li></ul></div>
+                    <div class="fx-tips"><b>撮り方</b><ul><li>横・ななめ・後ろ、<b>どの向きからでも</b>大丈夫です。スマホは<b>傾けず</b>(縦・横どちらでも)、<b>動かさずに固定</b>して(追いかけて動かすと、高さがずれます)</li><li>スパイカーの<b>頭から足まで全身</b>と、トスのボールが入るように</li><li>長さは<b>スパイカーの身長</b>から測ります(選手ごとに覚えます)</li><li>スロー撮影(120・240コマ)だと細かく測れます</li></ul></div>
                     ${hist.length ? `<div class="fx-grp"><h5>これまでの記録</h5>${hist.map(h => `<div class="fx-hrow"><span>${escapeHtml(h.at)} ${escapeHtml(h.name || "—")}</span><small>打点 ${fxF(h.res.hitH, "m")}・ジャンプ ${h.res.jump == null ? "—" : Math.round(h.res.jump * 100) + "cm"}・助走 ${h.res.runVsToss == null ? "—" : "トスの" + Math.abs(h.res.runVsToss).toFixed(2) + "秒" + (h.res.runVsToss < 0 ? "前" : "後")}</small><button type="button" onclick="fxDelHist(${h.id})" aria-label="消す">✕</button></div>`).join("")}</div>` : ""}
                     <div class="fx-note">骨格とボールの読み取りは、スマホの中だけで行います(Google の MediaPipe・無料)。動画はどこにも送りません。はじめて使うときだけ、読み取りのデータ(約10MB)をダウンロードします。</div></div>`;
                 return;
             }
-            const guide = { calibTop: "ネットの上端(白帯)をタップ", calibFloor: "その真下の床をタップ", pickSpiker: "スパイカーの腰のあたりをタップ", ready: "準備ができました", busy: "", result: "", ballTap: "ボールの位置をタップ" }[fx.step] || "";
+            const guide = { calibTop: "ネットの上端(白帯)をタップ", calibFloor: "その真下の床をタップ", pickSpiker: "スパイカーの腰のあたりをタップ", ready: fx.pick ? `スパイカーを選びました(${(fx.pick.t / (fx.slow || 1)).toFixed(2)}秒の画面)` : "スパイカーが写っている画面でタップ(しなくても、跳んだ人を自動で選びます)", busy: "", result: "", ballTap: "ボールの位置をタップ" }[fx.step] || "";
             const ctrl = `<div class="fx-ctrl"><button type="button" onclick="fxStepFrame(-1)" aria-label="前のコマ">‹</button><input type="range" id="fxSeek" min="0" max="${fx.dur || 0}" step="${FX_STEP}" value="${fx.t || 0}" oninput="fxSeek(+this.value)"><button type="button" onclick="fxStepFrame(1)" aria-label="次のコマ">›</button><span id="fxTime"></span></div>`;
             let body = "";
             if (fx.step === "calibTop" || fx.step === "calibFloor" || fx.step === "pickSpiker" || fx.step === "ready") {
@@ -10606,12 +10642,13 @@ const namesBtn = isAdmin() && dates.length > 0
                     <label>スロー<select onchange="fx.slow=+this.value">${[[1, "なし(そのまま)"], [4, "1/4(120コマを30で再生)"], [8, "1/8(240コマを30で再生)"]].map(([v, l]) => `<option value="${v}"${v === fx.slow ? " selected" : ""}>${l}</option>`).join("")}</select></label>
                     </div>
                     <div class="fx-netopt">${fx.calib.top && fx.calib.floor ? `ネット指定済み(ネットとの距離も出します)<select onchange="fx.net=+this.value">${FX_NETS.map(([v, l]) => `<option value="${v}"${+v === fx.net ? " selected" : ""}>${l}</option>`).join("")}</select>` : `<button type="button" class="st-btn" onclick="fx.calib={};fx.step='calibTop';fxRender()">ネットも指定する(真横から撮ったとき)</button>`}</div>
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pickSpiker';fx.calib={};fx.pick=null;fxRender();fxDraw()">やり直す</button><button type="button" class="st-btn fx-go" ${fx.step === "ready" ? "" : "disabled"} onclick="fxRun()">読み取る</button></div>`;
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ready';fx.calib={};fx.pick=null;fxRender();fxDraw()">やり直す</button><button type="button" class="st-btn fx-go" ${fx.step === "ready" ? "" : "disabled"} onclick="fxRun()">読み取る</button></div>`;
             } else if (fx.step === "busy") {
                 body = `<div class="fx-guide" id="fxMsg">準備しています…</div>`;
             } else {
                 const evs = FX_EVENTS.map(([k, l]) => `<div class="fx-ev"><button type="button" class="fx-evt" onclick="fxGoEvent('${k}')" ${fx.ev[k] == null ? "disabled" : ""}>${l}<small>${fx.ev[k] == null ? "見つからない" : (fx.ev[k] / (fx.slow || 1)).toFixed(2) + "秒"}</small></button><button type="button" class="fx-set" onclick="fxSetEvent('${k}')">今の画面</button></div>`).join("");
                 body = `${ctrl}
+                    <div class="fx-guide fx-sub">${fx.frames.some(f => f.pose) ? "緑の骨格がスパイカー。違う人なら、その人をタップ" : "スパイカーが見つかりません。スパイカーが写っている画面で、その人をタップ"}</div>
                     <div class="fx-grp"><h5>見つけた瞬間<small>違っていたら、コマ送りで合わせて「今の画面」</small></h5>${evs}
                     <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender()">この画面のボールをタップで指定</button></div></div>
                     ${fx.step === "ballTap" ? `<div class="fx-guide">ボールの位置をタップ</div>` : ""}
