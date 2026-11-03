@@ -10835,7 +10835,16 @@ const namesBtn = isAdmin() && dates.length > 0
             if (T[hi] - T[lo] < 0.2) return null;
             return [lo, hi];
         }
+        // 打つ手: 腕は「振りかぶり → 手がいちばん高くなる」の動きから自動で見つける(骨格の左右の名前には頼らない)。
+        //   骨格の左右の名前(15 = 左 / 16 = 右)は、後ろ向きなどで入れかわることがあるので、体の左右は、指定された利き手と、見つけた腕から決める:
+        //   「右手で打つ」と指定されていて、見つけた腕が 15(左の名前)なら、この動画は左右が入れかわっている
         function fxDetect(frames, heightM, segs) {
+            const ev = fxDetect0(frames, heightM, segs, true), pref = (typeof fx !== "undefined" && fx && fx.hand) || 0;
+            delete ev._swap;
+            if (ev._hand != null && pref) ev._swap = pref !== ev._hand;
+            return ev;
+        }
+        function fxDetect0(frames, heightM, segs, ignorePref) {
             const ev = {};
             const P = frames.filter(f => f.pose);
             if (P.length < 5) return ev;
@@ -10923,7 +10932,7 @@ const namesBtn = isAdmin() && dates.length > 0
             //   それより後だけを見る(振り始めると、打たないほうの腕は下ろすので、高いのは打つ腕)。
             //   腕の左右は、反ったり振り向いたりすると読みまちがえやすいので、どちらの腕かは決め打ちしない。ボールが見えていれば、手首にいちばん近づいたところで決める
             let ii = -1, ci = -1;
-            const hpref0 = (typeof fx !== "undefined" && fx && fx.hand) || 0;   // 15 = 左手で打つ、16 = 右手で打つ、0 = 自動
+            const hpref0 = ignorePref ? 0 : (typeof fx !== "undefined" && fx && fx.hand) || 0;   // 15 = 左手で打つ、16 = 右手で打つ、0 = 自動
             const hk = new Map();   // コマ → 打つ腕の手首(15/16)
             if (bs >= 0) {
                 // 骨格の左右の名前が体の左右と合っているか: 踏み切り前の体の向き(鼻 − 肩の中点)から体の右側の向きを求め、「左肩」が右側にあれば入れかわり
@@ -11125,7 +11134,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (v < 40) sp = Math.max(sp, v);
                 }
                 r.swing = sp;
-                r.arm = (k === 15) !== !!ev._swap ? "左" : "右";   // 体の左右(骨格の左右の名前が入れかわっていれば直す)
+                r.arm = (k === 15) !== !!ev._swap ? "左" : "右";
+                r.armAuto = !(typeof fx !== "undefined" && fx && fx.hand);   // 体の左右(骨格の左右の名前が入れかわっていれば直す)
                 // 体の使い方: いちばん高いところで打てているか / ひざを曲げて反り、インパクトで足を伸ばしながら腹筋で折りたたんでいるか
                 {
                     const tk = ev.takeoff != null ? ev.takeoff : ev.impact - 0.5, ld = ev.land != null ? ev.land : ev.impact + 0.5;
@@ -11672,12 +11682,13 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxSummaryHtml(r) {
             if (!r) return "";
             const w = fxBodyWords(r), tm = r.tm, row = (k, v, sub, go) => v == null ? "" : `<div class="fx-row"${go ? ` onclick="fxJump('${go}')" style="cursor:pointer"` : ""}><span>${k}${go ? " ›" : ""}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
-            const view = r.view == null ? null : r.view >= 60 ? "ほぼ真横" : r.view >= 30 ? "斜め" : "正面・後ろ寄り", arm = r.arm ? `${r.arm}手` : null;
-            const slowNote = r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "";
+            const view = r.view == null ? null : r.view >= 60 ? "ほぼ真横" : r.view >= 30 ? "斜め" : "正面・後ろ寄り", arm = r.arm ? `${r.arm}手${r.armAuto ? "(骨格の判定)" : ""}` : null;
+            const slowNote = (r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "")
+                + "";
             const tk = tm ? (tm.level === "ok" ? "ぴったり" : `あと${Math.abs(tm.delta).toFixed(2)}秒 ${tm.delta > 0 ? "遅く" : "早く"}`) : null;
             const tkSub = tm ? (tm.level === "ok" ? "トスに合わせて、ジャンプの頂点で打てる踏み切りです" : tm.delta > 0 ? "踏み切りが早い(ボールが落ちてくる前に頂点)" : "踏み切りが遅い(頂点を過ぎてからボールが来る)") : (r.tmWhy ? "ボールが追えていないので出せません(「見つけた瞬間」でボールの位置を指定)" : "");
             const rows = row("踏み切り", tk || (r.tmWhy ? "—" : null), tkSub, "takeoff") + row("打つタイミング", w.tim, w.timSub, "impact")
-                + row("ジャンプ", r.jump == null ? null : `${Math.round(r.jump * 100)}cm`, "腰が上がった高さ") + row("打点", r.hitH == null ? null : `${r.hitH.toFixed(2)}m`, `インパクトの${arm || "手"}の手のひらの高さ(床から。ボールが手のそばならボールの高さ)`, "impact")
+                + row("ジャンプ", r.jump == null ? null : `${Math.round(r.jump * 100)}cm`, "腰が上がった高さ") + row("打点", r.hitH == null ? null : `${r.hitH.toFixed(2)}m`, `インパクトの${arm || "手"}の手のひらの高さ(床から。ボールが手のそばならボールの高さ)${r.armAuto ? "。右・左が違っていれば、「打つ手」を指定" : ""}`, "impact")
                 + row("足", w.knee, w.kneeSub) + row("腹筋(折りたたみ)", w.fold, w.foldSub)
                 + row("撮った向き", view, view == null ? "" : r.view >= 60 ? "横から撮れています。足・体の折れ・腕の角度が測りやすい向きです" : r.view >= 30 ? "斜めからです。高さ・タイミングは問題なし、足・体の折れは少しずれます" : "正面・後ろ寄りです。高さ・タイミングは測れますが、足・体の折れ・腕の角度は精度が落ちます");
             return rows.replace(/\s/g, "") ? `${slowNote}<div class="fx-grp"><h5>結果<small>目安</small></h5>${rows}</div>` : slowNote;
