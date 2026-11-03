@@ -10595,6 +10595,40 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // ---- 瞬間を見つける(骨格・ボールの動きから) ----
         //   frames: [{ t, pose: [[x,y,vis]×33] (+ world: 体の中心からの3Dの位置(m)) | null, ball: {x,y} | null }]
+        // 空中にいる間: 腰の上下は重力だけで動く(放物線)。腰がいちばん高いところのまわりで放物線を合わせ、
+        //   そこから前後に、放物線に乗っている間 = 空中 とする(踏み切りで押し上げている間・着地でしゃがむ間は、放物線から外れる)
+        //   足首を使わないので、着地がソファや人に隠れても、奥へ走って床の位置が画面で動いても大丈夫
+        function fxBallistic(T, ys, pk, sc) {
+            const fit = (lo, hi) => {
+                const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], Y = [0, 0, 0];
+                for (let i = lo; i <= hi; i++) { if (ys[i] == null) continue; const u = T[i] - T[pk], v = [1, u, u * u]; for (let a = 0; a < 3; a++) { Y[a] += v[a] * ys[i]; for (let b = 0; b < 3; b++) S[a][b] += v[a] * v[b]; } }
+                const M = S.map((r, i) => r.concat([Y[i]]));
+                for (let c = 0; c < 3; c++) { let p = c; for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r; [M[c], M[p]] = [M[p], M[c]]; if (Math.abs(M[c][c]) < 1e-12) return null; for (let r = 0; r < 3; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k < 4; k++) M[r][k] -= f * M[c][k]; } }
+                return M.map((r, i) => r[3] / r[i]);
+            };
+            const tol = Math.max(4, 0.04 * sc);
+            let lo = pk, hi = pk; while (lo > 0 && T[pk] - T[lo - 1] <= 0.1) lo--; while (hi < T.length - 1 && T[hi + 1] - T[pk] <= 0.1) hi++;
+            if (hi - lo < 4) return null;
+            for (let round = 0; round < 3; round++) {
+                const m = fit(lo, hi); if (!m || m[2] <= 0) return null;
+                const res = i => { const u = T[i] - T[pk]; return Math.abs(ys[i] - (m[0] + m[1] * u + m[2] * u * u)); };
+                const ok = i => i >= 0 && i < T.length && ys[i] != null && res(i) < tol;
+                let a = lo, b = hi;
+                while (a > 0 && (ok(a - 1) || ok(a - 2)) && T[pk] - T[a - 1] <= 0.8) a -= ok(a - 1) ? 1 : 2;
+                while (b < T.length - 1 && (ok(b + 1) || ok(b + 2)) && T[b + 1] - T[pk] <= 0.8) b += ok(b + 1) ? 1 : 2;
+                b = Math.min(b, T.length - 1);
+                if (a === lo && b === hi) break;
+                lo = a; hi = b;
+            }
+            if (T[hi] - T[lo] < 0.2) return null;
+            // 着地したあとも腰はしばらく下がり続けて、放物線と見分けにくい。空中は頂点の前後で同じ長さなので、短いほうの側にそろえる
+            const m = fit(lo, hi); if (!m || m[2] <= 0) return null;
+            const tv = T[pk] - m[1] / (2 * m[2]), half = Math.min(tv - T[lo], T[hi] - tv) + 0.03;
+            while (lo < hi && tv - T[lo] > half) lo++;
+            while (hi > lo && T[hi] - tv > half) hi--;
+            if (T[hi] - T[lo] < 0.2) return null;
+            return [lo, hi];
+        }
         function fxDetect(frames, heightM, segs) {
             const ev = {};
             const P = frames.filter(f => f.pose);
@@ -10623,8 +10657,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 let lo = cb; for (let i = cb; i >= 0 && T[cb] - T[i] <= 0.6; i--) if (hipYs[i] > hipYs[lo]) lo = i;   // ジャンプの高さ比べ用: 直前の腰がいちばん低かったところ
                 const fl = ankY[cb], sc0 = ppm(P[cb]);
                 if ((hipYs[lo] - hipYs[pk]) / sc0 > 0.2) {   // 腰が 20cm 以上上がった = ジャンプ
-                    for (let i = cb + 1; i <= pk; i++) if ((fl - ankY[i]) / sc0 > 0.08) { bs = i; break; }
-                    if (bs >= 0) { be = P.length - 1; for (let i = pk + 1; i < P.length; i++) if ((fl - ankY[i]) / sc0 < 0.08) { be = i; break; } }
+                    const bl = fxBallistic(T, hipYs, pk, sc0);
+                    if (bl) { bs = bl[0]; be = bl[1]; }
+                    else {   // 放物線に乗らないとき(読み取りが乱れている): 足首が床から浮いている間
+                        for (let i = cb + 1; i <= pk; i++) if ((fl - ankY[i]) / sc0 > 0.08) { bs = i; break; }
+                        if (bs >= 0) { be = P.length - 1; for (let i = pk + 1; i < P.length; i++) if ((fl - ankY[i]) / sc0 < 0.08) { be = i; break; } }
+                    }
                 }
             }
             if (bs >= 0) { ev.takeoff = T[bs]; ev.land = T[be]; }
@@ -10637,10 +10675,23 @@ const namesBtn = isAdmin() && dates.length > 0
                 const st = P.findIndex((f, k) => k > i && fvs[k] >= 0.5);
                 if (st >= 0 && st < bs) ev.run = T[Math.max(0, st - 1)];
             }
-            // インパクト: 空中で、打つほうの手首がいちばん高いところ(ボールが見えていれば、手首にいちばん近づいたところで決める)
-            const wrHi = P.map(f => Math.min(f.pose[15][1], f.pose[16][1]));
+            // インパクト: 空中で、手が肩より上にあるうちに、腕をいちばん速く振ったところ(打つ瞬間に手首はいちばん速くなる)
+            //   「手首がいちばん高いところ」だと、振りかぶる前に手を伸ばした瞬間(頂点より前)を選んでしまうので使わない
+            //   踏み切りで腕を振り上げる動きと間違えないよう、踏み切り直後(0.06秒)は除く。ボールが見えていれば、手首にいちばん近づいたところで決める
             let ii = -1;
-            if (bs >= 0) { let m = Infinity; for (let i = bs; i <= be; i++) if (wrHi[i] < m) { m = wrHi[i]; ii = i; } }
+            if (bs >= 0) {
+                const sp = [15, 16].map(k => sm(P.map((f, i) => {
+                    const a = Math.max(0, i - 1), b = Math.min(P.length - 1, i + 1); if (a === b) return 0;
+                    const A = P[a].pose, B = P[b].pose; let d;
+                    if (A.world && B.world) d = Math.hypot(...[0, 1, 2].map(j => B.world[k][j] - A.world[k][j]));   // 3D は腰が原点なので、体に対する手首の動き
+                    else { const ha = fxHipOf(A), hb = fxHipOf(B); d = Math.hypot((B[k][0] - hb[0]) - (A[k][0] - ha[0]), (B[k][1] - hb[1]) - (A[k][1] - ha[1])) / ppm(P[i]); }
+                    const v = d / Math.max(1e-3, T[b] - T[a]); return v < 40 ? v : null;
+                }), 1));
+                let best = -1;
+                [15, 16].forEach((k, j) => { const s = k === 15 ? 11 : 12; for (let i = bs; i <= be; i++) if (T[i] - T[bs] >= 0.06 && P[i].pose[k][1] < P[i].pose[s][1] && sp[j][i] != null && sp[j][i] > best) { best = sp[j][i]; ii = i; ev._hand = k; } });
+                if (best < 3) ii = -1;   // 腕を振っていない(読み取れていない): 手首がいちばん高いところ
+                if (ii < 0) { let m = Infinity; for (let i = bs; i <= be; i++) { const k = P[i].pose[15][1] < P[i].pose[16][1] ? 15 : 16; if (P[i].pose[k][1] < m) { m = P[i].pose[k][1]; ii = i; ev._hand = k; } } }
+            }
             if (ii >= 0) {
                 ev.impact = T[ii];
                 const sc = ppm(P[ii]);
@@ -10717,7 +10768,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // インパクト: 打点の高さ・頭との前後(体の向きから)・腕の角度・腕を振る速さ(体の3Dの位置から。撮った向きに左右されない)
             const fi = at(ev.impact);
             if (fi && fi.pose) {
-                const p = fi.pose, k = p[15][1] < p[16][1] ? 15 : 16, e = k === 15 ? 13 : 14, s = k === 15 ? 11 : 12, h = k === 15 ? 23 : 24;
+                const p = fi.pose, k = ev._hand || (p[15][1] < p[16][1] ? 15 : 16), e = k === 15 ? 13 : 14, s = k === 15 ? 11 : 12, h = k === 15 ? 23 : 24;
                 const hand = fi.ball && Math.hypot(fi.ball.x - p[k][0], fi.ball.y - p[k][1]) / sc < 0.35 ? fi.ball : { x: p[k][0], y: p[k][1] };
                 r.hitH = (floorY - hand.y) / sc;
                 r.reach = r.hitH;   // 打点の高さ = 手(ボール)の位置
@@ -10868,7 +10919,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const ref = ev.impact, fr = fx.frames.filter(f => f.pose && f.pose.world && f.t >= ref - 1.2 * (fx.slow || 1) && f.t <= ref + 0.4 * (fx.slow || 1));
             if (fr.length < 5) return null;
             const r3 = v => Math.round(v * 1000) / 1000, sl = fx.slow || 1;
-            return { ev: Object.fromEntries(Object.entries(ev).filter(([, v]) => v != null).map(([k, v]) => [k, r3((v - ref) / sl)])), f: fr.map(f => ({ t: r3((f.t - ref) / sl), w: f.pose.world.map(p => p.map(r3)) })) };
+            return { ev: Object.fromEntries(Object.entries(ev).filter(([k, v]) => v != null && k[0] !== "_").map(([k, v]) => [k, r3((v - ref) / sl)])), f: fr.map(f => ({ t: r3((f.t - ref) / sl), w: f.pose.world.map(p => p.map(r3)) })) };
         }
         // ---- お手本と比べる ----
         //   お手本(上手な選手・プロの動画を同じように読み取って「お手本として保存」したもの)と、自分の記録を並べる
