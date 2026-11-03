@@ -3432,6 +3432,9 @@
         #fxOv .fx-cmp > i { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
         #fxOv .fx-cmp .hot { color: var(--ink); font-weight: 800; }
         #fxOv .fx-cmp i.hot { color: var(--accent); }
+        #fxOv .fx-balltap { margin: 10px 0 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, #ff7a1a 12%, var(--surface)); font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+        #fxOv .fx-balltap b { display: block; font-size: 14px; color: var(--ink); margin-bottom: 2px; }
+        #fxOv .fx-balltap div { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -10351,7 +10354,7 @@ const namesBtn = isAdmin() && dates.length > 0
             else if (fx.step === "calibFloor") { fx.calib.floor = { x: fx.calib.top.x, y: p.y }; fx.step = "ready"; }
             else if (fx.step === "pickSpiker" || fx.step === "ready") { fx.pick = { ...p, t: fx.t }; fx.step = "ready"; }
             else if (fx.step === "result") { fx.pick = { ...p, t: fx.t }; fxTrack(); }   // 読み終わったあと: タップした人を分析しなおす(読み直しはしない)
-            else if (fx.step === "ballTap") { fxSetBall(fx.t, p); fx.step = "result"; fxCompute(); }
+            else if (fx.step === "ballTap") { fxSetBall(fx.t, p); }   // 指定中はそのまま(コマを動かして、続けてタップ)
             fxRender(); fxDraw();
         }
         const fxMpp = () => { const f = fx.frames.find(x => x.pose); if (!f) return 0.005; const p = f.pose; return (FX_NOSE_HEEL * fx.height) / Math.max(1, Math.max(p[27][1], p[28][1]) - p[0][1]); };   // 1画素あたりの長さ(m)のおおよそ(ボールの飛び値の判定用)
@@ -10438,7 +10441,11 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxFitBall() {
             const fr = fx.frames, H = fx.h || 1000;
             const pts = [];
-            fr.forEach((f, fi) => { (f.balls || []).forEach(b => pts.push({ fi, t: f.t, x: b.x, y: b.y, w: 1 })); if (f.manual) pts.push({ fi, t: f.t, x: f.manual.x, y: f.manual.y, w: 5, man: true }); });
+            // 手で指定した点: 3点以上つながっていれば、その点だけで放物線を作る(自動の放物線より優先)。1〜2点なら、自動で探すときの目印にする
+            const man = fr.map((f, fi) => f.manual ? { fi, t: f.t, x: f.manual.x, y: f.manual.y, w: 1 } : null).filter(Boolean);
+            const manGroups = []; man.forEach(m => { const g = manGroups[manGroups.length - 1]; if (g && m.t - g[g.length - 1].t <= 1.5) g.push(m); else manGroups.push([m]); });
+            fr.forEach((f, fi) => { (f.balls || []).forEach(b => pts.push({ fi, t: f.t, x: b.x, y: b.y, w: 1 })); });
+            manGroups.filter(g => g.length < 3).forEach(g => g.forEach(m => pts.push({ ...m, w: 5, man: true })));
             const ps = fxScaleSeries(fr, fx.height || 1.7), pv = [...ps.values()].sort((a, b) => a - b), ppm = pv.length ? pv[Math.floor(pv.length / 2)] : null;
             const e0 = ppm ? 4.9 * ppm : null;   // 重力 9.8m/s² の半分 × 1mの画素
             const eMin = e0 ? e0 * 0.35 : H * 0.3, eMax = e0 ? e0 * 2.8 : H * 6;
@@ -10488,8 +10495,11 @@ const namesBtn = isAdmin() && dates.length > 0
                 segs.push({ ...m, t1: inl[0].t, t2: inl[inl.length - 1].t, n: inl.length });
                 const used = new Set(inl); pool = pool.filter(p => !used.has(p));
             }
+            // 手で指定した放物線(3点以上): いちばん優先。少しだけ前後にのばす
+            const manSegs = manGroups.filter(g => g.length >= 3).map(g => { const m = fit(g, g[0].t); return m ? { ...m, t1: g[0].t - 0.05, t2: g[g.length - 1].t + 0.05, n: 1e6, manual: true } : null; }).filter(Boolean);
+            segs.push(...manSegs);
             segs.sort((a, b) => a.t1 - b.t1);
-            // 時間が重なる放物線は、点が多いほうを残す(ボールは1つ)
+            // 時間が重なる放物線は、点が多いほうを残す(ボールは1つ。手で指定したものがいちばん強い)
             const keep = []; segs.slice().sort((a, b) => b.n - a.n).forEach(sg => { if (!keep.some(k => sg.t1 < k.t2 - 0.03 && sg.t2 > k.t1 + 0.03)) keep.push(sg); });
             keep.sort((a, b) => a.t1 - b.t1);
             fx.ballSegs = keep;
@@ -10498,9 +10508,13 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function fxSetBall(t, p) {
             const f = fx.frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, fx.frames[0]); if (!f) return;
-            f.manual = { x: p.x, y: p.y };   // 指定した点は、放物線を決めるときに強く効く
-            fxFitBall(); fx.ev = fxDetect(fx.frames, fx.height, fx.ballSegs); fxCompute();
+            f.manual = { x: p.x, y: p.y }; f.manualAt = Date.now();   // 同じコマなら置きかえ
+            fxBallRefit();
         }
+        function fxBallRefit() { fxFitBall(); fx.ev = fxDetect(fx.frames, fx.height, fx.ballSegs); fxCompute(); }
+        function fxBallClear() { fx.frames.forEach(f => { delete f.manual; }); fxBallRefit(); fxRender(); }
+        function fxBallDone() { fx.step = "result"; fxRender(); }
+        function fxBallUndo() { const fs = fx.frames.filter(f => f.manual); if (!fs.length) return; const last = fs.reduce((a, b) => (a.manualAt || 0) > (b.manualAt || 0) ? a : b); delete last.manual; fxBallRefit(); fxRender(); }
         // ---- 長さの基準: スパイカー自身の体(どの向きから撮っても使える) ----
         //   立っているときの「鼻からかかとまで」は、身長のおよそ 0.87 倍。画面の上下の長さは、横からでも後ろからでもほぼ同じに写るので、
         //   その人がいる場所での 1m が何画素かが分かる(奥へ走っていっても、コマごとに測り直す)
@@ -10669,8 +10683,9 @@ const namesBtn = isAdmin() && dates.length > 0
             // 読み取ったボールらしい点(薄く)と、放物線に合わせた軌道(黄色の線)
             g.fillStyle = "rgba(255,200,60,.35)";
             fx.frames.forEach(f => (f.balls || []).forEach(b => { g.beginPath(); g.arc(b.x, b.y, L * 1.2, 0, 7); g.fill(); }));
+            fx.frames.forEach(f => { if (!f.manual) return; g.fillStyle = "#ff7a1a"; g.strokeStyle = "#fff"; g.lineWidth = L; g.beginPath(); g.arc(f.manual.x, f.manual.y, L * 4, 0, 7); g.fill(); g.stroke(); });
             (fx.ballSegs || []).forEach(sg => {
-                g.strokeStyle = "rgba(255,200,60,.9)"; g.beginPath();
+                g.lineWidth = L; g.strokeStyle = sg.manual ? "rgba(255,122,26,.95)" : "rgba(255,200,60,.9)"; g.beginPath();
                 for (let t = sg.t1, i = 0; t <= sg.t2 + 1e-6; t += 1 / 120, i++) { const u = t - sg.t0, x = sg.a + sg.b * u, y = sg.c + sg.d * u + sg.e * u * u; if (i) g.lineTo(x, y); else g.moveTo(x, y); }
                 g.stroke();
             });
@@ -10780,11 +10795,13 @@ const namesBtn = isAdmin() && dates.length > 0
                 body = `<div class="fx-guide" id="fxMsg">準備しています…</div>`;
             } else {
                 const evs = FX_EVENTS.map(([k, l]) => `<div class="fx-ev"><button type="button" class="fx-evt" onclick="fxGoEvent('${k}')" ${fx.ev[k] == null ? "disabled" : ""}>${l}<small>${fx.ev[k] == null ? "見つからない" : (fx.ev[k] / (fx.slow || 1)).toFixed(2) + "秒"}</small></button><button type="button" class="fx-set" onclick="fxSetEvent('${k}')">今の画面</button></div>`).join("");
-                body = `${ctrl}
+                const nMan = fx.frames.filter(f => f.manual).length;
+                const ballBox = fx.step === "ballTap" ? `<div class="fx-balltap"><b>ボールをタップ(${nMan}点)</b><span>${nMan < 3 ? `コマを動かしながら、ボールの位置をタップ。トスなら「手を離れたところ・てっぺん・打つ直前」の3点以上で、その放物線になります(あと${3 - nMan}点)` : "指定した点を通る放物線にしました。ずれていれば、そのコマでもう一度タップ(置きかえ)"}</span>
+                    <div><button type="button" class="st-btn" onclick="fxBallUndo()" ${nMan ? "" : "disabled"}>1つ戻す</button><button type="button" class="st-btn" onclick="fxBallClear()" ${nMan ? "" : "disabled"}>全部消す</button><button type="button" class="st-btn fx-go" onclick="fxBallDone()">完了</button></div></div>` : "";
+                body = `${ballBox}${ctrl}
                     <div class="fx-guide fx-sub">${fx.frames.some(f => f.pose) ? "緑の骨格がスパイカー。違う人なら、その人をタップ" : "スパイカーが見つかりません。スパイカーが写っている画面で、その人をタップ"}</div>
                     <div class="fx-grp"><h5>見つけた瞬間<small>違っていたら、コマ送りで合わせて「今の画面」</small></h5>${evs}
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender()">この画面のボールをタップで指定</button></div></div>
-                    ${fx.step === "ballTap" ? `<div class="fx-guide">ボールの位置をタップ</div>` : ""}
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender();document.getElementById('fxCv').scrollIntoView({block:'center'})">ボールの位置を指定する</button></div></div>
                     ${fxResHtml(fx.res)}
                     <div class="fx-grp"><h5>印を付ける<small>あとで比べるため(保存したあとも直せます)</small></h5>${fxTagChips(fx.tags || {}, "fxTagSet")}</div>
                     <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
