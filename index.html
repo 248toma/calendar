@@ -3500,6 +3500,56 @@
         #fxOv .fx-curve { margin: 6px 0; }
         #fxOv .fx-curve span { font-size: 11px; color: var(--ink-3); }
         #fxOv .fx-curve svg { display: block; width: 100%; height: 70px; background: var(--bg); border-radius: 10px; }
+
+        /* ===== フォーム分析: 分析ページ・設定と同じ見た目にそろえる(白いカード・50px の見出し行・色は緑の文字だけ) ===== */
+        #fxOv .fx-head b { font-size: 22px; }
+        #fxOv .fx-pickbtn { height: 60px; gap: 10px; border-radius: 16px; background: var(--surface); color: var(--ink); font-size: 15px; font-weight: 700; box-shadow: none; }
+        #fxOv .fx-pickbtn svg { color: var(--accent); }
+        #fxOv .fx-pickbtn:active { box-shadow: var(--sink); }
+        #fxOv .fx-grp, #fxOv .fx-tips { margin: 12px 0 0; padding: 0 16px 8px; border-radius: 16px; background: var(--surface); box-shadow: none; color: var(--ink-2); }
+        #fxOv .fx-grp > h5 { display: flex; flex-direction: column; justify-content: center; min-height: 50px; margin: 0 -16px 2px; padding: 8px 16px; box-sizing: border-box; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; color: var(--ink); }
+        #fxOv .fx-grp > h5 small { margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--ink-3); }
+        #fxOv .fx-row { padding: 11px 0; gap: 3px 12px; }
+        #fxOv .fx-row > span { font-size: 13.5px; color: var(--ink); }
+        #fxOv .fx-row b { font-size: 15px; font-weight: 700; text-align: right; }
+        #fxOv .fx-row small { font-size: 11px; line-height: 1.5; }
+        #fxOv .fx-note { margin: 14px 6px 0; font-size: 11px; color: var(--ink-3); }
+        #fxOv .fx-notice { margin: 12px 0 0; padding: 12px 16px; border-radius: 16px; background: var(--surface); font-size: 12px; line-height: 1.6; color: var(--ink-2); }
+        /* 開け閉めするカード */
+        #fxOv .fx-card { margin: 12px 0 0; border-radius: 16px; background: var(--surface); overflow: hidden; }
+        #fxOv .fx-card > summary { display: flex; align-items: center; gap: 8px; min-height: 50px; padding: 0 16px; font-size: 14px; font-weight: 600; color: var(--ink); list-style: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        #fxOv .fx-card > summary::-webkit-details-marker { display: none; }
+        #fxOv .fx-card > summary > em { font-style: normal; font-size: 12px; font-weight: 500; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        #fxOv .fx-card > summary::after { content: "›"; margin-left: 10px; color: var(--ink-3); font-size: 18px; line-height: 1; transition: transform .15s; }
+        #fxOv .fx-card > summary > span { flex: 1; min-width: 0; }
+        #fxOv .fx-card[open] > summary { border-bottom: 1px solid var(--line); }
+        #fxOv .fx-card[open] > summary::after { transform: rotate(90deg); }
+        #fxOv .fx-cbody { padding: 2px 0 8px; }
+        #fxOv .fx-cbody > .fx-grp { margin: 0; padding-top: 0; border-radius: 0; background: none; }
+        #fxOv .fx-cbody > .fx-grp + .fx-grp { border-top: 1px solid var(--line); }
+        #fxOv .fx-cbody > .fx-grp > h5 { min-height: 0; margin: 0 -16px; padding: 12px 16px 4px; border-bottom: none; font-size: 12px; font-weight: 700; color: var(--ink-3); }
+        #fxOv .fx-cbody > .fx-grp:first-child > h5 { font-size: 0; padding-top: 10px; }   /* カードの見出しと同じ名前は出さず、説明だけ */
+        #fxOv .fx-cbody > .fx-grp:first-child > h5 small { font-size: 11px; margin: 0; }
+        #fxOv .fx-cbody > .fx-note, #fxOv .fx-cbody > .fx-acts { margin-left: 16px; margin-right: 16px; }
+        #fxOv .fx-tiplist { margin: 10px 16px 6px; padding-left: 1.1em; font-size: 12.5px; line-height: 1.8; color: var(--ink-2); }
+        #fxOv .fx-tiplist b { color: var(--ink); }
+        /* ボタン・入力: アプリのほかの画面と同じ凸凹 */
+        #fxOv .st-btn { height: 36px; }
+        #fxOv .fx-go { background: var(--bg) !important; color: var(--accent) !important; }
+        #fxOv .fx-acts { margin-top: 14px; }
+        #fxOv .fx-acts-main { margin-top: 18px; }
+        #fxOv .fx-ctrl button { background: var(--surface); box-shadow: var(--raise-sm); border-radius: 14px; }
+        #fxOv .fx-set { border: none; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-sm); color: var(--ink-2); font-weight: 600; }
+        #fxOv .fx-opts input, #fxOv .fx-opts select, #fxOv .fx-netopt select, #fxOv .fx-cmphead select, #fxOv .fx-refsel select { border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); }
+        #fxOv .fx-tagrow button { border: none; border-radius: 16px; background: var(--bg); box-shadow: var(--raise-sm); color: var(--ink-2); padding: 7px 12px; }
+        #fxOv .fx-tagrow button.on { background: var(--bg); color: var(--accent); box-shadow: var(--sink); font-weight: 700; }
+        #fxOv .fx-seg { background: var(--bg); box-shadow: var(--sink); border-radius: 12px; padding: 3px; }
+        #fxOv .fx-seg button.on { background: var(--surface); color: var(--accent); box-shadow: var(--raise-sm); border-radius: 9px; }
+        #fxOv .fx-hrow em { background: var(--bg); box-shadow: var(--sink); }
+        #fxOv .fx-ov svg, #fxOv .fx-curve svg { background: var(--bg); border-radius: 12px; }
+        #fxOv .fx-sticks > div { background: var(--bg); }
+        #fxOv .fx-guide { font-size: 13px; }
+        #fxOv input[type=range] { accent-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -11375,15 +11425,26 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${row("体の反り", fxF(r.arch, "°", 0), "胸を張って、肩とひざが後ろへ反った大きさ")}
                 ${row("たたみ込み(腹筋)", fxF(r.fold, "°", 0), foldSub || "反った形から、インパクトにかけて体を前に折った大きさ")}</div>`;
         }
-        function fxResHtml(r) {
-            if (!r) return `<div class="fx-note">スパイカーの骨格が見つかりませんでした。明るく、全身が入る動画で試してください。</div>`;
-            const slowNote = r.slowSus ? `<div class="fx-grp"><div class="fx-note" style="margin:0">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さの値は出していません。高さ・角度・体の形は出ています。一定のスローなら、倍率を「スロー」で選んで読み直すと、時間も出ます。</div></div>` : "";
+        // part: "main" = 体の使い方(いちばん見たいところ) / "nums" = くわしい数字(トス・ジャンプ・打点)。値のない行・グループは出さない
+        function fxResHtml(r, part) {
+            if (!r) return part === "nums" ? "" : `<div class="fx-note">スパイカーの骨格が見つかりませんでした。明るく、全身が入る動画で試してください。</div>`;
+            const row = (k, v, sub) => v == null || v === "—" ? "" : `<div class="fx-row"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
+            if (part !== "nums") {
+                const slowNote = r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "";
+                return `${slowNote}${fxBodyHtml(r, (k, v, sub) => `<div class="fx-row"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`)}`;
+            }
             const sg = (v, pos, neg) => v == null ? "—" : `${Math.abs(v).toFixed(2)}秒${v < 0 ? neg : pos}`;
-            const row = (k, v, sub) => `<div class="fx-row"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
-            return `${slowNote}<div class="fx-grp"><h5>トス</h5>${row("頂点の高さ", fxF(r.tossH, "m"))}${row("上がってから頂点まで", fxF(r.tossUp, "秒"))}${row("手を離れてからインパクトまで", fxF(r.tossToHit, "秒"))}</div>
-                <div class="fx-grp"><h5>助走・ジャンプ</h5>${row("助走を始めたタイミング", r.runVsToss == null ? "—" : sg(r.runVsToss, "後", "前"), "トスが手を離れたときから")}${row("踏み切りのタイミング", r.takeoffVsApex == null ? "—" : sg(r.takeoffVsApex, "後", "前"), "トスの頂点から")}${row("助走の時間", fxF(r.approach, "秒"))}${row("ジャンプ(腰が上がった高さ)", r.jump == null ? "—" : `${Math.round(r.jump * 100)}cm`)}${row("滞空時間", fxF(r.hang, "秒"))}</div>
-                <div class="fx-grp"><h5>インパクト・フォーム</h5>${row("打点の高さ", fxF(r.hitH, "m"))}${r.ballGap == null ? "" : row("インパクトの手とボール", `${Math.round(r.ballGap * 100)}cm`, r.ballGap <= 0.35 ? (r.byBall ? "ボールの軌道が変わった瞬間に、手がボールに届いています" : "手がボールに届いています") : "手とボールが離れています。インパクトのコマを確かめてください")}${row("打点の前後", r.hitFront == null ? "—" : `${Math.round(Math.abs(r.hitFront) * 100)}cm ${r.hitFront >= 0 ? "頭より前" : "頭より後ろ"}`)}${r.netDist == null ? "" : row("打点とネットの距離", `${Math.round(r.netDist * 100)}cm`)}${row("ひじの角度", fxF(r.elbow, "°", 0), "180°でまっすぐ")}${row("肩の角度", fxF(r.shoulder, "°", 0), "わきの開き。180°で真上")}${row("腕を振る速さ", fxF(r.swing, "m/秒", 1), "手首のいちばん速いとき")}</div>
-                ${fxBodyHtml(r, row)}`;
+            const grp = (t, rows) => rows.replace(/\s/g, "") ? `<div class="fx-grp"><h5>${t}</h5>${rows}</div>` : "";
+            return grp("トス", row("頂点の高さ", fxF(r.tossH, "m")) + row("上がってから頂点まで", fxF(r.tossUp, "秒")) + row("手を離れてからインパクトまで", fxF(r.tossToHit, "秒")))
+                + grp("助走・ジャンプ", row("助走を始めたタイミング", r.runVsToss == null ? "—" : sg(r.runVsToss, "後", "前"), "トスが手を離れたときから") + row("踏み切りのタイミング", r.takeoffVsApex == null ? "—" : sg(r.takeoffVsApex, "後", "前"), "トスの頂点から") + row("助走の時間", fxF(r.approach, "秒")) + row("ジャンプ(腰が上がった高さ)", r.jump == null ? "—" : `${Math.round(r.jump * 100)}cm`) + row("滞空時間", fxF(r.hang, "秒")))
+                + grp("インパクト", row("打点の高さ", fxF(r.hitH, "m")) + (r.ballGap == null ? "" : row("手とボール", `${Math.round(r.ballGap * 100)}cm`, r.ballGap <= 0.35 ? (r.byBall ? "ボールの軌道が変わった瞬間に、手がボールに届いています" : "手がボールに届いています") : "手とボールが離れています。インパクトのコマを確かめてください")) + row("打点の前後", r.hitFront == null ? "—" : `${Math.round(Math.abs(r.hitFront) * 100)}cm ${r.hitFront >= 0 ? "頭より前" : "頭より後ろ"}`) + (r.netDist == null ? "" : row("打点とネットの距離", `${Math.round(r.netDist * 100)}cm`)) + row("ひじの角度", fxF(r.elbow, "°", 0), "180°でまっすぐ") + row("肩の角度", fxF(r.shoulder, "°", 0), "わきの開き。180°で真上") + row("腕を振る速さ", fxF(r.swing, "m/秒", 1)));
+        }
+        // 開け閉めできるカード(分析ページと同じ見た目)。中の .fx-grp はカードの中身として、見出しを出さずに並べる
+        var fxOpenSt = { overlay: true };
+        function fxCard(key, title, inner, sub) {
+            if (!inner || !inner.replace(/\s/g, "")) return "";
+            const open = fxOpenSt[key] != null ? fxOpenSt[key] : false;
+            return `<details class="fx-card"${open ? " open" : ""} ontoggle="fxOpenSt['${key}']=this.open"><summary><span>${title}</span>${sub ? `<em>${sub}</em>` : ""}</summary><div class="fx-cbody">${inner}</div></details>`;
         }
         function fxRender() {
             const ov = document.getElementById("fxOv"); if (!ov || !fx) return;
@@ -11392,13 +11453,13 @@ const namesBtn = isAdmin() && dates.length > 0
             if (fx.step === "pick") {
                 const hist = fxHist().slice().reverse();
                 ov.innerHTML = `<div class="fx-wrap">${top}
-                    <label class="fx-pickbtn"><input type="file" accept="video/*" onchange="fxPickFile(this)"><span>動画を選ぶ・撮る</span></label>
-                    <div class="fx-tips"><b>撮り方</b><ul><li>横・ななめ・後ろ、<b>どの向きからでも</b>大丈夫です。スマホは<b>傾けず</b>(縦・横どちらでも)、<b>動かさずに固定</b>して(追いかけて動かすと、高さがずれます)</li><li>スパイカーの<b>頭から足まで全身</b>と、トスのボールが入るように</li><li>長さは<b>スパイカーの身長</b>から測ります(選手ごとに覚えます)</li><li>スロー撮影(120・240コマ)だと細かく測れます</li></ul></div>
-                    ${fxOverlayHtml(null, hist)}
-                    ${fxRefHtml(hist)}
-                    ${hist.filter(h => !h.ref).length ? fxCmpHtml(hist.filter(h => !h.ref)) : ""}
-                    ${hist.length ? `<div class="fx-grp"><h5>これまでの記録<small>タップで印を付ける・直す</small></h5>${hist.map(h => `<div class="fx-hrow" onclick="if(!event.target.closest('button'))fxHistToggle(${h.id})"><span>${h.ref ? "★ " : ""}${escapeHtml(h.at)} ${escapeHtml(h.name || "—")}${["out", "feel", "course"].map(k => h.tags && h.tags[k] ? `<em>${fxTagLabel(k, h.tags[k])}</em>` : "").join("")}</span><small>打点 ${fxF(h.res.hitH, "m")}・ジャンプ ${h.res.jump == null ? "—" : Math.round(h.res.jump * 100) + "cm"}・助走 ${h.res.runVsToss == null ? "—" : "トスの" + Math.abs(h.res.runVsToss).toFixed(2) + "秒" + (h.res.runVsToss < 0 ? "前" : "後")}</small><button type="button" onclick="fxDelHist(${h.id})" aria-label="消す">✕</button></div>${fxOpenHist === h.id ? `<div class="fx-hedit">${fxTagChips(h.tags || {}, "fxHistTag", h.id)}</div>` : ""}`).join("")}</div>` : ""}
-                    <div class="fx-note">骨格とボールの読み取りは、スマホの中だけで行います(Google の MediaPipe・無料)。動画はどこにも送りません。はじめて使うときだけ、読み取りのデータ(約10MB)をダウンロードします。</div></div>`;
+                    <label class="fx-pickbtn"><input type="file" accept="video/*" onchange="fxPickFile(this)"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="3"></rect><path d="M16 10.5 21 7.5v9l-5-3"></path></svg><span>動画を選ぶ・撮る</span></label>
+                    ${fxCard("tips", "撮り方", `<ul class="fx-tiplist"><li>どの向きからでも大丈夫。スマホは<b>傾けず、動かさずに固定</b></li><li>スパイカーの<b>頭から足まで</b>と、トスのボールが入るように</li><li>長さは<b>身長</b>から測ります(選手ごとに覚えます)</li><li>スロー撮影(120・240コマ)だと細かく測れます</li></ul>`)}
+                    ${fxCard("overlay", "重ねて見る", fxOverlayHtml(null, hist))}
+                    ${fxCard("ref", "お手本と比べる", fxRefHtml(hist), hist.some(h => h.ref) ? "" : "お手本なし")}
+                    ${hist.filter(h => !h.ref).length ? fxCard("cmp", "印で比べる", fxCmpHtml(hist.filter(h => !h.ref))) : ""}
+                    ${hist.length ? fxCard("hist", "これまでの記録", `<div class="fx-grp"><h5><small>タップで印を付ける・直す</small></h5>${hist.map(h => `<div class="fx-hrow" onclick="if(!event.target.closest('button'))fxHistToggle(${h.id})"><span>${h.ref ? "★ " : ""}${escapeHtml(h.at)} ${escapeHtml(h.name || "—")}${["out", "feel", "course"].map(k => h.tags && h.tags[k] ? `<em>${fxTagLabel(k, h.tags[k])}</em>` : "").join("")}</span><small>打点 ${fxF(h.res.hitH, "m")}・ジャンプ ${h.res.jump == null ? "—" : Math.round(h.res.jump * 100) + "cm"}・助走 ${h.res.runVsToss == null ? "—" : "トスの" + Math.abs(h.res.runVsToss).toFixed(2) + "秒" + (h.res.runVsToss < 0 ? "前" : "後")}</small><button type="button" onclick="fxDelHist(${h.id})" aria-label="消す">✕</button></div>${fxOpenHist === h.id ? `<div class="fx-hedit">${fxTagChips(h.tags || {}, "fxHistTag", h.id)}</div>` : ""}`).join("")}</div>`, `${hist.length}本`) : ""}
+                    <div class="fx-note">読み取りはスマホの中だけで行い、動画はどこにも送りません(Google MediaPipe・無料)。</div></div>`;
                 return;
             }
             const guide = { calibTop: "ネットの上端(白帯)をタップ", calibFloor: "その真下の床をタップ", pickSpiker: "スパイカーの腰のあたりをタップ", ready: fx.pick ? `スパイカーを選びました(${(fx.pick.t / (fx.slow || 1)).toFixed(2)}秒の画面)` : "スパイカーが写っている画面でタップ(しなくても、跳んだ人を自動で選びます)", busy: "", result: "", ballTap: "ボールの位置をタップ" }[fx.step] || "";
@@ -11421,14 +11482,14 @@ const namesBtn = isAdmin() && dates.length > 0
                     <div><button type="button" class="st-btn" onclick="fxBallUndo()" ${nMan ? "" : "disabled"}>1つ戻す</button><button type="button" class="st-btn" onclick="fxBallClear()" ${nMan ? "" : "disabled"}>全部消す</button><button type="button" class="st-btn fx-go" onclick="fxBallDone()">完了</button></div></div>` : "";
                 body = `${ballBox}${ctrl}
                     <div class="fx-guide fx-sub">${fx.frames.some(f => f.pose) ? "緑の骨格がスパイカー。違う人なら、その人をタップ" : "スパイカーが見つかりません。スパイカーが写っている画面で、その人をタップ"}${fxDiagHtml()}</div>
-                    <div class="fx-grp"><h5>見つけた瞬間<small>違っていたら、コマ送りで合わせて「今の画面」</small></h5>${evs}
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender();document.getElementById('fxCv').scrollIntoView({block:'center'})">ボールの位置を指定する</button></div></div>
-                    ${fxResHtml(fx.res)}
+                    ${fxCard("ev", "見つけた瞬間", `<div class="fx-grp"><h5><small>違っていたら、コマ送りで合わせて「今の画面」</small></h5>${evs}
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender();document.getElementById('fxCv').scrollIntoView({block:'center'})">ボールの位置を指定する</button></div></div>`, fx.ev.impact != null ? `インパクト ${(fx.ev.impact / (fx.slow || 1)).toFixed(2)}秒` : "インパクトなし")}
+                    ${fxResHtml(fx.res, "main")}
                     ${fx.res ? fxOverlayHtml({ res: fx.res, seq: fxSeq() }, fxHist().slice().reverse()) : ""}
+                    ${fx.res ? fxCard("nums", "くわしい数字", fxResHtml(fx.res, "nums"), [fx.res.jump != null ? `ジャンプ ${Math.round(fx.res.jump * 100)}cm` : "", fx.res.hitH != null ? `打点 ${fx.res.hitH.toFixed(2)}m` : ""].filter(Boolean).join("・")) : ""}
                     <div class="fx-grp"><h5>印を付ける<small>あとで比べるため(保存したあとも直せます)</small></h5>${fxTagChips(fx.tags || {}, "fxTagSet")}</div>
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn" onclick="fxSave(true)" ${fx.saved ? "disabled" : ""}>お手本として保存</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fxExport()">データと結果を書き出す(検証用)</button></div>
-                    <div class="fx-note">数字の目安: 長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。頭との前後・腕の角度・振る速さは、体の3Dの形から出すので向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div>`;
+                    <div class="fx-acts fx-acts-main"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn" onclick="fxSave(true)" ${fx.saved ? "disabled" : ""}>お手本にする</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
+                    ${fxCard("about", "数字について・書き出し", `<div class="fx-note" style="margin:4px 0 0">長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。体の軸・腕の伸び・ひざなどは体の3Dの形から出すので、向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div><div class="fx-acts"><button type="button" class="st-btn" onclick="fxExport()">データと結果を書き出す(検証用)</button></div>`)}`;
             }
             ov.innerHTML = `<div class="fx-wrap">${top}<div class="fx-cvbox"><canvas id="fxCv" onclick="fxTap(event)"></canvas></div>${body}</div>`;
             fxDraw();
