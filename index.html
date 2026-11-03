@@ -10467,20 +10467,57 @@ const namesBtn = isAdmin() && dates.length > 0
         // ---- スパイカーを決める: コマどうしで同じ人をつないで「人の通り道」を作り、その中から選ぶ ----
         //   タップしていれば、そのコマでタップにいちばん近い人の通り道。していなければ、いちばん大きく跳んだ人(スパイカー)
         const fxHipOf = p => [(p[23][0] + p[24][0]) / 2, (p[23][1] + p[24][1]) / 2];
-        const fxSizeOf = p => Math.max(20, Math.max(p[27][1], p[28][1]) - p[0][1]);   // 画面での体の大きさ(鼻から足首)
+        // 画面での体の大きさ(鼻から足首)。跳んで足を後ろに曲げると短く写るので、胴の長さ(肩〜腰)の 2.8 倍より小さくはしない
+        const fxSizeOf = p => { const t = Math.hypot((p[11][0] + p[12][0] - p[23][0] - p[24][0]) / 2, (p[11][1] + p[12][1] - p[23][1] - p[24][1]) / 2); return Math.max(20, Math.max(p[27][1], p[28][1]) - p[0][1], 2.8 * t); };
+        const fxVis = p => [0, 11, 12, 23, 24, 25, 26, 27, 28].reduce((s, k) => s + (p[k][2] || 0), 0);
         function fxTracks(frames) {
             const tracks = [];
             frames.forEach((f, i) => {
                 const used = new Set();
                 const cand = [];
-                (f.people || []).forEach((p, pi) => tracks.forEach((tr, ti) => {
+                // 同じ人が2つ重なって読まれることがある(速く動く・体を反ったとき): 腰と肩がほぼ同じ場所なら1人にまとめる(よく見えているほうを残す)
+                const ppl = (f.people || []).slice().sort((a, b) => fxVis(b) - fxVis(a)).filter((p, k, arr) => !arr.slice(0, k).some(q => {
+                    const a = fxHipOf(p), c = fxHipOf(q), sz = Math.max(fxSizeOf(p), fxSizeOf(q));
+                    const sa = [(p[11][0] + p[12][0]) / 2, (p[11][1] + p[12][1]) / 2], sb = [(q[11][0] + q[12][0]) / 2, (q[11][1] + q[12][1]) / 2];
+                    return Math.hypot(a[0] - c[0], a[1] - c[1]) / sz < 0.3 || Math.hypot(sa[0] - sb[0], sa[1] - sb[1]) / sz < 0.2;
+                }));
+                (ppl).forEach((p, pi) => tracks.forEach((tr, ti) => {
                     const last = tr.items[tr.items.length - 1]; if (i - last.i > 18 || i === last.i) return;   // 0.3秒までなら見失ってもつなぐ
                     const a = fxHipOf(p), b = fxHipOf(last.p), d = Math.hypot(a[0] - b[0], a[1] - b[1]) / fxSizeOf(last.p);
                     if (d < 0.6 + 0.05 * (i - last.i)) cand.push({ pi, ti, d });
                 }));
-                cand.sort((x, y) => x.d - y.d).forEach(c => { if (used.has("p" + c.pi) || used.has("t" + c.ti)) return; used.add("p" + c.pi); used.add("t" + c.ti); tracks[c.ti].items.push({ i, p: f.people[c.pi] }); });
-                (f.people || []).forEach((p, pi) => { if (!used.has("p" + pi)) tracks.push({ items: [{ i, p }] }); });
+                cand.sort((x, y) => x.d - y.d).forEach(c => { if (used.has("p" + c.pi) || used.has("t" + c.ti)) return; used.add("p" + c.pi); used.add("t" + c.ti); tracks[c.ti].items.push({ i, p: ppl[c.pi] }); });
+                ppl.forEach((p, pi) => { if (!used.has("p" + pi)) tracks.push({ items: [{ i, p }] }); });
             });
+            // 途切れた通り道をつなぐ: 跳んだり体を反ったりすると、骨格の形が急に変わって別の人として始まることがある
+            //   片方が終わってから 0.5秒以内にもう片方が始まり、その間に動ける距離なら、同じ人とみなしてつなぐ(時間が重なるものはつながない)
+            const fps = frames.length > 1 ? 1 / Math.max(1e-3, frames[1].t - frames[0].t) : 60;
+            for (let changed = true; changed;) {
+                changed = false;
+                tracks.sort((a, b) => a.items[0].i - b.items[0].i);
+                outer: for (const A of tracks) {
+                    const la = A.items[A.items.length - 1];
+                    let best = null, bd = Infinity;
+                    let cut = -1;
+                    for (const B of tracks) {
+                        if (B === A) continue;
+                        const fb = B.items[0], gap = fb.i - la.i;
+                        if (gap <= 0) {
+                            // 少し重なっている: A が終わる直前に B が始まり、A はすぐ消える(= A は最後に別のものを拾っていた)。B の始まりが、その直前の A の位置に近ければ、そこで A を切って B につなぐ
+                            if (-gap > fps * 0.2 || B.items[B.items.length - 1].i <= la.i) continue;
+                            const k = A.items.findIndex(it => it.i >= fb.i); if (k <= 0) continue;
+                            const pa = A.items[k - 1], a = fxHipOf(pa.p), c = fxHipOf(fb.p), d = Math.hypot(a[0] - c[0], a[1] - c[1]) / Math.max(fxSizeOf(pa.p), fxSizeOf(fb.p));
+                            if (d < 0.6 + 3 * (fb.i - pa.i) / fps && d < bd) { bd = d; best = B; cut = k; }
+                            continue;
+                        }
+                        if (gap > fps * 0.5) continue;
+                        const a = fxHipOf(la.p), c = fxHipOf(fb.p), sz = Math.max(fxSizeOf(la.p), fxSizeOf(fb.p));
+                        const d = Math.hypot(a[0] - c[0], a[1] - c[1]) / sz;
+                        if (d < 0.8 + 3 * gap / fps && d < bd) { bd = d; best = B; cut = -1; }
+                    }
+                    if (best) { if (cut >= 0) A.items.length = cut; A.items.push(...best.items); tracks.splice(tracks.indexOf(best), 1); changed = true; break outer; }
+                }
+            }
             return tracks;
         }
         function fxTrack() {
@@ -10496,7 +10533,20 @@ const namesBtn = isAdmin() && dates.length > 0
                 tracks.forEach(tr => { const ys = tr.items.map(it => fxHipOf(it.p)[1]), sz = tr.items.map(it => fxSizeOf(it.p)).sort((a, b) => a - b)[Math.floor(tr.items.length / 2)]; const sc = (Math.max(...ys) - Math.min(...ys)) / sz + tr.items.length * 0.002; if (sc > bs) { bs = sc; pick = tr; } });
             }
             fr.forEach(f => { f.pose = null; });
-            if (pick) pick.items.forEach(it => { fr[it.i].pose = it.p; });
+            if (pick) {
+                pick.items.forEach(it => { fr[it.i].pose = it.p; });
+                // 通り道の途中で抜けたコマ: 前後のコマの間(まっすぐ結んだ位置)の近くに写っている人がいれば、その人で埋める
+                const its = pick.items.slice().sort((a, b) => a.i - b.i);
+                for (let k = 1; k < its.length; k++) {
+                    const A = its[k - 1], B = its[k]; if (B.i - A.i < 2) continue;
+                    const ha = fxHipOf(A.p), hb = fxHipOf(B.p), sz = Math.max(fxSizeOf(A.p), fxSizeOf(B.p));
+                    for (let i = A.i + 1; i < B.i; i++) {
+                        const u = (i - A.i) / (B.i - A.i), ex = ha[0] + (hb[0] - ha[0]) * u, ey = ha[1] + (hb[1] - ha[1]) * u;
+                        let bp = null, bd = 0.4; (fr[i].people || []).forEach(q => { const h = fxHipOf(q), d = Math.hypot(h[0] - ex, h[1] - ey) / sz; if (d < bd) { bd = d; bp = q; } });
+                        if (bp) fr[i].pose = bp;
+                    }
+                }
+            }
             fxFitBall();
             fx.ev = fxDetect(fr, fx.height, fx.ballSegs); fxCompute();
         }
