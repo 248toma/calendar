@@ -2902,13 +2902,41 @@
         #ntfModal .nm-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
         #ntfModal .nm-acts button { height: 38px; min-width: 88px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-xs); }
         #ntfModal .nm-acts .ok { background: var(--accent); color: #fff; }
-        /* ===== はじめての人向けチュートリアル(ログインしていないときに出る) ===== */
-        @keyframes tutPulse { 0% { box-shadow: 0 0 0 0 rgba(47, 211, 154, .55); } 100% { box-shadow: 0 0 0 14px rgba(47, 211, 154, 0); } }
-        @keyframes tutTap { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-4px, -8px) scale(.92); } }
-        /* 見本の画面は、本物の画面と同じように全体を覆う(後ろのカレンダーが見えないように) */
-        #tutOv .tut-demo { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; background: var(--bg); box-sizing: border-box;
-            padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 0; }
-        @keyframes tutIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        /* ===== はじめての人向けチュートリアル(ログインしていないときに出る。閲覧モードの使い方だけ) ===== */
+        @keyframes tutPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tut-ring, #2f6bf2) 70%, transparent); } 100% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--tut-ring, #2f6bf2) 0%, transparent); } }
+        @keyframes tutTap { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-3px, -9px) scale(.92); } }
+        @keyframes tutPop { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+        @keyframes tutFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tutShake { 0%, 100% { transform: none; } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+        #tutOv { display: none; position: fixed; inset: 0; z-index: 100000; box-sizing: border-box; font-family: 'Noto Sans JP', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; touch-action: none; overscroll-behavior: contain; -webkit-user-select: none; user-select: none; }
+        #tutOv.show { display: block; }
+        /* 見本の画面は、本物の画面と同じように全体を覆う(後ろのカレンダーが見えないように)。押せるのは光っている所だけ */
+        #tutOv .tut-demo { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+        #tutOv .tut-spot { position: absolute; z-index: 2; left: 50%; top: 50%; width: 1px; height: 1px; border-radius: 0; box-shadow: 0 0 0 200vmax rgba(8, 10, 14, .68); pointer-events: none;
+            transition: left .38s cubic-bezier(.2, .8, .2, 1), top .38s cubic-bezier(.2, .8, .2, 1), width .38s cubic-bezier(.2, .8, .2, 1), height .38s cubic-bezier(.2, .8, .2, 1), border-radius .3s; }
+        #tutOv .tut-ring { position: absolute; inset: 0; border-radius: inherit; animation: tutPulse 1.4s ease-out infinite; }
+        #tutOv .tut-block { position: absolute; inset: 0; z-index: 3; }
+        #tutOv .tut-hit { position: absolute; z-index: 4; display: none; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
+        #tutOv .tut-finger { position: absolute; z-index: 5; display: none; width: 40px; height: 40px; pointer-events: none; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .4)); animation: tutTap 1.1s ease-in-out infinite; }
+        #tutOv .tut-finger span { display: block; font-size: 34px; line-height: 40px; transform: rotate(-18deg); }
+        #tutOv .tut-tip { position: absolute; z-index: 6; box-sizing: border-box; width: min(88vw, 340px); padding: 14px 16px 14px; border-radius: 22px; background: var(--tut-bg); color: var(--tut-ink); box-shadow: 0 14px 36px rgba(0, 0, 0, .38), 0 0 0 1px var(--tut-line); animation: tutPop .22s ease both; }
+        #tutOv .tut-arrow { position: absolute; width: 14px; height: 14px; border-radius: 3px; background: var(--tut-bg); transform: rotate(45deg); }
+        #tutOv .tut-dots { display: flex; gap: 5px; margin-bottom: 9px; }
+        #tutOv .tut-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--tut-line2); transition: width .2s; }
+        #tutOv .tut-dots i.on { width: 16px; background: var(--tut-acc); }
+        #tutOv .tut-ttl { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+        #tutOv .tut-msg { font-size: 13.5px; line-height: 1.75; color: var(--tut-ink2); }
+        #tutOv .tut-msg b { color: var(--tut-ink); }
+        #tutOv .tut-acts { display: flex; justify-content: flex-end; margin-top: 12px; }
+        #tutOv .tut-next { height: 38px; min-width: 96px; padding: 0 20px; border: 0; border-radius: 19px; background: var(--tut-acc); color: var(--tut-onacc); font-size: 14px; font-weight: 800; }
+        #tutOv .tut-b { display: flex; align-items: center; justify-content: center; width: 100%; height: 46px; margin: 12px 0 0; padding: 0; border: 0; border-radius: 23px; font-size: 15px; font-weight: 800; }
+        #tutOv .tut-b.pri { background: var(--tut-acc); color: var(--tut-onacc); }
+        #tutOv .tut-b.sec { background: transparent; color: var(--tut-ink); box-shadow: inset 0 0 0 1.5px var(--tut-acc); }
+        #tutOv .tut-login small { display: block; margin: 5px 6px 0; font-size: 11.5px; line-height: 1.5; color: var(--tut-ink3); text-align: center; }
+        #tutOv .tut-later { display: block; margin: 12px auto 0; padding: 6px 14px; border: 0; background: none; color: var(--tut-ink3); font-size: 13px; text-decoration: underline; }
+        #tutOv .tut-skip { position: absolute; z-index: 7; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 14px; height: 30px; padding: 0 13px; border: 0; border-radius: 15px; background: rgba(255, 255, 255, .18); color: #fff; font-size: 12px; font-weight: 700; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+        #tutOv .tut-sample { position: absolute; z-index: 1; top: calc(env(safe-area-inset-top, 0px) + 2px); left: 50%; transform: translateX(-50%); font: 700 8.5px/12px 'Montserrat', system-ui, sans-serif; letter-spacing: .18em; color: var(--tut-ink3); opacity: .8; }
+        @media (prefers-reduced-motion: reduce) { #tutOv .tut-ring, #tutOv .tut-finger { animation: none; } #tutOv .tut-spot { transition: none; } }
         /* ===== ホーム画面に追加・ウィジェットの説明 ===== */
         .st-guide button { min-width: 0 !important; padding: 0 9px !important; }
         #guideOv { display: none; position: fixed; inset: 0; z-index: 905; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;
@@ -14085,6 +14113,8 @@ const namesBtn = isAdmin() && dates.length > 0
             }, error => { console.error("Firestoreの読み込みに失敗しました。", error); setFirestoreSyncStatus("共有エラー", true); });
 
             firebase.auth().onAuthStateChanged(async user => {
+                // ログインしていない人が起動・更新したときは、使い方のチュートリアルを出す(最初の確認のときだけ。ログアウトした直後には出さない)
+                if (!tutAuthChecked) { tutAuthChecked = true; if (!user) setTimeout(() => { try { tutStart(); } catch (e) { console.warn("チュートリアルを出せませんでした。", e); } }, 700); }
                 authEmail = user && user.email ? user.email.toLowerCase() : "";
                 authUid = user ? user.uid : "";
                 authIsGuest = !!(user && user.isAnonymous);
@@ -16320,6 +16350,247 @@ const namesBtn = isAdmin() && dates.length > 0
             el.style.background = P.bg; el.style.color = P.ink;
             el.innerHTML = `<div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px);display:flex;flex-direction:column;gap:18px;font-family:'Noto Sans JP',system-ui,sans-serif">${head}${acts}<div style="display:flex;flex-direction:column;gap:12px">${rows}</div></div>`;
         }
+        // ======================================================================
+        // はじめての人向けチュートリアル(ログインしていない人が起動・更新したときに出る。閲覧モードの使い方だけ)
+        // ログインしていないと、本物の画面は中身が空で回答ボタンも出ない。そこで「見本の画面」の上で、押してほしい所を光らせて案内する
+        // 流れ: ①日付をタップ → ②人数と場所 → ③📝ボタンを押す → ④○✖△で答える → ⑤サインイン / ゲストでログイン
+        // ======================================================================
+        var tutAuthChecked, tutOpen, tutIdx, tutS, tutScreen, tutDays, tutOnResize;   // var: 起動時の認証確認から先に参照されても大丈夫なように(初期値は入れない)
+        const TUT_STEPS = [
+            { id: "intro", center: true, screen: "main" },
+            { id: "day", target: "day", tap: true, screen: "main" },
+            { id: "head", target: "head", screen: "main" },
+            { id: "svbtn", target: "svbtn", tap: true, screen: "main" },
+            { id: "ans", target: "seg", tap: true, screen: "survey" },
+            { id: "login", center: true, screen: "survey" }
+        ];
+        const TUT_EN = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif";
+        const TUT_WN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        // 見本のバレーの日: 今月の土曜(今日をのぞく)の2つ目と4つ目
+        function tutDaysOf() {
+            const now = new Date(), y = now.getFullYear(), m = now.getMonth(), todayKey = formatDateKey(now), last = new Date(y, m + 1, 0).getDate(), sats = [];
+            for (let d = 1; d <= last; d++) { const dt = new Date(y, m, d); if (dt.getDay() === 6) { const k = formatDateKey(dt); if (k !== todayKey) sats.push(k); } }
+            return { y, m, todayKey, d1: sats[1] || sats[0] || "", d2: sats[3] || sats[2] || "" };
+        }
+        // 人数のリング(本物と同じ: 1人1マスの12マス)
+        function tutRing(P, dark, n, col, size, nf, big, sub) {
+            const { raiseS } = protoNeu(P, dark);
+            const th = Math.max(4, Math.round(size * 0.125)), gap = 7, sh = Math.max(2, Math.round(size / 46)), dsz = Math.round(size * 0.9), isl = dsz - th * 2;
+            const mask = `radial-gradient(farthest-side, transparent calc(100% - ${th}px), #000 calc(100% - ${th - 0.6}px))`;
+            const colA = `color-mix(in srgb, ${col} 55%, ${P.bg})`, st = [];
+            for (let i = 0; i < 12; i++) { const a = i * 30; st.push(`${i < n ? colA : "transparent"} ${a + gap / 2}deg ${a + 30 - gap / 2}deg`, `transparent ${a + 30 - gap / 2}deg ${a + 30 + gap / 2}deg`); }
+            const pos = s => `position:absolute;left:50%;top:50%;width:${s}px;height:${s}px;margin:-${s / 2}px 0 0 -${s / 2}px;border-radius:50%;`;
+            return `<div style="position:relative;width:${size}px;height:${size}px;flex:none;border-radius:50%;${raiseS}">
+                <i style="${pos(dsz)}background:${P.bot};box-shadow:inset ${sh}px ${sh}px ${sh * 2}px ${P.lo}, inset -${sh}px -${sh}px ${sh * 2}px ${P.hi}"></i>
+                <i style="${pos(dsz)}background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mask};mask:${mask}"></i>
+                <i style="${pos(isl)}background:${P.bg};box-shadow:${sh * 0.5}px ${sh * 0.5}px ${sh * 1.2}px ${P.lo}, -${sh * 0.5}px -${sh * 0.5}px ${sh * 1.2}px ${P.hi}"></i>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;gap:2px"><span style="font-family:${TUT_EN};font-size:${nf}px;font-weight:600;color:${col}">${big}</span><span style="font-family:${TUT_EN};font-size:${Math.max(7, Math.round(nf * 0.43))}px;font-weight:700;letter-spacing:.06em;color:${P.ink3}">${sub}</span></div></div>`;
+        }
+        // 答えのボタン(来る○ / 来ない✖ / 未定△。3つの凹みで、選んだものが浮く)
+        function tutSeg(P, dark, LV, st) {
+            const { raiseS, insetS } = protoNeu(P, dark);
+            const OPTS = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>'], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>'], ["未定", '<path d="M12 4.5 20 19H4z"></path>']];
+            const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger }, idx = OPTS.findIndex(o => o[0] === st);
+            return `<div data-tut="seg" data-tr="21" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;flex:1;min-width:0;box-sizing:border-box;${insetS}">
+                ${idx >= 0 ? `<i style="position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 3 * ${idx});width:calc((100% - 8px) / 3);border-radius:15px;animation:tutPop .25s ease both;${raiseS}"></i>` : ""}
+                ${OPTS.map(([s0, svg]) => `<span style="position:relative;height:34px;display:flex;align-items:center;justify-content:center;color:${st === s0 ? AC[s0] : P.ink3};opacity:${st === s0 || idx < 0 ? 1 : 0.55}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></span>`).join("")}
+            </div>`;
+        }
+        // 見本のホーム画面(上: その日の人数と場所 / 中: カレンダー / 下: ボタン)
+        function tutMainHtml() {
+            const { dark, P, LV } = protoPal(), { raise, raiseS, insetS } = protoNeu(P, dark), D = tutDays;
+            let wsd = 0; try { wsd = weekStartDay === 1 ? 1 : 0; } catch (e) { wsd = 0; }
+            const MN = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const off = (new Date(D.y, D.m, 1).getDay() - wsd + 7) % 7;
+            let cells = "";
+            for (let i = 0; i < 42; i++) {
+                const d = new Date(D.y, D.m, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === D.m, wd = d.getDay(), isSel = k === tutS.sel, isToday = k === D.todayKey;
+                const vol = !inM ? "" : k === D.d1 ? LV.sufficient : k === D.d2 ? LV.warning : "";
+                const numCol = isToday ? P.today : isSel ? P.acc : wd === 0 ? P.red : wd === 6 ? P.blue : P.ink;
+                cells += `<div ${k === D.d1 ? 'data-tut="day" data-tr="14"' : ""} style="display:flex;flex-direction:column;align-items:center;min-width:0;padding-top:2px;overflow:hidden">
+                    <span style="width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;opacity:${inM ? 1 : 0.28};font-family:${TUT_EN};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol};${isSel ? insetS : ""}">${d.getDate()}</span>
+                    ${vol ? `<span style="margin-top:3px;font-size:9.5px;font-weight:700;color:${vol};white-space:nowrap">バレー</span>` : ""}</div>`;
+            }
+            const wl = wsd === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"], sunIdx = wsd === 1 ? 6 : 0, satIdx = wsd === 1 ? 5 : 6;
+            const sd = new Date(tutS.sel + "T00:00:00"), isVol = tutS.sel === D.d1;
+            const dial = tutRing(P, dark, isVol ? 8 : 0, LV.sufficient, 138, 22, isVol ? "8" : "", isVol ? "/ 12人" : TUT_WN[sd.getDay()]);
+            const info = isVol
+                ? `<span style="font-family:${TUT_EN};font-size:10.5px;font-weight:700;letter-spacing:.08em;color:${P.ink3}">VOLLEY · この日</span>
+                   <span style="font-family:${TUT_EN};font-size:15px;font-weight:700">19:00〜21:00</span>
+                   <span style="font-size:12px;color:${P.ink2}">稲沢総合 北</span>`
+                : `<span style="font-size:12px;color:${P.ink3}">この日のバレーはありません</span>`;
+            const ico = (d, sz, sw) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+            const rb = (inner, extra) => `<div ${extra || ""} style="position:relative;width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${inner}</div>`;
+            const badge = `<span style="position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:#e5484d;color:#fff;font:700 10px/17px ${TUT_EN};text-align:center">2</span>`;
+            return `<div style="position:absolute;inset:0;background:${P.bg};color:${P.ink};font-family:'Noto Sans JP',system-ui,sans-serif">
+              <div style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px 0;display:flex;flex-direction:column;gap:22px;position:relative">
+                <div data-tut="head" data-tr="28" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${raise}">
+                  <div style="display:flex;align-items:center;gap:20px;height:158px">
+                    ${dial}
+                    <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
+                      <span style="font-family:${TUT_EN};font-size:15px;font-weight:700;white-space:nowrap">${sd.getMonth() + 1}/${sd.getDate()} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${TUT_WN[sd.getDay()]}</span></span>
+                      ${info}
+                    </div>
+                  </div>
+                </div>
+                <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px">
+                  <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 2px 8px"><span style="font-family:${TUT_EN};font-size:16px;font-weight:700">${MN[D.m]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${TUT_EN};font-size:13px;font-weight:600;color:${P.ink3}">${D.y}</span></div>
+                  <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${TUT_EN};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === satIdx ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
+                  <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cells}</div>
+                </div>
+                <div style="position:absolute;left:22px;right:22px;bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);display:flex;align-items:center;gap:14px">
+                  <div style="height:44px;padding:0 20px;border-radius:22px;display:flex;align-items:center;font-family:${TUT_EN};font-size:13px;font-weight:700;color:${P.ink3};${raiseS}">Today</div>
+                  <span style="flex:1"></span>
+                  ${rb(ico('<rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path>', 18, 1.6))}
+                  ${rb(ico('<rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path>', 18, 1.6) + badge, 'data-tut="svbtn" data-tr="22"')}
+                  ${rb(ico('<path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle>', 18, 1.6))}
+                  <div style="width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:${P.acc};${raise}">${ico('<path d="M12 5v14M5 12h14"></path>', 20, 2)}</div>
+                </div>
+              </div>
+              <div class="tut-sample">SAMPLE</div>
+            </div>`;
+        }
+        // 見本の回答画面(本物の「アンケート」と同じ作り)
+        function tutSurveyHtml() {
+            const { dark, P, LV } = protoPal(), { raiseS } = protoNeu(P, dark), D = tutDays, ans = tutS.ans;
+            const dot = `<i style="width:7px;height:7px;border-radius:4px;flex:none;align-self:center;background:${P.red}"></i>`;
+            const dateHead = (k, d0) => { const dt = new Date(k + "T00:00:00"), w = dt.getDay(); return `<div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:${TUT_EN};font-size:16px;font-weight:600">${dt.getMonth() + 1}/${dt.getDate()}</span><span style="font-family:${TUT_EN};font-size:9.5px;font-weight:600;letter-spacing:.1em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${TUT_WN[w]}</span>${d0}</div>`; };
+            const card = (k, n, st, attrs) => `<div ${attrs} style="border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;${raiseS}">
+                <div style="display:flex;align-items:center;gap:14px">
+                  ${tutRing(P, dark, n, LV.sufficient, 60, 15, n, "/ 12")}
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">${dateHead(k, st ? "" : dot)}
+                    <span style="font-family:${TUT_EN};font-size:11.5px;font-weight:500;color:${P.ink3};white-space:nowrap">19:00–21:00  稲沢総合 北</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">${tutSeg(P, dark, LV, st)}</div>
+              </div>`;
+            return `<div style="position:absolute;inset:0;background:${P.bg};color:${P.ink};font-family:'Noto Sans JP',system-ui,sans-serif">
+              <div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px 40px;display:flex;flex-direction:column;gap:18px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="width:40px;height:40px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-family:${TUT_EN};font-size:10px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">SURVEY</span><span style="font-size:16px;font-weight:700">あなたの名前</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:16px">
+                  ${card(D.d1, ans === "来る" ? 8 : 7, ans, 'data-tut="card" data-tr="22"')}
+                  ${card(D.d2, 9, "来る", "")}
+                </div>
+              </div>
+              <div class="tut-sample">SAMPLE</div>
+            </div>`;
+        }
+        // 吹き出しの文
+        function tutCopy() {
+            const id = TUT_STEPS[tutIdx].id;
+            if (id === "intro") return { ttl: "ようこそ!", msg: "出欠の見かたと答えかたを、実際に押しながら<b>30秒</b>で体験しましょう。ここから先は<b>見本の画面</b>です(本物のデータは使いません)。", btn: "はじめる" };
+            if (id === "day") return { ttl: "① バレーの日をタップ", msg: "カレンダーで<b>「バレー」</b>と書いてある日が、バレーのある日です。光っている日をタップしてみましょう。" };
+            if (id === "head") return { ttl: "② 人数・時間・場所が見られる", msg: "上のリングは<b>「来る」と答えた人数</b>です。マスが埋まるほど集まっています。時間と場所もここに出ます。", btn: "次へ" };
+            if (id === "svbtn") return { ttl: "③ 出欠は📝から答える", msg: "出欠の回答は、右下の<b>📝ボタン</b>から。赤い数字がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
+            if (id === "ans") return tutS.ans
+                ? { ttl: "回答できました!", msg: "答えはすぐにみんなへ共有されます。あとから何度でも変えられます。", btn: "次へ" }
+                : { ttl: "④ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
+            return { ttl: "最後に、ログインしましょう", msg: "出欠への回答は、<b>ログインした人</b>ができます。どちらかを選んでください。" };
+        }
+        function tutTip() {
+            const st = TUT_STEPS[tutIdx], c = tutCopy(), tip = document.getElementById("tutTip"), q = id => document.getElementById(id);
+            const dots = TUT_STEPS.map((_, k) => `<i class="${k === tutIdx ? "on" : ""}"></i>`).join("");
+            tip.innerHTML = `<i class="tut-arrow" id="tutArrow"></i><div class="tut-dots">${dots}</div><div class="tut-ttl">${c.ttl}</div><div class="tut-msg">${c.msg}</div>`
+                + (st.id === "login"
+                    ? `<div class="tut-login"><button type="button" class="tut-b pri" id="tutGoogle">Googleでサインイン</button><small>Googleアカウントでログインします</small>
+                        <button type="button" class="tut-b sec" id="tutGuest">ゲストでログイン</button><small>Googleなしで、名簿から自分の名前を選んで使えます</small>
+                        <button type="button" class="tut-later" id="tutLater">あとで</button></div>`
+                    : c.btn ? `<div class="tut-acts"><button type="button" class="tut-next" id="tutNext">${c.btn}</button></div>` : "");
+            if (q("tutNext")) q("tutNext").onclick = () => tutShow(tutIdx + 1);
+            if (q("tutGoogle")) q("tutGoogle").onclick = () => { tutClose(); try { signInForFirestore(); } catch (e) { console.error(e); } };   // タップの直後にそのまま呼ぶ(ポップアップを止められないように)
+            if (q("tutGuest")) q("tutGuest").onclick = () => { tutClose(); try { signInAsGuest(); } catch (e) { console.error(e); } };
+            if (q("tutLater")) q("tutLater").onclick = tutClose;
+            tip.style.animation = "none"; void tip.offsetWidth; tip.style.animation = "";   // 文が変わるたびにふわっと出す
+        }
+        // 光らせる場所・指・吹き出しの位置を、見本の画面の実際の位置に合わせる
+        function tutPlace() {
+            if (!tutOpen) return;
+            const ov = document.getElementById("tutOv"), demo = document.getElementById("tutDemo"); if (!ov || !demo) return;
+            const st = TUT_STEPS[tutIdx], q = id => document.getElementById(id);
+            const spot = q("tutSpot"), hit = q("tutHit"), fin = q("tutFinger"), tip = q("tutTip"), arrow = q("tutArrow");
+            const W = ov.clientWidth, H = ov.clientHeight, safeTop = 50;
+            const name = st.id === "ans" && tutS.ans ? "card" : st.target;
+            const el = !st.center && name ? demo.querySelector(`[data-tut="${name}"]`) : null;
+            let r = null;
+            if (el) { const b = el.getBoundingClientRect(), pad = name === "svbtn" ? 5 : 4; r = { l: b.left - pad, t: b.top - pad, w: b.width + pad * 2, h: b.height + pad * 2, rad: (+el.getAttribute("data-tr") || 14) + pad }; }
+            const px = v => Math.round(v) + "px";
+            if (r) { spot.style.left = px(r.l); spot.style.top = px(r.t); spot.style.width = px(r.w); spot.style.height = px(r.h); spot.style.borderRadius = px(r.rad); }
+            else { spot.style.left = px(W / 2); spot.style.top = px(H / 2); spot.style.width = "1px"; spot.style.height = "1px"; spot.style.borderRadius = "0px"; }
+            spot.firstElementChild.style.display = r ? "" : "none";
+            const tappable = !!r && !!st.tap && !(st.id === "ans" && tutS.ans);
+            if (tappable) { hit.style.display = "block"; hit.style.left = px(r.l); hit.style.top = px(r.t); hit.style.width = px(r.w); hit.style.height = px(r.h); hit.style.borderRadius = px(r.rad); }
+            else hit.style.display = "none";
+            if (tappable) { fin.style.display = "block"; fin.style.left = px(r.l + r.w / 2 - 8); fin.style.top = px(Math.min(r.t + r.h / 2 + 2, H - 44)); }
+            else fin.style.display = "none";
+            const tw = tip.offsetWidth, th = tip.offsetHeight;
+            if (!r) { arrow.style.display = "none"; tip.style.left = px((W - tw) / 2); tip.style.top = px(Math.max(safeTop, (H - th) * 0.45)); return; }
+            const cx = r.l + r.w / 2, cy = r.t + r.h / 2;
+            let below = cy < H * 0.5;
+            if (below && r.t + r.h + 16 + th > H - 10) below = false;
+            if (!below && r.t - th - 16 < safeTop) below = true;
+            const left = Math.max(12, Math.min(W - tw - 12, cx - tw / 2));
+            tip.style.left = px(left);
+            tip.style.top = px(Math.max(safeTop, Math.min(H - th - 10, below ? r.t + r.h + 16 : r.t - th - 16)));
+            arrow.style.display = ""; arrow.style.left = px(Math.max(18, Math.min(tw - 32, cx - left - 7)));
+            arrow.style.top = below ? "-6px" : ""; arrow.style.bottom = below ? "" : "-6px";
+        }
+        function tutTheme() {
+            const { dark, P } = protoPal(), ov = document.getElementById("tutOv"); if (!ov) return;
+            const set = (k, v) => ov.style.setProperty(k, v);
+            set("--tut-bg", P.bg); set("--tut-ink", P.ink); set("--tut-ink2", P.ink2); set("--tut-ink3", P.ink3); set("--tut-acc", P.acc); set("--tut-ring", P.acc);
+            set("--tut-onacc", dark ? "#0b1020" : "#fff"); set("--tut-line", dark ? "rgba(255,255,255,.10)" : "rgba(255,255,255,.8)"); set("--tut-line2", dark ? "rgba(255,255,255,.2)" : "rgba(40,50,70,.18)");
+        }
+        function tutShow(i) {
+            const st = TUT_STEPS[i]; if (!st) { tutClose(); return; }
+            const demo = document.getElementById("tutDemo"); if (!demo) return;
+            tutIdx = i; tutTheme();
+            demo.innerHTML = st.screen === "survey" ? tutSurveyHtml() : tutMainHtml();
+            if (tutScreen !== st.screen && demo.firstElementChild) demo.firstElementChild.style.animation = "tutFade .3s ease both";   // 画面が変わるときだけ、ふわっと
+            tutScreen = st.screen;
+            tutTip();
+            requestAnimationFrame(tutPlace);
+        }
+        // 光っている所を押したとき
+        function tutTapped(e) {
+            const st = TUT_STEPS[tutIdx];
+            try { if (typeof protoHaptic === "function") protoHaptic(); } catch (x) { /* ignore */ }
+            if (st.id === "day") { tutS.sel = tutDays.d1; tutShow(tutIdx + 1); }
+            else if (st.id === "svbtn") tutShow(tutIdx + 1);
+            else if (st.id === "ans") {
+                const b = document.getElementById("tutHit").getBoundingClientRect(), x = e && e.clientX != null ? e.clientX : b.left + b.width / 2;
+                tutS.ans = ["来る", "来ない", "未定"][Math.max(0, Math.min(2, Math.floor((x - b.left) / Math.max(1, b.width) * 3)))];
+                tutShow(tutIdx);   // 同じ手順のまま、答えが入った見た目に
+            }
+        }
+        function tutClose() {
+            tutOpen = false;
+            const ov = document.getElementById("tutOv"); if (ov) ov.remove();
+            if (tutOnResize) { window.removeEventListener("resize", tutOnResize); window.removeEventListener("orientationchange", tutOnResize); tutOnResize = null; }
+        }
+        // ログインしていない人が起動・更新したときに呼ばれる(共有に繋がらない端末では出さない。ログインできないため)
+        function tutStart() {
+            if (tutOpen || authUid || !firebaseAvailable) return;
+            try { closeSurveyIfOpen(); } catch (e) { /* ignore */ }
+            const old = document.getElementById("tutOv"); if (old) old.remove();
+            tutOpen = true; tutScreen = ""; tutDays = tutDaysOf(); tutS = { sel: tutDays.todayKey, ans: "" };
+            const ov = document.createElement("div"); ov.id = "tutOv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "使い方");
+            ov.innerHTML = `<div class="tut-demo" id="tutDemo"></div><div class="tut-spot" id="tutSpot"><i class="tut-ring"></i></div><div class="tut-block" id="tutBlock"></div>
+                <button type="button" class="tut-hit" id="tutHit" aria-label="ここを押す"></button><div class="tut-finger" id="tutFinger" aria-hidden="true"><span>👆</span></div>
+                <div class="tut-tip" id="tutTip"></div><button type="button" class="tut-skip" id="tutSkip">スキップ</button>`;
+            document.body.appendChild(ov);
+            ov.classList.add("show");
+            ov.addEventListener("touchmove", e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+            document.getElementById("tutSkip").onclick = tutClose;
+            document.getElementById("tutHit").onclick = tutTapped;
+            document.getElementById("tutBlock").onclick = () => { const t = document.getElementById("tutTip"); if (t) { t.style.animation = "none"; void t.offsetWidth; t.style.animation = "tutShake .3s"; } };   // 光っていない所を押したら、吹き出しがぷるっと揺れる
+            tutOnResize = () => tutPlace();
+            window.addEventListener("resize", tutOnResize); window.addEventListener("orientationchange", tutOnResize);
+            tutShow(0);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (tutOpen) tutPlace(); });   // 文字が読み込まれて大きさが変わっても、光る位置をずらさない
+        }
+
         (function initProtoUI() {
             const host = document.createElement("div"); host.id = "protoUI"; document.body.appendChild(host);
             // 設定・名簿などのパネルが見えている間は、試作UIを引っこめて今の画面を出す
