@@ -3386,6 +3386,7 @@
         #fxOv .fx-hrow:first-of-type { border-top: none; }
         #fxOv .fx-hrow small { grid-column: 1; color: var(--ink-3); }
         #fxOv .fx-hrow button { grid-column: 2; grid-row: 1 / span 2; border: none; background: none; color: var(--ink-3); font-size: 14px; padding: 6px; }
+        .rs-export { display: flex; justify-content: center; margin: 14px 0 4px; }
         #fxOv .fx-ov { margin: 6px 0 10px; }
         #fxOv .fx-ov > span { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
         #fxOv .fx-ov > span small { display: block; font-size: 10.5px; color: var(--ink-3); }
@@ -11235,15 +11236,73 @@ const namesBtn = isAdmin() && dates.length > 0
             const id = Date.now(), a = fxHist(); a.push({ id, at: formatDateKey(new Date()), name: label, ref: !!asRef, height: fx.height, net: fx.net, tags: { ...(fx.tags || {}) }, res: { ...fx.res, ev: undefined }, seq: fxSeq() });
             fxHistSave(a); fx.saved = true; fx.savedId = id; fxRender();
         }
-        // 読み取ったままのデータ(全員の骨格・ボールの候補)をファイルにする。動画そのものは入らない
+        // データと結果の書き出し(ほかの AI などで同じ分析ができるか確かめる用)。動画そのものは入らない
+        //   ・読み取ったままのデータ(コマごとの全員の骨格・ボールの候補)
+        //   ・アプリが使った値(スパイカーの骨格 = 左右を直したもの、同じ画のコマ、ボールの放物線)
+        //   ・アプリの結果(見つけた瞬間・数字)と、その決め方の説明
+        const FX_EXPORT_ABOUT = {
+            "このファイル": "バレーボールのスパイク動画を、スマホの中で Google MediaPipe(Pose Landmarker full / 物体検出 EfficientDet-Lite0)で読み取ったデータと、アプリの分析結果。frames が元データ、app が分析結果。同じ元データから別の方法で分析して、結果を比べる用。",
+            "座標": {
+                "image(i)": "動画の画素。x は右が +、y は下が +。[x, y, visibility(0〜1)]",
+                "world(w)": "MediaPipe の 3D 座標(メートル)。原点は腰の中心。x 右、y 下、z 奥が +。カメラの向きのまま(重力の向きにはそろえていない)",
+                "time(t)": "動画の中の秒。slow(スローの倍率)が 1 でなければ、実際の時間は t / slow"
+            },
+            "骨格の番号": "MediaPipe Pose の 33点。0 鼻、7/8 左右の耳、11/12 左右の肩、13/14 ひじ、15/16 手首、23/24 腰、25/26 ひざ、27/28 足首、29/30 かかと、31/32 つま先(左が奇数)。左右は MediaPipe の判断で、反ったり振り向いたりすると入れかわることがある",
+            "frames の中身": {
+                "people": "そのコマで見つかった全員の骨格 [{ i: 33点の画像座標, w: 33点の3D座標 }]",
+                "sp": "アプリがスパイカーとした人の people の番号(-1 = いない・使っていない)",
+                "pose": "アプリが分析に使ったスパイカーの骨格(左右の入れかわりを直したもの)。null = 使っていない",
+                "dup": "true = 前のコマと同じ画(動画からコマを取り出すときに同じ画が2回出る)。分析には使っていない",
+                "balls": "ボールらしいものの候補 [x, y, score]。見まちがいも含む",
+                "ball": "アプリが放物線に合わせたボールの位置 [x, y](放物線に乗らない候補は捨てている)",
+                "manual": "手で指定したボールの位置"
+            },
+            "アプリの処理": [
+                "スパイカー: コマどうしで同じ人をつないだ通り道のうち、タップした人(なければ、いちばん大きく跳んだ人)。途切れても 0.5 秒以内ならつなぐ。逆さまに読まれた骨格(肩も鼻も腰より下)は捨てる",
+                "長さの基準(1m の画素): 立っているときの鼻〜かかと ≒ 身長 × 0.87(前後 0.15 秒でいちばん長く写ったところ)",
+                "ボール: 候補のうち、放物線(x = a + b·t、y = c + d·t + e·t²)に乗るものだけ(RANSAC)。触るたびに別の放物線",
+                "空中(踏み切り〜着地): 腰の上下が放物線(重力)に乗っている間。踏み切り = かがんだあと、ひざが伸びきって(150°以上)足首が床から 3cm 浮いたコマ。着地 = 頂点のあと、伸ばしたひざが 10°以上曲がり始める直前",
+                "スロー: 空中が 1.2 秒より長ければ、スロー(倍率不明)とみなして、時間・速さの値は出さない",
+                "振りかぶり: 空中で、手首が肩より上にあるまま、ひじ(3D)がいちばん深く曲がった瞬間(120°未満)",
+                "インパクト: 振りかぶった手首を、コマごとに前の位置にいちばん近い「肩より上の手首」でたどり、いちばん高く写ったコマ。ボールがあれば、その前後 0.25 秒で、トスの放物線が終わる時刻に手がボールの 50cm 以内ならその時刻、なければ手とボールがいちばん近いコマ(35cm 以内)",
+                "空中の高さ: 床の位置と 1m の画素を、踏み切りのときと着地のときの間でつないで使う(奥・手前へ跳ぶと変わるため)"
+            ],
+            "結果(app.res)の意味": {
+                "jump": "ジャンプ(m): 空中で腰がいちばん高いときの、床からの腰の高さ − 身長 × 0.53(立ったときの腰の高さ)",
+                "hang": "滞空時間(秒)", "approach": "助走の時間(秒)", "hitH": "打点の高さ(m): 床からインパクトの手(ボールが手の近くならボール)まで",
+                "hitFront": "打点の前後(m): 3D で、腰の線に直角な前の向きに、手首が鼻よりどれだけ前か", "elbow": "インパクトのひじの角度(3D・°)", "shoulder": "インパクトの肩の角度(腰-肩-ひじ、3D・°)",
+                "swing": "腕を振る速さ(m/秒): インパクト前 0.35 秒の手首の 3D の速さの最大", "ballGap": "インパクトの手首とボールの距離(m)",
+                "peakGap": "インパクト − 腰の頂点(秒)。+ は頂点のあと", "peakDrop": "インパクトのときの腰の、頂点からの下がり(m)",
+                "kneeAir": "インパクト前 0.45 秒の、両ひざの角度の平均のいちばん小さい値(°)", "kneeImp": "インパクトのひざの角度(°)", "kneeExt": "kneeImp − kneeAir",
+                "arch": "体の反り(°): 真横から見た「上体の前傾 + 太ももの前への上がり」がいちばんマイナスになった大きさ", "fold": "たたみ込み(°): 反りのいちばん後ろから、インパクト後 0.15 秒までに前へ折れた大きさ",
+                "hipTraj": "腰の軌道 [u, 高さ%]。u = (t − 踏み切り) / (着地 − 踏み切り)、高さ = 床からの腰の高さ ÷ 身長 × 100", "impU": "インパクトの u", "apexU": "腰の頂点の u",
+                "hipAtImp": "インパクトの腰の高さ(%): 踏み切りのときの腰を 0、頂点を 100", "armExt": "腕の伸び(%): 肩〜手首のまっすぐな長さ ÷ (上腕 + 前腕)、3D",
+                "axisLean": "体の軸の傾き(°): 真横から見て、腰 → 打つ手の線。0 = 真上、+ = 前", "axisBend": "体の軸の曲がり(°): 足首 → 腰 の線と 腰 → 手 の線のなす角。0 = 一直線、+ = 前に折れる"
+            },
+            "瞬間(app.ev)": "秒(動画の中の時刻)。release トスが手を離れた、apex トスの頂点、run 助走開始、takeoff 踏み切り、cock 振りかぶり、impact インパクト、land 着地。_hand = 打った手首の番号(15/16)、_byBall = ボールで決めた、_slowSus = スローとみなした"
+        };
+        // ファイルを共有(iPhone の共有シート)、できなければダウンロード
+        async function shareJsonFile(name, data) {
+            const file = new File([JSON.stringify(data)], name, { type: "application/json" });
+            try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+            const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        }
         async function fxExport() {
             if (!fx || !fx.frames.length) return;
             const r1 = v => Math.round(v * 10) / 10, r3 = v => Math.round(v * 1000) / 1000;
-            const data = { v: 1, w: fx.w, h: fx.h, rot: fx.rot || 0, dur: fx.dur, slow: fx.slow, height: fx.height, step: FX_STEP, pick: fx.pick, ev: fx.ev, diag: fx.diag,
-                frames: fx.frames.map(f => ({ t: r3(f.t), sp: f.pose ? f.people.indexOf(f.pose) : -1, people: f.people.map(p => ({ i: p.map(q => [r1(q[0]), r1(q[1]), Math.round(q[2] * 100) / 100]), w: p.world ? p.world.map(q => q.map(r3)) : null })), balls: (f.balls || []).map(b => [r1(b.x), r1(b.y), Math.round(b.s * 100) / 100]), manual: f.manual || null })) };
-            const name = `form-${Date.now()}.json`, file = new File([JSON.stringify(data)], name, { type: "application/json" });
-            try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
-            const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            const img = p => p.map(q => [r1(q[0]), r1(q[1]), Math.round(q[2] * 100) / 100]), wld = p => p.world ? p.world.map(q => q.map(r3)) : null;
+            const clean = o => o == null ? o : JSON.parse(JSON.stringify(o, (k, v) => typeof v === "number" ? Math.round(v * 1000) / 1000 : v));
+            const data = {
+                v: 2, about: FX_EXPORT_ABOUT,
+                video: { w: fx.w, h: fx.h, rot: fx.rot || 0, dur: fx.dur, slow: fx.slow, step: FX_STEP }, height: fx.height, pick: fx.pick, diag: fx.diag,   // 選手名は入れない(外に渡すため)
+                app: { ev: clean(fx.ev), res: clean(fx.res ? { ...fx.res, ev: undefined } : null), ballSegs: clean(fx.ballSegs || []), net: fx.calib && fx.calib.top && fx.calib.floor ? { top: fx.calib.top, floor: fx.calib.floor, height: fx.net } : null },
+                frames: fx.frames.map(f => ({ t: r3(f.t), dup: !!f.dup, sp: f.pose ? f.people.indexOf(f.srcPose || f.pose) : -1,
+                    people: f.people.map(p => ({ i: img(p), w: wld(p) })), pose: f.pose ? { i: img(f.pose), w: wld(f.pose) } : null,
+                    balls: (f.balls || []).map(b => [r1(b.x), r1(b.y), Math.round(b.s * 100) / 100]), ball: f.ball ? [r1(f.ball.x), r1(f.ball.y)] : null, manual: f.manual || null }))
+            };
+            // 前の形(v1)でも読めるように
+            Object.assign(data, { w: fx.w, h: fx.h, rot: fx.rot || 0, dur: fx.dur, slow: fx.slow, step: FX_STEP, ev: data.app.ev });
+            await shareJsonFile(`form-${Date.now()}.json`, data);
         }
         function fxDelHist(id) { fxHistSave(fxHist().filter(x => x.id !== id)); fxRender(); }
         const fxF = (v, u, d = 2) => v == null || !isFinite(v) ? "—" : `${(+v).toFixed(d)}${u}`;
@@ -11326,7 +11385,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     ${fx.res ? fxOverlayHtml({ res: fx.res, seq: fxSeq() }, fxHist().slice().reverse()) : ""}
                     <div class="fx-grp"><h5>印を付ける<small>あとで比べるため(保存したあとも直せます)</small></h5>${fxTagChips(fx.tags || {}, "fxTagSet")}</div>
                     <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn" onclick="fxSave(true)" ${fx.saved ? "disabled" : ""}>お手本として保存</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fxExport()">読み取りデータを書き出す(調整用)</button></div>
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fxExport()">データと結果を書き出す(検証用)</button></div>
                     <div class="fx-note">数字の目安: 長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。頭との前後・腕の角度・振る速さは、体の3Dの形から出すので向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div>`;
             }
             ov.innerHTML = `<div class="fx-wrap">${top}<div class="fx-cvbox"><canvas id="fxCv" onclick="fxTap(event)"></canvas></div>${body}</div>`;
@@ -11579,6 +11638,45 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="rs-tbl" style="margin-top:8px">${rows.map(r => { const d = r.v - r.p; return `<div class="stg-row"><span class="rs-nm">${escapeHtml(r.n)}</span><span class="stg-bar"><i style="width:${x(r.v)}%"></i><b style="left:${x(r.p)}%"></b></span><span class="stg-v">${r.v.toFixed(1)}</span><span class="stg-d${d > 0.05 ? " up" : ""}">${Math.abs(d) < 0.05 ? "±0" : (d > 0 ? "+" : "−") + Math.abs(d).toFixed(1)}</span></div>`; }).join("")}</div>
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">名簿のパラメータ(縦線)をベースに、試合結果(点差込み)で補正した強さ(1〜5)。右は補正の量。強いチームに入って勝っているだけの人は上がりにくい</div></details></details>`;
         }
+        // ---- 分析のデータと結果の書き出し(ほかの AI などで同じ分析になるか確かめる用) ----
+        //   名前は P01, P02 … に置きかえる(対応表はファイルに入れない)。今の期間・ゲーム/試合の設定で書き出す
+        async function anaExport() {
+            if (!isAdmin()) return;
+            const from = rosterStatsFrom(), recs = chemRecords(from), cd = chemData(from), wm = whyModel(from), { F, P } = whyFactors();
+            const names = [...new Set(roster.map(r => r.name).concat(recs.flatMap(r => r.teams.flat().concat(r.ctx))))];
+            const idOf = new Map(names.map((n, i) => [n, "P" + String(i + 1).padStart(2, "0")])), ID = n => idOf.get(n) || "?";
+            const r3 = v => v == null || !isFinite(v) ? null : Math.round(v * 1000) / 1000;
+            const lvl = v => 3 + v / CHEM_PARAM_W;   // 強さを、パラメータと同じものさしに
+            const members = names.map(n => {
+                const r = roster.find(x => x.name === n), raw = r ? { ...(r.params || {}) } : null, eff = r ? effectiveParams(r.params || {}) : null, g = cd.ind[n] || { g: 0, w: 0 };
+                return { id: ID(n), inRoster: !!r, guest: !!r && r.position === GUEST_POS, position: r ? r.position || "" : "", gender: r ? r.gender || "" : "",
+                    params: raw && Object.fromEntries(PARAM_DEFS.map(d => [d.key, raw[d.key] ?? 3])), effective: eff && Object.fromEntries(PARAM_DEFS.map(d => [d.key, r3(eff[d.key] ?? 3)])),
+                    games: g.g, wins: g.w, strengthBase: n in cd.prior ? r3(lvl(cd.prior[n])) : null, strength: n in cd.base ? r3(lvl(cd.base[n])) : null };
+            });
+            const Fx = F.filter(([lb]) => lb !== "総合");
+            const matches = recs.map(r => ({ date: r.d, teams: r.teams.map(t => t.map(ID)), win: r.win, diff: r.diff, y: r3(r.y), dayMembers: r.ctx.map(ID),
+                features: Object.fromEntries(Fx.map(([lb, f]) => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); return [lb, [r3(a), r3(b)]]; })) }));
+            const data = {
+                v: 1, kind: "volley-team-analysis", exportedAt: new Date().toISOString(),
+                about: {
+                    "このファイル": "バレーボールの練習試合の記録(チーム分けと勝ち負け・点差)と、メンバーの能力パラメータ、アプリの分析結果。名前は P01 などの記号に置きかえてある。同じデータから別の方法で分析して、結果を比べる用。",
+                    "パラメータ": "サーブ・レシーブ・セット・スパイク・機動力(1〜10、昔の記録は 1〜5 のまま)。effective = 機動力の補正後 = 元の値 × (1 − w) + 機動力 × w(w は settings.mobilityWeights)。機動力そのものは元の値。分析は effective を使う",
+                    "試合(matches)": "teams = 2チームのメンバー、win = 勝ったチームの番号(0/1)、diff = 点差(勝ったチームから見て。0 = 記録なし)、dayMembers = その日に試合に出た全員(その日の1位・最下位を決めるため)。y = チーム0が勝った度合い(点差込みの勝ち負け: 勝ち側 = 0.5 + 0.5 × (1 − e^(−点差/5))、点差なしの勝ちは 0.8)。unit が game なら1ゲームごと、match なら先取などで決着した1試合ごと(点差は全ゲームの合計)",
+                    "強さ(members.strength)": "一人ひとりの強さ s。チーム0が勝つ確率 = sigmoid(Σチーム0の s − Σチーム1の s)。y に合うように決める(ロジスティック回帰・勾配法 200回)。名簿のパラメータ(effective の4項目の平均)から決めた strengthBase に引っぱる(強さ = 3 + s / " + CHEM_PARAM_W + "、引っぱりの強さ = 試合" + CHEM_PULL + "回ぶん)。パラメータと同じものさし",
+                    "相性(chemistry)": "2人の組ごとに、その2人が一緒にいない試合だけで2人の強さを出し直し、一緒にいた試合の (実際の y − 予想) の平均(回数が少ないと0寄り: 合計 ÷ (回数 + 3))。mates = 同じチーム、rivals = 相手チーム(a のいたチームから見て)。3回以上の組だけ",
+                    "勝ち負けの要因(factors)": "matches.features の各項目の (チーム0 − チーム1) を説明変数、y を目的変数にした、切片なしのロジスティック回帰(L2 正則化 λ = 0.25、ニュートン法)。差がついた試合が5試合未満の項目は使わない。b = 係数、se = 標準誤差(ヘッセ行列の逆行列の対角)、z = b / se、effect = sigmoid(b × 単位) − 0.5(単位 = 1、格差だけ 0.5)。アプリは |z| ≥ 1 をはっきりしている、としている",
+                    "特徴(features)の定義": "〇〇の平均 = チームの effective の平均 / 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / オールラウンダーの人数 = effective の4項目がすべて " + WHY_ALL_MIN + " 以上の人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数"
+                },
+                settings: { period: rstatPeriod ? `${rstatPeriod}か月` : "全部", from, unit: matchRateUnit, mobilityWeights: { ...mobilityWeights }, keyParams: [...paramRoles.key], avgParams: [...paramRoles.avg], CHEM_PULL, CHEM_PARAM_W, factorLambda: 0.25, allrounderMin: WHY_ALL_MIN },
+                members, matches,
+                results: {
+                    games: recs.length,
+                    factors: wm.rows.map(x => ({ factor: x.lb, gamesWithDiff: x.n, used: !!x.ok, b: r3(x.b), se: r3(x.se), z: r3(x.z), effect: r3(x.eff) })),
+                    chemistry: { mates: cd.pairs.map(o => ({ a: ID(o.a), b: ID(o.b), games: o.g, wins: o.w, score: r3(o.c) })), rivals: cd.rivals.map(o => ({ a: ID(o.a), b: ID(o.b), games: o.g, aWins: o.w, score: r3(o.c) })) }
+                }
+            };
+            await shareJsonFile(`team-analysis-${Date.now()}.json`, data);
+        }
         function setRstat(k, v) { if (k === "p") rstatPeriod = v; else rstatSort = v; renderRosterStats(); }
         var rtblOpen = false;
         function renderRosterStats() {
@@ -11602,7 +11700,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div></details></details>
-                <details class="note-details chem" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>`;
+                <details class="note-details chem" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
+                <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データと結果を書き出す(検証用・名前は記号に)</button></div>`;
         }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
