@@ -10569,8 +10569,11 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 同じ画のコマは、表示だけ前のコマの骨格を出す
                 fr.forEach((f, i) => { if (f.dup && i) f.dpose = fr[i - 1].pose || fr[i - 1].dpose; });
             }
+            fx._slowSus = false;
             fxFitBall();
-            fx.ev = fxDetect(fr, fx.height, fx.ballSegs); fxCompute();
+            fx.ev = fxDetect(fr, fx.height, fx.ballSegs);
+            if (fx.ev._slowSus) { fx._slowSus = true; fxFitBall(); fx.ev = fxDetect(fr, fx.height, fx.ballSegs); }
+            fxCompute();
         }
         // ---- ボールの軌道: 放物線に乗る点だけを使う ----
         //   空中のボールは、横はまっすぐ等速・縦は重力で放物線(x = a + b·t、y = c + d·t + e·t²)。読み取った点のうち、この形に乗るものだけをボールとし、
@@ -10585,8 +10588,9 @@ const namesBtn = isAdmin() && dates.length > 0
             fr.forEach((f, fi) => { if (!f.dup) (f.balls || []).forEach(b => pts.push({ fi, t: f.t, x: b.x, y: b.y, w: 1 })); });
             manGroups.filter(g => g.length < 3).forEach(g => g.forEach(m => pts.push({ ...m, w: 5, man: true })));
             const ps = fxScaleSeries(fr, fx.height || 1.7), pv = [...ps.values()].sort((a, b) => a - b), ppm = pv.length ? pv[Math.floor(pv.length / 2)] : null;
-            const e0 = ppm ? 4.9 * ppm : null;   // 重力 9.8m/s² の半分 × 1mの画素
-            const eMin = e0 ? e0 * 0.35 : H * 0.3, eMax = e0 ? e0 * 2.8 : H * 6;
+            const sl = fx.slow || 1, e0 = ppm ? 4.9 * ppm / (sl * sl) : null;   // 重力 9.8m/s² の半分 × 1mの画素(スローなら、ゆっくり落ちる)
+            // スローの倍率がわからない(スローらしい)ときは、6倍スローまで許す
+            const eMin = e0 ? e0 * 0.35 / (fx._slowSus ? 36 : 1) : H * 0.3 / (fx._slowSus ? 36 : 1), eMax = e0 ? e0 * 2.8 : H * 6;
             const tol = Math.max(10, ppm ? 0.18 * ppm : H * 0.015);
             const solve3 = (A, B) => {   // 3×3
                 const M = A.map((r, i) => r.concat([B[i]]));
@@ -10759,7 +10763,23 @@ const namesBtn = isAdmin() && dates.length > 0
                     }
                 }
             }
-            if (bs >= 0) { ev.takeoff = T[bs]; ev.land = T[be]; }
+            // 見つからないとき(スロー・途中で速さが変わる編集の動画など、時間の幅を前提にした探し方が合わない): 足首が床から浮いている間
+            //   床 = 頂点より前で、足首がいちばん下に写った高さ(その最後のコマ = 踏み切る直前)。時間の長さは使わない
+            if (bs < 0 && pk > 0) {
+                let mx = -Infinity; for (let i = 0; i < pk; i++) if (ankY[i] > mx) mx = ankY[i];
+                let g = -1; for (let i = pk - 1; i >= 0; i--) if (ankY[i] >= mx - 0.05 * ppm(P[i])) { g = i; break; }
+                if (g >= 0 && (hipYs[g] - hipYs[pk]) / ppm(P[g]) > 0.2) {
+                    const sc = ppm(P[g]);
+                    for (let i = g + 1; i <= pk; i++) if ((ankY[g] - ankY[i]) / sc > 0.08) { bs = i; break; }
+                    if (bs >= 0) {
+                        be = P.length - 1;
+                        for (let i = pk + 1; i < P.length; i++) if ((ankY[g] - ankY[i]) / sc < 0.08) { be = i; break; }
+                        // 床まで戻らない(着地で画面が動く・足が隠れる): 足を伸ばしたあと、ひざが曲がり始める直前
+                        if (be === P.length - 1) { let m2 = -1; for (let i = pk + 1; i < P.length; i++) { const k = P[i].pose.world ? fxKnee(P[i].pose.world) : null; if (k == null) continue; if (k >= 150) m2 = Math.max(m2, k); else if (m2 >= 150 && k < m2 - 10) { be = i - 1; break; } } }
+                    }
+                }
+            }
+            if (bs >= 0) { ev.takeoff = T[bs]; ev.land = T[be]; if ((T[be] - T[bs]) / ((fx && fx.slow) || 1) > 1.2) ev._slowSus = true; }   // 人の滞空は長くても 1 秒ほど。それより長ければスロー
             // 助走開始: 踏み切りの前で、足が動き続けているところの始まり(足首の動きの速さ。どの向きから撮っても、足を上げ下ろしする動きは写る)
             const fv = P.map((f, i) => { if (!i) return 0; const q = P[i - 1], d = Math.max(Math.hypot(f.pose[27][0] - q.pose[27][0], f.pose[27][1] - q.pose[27][1]), Math.hypot(f.pose[28][0] - q.pose[28][0], f.pose[28][1] - q.pose[28][1])); return d / ppm(f) / Math.max(1e-3, f.t - q.t); });
             const fvs = sm(fv, 4);
@@ -10787,8 +10807,10 @@ const namesBtn = isAdmin() && dates.length > 0
                     // 振りかぶった手首を、コマごとに「前のコマの位置にいちばん近い手首」でたどる(左右の名前が入れかわっても追える)。その手首がいちばん高いところ = インパクト
                     ev.cock = T[ci];
                     let pos = P[ci].pose[ck];
+                    //   打つ手は、振りかぶってから打つまで肩より上にある。肩より上の手首がないコマ(腕がブレて読みまちがえた・打ったあと)は飛ばす
                     for (let i = ci + 1; i <= be; i++) {
-                        const k = [15, 16].reduce((a, b) => Math.hypot(P[i].pose[b][0] - pos[0], P[i].pose[b][1] - pos[1]) < Math.hypot(P[i].pose[a][0] - pos[0], P[i].pose[a][1] - pos[1]) ? b : a);
+                        const up = [15, 16].filter(k => P[i].pose[k][1] < P[i].pose[k === 15 ? 11 : 12][1]); if (!up.length) continue;
+                        const k = up.reduce((a, b) => Math.hypot(P[i].pose[b][0] - pos[0], P[i].pose[b][1] - pos[1]) < Math.hypot(P[i].pose[a][0] - pos[0], P[i].pose[a][1] - pos[1]) ? b : a);
                         pos = P[i].pose[k]; hk.set(i, k);
                         if (pos[1] < m) { m = pos[1]; ii = i; ev._hand = k; }
                     }
@@ -10921,11 +10943,13 @@ const namesBtn = isAdmin() && dates.length > 0
                         r.peakGap = sec(ev.impact - ap.t);
                         r.peakDrop = Math.max(0, (hY(fi) - hY(ap)) / sc);
                     }
-                    const win = (a, b) => P.filter(f => f.pose.world && f.t >= ev.impact + a * slow && f.t <= ev.impact + b * slow);
+                    // 時間の幅: スローなら倍率をかける。倍率がわからないスロー(らしい)なら、滞空を 0.6 秒とみなして合わせる
+                    const tsc = ev._slowSus && ev.takeoff != null && ev.land != null ? (ev.land - ev.takeoff) / 0.6 : slow;
+                    const win = (a, b) => P.filter(f => f.pose.world && f.t >= ev.impact + a * tsc && f.t <= ev.impact + b * tsc);
                     const pre = win(-0.45, 0).filter(f => f.t >= tk), post = win(0, 0.15);
                     if (pre.length >= 3 && W3) {
                         // 前の向き: 踏み切る前(体が起きていて、鼻が前にある)から、時間順につなぐ
-                        const fref = {}; P.filter(f => f.pose.world && f.t >= tk - 0.3 * slow && f.t < pre[0].t).forEach(f => fxHipFlex(f.pose.world, fref));
+                        const fref = {}; P.filter(f => f.pose.world && f.t >= tk - 0.3 * tsc && f.t < pre[0].t).forEach(f => fxHipFlex(f.pose.world, fref));
                         const ks = pre.map(f => fxKnee(f.pose.world)).filter(v => v != null), hf = pre.map(f => fxHipFlex(f.pose.world, fref)).filter(v => v != null);
                         if (ks.length) { r.kneeAir = Math.min(...ks); r.kneeImp = fxKnee(W3); if (r.kneeImp != null) r.kneeExt = r.kneeImp - r.kneeAir; }
                         if (hf.length) {
@@ -10945,6 +10969,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (ev.release != null && ev.impact != null) r.tossToHit = sec(ev.impact - ev.release);
             if (ev.release != null && ev.run != null) r.runVsToss = sec(ev.run - ev.release);
             if (ev.apex != null && ev.takeoff != null) r.takeoffVsApex = sec(ev.takeoff - ev.apex);
+            // スローらしいのに倍率がわからない(途中で速さが変わる編集も): 時間・速さの値は出さない(高さ・角度・形は時間に関係ないので出す)
+            if (ev._slowSus) { ["hang", "approach", "swing", "runVsToss", "takeoffVsApex", "tossUp", "tossToHit"].forEach(k => delete r[k]); if (r.peakGap != null) { r.peakSide = r.peakGap / (ev._slowSus && ev.land > ev.takeoff ? (ev.land - ev.takeoff) / 0.6 : 1); r.peakGap = null; } r.slowSus = true; }
             return r;
         }
         // ---- 画面 ----
@@ -11152,13 +11178,17 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // 体の使い方(目安の言葉つき)
         function fxBodyHtml(r, row) {
-            if (r.peakGap == null && r.kneeAir == null && r.arch == null) return "";
+            if (r.peakGap == null && r.peakSide == null && r.kneeAir == null && r.arch == null) return "";
+            if (r.peakGap == null && r.peakSide != null) {   // スロー(倍率不明): 秒は出さず、頂点の前か後かだけ
+                const g2 = r.peakSide, tim2 = Math.abs(g2) <= 0.05 ? "頂点のあたり" : g2 < 0 ? "頂点の前" : "頂点の後";
+                r = { ...r, _tim: tim2, _timSub: Math.abs(g2) <= 0.05 ? "いちばん高いところで打てています(目安)" : g2 < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)` };
+            }
             const g = r.peakGap, tim = g == null ? "—" : Math.abs(g) < 0.005 ? "頂点ちょうど" : `頂点の${Math.abs(g).toFixed(2)}秒${g < 0 ? "前" : "後"}`;
             const timSub = g == null ? "" : Math.abs(g) <= 0.05 ? "いちばん高いところで打てています" : g < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)`;
             const kneeSub = r.kneeExt == null ? "" : r.kneeExt >= 30 ? "曲げた足を、伸ばしながら打てています" : r.kneeAir > 140 ? "空中で足があまり曲がっていません(反動が使えていない)" : "足が曲がったまま打っています(伸ばしきれていない)";
             const foldSub = r.fold == null ? "" : r.fold >= 25 ? "反った体を、腹筋で折りたたんで打てています" : r.arch != null && r.arch < 5 ? "反りが小さく、体の折りたたみも小さめ(腕だけで打っている可能性)" : "反ったあとの折りたたみが小さめ";
             return `<div class="fx-grp"><h5>体の使い方<small>目安</small></h5>
-                ${row("打つタイミング", tim, timSub || "ジャンプの頂点(腰がいちばん高いとき)から")}
+                ${row("打つタイミング", r._tim || tim, r._timSub || timSub || "ジャンプの頂点(腰がいちばん高いとき)から")}
                 ${row("空中でのひざ(いちばん曲げたとき)", fxF(r.kneeAir, "°", 0), "180°でまっすぐ。小さいほど曲げている")}
                 ${row("インパクトのひざ", r.kneeImp == null ? "—" : `${Math.round(r.kneeImp)}°${r.kneeExt != null ? `(${r.kneeExt >= 0 ? "+" : ""}${Math.round(r.kneeExt)}°)` : ""}`, kneeSub)}
                 ${row("体の反り", fxF(r.arch, "°", 0), "胸を張って、肩とひざが後ろへ反った大きさ")}
@@ -11166,9 +11196,10 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function fxResHtml(r) {
             if (!r) return `<div class="fx-note">スパイカーの骨格が見つかりませんでした。明るく、全身が入る動画で試してください。</div>`;
+            const slowNote = r.slowSus ? `<div class="fx-grp"><div class="fx-note" style="margin:0">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さの値は出していません。高さ・角度・体の形は出ています。一定のスローなら、倍率を「スロー」で選んで読み直すと、時間も出ます。</div></div>` : "";
             const sg = (v, pos, neg) => v == null ? "—" : `${Math.abs(v).toFixed(2)}秒${v < 0 ? neg : pos}`;
             const row = (k, v, sub) => `<div class="fx-row"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
-            return `<div class="fx-grp"><h5>トス</h5>${row("頂点の高さ", fxF(r.tossH, "m"))}${row("上がってから頂点まで", fxF(r.tossUp, "秒"))}${row("手を離れてからインパクトまで", fxF(r.tossToHit, "秒"))}</div>
+            return `${slowNote}<div class="fx-grp"><h5>トス</h5>${row("頂点の高さ", fxF(r.tossH, "m"))}${row("上がってから頂点まで", fxF(r.tossUp, "秒"))}${row("手を離れてからインパクトまで", fxF(r.tossToHit, "秒"))}</div>
                 <div class="fx-grp"><h5>助走・ジャンプ</h5>${row("助走を始めたタイミング", r.runVsToss == null ? "—" : sg(r.runVsToss, "後", "前"), "トスが手を離れたときから")}${row("踏み切りのタイミング", r.takeoffVsApex == null ? "—" : sg(r.takeoffVsApex, "後", "前"), "トスの頂点から")}${row("助走の時間", fxF(r.approach, "秒"))}${row("ジャンプ(腰が上がった高さ)", r.jump == null ? "—" : `${Math.round(r.jump * 100)}cm`)}${row("滞空時間", fxF(r.hang, "秒"))}</div>
                 <div class="fx-grp"><h5>インパクト・フォーム</h5>${row("打点の高さ", fxF(r.hitH, "m"))}${r.ballGap == null ? "" : row("インパクトの手とボール", `${Math.round(r.ballGap * 100)}cm`, r.ballGap <= 0.35 ? (r.byBall ? "ボールの軌道が変わった瞬間に、手がボールに届いています" : "手がボールに届いています") : "手とボールが離れています。インパクトのコマを確かめてください")}${row("打点の前後", r.hitFront == null ? "—" : `${Math.round(Math.abs(r.hitFront) * 100)}cm ${r.hitFront >= 0 ? "頭より前" : "頭より後ろ"}`)}${r.netDist == null ? "" : row("打点とネットの距離", `${Math.round(r.netDist * 100)}cm`)}${row("ひじの角度", fxF(r.elbow, "°", 0), "180°でまっすぐ")}${row("肩の角度", fxF(r.shoulder, "°", 0), "わきの開き。180°で真上")}${row("腕を振る速さ", fxF(r.swing, "m/秒", 1), "手首のいちばん速いとき")}</div>
                 ${fxBodyHtml(r, row)}`;
