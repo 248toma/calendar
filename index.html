@@ -10678,6 +10678,21 @@ const namesBtn = isAdmin() && dates.length > 0
             const d = u.reduce((s, v, i) => s + v * w[i], 0), n = Math.hypot(...u) * Math.hypot(...w);
             return n ? Math.acos(Math.max(-1, Math.min(1, d / n))) * 180 / Math.PI : null;
         }
+        // 体の折れ(度): 体を真横から見て、上体の前傾 + 太ももの前への上がり。まっすぐ立つと 0、胸を張って反ると マイナス、腹筋で折りたたむと プラス
+        //   体の3Dの形から出すので、どの向きから撮っても同じように測れる(前 = 腰の線に直角で、鼻のある向き)
+        //   反ると頭が腰より後ろに来ることがあるので、前の向きは、時間順に前のコマの向きと続くように決める(ref に覚える)
+        function fxHipFlex(w, ref) {
+            if (!w) return null;
+            const mid = (a, b) => [0, 1, 2].map(j => (w[a][j] + w[b][j]) / 2), hp = mid(23, 24), sh = mid(11, 12), kn = mid(25, 26);
+            const hl = [w[24][0] - w[23][0], w[24][2] - w[23][2]], f0 = [-hl[1], hl[0]], n = Math.hypot(...f0); if (!n) return null;
+            const sg = ref && ref.fw ? ((f0[0] * ref.fw[0] + f0[1] * ref.fw[1]) >= 0 ? 1 : -1) : ((f0[0] * (w[0][0] - hp[0]) + f0[1] * (w[0][2] - hp[2])) >= 0 ? 1 : -1), fw = [f0[0] * sg / n, f0[1] * sg / n];
+            if (ref) ref.fw = fw;
+            const fwd = v => v[0] * fw[0] + v[2] * fw[1];
+            const tv = sh.map((v, j) => v - hp[j]), kv = kn.map((v, j) => v - hp[j]);
+            const trunk = Math.atan2(fwd(tv), -tv[1]), thigh = Math.atan2(fwd(kv), kv[1]);   // y は下ほど大きい
+            return (trunk + thigh) * 180 / Math.PI;
+        }
+        const fxKnee = w => { const a = fxAngle(w[23], w[25], w[27]), b = fxAngle(w[24], w[26], w[28]); return a == null || b == null ? (a ?? b) : (a + b) / 2; };
         function fxMetrics(frames, ev, heightM, calib, slow, netH) {
             slow = slow || 1;
             const at = t => t == null ? null : frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, frames[0]);
@@ -10725,6 +10740,29 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
                 r.swing = sp;
                 r.arm = k === 15 ? "左" : "右";   // 体の左右(MediaPipe の左右)
+                // 体の使い方: いちばん高いところで打てているか / ひざを曲げて反り、インパクトで足を伸ばしながら腹筋で折りたたんでいるか
+                {
+                    const tk = ev.takeoff != null ? ev.takeoff : ev.impact - 0.5, ld = ev.land != null ? ev.land : ev.impact + 0.5;
+                    const air = P.filter(f => f.t >= tk && f.t <= ld);
+                    if (air.length >= 3) {
+                        const ap = air.reduce((a, b) => hY(b) < hY(a) ? b : a);   // 腰がいちばん高いコマ = ジャンプの頂点
+                        r.peakGap = sec(ev.impact - ap.t);
+                        r.peakDrop = Math.max(0, (hY(fi) - hY(ap)) / sc);
+                    }
+                    const win = (a, b) => P.filter(f => f.pose.world && f.t >= ev.impact + a * slow && f.t <= ev.impact + b * slow);
+                    const pre = win(-0.45, 0).filter(f => f.t >= tk), post = win(0, 0.15);
+                    if (pre.length >= 3 && W3) {
+                        // 前の向き: 踏み切る前(体が起きていて、鼻が前にある)から、時間順につなぐ
+                        const fref = {}; P.filter(f => f.pose.world && f.t >= tk - 0.3 * slow && f.t < pre[0].t).forEach(f => fxHipFlex(f.pose.world, fref));
+                        const ks = pre.map(f => fxKnee(f.pose.world)).filter(v => v != null), hf = pre.map(f => fxHipFlex(f.pose.world, fref)).filter(v => v != null);
+                        if (ks.length) { r.kneeAir = Math.min(...ks); r.kneeImp = fxKnee(W3); if (r.kneeImp != null) r.kneeExt = r.kneeImp - r.kneeAir; }
+                        if (hf.length) {
+                            const lo = Math.min(...hf); r.arch = Math.max(0, -lo);
+                            const after = post.map(f => fxHipFlex(f.pose.world, fref)).filter(v => v != null), hiAfter = after.length ? Math.max(...after) : null;
+                            if (hiAfter != null) r.fold = Math.max(0, hiAfter - lo);
+                        }
+                    }
+                }
                 // ネットとの距離: 真横から撮ってネットを指定したときだけ
                 if (calib && calib.top && calib.floor && netH) { const npp = Math.abs(calib.floor.y - calib.top.y) / netH; r.netDist = Math.abs(calib.top.x - hand.x) / npp; }
             }
@@ -10793,7 +10831,8 @@ const namesBtn = isAdmin() && dates.length > 0
         ];
         const FX_CMP_METRICS = [
             ["runVsToss", "助走開始(トスから)", "秒", 2], ["takeoffVsApex", "踏み切り(トスの頂点から)", "秒", 2], ["tossH", "トスの高さ", "m", 2], ["tossToHit", "トスからインパクト", "秒", 2],
-            ["jump", "ジャンプ", "m", 2], ["hitH", "打点の高さ", "m", 2], ["hitFront", "打点の前後(頭より前+)", "m", 2], ["elbow", "ひじの角度", "°", 0], ["shoulder", "肩の角度", "°", 0], ["swing", "腕を振る速さ", "m/秒", 1]
+            ["jump", "ジャンプ", "m", 2], ["hitH", "打点の高さ", "m", 2], ["hitFront", "打点の前後(頭より前+)", "m", 2], ["elbow", "ひじの角度", "°", 0], ["shoulder", "肩の角度", "°", 0], ["swing", "腕を振る速さ", "m/秒", 1],
+            ["peakGap", "打つタイミング(頂点から)", "秒", 2], ["kneeAir", "空中でのひざ", "°", 0], ["kneeImp", "インパクトのひざ", "°", 0], ["arch", "体の反り", "°", 0], ["fold", "たたみ込み", "°", 0]
         ];
         function fxTagChips(tags, fn, id) {
             const pre = id != null ? id + "," : "";
@@ -10845,7 +10884,6 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxRefItems(me, ref) {
             const sm = fxArmSide(me.seq), sr = fxArmSide(ref.seq);
             const kneeAt = (h, side) => { const s = h.seq; if (s.ev.takeoff == null) return null; let m = Infinity; s.f.forEach(f => { if (f.t >= s.ev.takeoff - 0.35 && f.t <= s.ev.takeoff) [0, 1].forEach(sd => { const [a, b, c] = FX_J.knee[sd], v = fxAngle(f.w[a], f.w[b], f.w[c]); if (v != null && v < m) m = v; }); }); return isFinite(m) ? m : null; };
-            const archMax = (h, side) => { let m = 0; h.seq.f.forEach(f => { if (f.t < -0.45 || f.t > 0) return; const [a, b, c] = FX_J.hip[side], v = fxAngle(f.w[a], f.w[b], f.w[c]); if (v != null) m = Math.max(m, v); }); return m || null; };   // 胸を張って反ったとき(肩-腰-ひざ が 180°を超えて開く向き)
             const cock = (h, side) => { let m = 180; h.seq.f.forEach(f => { if (f.t < -0.45 || f.t > -0.02) return; const [a, b, c] = FX_J.elbow[side], v = fxAngle(f.w[a], f.w[b], f.w[c]); if (v != null && v < m) m = v; }); return m < 180 ? m : null; };   // 振りかぶったときのひじの曲げ
             const R = (h, k) => h.res && h.res[k] != null ? h.res[k] : null, HT = h => h.height || 1.7;
             return [
@@ -10858,15 +10896,21 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["振りかぶり(ひじのいちばん曲がった角度)", cock(me, sm), cock(ref, sr), "°", 0, ["引きが小さめ(お手本はもっとひじを曲げて引いています)", "お手本より大きく引いています"]],
                 ["インパクトのひじ", R(me, "elbow"), R(ref, "elbow"), "°", 0, ["お手本より腕が伸びています", "インパクトでひじが曲がっています"]],
                 ["インパクトの肩(腕の上がり)", R(me, "shoulder"), R(ref, "shoulder"), "°", 0, ["お手本より腕が真上に近い", "腕の上がりが足りません(横振り気味)"]],
-                ["腕を振る速さ", R(me, "swing"), R(ref, "swing"), "m/秒", 1, ["お手本より速く振れています", "腕の振りが遅め"]]
+                ["腕を振る速さ", R(me, "swing"), R(ref, "swing"), "m/秒", 1, ["お手本より速く振れています", "腕の振りが遅め"]],
+                ["打つタイミング(ジャンプの頂点から)", R(me, "peakGap"), R(ref, "peakGap"), "秒", 2, ["お手本より遅く(落ちながら)打っています", "お手本より早く(上がりながら)打っています"]],
+                ["空中でのひざの曲げ", R(me, "kneeAir"), R(ref, "kneeAir"), "°", 0, ["空中でひざの曲げが浅め(お手本はもっと曲げてためています)", "お手本より深く曲げています"]],
+                ["インパクトのひざ", R(me, "kneeImp"), R(ref, "kneeImp"), "°", 0, ["お手本より足が伸びています", "インパクトで足が伸びきっていません"]],
+                ["体の反り", R(me, "arch"), R(ref, "arch"), "°", 0, ["お手本より大きく反っています", "反りが小さめ(お手本はもっと胸を張っています)"]],
+                ["たたみ込み(腹筋)", R(me, "fold"), R(ref, "fold"), "°", 0, ["お手本より大きく体を折っています", "体の折りたたみが小さめ(腹筋を使えていない可能性)"]]
             ];
         }
         // 角度の動き(インパクトを0秒に): 小さな折れ線
         function fxCurveSvg(me, ref, name, label) {
             const sm = fxArmSide(me.seq), sr = fxArmSide(ref.seq), W = 300, Hh = 90, t0 = -1.0, t1 = 0.3;
-            const ser = (h, side) => h.seq.f.filter(f => f.t >= t0 && f.t <= t1).map(f => { const [a, b, c] = FX_J[name][side]; return [f.t, fxAngle(f.w[a], f.w[b], f.w[c])]; }).filter(p => p[1] != null);
+            const val = (f, side, ref) => { if (name === "fold") return fxHipFlex(f.w, ref); const [a, b, c] = FX_J[name][side]; return fxAngle(f.w[a], f.w[b], f.w[c]); };
+            const ser = (h, side) => { const ref = {}; h.seq.f.filter(f => f.t < t0).forEach(f => val(f, side, ref)); return h.seq.f.filter(f => f.t >= t0 && f.t <= t1).map(f => [f.t, val(f, side, ref)]).filter(p => p[1] != null); };
             const A = ser(me, sm), B = ser(ref, sr); if (A.length < 3 || B.length < 3) return "";
-            const vs = A.concat(B).map(p => p[1]), lo = Math.max(0, Math.min(...vs) - 10), hi = Math.min(200, Math.max(...vs) + 10);
+            const vs = A.concat(B).map(p => p[1]), lo = name === "fold" ? Math.min(...vs) - 10 : Math.max(0, Math.min(...vs) - 10), hi = Math.min(200, Math.max(...vs) + 10);
             const X = t => ((t - t0) / (t1 - t0) * W).toFixed(1), Y = v => (Hh - (v - lo) / (hi - lo) * Hh).toFixed(1);
             const line = (P, col, w) => `<polyline fill="none" stroke="${col}" stroke-width="${w}" stroke-linejoin="round" points="${P.map(p => X(p[0]) + "," + Y(p[1])).join(" ")}"/>`;
             return `<div class="fx-curve"><span>${label}</span><svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><line x1="${X(0)}" x2="${X(0)}" y1="0" y2="${Hh}" stroke="var(--line)" stroke-width="1"/>${line(B, "var(--ink-3)", 2)}${line(A, "var(--accent)", 2.5)}</svg></div>`;
@@ -10901,7 +10945,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="fx-refsel"><label>あなた${sel(mine, me, "me")}</label><label>お手本${sel(refs, ref, "ref")}</label></div>
                 ${hints ? `<ul class="fx-hints">${hints}</ul>` : `<div class="fx-note">大きな違いは見つかりませんでした。</div>`}
                 <div class="fx-sticks">${moments.map(([lb, a, b]) => `<div><span>${lb}</span>${fxStickSvg({ f: me.seq.f.map(f => ({ ...f, t: f.t - a })) }, { f: ref.seq.f.map(f => ({ ...f, t: f.t - b })) }, 0)}</div>`).join("")}</div>
-                ${fxCurveSvg(me, ref, "elbow", "ひじの角度")}${fxCurveSvg(me, ref, "shoulder", "肩の角度(腕の上がり)")}${fxCurveSvg(me, ref, "knee", "ひざの角度")}
+                ${fxCurveSvg(me, ref, "elbow", "ひじの角度")}${fxCurveSvg(me, ref, "shoulder", "肩の角度(腕の上がり)")}${fxCurveSvg(me, ref, "knee", "ひざの角度")}${fxCurveSvg(me, ref, "fold", "体の折れ(下 = 反り、上 = たたみ込み)")}
                 <div class="fx-note">折れ線は、インパクトを縦線(0秒)にそろえた、1秒前から0.3秒後までの角度の動きです。</div>
                 <div class="fx-cmp" style="grid-template-columns:1fr auto auto"><span></span><b>あなた</b><b>お手本</b>${items.map(x => `<span class="${x.z >= 1 ? "hot" : ""}">${x[0]}</span><i>${(+x[1]).toFixed(x[4])}${x[3]}</i><i>${(+x[2]).toFixed(x[4])}${x[3]}</i>`).join("")}</div>
                 <div class="fx-note">お手本との違いは目安です。体の形・高さは身長で割ってそろえていますが、撮る向き・距離・画質でずれます。似た撮り方の動画どうしで比べるほど正確です。</div></div>`;
@@ -10924,13 +10968,28 @@ const namesBtn = isAdmin() && dates.length > 0
             const why = !sp ? "" : fx.ev.takeoff == null ? "ジャンプが見つかりません。踏み切り・インパクトのコマで「今の画面」を押すと測れます" : "";
             return `<small class="fx-diag">${bits.join("・")}${why ? `<br>${why}` : ""}</small>`;
         }
+        // 体の使い方(目安の言葉つき)
+        function fxBodyHtml(r, row) {
+            if (r.peakGap == null && r.kneeAir == null && r.arch == null) return "";
+            const g = r.peakGap, tim = g == null ? "—" : Math.abs(g) < 0.005 ? "頂点ちょうど" : `頂点の${Math.abs(g).toFixed(2)}秒${g < 0 ? "前" : "後"}`;
+            const timSub = g == null ? "" : Math.abs(g) <= 0.05 ? "いちばん高いところで打てています" : g < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)`;
+            const kneeSub = r.kneeExt == null ? "" : r.kneeExt >= 30 ? "曲げた足を、伸ばしながら打てています" : r.kneeAir > 140 ? "空中で足があまり曲がっていません(反動が使えていない)" : "足が曲がったまま打っています(伸ばしきれていない)";
+            const foldSub = r.fold == null ? "" : r.fold >= 25 ? "反った体を、腹筋で折りたたんで打てています" : r.arch != null && r.arch < 5 ? "反りが小さく、体の折りたたみも小さめ(腕だけで打っている可能性)" : "反ったあとの折りたたみが小さめ";
+            return `<div class="fx-grp"><h5>体の使い方<small>目安</small></h5>
+                ${row("打つタイミング", tim, timSub || "ジャンプの頂点(腰がいちばん高いとき)から")}
+                ${row("空中でのひざ(いちばん曲げたとき)", fxF(r.kneeAir, "°", 0), "180°でまっすぐ。小さいほど曲げている")}
+                ${row("インパクトのひざ", r.kneeImp == null ? "—" : `${Math.round(r.kneeImp)}°${r.kneeExt != null ? `(${r.kneeExt >= 0 ? "+" : ""}${Math.round(r.kneeExt)}°)` : ""}`, kneeSub)}
+                ${row("体の反り", fxF(r.arch, "°", 0), "胸を張って、肩とひざが後ろへ反った大きさ")}
+                ${row("たたみ込み(腹筋)", fxF(r.fold, "°", 0), foldSub || "反った形から、インパクトにかけて体を前に折った大きさ")}</div>`;
+        }
         function fxResHtml(r) {
             if (!r) return `<div class="fx-note">スパイカーの骨格が見つかりませんでした。明るく、全身が入る動画で試してください。</div>`;
             const sg = (v, pos, neg) => v == null ? "—" : `${Math.abs(v).toFixed(2)}秒${v < 0 ? neg : pos}`;
             const row = (k, v, sub) => `<div class="fx-row"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
             return `<div class="fx-grp"><h5>トス</h5>${row("頂点の高さ", fxF(r.tossH, "m"))}${row("上がってから頂点まで", fxF(r.tossUp, "秒"))}${row("手を離れてからインパクトまで", fxF(r.tossToHit, "秒"))}</div>
                 <div class="fx-grp"><h5>助走・ジャンプ</h5>${row("助走を始めたタイミング", r.runVsToss == null ? "—" : sg(r.runVsToss, "後", "前"), "トスが手を離れたときから")}${row("踏み切りのタイミング", r.takeoffVsApex == null ? "—" : sg(r.takeoffVsApex, "後", "前"), "トスの頂点から")}${row("助走の時間", fxF(r.approach, "秒"))}${row("ジャンプ(腰が上がった高さ)", r.jump == null ? "—" : `${Math.round(r.jump * 100)}cm`)}${row("滞空時間", fxF(r.hang, "秒"))}</div>
-                <div class="fx-grp"><h5>インパクト・フォーム</h5>${row("打点の高さ", fxF(r.hitH, "m"))}${row("打点の前後", r.hitFront == null ? "—" : `${Math.round(Math.abs(r.hitFront) * 100)}cm ${r.hitFront >= 0 ? "頭より前" : "頭より後ろ"}`)}${r.netDist == null ? "" : row("打点とネットの距離", `${Math.round(r.netDist * 100)}cm`)}${row("ひじの角度", fxF(r.elbow, "°", 0), "180°でまっすぐ")}${row("肩の角度", fxF(r.shoulder, "°", 0), "わきの開き。180°で真上")}${row("腕を振る速さ", fxF(r.swing, "m/秒", 1), "手首のいちばん速いとき")}</div>`;
+                <div class="fx-grp"><h5>インパクト・フォーム</h5>${row("打点の高さ", fxF(r.hitH, "m"))}${row("打点の前後", r.hitFront == null ? "—" : `${Math.round(Math.abs(r.hitFront) * 100)}cm ${r.hitFront >= 0 ? "頭より前" : "頭より後ろ"}`)}${r.netDist == null ? "" : row("打点とネットの距離", `${Math.round(r.netDist * 100)}cm`)}${row("ひじの角度", fxF(r.elbow, "°", 0), "180°でまっすぐ")}${row("肩の角度", fxF(r.shoulder, "°", 0), "わきの開き。180°で真上")}${row("腕を振る速さ", fxF(r.swing, "m/秒", 1), "手首のいちばん速いとき")}</div>
+                ${fxBodyHtml(r, row)}`;
         }
         function fxRender() {
             const ov = document.getElementById("fxOv"); if (!ov || !fx) return;
