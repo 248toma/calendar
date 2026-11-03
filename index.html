@@ -3365,6 +3365,51 @@
         .why-help ul { margin: 0 0 8px; padding-left: 1.2em; }
         .why-help li { margin: 0 0 4px; }
         .why-help b { color: var(--ink); font-weight: 700; }
+        /* 動画でフォーム分析 */
+        #fxOv { display: none; position: fixed; inset: 0; z-index: 9600; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #fxOv.open { display: block; }
+        #fxOv .fx-wrap { max-width: 560px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 40px); box-sizing: border-box; }
+        #fxOv .fx-head { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; }
+        #fxOv .fx-head b { font-size: 20px; font-weight: 800; }
+        #fxOv .fx-x { border: none; background: none; color: var(--accent); font-size: 14px; font-weight: 700; padding: 6px 2px; }
+        #fxOv .fx-pickbtn { position: relative; display: flex; align-items: center; justify-content: center; height: 56px; border-radius: 16px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; overflow: hidden; }
+        #fxOv .fx-pickbtn input { position: absolute; inset: 0; opacity: 0; }
+        #fxOv .fx-tips, #fxOv .fx-grp { margin: 12px 0 0; padding: 12px 16px; border-radius: 16px; background: var(--surface); font-size: 13px; color: var(--ink-2); }
+        #fxOv .fx-tips ul { margin: 6px 0 0; padding-left: 1.2em; line-height: 1.7; }
+        #fxOv .fx-grp h5 { margin: 0 0 6px; font-size: 12px; font-weight: 800; color: var(--ink); display: flex; align-items: baseline; gap: 8px; }
+        #fxOv .fx-grp h5 small { font-weight: 500; color: var(--ink-3); }
+        #fxOv .fx-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+        #fxOv .fx-row:first-of-type { border-top: none; }
+        #fxOv .fx-row b { font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+        #fxOv .fx-row small { grid-column: 1 / -1; font-size: 10.5px; color: var(--ink-3); }
+        #fxOv .fx-hrow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+        #fxOv .fx-hrow:first-of-type { border-top: none; }
+        #fxOv .fx-hrow small { grid-column: 1; color: var(--ink-3); }
+        #fxOv .fx-hrow button { grid-column: 2; grid-row: 1 / span 2; border: none; background: none; color: var(--ink-3); font-size: 14px; padding: 6px; }
+        #fxOv .fx-note { margin: 12px 4px 0; font-size: 11px; line-height: 1.6; color: var(--ink-3); }
+        #fxOv .fx-cvbox { border-radius: 14px; overflow: hidden; background: #000; }
+        #fxOv canvas { display: block; width: 100%; height: auto; touch-action: manipulation; }
+        #fxOv .fx-guide { margin: 10px 2px; font-size: 14px; font-weight: 700; color: var(--accent); text-align: center; }
+        #fxOv .fx-ctrl { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+        #fxOv .fx-ctrl input[type=range] { flex: 1; }
+        #fxOv .fx-ctrl button { width: 40px; height: 36px; border: none; border-radius: 12px; background: var(--surface); color: var(--ink); font-size: 20px; }
+        #fxOv .fx-ctrl span { min-width: 4.2em; text-align: right; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+        #fxOv .fx-opts { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 6px 0; font-size: 12px; color: var(--ink-3); }
+        #fxOv .fx-opts label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; }
+        #fxOv .fx-netopt { margin: 8px 0 0; font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        #fxOv .fx-netopt select { height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+        #fxOv .fx-opts input, #fxOv .fx-opts select { height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 0 8px; font-size: 13px; }
+        #fxOv .fx-acts { display: flex; gap: 8px; justify-content: flex-end; margin: 12px 0 0; flex-wrap: wrap; }
+        #fxOv .fx-go { background: var(--accent) !important; color: #fff !important; }
+        #fxOv .fx-go:disabled { opacity: .4; }
+        #fxOv .fx-ev { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
+        #fxOv .fx-ev:first-of-type { border-top: none; }
+        #fxOv .fx-evt { flex: 1; display: flex; justify-content: space-between; align-items: baseline; border: none; background: none; padding: 4px 0; font-size: 13px; color: var(--ink); text-align: left; }
+        #fxOv .fx-evt small { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+        #fxOv .fx-evt:disabled { color: var(--ink-3); }
+        #fxOv .fx-set { flex: none; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink-2); font-size: 11.5px; padding: 6px 10px; }
+        #settingsPanel .fx-open { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 50px; margin: 0 0 10px; padding: 0 16px; border: none; border-radius: 16px; background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 600; text-align: left; }
+        #settingsPanel .fx-open::after { content: "›"; color: var(--ink-3); font-size: 18px; }
 </style>
 </head>
 <body>
@@ -10197,6 +10242,386 @@ const namesBtn = isAdmin() && dates.length > 0
             if (info.fresh) bits.push(`初めて組む2人 ${info.fresh}組`);
             return `<b>提案</b>　${bits.join("　/　")}`;
         }
+        // ======================================================================
+        // 動画でフォーム分析(スパイク)
+        //   動画の中の人の骨格(関節の位置)とボールを、スマホの中だけで読み取る(Google の MediaPipe。無料・動画は外に送らない)
+        //   ネットの高さを基準に長さを合わせ、トス・助走・踏み切り・ジャンプ・打点・腕のフォームを数字にする
+        //   見つけた瞬間(トスが手を離れた・頂点・助走開始・踏み切り・インパクト)は、コマ送りで直せる。結果は選手ごとにこの端末に保存
+        // ======================================================================
+        const FX_VER = "0.10.14";
+        const FX_CDN = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${FX_VER}`;
+        const FX_POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task";
+        const FX_BALL_MODEL = "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite";
+        const FX_KEY = "form_ana_v1";   // この端末だけ
+        const FX_STEP = 1 / 60;         // 読み取る間隔(動画の秒)
+        const FX_NETS = [["2.43", "一般男子 2.43m"], ["2.24", "一般女子 2.24m"], ["2.20", "混合 2.20m"], ["2.15", "ママさん 2.15m"], ["2.35", "中学男子 2.30m〜"], ["2.00", "2.00m"]];
+        const FX_EVENTS = [["release", "トスが手を離れた"], ["apex", "トスの頂点"], ["run", "助走を始めた"], ["takeoff", "踏み切り"], ["impact", "インパクト"]];
+        var fx = null;   // { file, url, video, canvas, ctx, w, h, dur, slow, net, calib:{top,floor}, pick, frames:[], ev:{}, res, step, t }
+        var fxLib = null, fxPose = null, fxBall = null;
+
+        function fxHist() { try { const v = JSON.parse(localStorage.getItem(FX_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+        function fxHistSave(a) { try { localStorage.setItem(FX_KEY, JSON.stringify(a.slice(-200))); } catch (e) { console.warn(e); } }
+
+        function openFormAna() {
+            let ov = document.getElementById("fxOv");
+            if (!ov) { ov = document.createElement("div"); ov.id = "fxOv"; document.body.appendChild(ov); }
+            fx = { step: "pick", slow: 1, net: 2.43, calib: {}, frames: [], ev: {}, player: "", height: 1.70 };
+            ov.classList.add("open"); document.body.style.overflow = "hidden";
+            fxRender();
+        }
+        function closeFormAna() {
+            const ov = document.getElementById("fxOv"); if (ov) { ov.classList.remove("open"); ov.innerHTML = ""; }
+            if (fx && fx.url) { try { URL.revokeObjectURL(fx.url); } catch (e) { /* ignore */ } }
+            { const v = document.getElementById("fxVid"); if (v) v.remove(); }
+            fx = null; document.body.style.overflow = "";
+        }
+        // ---- 読み込み(はじめて使うときに、骨格とボールのモデルをダウンロード。2回目からはブラウザに残る) ----
+        async function fxLoadModels(onMsg) {
+            if (!fxLib) { onMsg("読み取りの準備をしています(はじめてのときは数十秒かかります)"); fxLib = await import(`${FX_CDN}/vision_bundle.mjs`); }
+            const files = await fxLib.FilesetResolver.forVisionTasks(`${FX_CDN}/wasm`);
+            if (!fxPose) {
+                onMsg("骨格のモデルを読み込んでいます");
+                const mk = (delegate) => fxLib.PoseLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: FX_POSE_MODEL, delegate }, runningMode: "VIDEO", numPoses: 4, minPoseDetectionConfidence: 0.4, minTrackingConfidence: 0.4 });
+                try { fxPose = await mk("GPU"); } catch (e) { fxPose = await mk("CPU"); }
+            }
+            if (!fxBall) {
+                onMsg("ボールのモデルを読み込んでいます");
+                const mk = (delegate) => fxLib.ObjectDetector.createFromOptions(files, { baseOptions: { modelAssetPath: FX_BALL_MODEL, delegate }, runningMode: "VIDEO", scoreThreshold: 0.15, maxResults: 5, categoryAllowlist: ["sports ball"] });
+                try { fxBall = await mk("GPU"); } catch (e) { try { fxBall = await mk("CPU"); } catch (e2) { fxBall = null; } }
+            }
+        }
+        function fxPickFile(inp) {
+            const f = inp.files && inp.files[0]; if (!f) return;
+            if (fx.url) { try { URL.revokeObjectURL(fx.url); } catch (e) { /* ignore */ } }
+            fx.file = f; fx.url = URL.createObjectURL(f);
+            const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = fx.url;
+            v.setAttribute("playsinline", ""); v.setAttribute("muted", "");
+            v.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";   // iPhone は画面に置いた動画でないとコマを取り出せないことがある
+            { const old = document.getElementById("fxVid"); if (old) old.remove(); } v.id = "fxVid"; document.body.appendChild(v);
+            v.addEventListener("loadeddata", async () => {
+                fx.video = v; fx.w = v.videoWidth; fx.h = v.videoHeight; fx.dur = v.duration; fx.t = 0;
+                fx.step = "pickSpiker"; fx.frames = []; fx.ev = {}; fx.res = null; fx.calib = {};
+                fxRender(); await fxSeek(0);
+            }, { once: true });
+            v.addEventListener("error", () => { alert("この動画は読み込めませんでした。"); }, { once: true });
+            v.load();
+        }
+        function fxSeek(t) {
+            return new Promise(res => {
+                const v = fx && fx.video; if (!v) return res();
+                t = Math.max(0, Math.min(fx.dur - 0.001, t));
+                const done = () => { fx.t = v.currentTime; fxDraw(); res(); };
+                if (Math.abs(v.currentTime - t) < 0.0005) { done(); return; }
+                v.addEventListener("seeked", done, { once: true });
+                v.currentTime = t;
+            });
+        }
+        // 画面の座標(キャンバス上) → 動画の画素
+        function fxTapPos(e) {
+            const c = document.getElementById("fxCv"), r = c.getBoundingClientRect();
+            return { x: (e.clientX - r.left) / r.width * fx.w, y: (e.clientY - r.top) / r.height * fx.h };
+        }
+        function fxTap(e) {
+            if (!fx || !fx.video) return;
+            const p = fxTapPos(e);
+            if (fx.step === "calibTop") { fx.calib.top = p; fx.step = "calibFloor"; }
+            else if (fx.step === "calibFloor") { fx.calib.floor = { x: fx.calib.top.x, y: p.y }; fx.step = fx.pick ? "ready" : "pickSpiker"; }
+            else if (fx.step === "pickSpiker") { fx.pick = p; fx.step = "ready"; }
+            else if (fx.step === "ballTap") { fxSetBall(fx.t, p); fx.step = "result"; fxCompute(); }
+            fxRender(); fxDraw();
+        }
+        const fxMpp = () => { const f = fx.frames.find(x => x.pose); if (!f) return 0.005; const p = f.pose; return (FX_NOSE_HEEL * fx.height) / Math.max(1, Math.max(p[27][1], p[28][1]) - p[0][1]); };   // 1画素あたりの長さ(m)のおおよそ(ボールの飛び値の判定用)
+        // ---- 読み取り(動画を少しずつ進めて、そのたびに骨格とボールを探す) ----
+        async function fxRun() {
+            const msg = (m) => { const el = document.getElementById("fxMsg"); if (el) el.textContent = m; };
+            fx.step = "busy"; fxRender();
+            try { await fxLoadModels(msg); } catch (e) { console.warn(e); fx.step = "ready"; fxRender(); alert("読み取りの準備ができませんでした(通信を確認してください)。"); return; }
+            const v = fx.video, cv = document.createElement("canvas"), W = Math.min(960, fx.w), H = Math.round(fx.h * W / fx.w);
+            cv.width = W; cv.height = H; const cx = cv.getContext("2d");
+            const sx = fx.w / W;
+            fx.frames = [];
+            let prevHip = fx.pick ? { x: fx.pick.x, y: fx.pick.y } : null;
+            const n = Math.floor(fx.dur / FX_STEP);
+            for (let i = 0; i <= n; i++) {
+                const t = i * FX_STEP;
+                await new Promise(res => { const tt = Math.min(fx.dur - 0.001, t); if (Math.abs(v.currentTime - tt) < 1e-4) { res(); return; } v.addEventListener("seeked", res, { once: true }); v.currentTime = tt; });
+                cx.drawImage(v, 0, 0, W, H);
+                const ts = Math.round(t * 1000) + 1;
+                let pose = null, ball = null;
+                try {
+                    const r = fxPose.detectForVideo(cv, ts);
+                    // 選んだスパイカー: 前のコマの腰にいちばん近い人(はじめはタップした場所)
+                    let best = null, bd = Infinity;
+                    (r.landmarks || []).forEach((lm, k) => {
+                        const hx = (lm[23].x + lm[24].x) / 2 * fx.w, hy = (lm[23].y + lm[24].y) / 2 * fx.h;
+                        const d = prevHip ? Math.hypot(hx - prevHip.x, hy - prevHip.y) : 0;
+                        if (d < bd) { bd = d; best = k; }
+                    });
+                    if (best != null && bd < fx.h * 0.35) {
+                        const lm = r.landmarks[best], wl = (r.worldLandmarks || [])[best];
+                        pose = lm.map(p => [p.x * fx.w, p.y * fx.h, p.visibility == null ? 1 : p.visibility]);
+                        if (wl) pose.world = wl.map(p => [p.x, p.y, p.z]);
+                        prevHip = { x: (pose[23][0] + pose[24][0]) / 2, y: (pose[23][1] + pose[24][1]) / 2 };
+                    }
+                } catch (e) { console.warn(e); }
+                if (fxBall) {
+                    try {
+                        const r = fxBall.detectForVideo(cv, ts);
+                        const ds = (r.detections || []).map(d => ({ x: (d.boundingBox.originX + d.boundingBox.width / 2) * sx, y: (d.boundingBox.originY + d.boundingBox.height / 2) * sx, s: (d.categories[0] || {}).score || 0, r: d.boundingBox.width * sx / 2 }));
+                        if (ds.length) ball = ds.sort((a, b) => b.s - a.s)[0];
+                    } catch (e) { /* ignore */ }
+                }
+                fx.frames.push({ t, pose, ball });
+                if (i % 6 === 0) msg(`読み取り中… ${Math.round(i / n * 100)}%`);
+            }
+            fxCleanBall();
+            fx.ev = fxDetect(fx.frames, fx.height);
+            fx.step = "result"; fxCompute(); fxRender(); await fxSeek(fx.ev.impact != null ? fx.ev.impact : 0);
+        }
+        // ボールの点を整える: 前後とつながらない飛び値を外す(ボールは1コマで大きくは動かない)
+        function fxCleanBall() {
+            const fr = fx.frames, mpp = fxMpp() || 0.01, maxJump = 0.6 / mpp;   // 1/60秒で 0.6m(時速130km)を超える動きは別物
+            for (let i = 0; i < fr.length; i++) {
+                const b = fr[i].ball; if (!b || b.manual) continue;
+                const nb = [fr[i - 1], fr[i + 1], fr[i - 2], fr[i + 2]].filter(f => f && f.ball);
+                if (nb.length && !nb.some(f => Math.hypot(f.ball.x - b.x, f.ball.y - b.y) < maxJump * Math.abs(f.t - fr[i].t) * 60)) fr[i].ball = null;
+            }
+        }
+        function fxSetBall(t, p) {
+            const f = fx.frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, fx.frames[0]); if (!f) return;
+            f.ball = { x: p.x, y: p.y, s: 1, r: 10, manual: true };
+        }
+        // ---- 長さの基準: スパイカー自身の体(どの向きから撮っても使える) ----
+        //   立っているときの「鼻からかかとまで」は、身長のおよそ 0.87 倍。画面の上下の長さは、横からでも後ろからでもほぼ同じに写るので、
+        //   その人がいる場所での 1m が何画素かが分かる(奥へ走っていっても、コマごとに測り直す)
+        const FX_NOSE_HEEL = 0.87;
+        function fxScaleSeries(frames, heightM) {
+            const P = frames.filter(f => f.pose);
+            const raw = P.map(f => { const p = f.pose, heel = Math.max(p[29] ? p[29][1] : p[27][1], p[30] ? p[30][1] : p[28][1], p[27][1], p[28][1]); return (heel - p[0][1]) / (FX_NOSE_HEEL * heightM); });
+            // 走っている・跳んでいるときは体が傾いて短く写るので、前後0.15秒のいちばん大きい値を使う(立っているときに近い値。奥・手前へ動くと変わるので、短い間で)
+            const out = new Map();
+            P.forEach((f, i) => { let m = 0; for (let j = 0; j < P.length; j++) if (Math.abs(P[j].t - f.t) <= 0.15 && raw[j] > m) m = raw[j]; out.set(f.t, m || raw[i]); });
+            return out;   // t → 1m あたりの画素
+        }
+        // ---- 瞬間を見つける(骨格・ボールの動きから) ----
+        //   frames: [{ t, pose: [[x,y,vis]×33] (+ world: 体の中心からの3Dの位置(m)) | null, ball: {x,y} | null }]
+        function fxDetect(frames, heightM) {
+            const ev = {};
+            const P = frames.filter(f => f.pose);
+            if (P.length < 5) return ev;
+            const ppmS = fxScaleSeries(frames, heightM), ppm = f => ppmS.get(f.t) || 100;
+            const sm = (arr, k = 2) => arr.map((_, i) => { let s = 0, n = 0; for (let j = Math.max(0, i - k); j <= Math.min(arr.length - 1, i + k); j++) if (arr[j] != null) { s += arr[j]; n++; } return n ? s / n : null; });
+            const T = P.map(f => f.t);
+            const ankY = sm(P.map(f => Math.max(f.pose[27][1], f.pose[28][1])));   // 下にある足首(画面の下ほど y が大きい)
+            // ジャンプ: 腰がいちばん高くなったところ(頂点)から戻って、いちばん沈み込んだところ(踏み切る前のかがみ込み)を探す
+            //   そのときの足首の位置を床とし、そこから 8cm 浮いた瞬間 = 踏み切り、頂点のあとで床に戻った瞬間 = 着地
+            //   (床の線を引かないので、奥・手前へ走って床の位置が画面で動いても大丈夫)
+            const hipYs = sm(P.map(f => (f.pose[23][1] + f.pose[24][1]) / 2));
+            let pk = -1, pm = Infinity; for (let i = 2; i < P.length - 2; i++) if (hipYs[i] < pm) { pm = hipYs[i]; pk = i; }
+            let bs = -1, be = -1;
+            if (pk > 0) {
+                // 踏み切る足: 頂点より前で、下の足首が最後に止まっていた(床に着いていた)コマ。着いている足は画面の上でほとんど動かない
+                const lowK = P.map(f => f.pose[27][1] > f.pose[28][1] ? 27 : 28);
+                const still = i => { if (!i) return true; const f = P[i], q = P[i - 1], k = lowK[i]; return Math.hypot(f.pose[k][0] - q.pose[k][0], f.pose[k][1] - q.pose[k][1]) / ppm(f) / Math.max(1e-3, f.t - q.t) < 0.6; };
+                let cb = pk; while (cb > 0 && !(still(cb) && (T[pk] - T[cb]) > 0.05)) cb--;
+                let lo = cb; for (let i = cb; i >= 0 && T[cb] - T[i] <= 0.6; i--) if (hipYs[i] > hipYs[lo]) lo = i;   // ジャンプの高さ比べ用: 直前の腰がいちばん低かったところ
+                const fl = ankY[cb], sc0 = ppm(P[cb]);
+                if ((hipYs[lo] - hipYs[pk]) / sc0 > 0.2) {   // 腰が 20cm 以上上がった = ジャンプ
+                    for (let i = cb + 1; i <= pk; i++) if ((fl - ankY[i]) / sc0 > 0.08) { bs = i; break; }
+                    if (bs >= 0) { be = P.length - 1; for (let i = pk + 1; i < P.length; i++) if ((fl - ankY[i]) / sc0 < 0.08) { be = i; break; } }
+                }
+            }
+            if (bs >= 0) { ev.takeoff = T[bs]; ev.land = T[be]; }
+            // 助走開始: 踏み切りの前で、足が動き続けているところの始まり(足首の動きの速さ。どの向きから撮っても、足を上げ下ろしする動きは写る)
+            const fv = P.map((f, i) => { if (!i) return 0; const q = P[i - 1], d = Math.max(Math.hypot(f.pose[27][0] - q.pose[27][0], f.pose[27][1] - q.pose[27][1]), Math.hypot(f.pose[28][0] - q.pose[28][0], f.pose[28][1] - q.pose[28][1])); return d / ppm(f) / Math.max(1e-3, f.t - q.t); });
+            const fvs = sm(fv, 4);
+            if (bs > 0) {
+                let i = bs - 1, quiet = 0;
+                while (i > 0) { if (fvs[i] < 0.5) { quiet += T[i + 1] - T[i]; if (quiet >= 0.2) break; } else quiet = 0; i--; }
+                const st = P.findIndex((f, k) => k > i && fvs[k] >= 0.5);
+                if (st >= 0 && st < bs) ev.run = T[Math.max(0, st - 1)];
+            }
+            // インパクト: 空中で、打つほうの手首がいちばん高いところ(ボールが見えていれば、手首にいちばん近づいたところで決める)
+            const wrHi = P.map(f => Math.min(f.pose[15][1], f.pose[16][1]));
+            let ii = -1;
+            if (bs >= 0) { let m = Infinity; for (let i = bs; i <= be; i++) if (wrHi[i] < m) { m = wrHi[i]; ii = i; } }
+            if (ii >= 0) {
+                ev.impact = T[ii];
+                const sc = ppm(P[ii]);
+                const near = frames.filter(f => f.ball && f.pose && Math.abs(f.t - T[ii]) < 0.15).map(f => ({ t: f.t, d: Math.min(...[15, 16].map(k => Math.hypot(f.pose[k][0] - f.ball.x, f.pose[k][1] - f.ball.y))) })).sort((a, b) => a.d - b.d)[0];
+                if (near && near.d / sc < 0.35) ev.impact = near.t;
+            }
+            // トス: インパクトより前のボールの点で、いちばん高い点 = 頂点。そこから戻って、上がり始めた点 = 手を離れた瞬間
+            const B = frames.filter(f => f.ball && (ev.impact == null || f.t < ev.impact - 0.02));
+            if (B.length >= 3) {
+                let ai = 0; B.forEach((f, i) => { if (f.ball.y < B[ai].ball.y) ai = i; });
+                ev.apex = B[ai].t;
+                let ri = ai; while (ri > 0 && B[ri - 1].ball.y > B[ri].ball.y - 0.5 && B[ri].t - B[ri - 1].t < 0.1) ri--;
+                if (ri < ai) ev.release = B[ri].t;
+            }
+            return ev;
+        }
+        // ---- 数字を出す(瞬間が決まっていれば、そこから計算。瞬間は手で直せる) ----
+        function fxFrameAt(t) { if (!fx.frames.length || t == null) return null; return fx.frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, fx.frames[0]); }
+        function fxCompute() {
+            fx.res = fxMetrics(fx.frames, fx.ev, fx.height, fx.calib, fx.slow, fx.net);
+        }
+        function fxAngle(a, b, c) {   // b を頂点とする角度(度)
+            const u = a.map((v, i) => v - b[i]), w = c.map((v, i) => v - b[i]);
+            const d = u.reduce((s, v, i) => s + v * w[i], 0), n = Math.hypot(...u) * Math.hypot(...w);
+            return n ? Math.acos(Math.max(-1, Math.min(1, d / n))) * 180 / Math.PI : null;
+        }
+        function fxMetrics(frames, ev, heightM, calib, slow, netH) {
+            slow = slow || 1;
+            const at = t => t == null ? null : frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, frames[0]);
+            const P = frames.filter(f => f.pose); if (!P.length) return null;
+            const ppmS = fxScaleSeries(frames, heightM), ppm = f => (f && ppmS.get(f.t)) || 100;
+            const sec = d => d / slow;   // スロー動画は、実際の時間に直す
+            const hY = f => (f.pose[23][1] + f.pose[24][1]) / 2;
+            const ankLow = f => Math.max(f.pose[27][1], f.pose[28][1]);
+            const r = { ev: { ...ev } };
+            // 踏み切る直前(地面にいた最後のあたり)の床・腰・長さの基準 … ジャンプと打点はこれを基準にする
+            const ground = ev.takeoff != null ? P.filter(f => f.t <= ev.takeoff && f.t >= ev.takeoff - 0.15) : P.slice(0, 10);
+            const gref = ground.length ? ground : P.slice(0, 10);
+            const floorY = Math.max(...gref.map(ankLow)), sc = ppm(gref[gref.length - 1]);
+            // 立って構えたときの腰の高さ = 床から 身長×0.53 くらい(踏み切り直前は沈み込むので、この値を基準にする)
+            const hipStand = floorY - 0.53 * heightM * sc;
+            if (ev.takeoff != null && ev.land != null) {
+                const air = P.filter(f => f.t >= ev.takeoff && f.t <= ev.land);
+                if (air.length) r.jump = Math.max(0, (hipStand - Math.min(...air.map(hY))) / sc);
+                r.hang = sec(ev.land - ev.takeoff);
+            }
+            if (ev.run != null && ev.takeoff != null) r.approach = sec(ev.takeoff - ev.run);
+            // インパクト: 打点の高さ・頭との前後(体の向きから)・腕の角度・腕を振る速さ(体の3Dの位置から。撮った向きに左右されない)
+            const fi = at(ev.impact);
+            if (fi && fi.pose) {
+                const p = fi.pose, k = p[15][1] < p[16][1] ? 15 : 16, e = k === 15 ? 13 : 14, s = k === 15 ? 11 : 12, h = k === 15 ? 23 : 24;
+                const hand = fi.ball && Math.hypot(fi.ball.x - p[k][0], fi.ball.y - p[k][1]) / sc < 0.35 ? fi.ball : { x: p[k][0], y: p[k][1] };
+                r.hitH = (floorY - hand.y) / sc;
+                r.reach = r.hitH;   // 打点の高さ = 手(ボール)の位置
+                const W3 = p.world;
+                if (W3) {
+                    r.elbow = fxAngle(W3[s], W3[e], W3[k]); r.shoulder = fxAngle(W3[h], W3[s], W3[e]);
+                    // 前後: 両肩を結ぶ線に直角な水平方向(鼻のある側が前)に、手首が鼻よりどれだけ前か
+                    const sh = [W3[12][0] - W3[11][0], W3[12][2] - W3[11][2]], fw0 = [-sh[1], sh[0]], mid = [(W3[11][0] + W3[12][0]) / 2, (W3[11][2] + W3[12][2]) / 2];
+                    const toNose = [W3[0][0] - mid[0], W3[0][2] - mid[1]], sg = (fw0[0] * toNose[0] + fw0[1] * toNose[1]) >= 0 ? 1 : -1, n = Math.hypot(...fw0) || 1, fw = [fw0[0] * sg / n, fw0[1] * sg / n];
+                    r.hitFront = (W3[k][0] - W3[0][0]) * fw[0] + (W3[k][2] - W3[0][2]) * fw[1];
+                } else { r.elbow = fxAngle(p[s].slice(0, 2), p[e].slice(0, 2), p[k].slice(0, 2)); r.shoulder = fxAngle(p[h].slice(0, 2), p[s].slice(0, 2), p[e].slice(0, 2)); }
+                // 腕を振る速さ: 体の中心から見た手首の動き(3D)。3コマ分で測り、人の腕では出ない速さ(秒速40m超)は読み取りの乱れとして外す
+                const before = P.filter(f => f.t <= ev.impact && f.t >= ev.impact - 0.35);
+                let sp = 0;
+                for (let i = 3; i < before.length; i++) {
+                    const a = before[i], b = before[i - 3];
+                    const v = a.pose.world && b.pose.world ? Math.hypot(...[0, 1, 2].map(j => a.pose.world[k][j] - b.pose.world[k][j])) / sec(a.t - b.t)
+                        : Math.hypot(a.pose[k][0] - b.pose[k][0], a.pose[k][1] - b.pose[k][1]) / sc / sec(a.t - b.t);
+                    if (v < 40) sp = Math.max(sp, v);
+                }
+                r.swing = sp;
+                r.arm = k === 15 ? "左" : "右";   // 体の左右(MediaPipe の左右)
+                // ネットとの距離: 真横から撮ってネットを指定したときだけ
+                if (calib && calib.top && calib.floor && netH) { const npp = Math.abs(calib.floor.y - calib.top.y) / netH; r.netDist = Math.abs(calib.top.x - hand.x) / npp; }
+            }
+            // トス: 頂点の高さ(スパイカーの位置の長さで見るので、ボールがスパイカーから奥・手前に離れていると、少しずれる)
+            const fa = at(ev.apex);
+            if (fa && fa.ball) r.tossH = (floorY - fa.ball.y) / sc;
+            if (ev.release != null && ev.apex != null) r.tossUp = sec(ev.apex - ev.release);
+            if (ev.release != null && ev.impact != null) r.tossToHit = sec(ev.impact - ev.release);
+            if (ev.release != null && ev.run != null) r.runVsToss = sec(ev.run - ev.release);
+            if (ev.apex != null && ev.takeoff != null) r.takeoffVsApex = sec(ev.takeoff - ev.apex);
+            return r;
+        }
+        // ---- 画面 ----
+        function fxDraw() {
+            const c = document.getElementById("fxCv"); if (!c || !fx || !fx.video) return;
+            if (c.width !== fx.w) { c.width = fx.w; c.height = fx.h; }
+            const g = c.getContext("2d");
+            g.drawImage(fx.video, 0, 0, fx.w, fx.h);
+            const L = Math.max(2, fx.w / 400);
+            g.lineWidth = L; g.lineCap = "round";
+            if (fx.calib.top) {
+                g.strokeStyle = "rgba(255,255,255,.9)"; g.setLineDash([L * 3, L * 3]);
+                g.beginPath(); g.moveTo(fx.calib.top.x, fx.calib.top.y); g.lineTo(fx.calib.top.x, fx.calib.floor ? fx.calib.floor.y : fx.calib.top.y + 10); g.stroke(); g.setLineDash([]);
+                g.fillStyle = "#fff"; g.beginPath(); g.arc(fx.calib.top.x, fx.calib.top.y, L * 3, 0, 7); g.fill();
+            }
+            if (fx.pick && fx.step !== "result") { g.strokeStyle = "#2fd39a"; g.beginPath(); g.arc(fx.pick.x, fx.pick.y, L * 10, 0, 7); g.stroke(); }
+            // ボールの軌道(読み取った点)
+            const pts = fx.frames.filter(f => f.ball);
+            if (pts.length) {
+                g.strokeStyle = "rgba(255,200,60,.85)"; g.beginPath(); pts.forEach((f, i) => { if (i) g.lineTo(f.ball.x, f.ball.y); else g.moveTo(f.ball.x, f.ball.y); }); g.stroke();
+            }
+            const f = fx.frames.length ? fxFrameAt(fx.t) : null;
+            if (f && f.ball) { g.strokeStyle = "#ffc83c"; g.lineWidth = L * 1.5; g.beginPath(); g.arc(f.ball.x, f.ball.y, Math.max(L * 5, f.ball.r || 0), 0, 7); g.stroke(); g.lineWidth = L; }
+            if (f && f.pose) {
+                const p = f.pose, E = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32]];
+                g.strokeStyle = "rgba(47,211,154,.95)";
+                E.forEach(([a, b]) => { g.beginPath(); g.moveTo(p[a][0], p[a][1]); g.lineTo(p[b][0], p[b][1]); g.stroke(); });
+                g.fillStyle = "#fff"; [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28].forEach(k => { g.beginPath(); g.arc(p[k][0], p[k][1], L * 1.6, 0, 7); g.fill(); });
+            }
+            const tl = document.getElementById("fxTime"); if (tl) tl.textContent = `${(fx.t / (fx.slow || 1)).toFixed(2)}秒`;
+            const sl = document.getElementById("fxSeek"); if (sl && document.activeElement !== sl) sl.value = String(fx.t);
+        }
+        // 身長は、選手ごとにこの端末に覚える(長さの基準になる)
+        const FX_HT_KEY = "form_height_v1";
+        function fxHeights() { try { return JSON.parse(localStorage.getItem(FX_HT_KEY) || "{}") || {}; } catch (e) { return {}; } }
+        function fxSetPlayer(n) { fx.player = n; const h = fxHeights()[n]; if (h) fx.height = h; fxRender(); }
+        function fxSetHeight(v) { const h = Math.max(1.2, Math.min(2.2, (+v || 170) / 100)); fx.height = h; if (fx.player) { const o = fxHeights(); o[fx.player] = h; try { localStorage.setItem(FX_HT_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } } if (fx.frames.length) { fx.ev = fxDetect(fx.frames, fx.height); fxCompute(); } fxRender(); }
+        function fxStepFrame(d) { if (fx && fx.video) fxSeek(fx.t + d * FX_STEP); }
+        function fxSetEvent(k) { if (!fx) return; fx.ev[k] = fx.t; if (k === "takeoff" && (fx.ev.land == null || fx.ev.land <= fx.t)) fx.ev.land = fx.t + 0.5; fxCompute(); fxRender(); fxDraw(); }
+        function fxGoEvent(k) { if (fx && fx.ev[k] != null) fxSeek(fx.ev[k]); }
+        function fxSave() {
+            if (!fx || !fx.res) return;
+            const a = fxHist(); a.push({ id: Date.now(), at: formatDateKey(new Date()), name: fx.player || "", net: fx.net, res: { ...fx.res, ev: undefined } });
+            fxHistSave(a); fx.saved = true; fxRender();
+        }
+        function fxDelHist(id) { fxHistSave(fxHist().filter(x => x.id !== id)); fxRender(); }
+        const fxF = (v, u, d = 2) => v == null || !isFinite(v) ? "—" : `${(+v).toFixed(d)}${u}`;
+        function fxResHtml(r) {
+            if (!r) return `<div class="fx-note">スパイカーの骨格が見つかりませんでした。明るく、全身が入る動画で試してください。</div>`;
+            const sg = (v, pos, neg) => v == null ? "—" : `${Math.abs(v).toFixed(2)}秒${v < 0 ? neg : pos}`;
+            const row = (k, v, sub) => `<div class="fx-row"><span>${k}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
+            return `<div class="fx-grp"><h5>トス</h5>${row("頂点の高さ", fxF(r.tossH, "m"))}${row("上がってから頂点まで", fxF(r.tossUp, "秒"))}${row("手を離れてからインパクトまで", fxF(r.tossToHit, "秒"))}</div>
+                <div class="fx-grp"><h5>助走・ジャンプ</h5>${row("助走を始めたタイミング", r.runVsToss == null ? "—" : sg(r.runVsToss, "後", "前"), "トスが手を離れたときから")}${row("踏み切りのタイミング", r.takeoffVsApex == null ? "—" : sg(r.takeoffVsApex, "後", "前"), "トスの頂点から")}${row("助走の時間", fxF(r.approach, "秒"))}${row("ジャンプ(腰が上がった高さ)", r.jump == null ? "—" : `${Math.round(r.jump * 100)}cm`)}${row("滞空時間", fxF(r.hang, "秒"))}</div>
+                <div class="fx-grp"><h5>インパクト・フォーム</h5>${row("打点の高さ", fxF(r.hitH, "m"))}${row("打点の前後", r.hitFront == null ? "—" : `${Math.round(Math.abs(r.hitFront) * 100)}cm ${r.hitFront >= 0 ? "頭より前" : "頭より後ろ"}`)}${r.netDist == null ? "" : row("打点とネットの距離", `${Math.round(r.netDist * 100)}cm`)}${row("ひじの角度", fxF(r.elbow, "°", 0), "180°でまっすぐ")}${row("肩の角度", fxF(r.shoulder, "°", 0), "わきの開き。180°で真上")}${row("腕を振る速さ", fxF(r.swing, "m/秒", 1), "手首のいちばん速いとき")}</div>`;
+        }
+        function fxRender() {
+            const ov = document.getElementById("fxOv"); if (!ov || !fx) return;
+            const names = roster.filter(r => r.position !== GUEST_POS).map(r => r.name);
+            const top = `<div class="fx-head"><b>フォーム分析</b><button type="button" class="fx-x" onclick="closeFormAna()">閉じる</button></div>`;
+            if (fx.step === "pick") {
+                const hist = fxHist().slice().reverse();
+                ov.innerHTML = `<div class="fx-wrap">${top}
+                    <label class="fx-pickbtn"><input type="file" accept="video/*" onchange="fxPickFile(this)"><span>動画を選ぶ・撮る</span></label>
+                    <div class="fx-tips"><b>撮り方</b><ul><li>横・ななめ・後ろ、<b>どの向きからでも</b>大丈夫です。スマホは<b>傾けず</b>(縦・横どちらでも)、なるべく固定して</li><li>スパイカーの<b>頭から足まで全身</b>と、トスのボールが入るように</li><li>長さは<b>スパイカーの身長</b>から測ります(選手ごとに覚えます)</li><li>スロー撮影(120・240コマ)だと細かく測れます</li></ul></div>
+                    ${hist.length ? `<div class="fx-grp"><h5>これまでの記録</h5>${hist.map(h => `<div class="fx-hrow"><span>${escapeHtml(h.at)} ${escapeHtml(h.name || "—")}</span><small>打点 ${fxF(h.res.hitH, "m")}・ジャンプ ${h.res.jump == null ? "—" : Math.round(h.res.jump * 100) + "cm"}・助走 ${h.res.runVsToss == null ? "—" : "トスの" + Math.abs(h.res.runVsToss).toFixed(2) + "秒" + (h.res.runVsToss < 0 ? "前" : "後")}</small><button type="button" onclick="fxDelHist(${h.id})" aria-label="消す">✕</button></div>`).join("")}</div>` : ""}
+                    <div class="fx-note">骨格とボールの読み取りは、スマホの中だけで行います(Google の MediaPipe・無料)。動画はどこにも送りません。はじめて使うときだけ、読み取りのデータ(約10MB)をダウンロードします。</div></div>`;
+                return;
+            }
+            const guide = { calibTop: "ネットの上端(白帯)をタップ", calibFloor: "その真下の床をタップ", pickSpiker: "スパイカーの腰のあたりをタップ", ready: "準備ができました", busy: "", result: "", ballTap: "ボールの位置をタップ" }[fx.step] || "";
+            const ctrl = `<div class="fx-ctrl"><button type="button" onclick="fxStepFrame(-1)" aria-label="前のコマ">‹</button><input type="range" id="fxSeek" min="0" max="${fx.dur || 0}" step="${FX_STEP}" value="${fx.t || 0}" oninput="fxSeek(+this.value)"><button type="button" onclick="fxStepFrame(1)" aria-label="次のコマ">›</button><span id="fxTime"></span></div>`;
+            let body = "";
+            if (fx.step === "calibTop" || fx.step === "calibFloor" || fx.step === "pickSpiker" || fx.step === "ready") {
+                body = `<div class="fx-guide">${guide}</div>${ctrl}
+                    <div class="fx-opts"><label>選手<select onchange="fxSetPlayer(this.value)"><option value="">—</option>${names.map(n => `<option${n === fx.player ? " selected" : ""}>${escapeHtml(n)}</option>`).join("")}</select></label>
+                    <label>身長(cm)<input type="number" inputmode="numeric" min="120" max="220" value="${Math.round(fx.height * 100)}" onchange="fxSetHeight(this.value)"></label>
+                    <label>スロー<select onchange="fx.slow=+this.value">${[[1, "なし(そのまま)"], [4, "1/4(120コマを30で再生)"], [8, "1/8(240コマを30で再生)"]].map(([v, l]) => `<option value="${v}"${v === fx.slow ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+                    </div>
+                    <div class="fx-netopt">${fx.calib.top && fx.calib.floor ? `ネット指定済み(ネットとの距離も出します)<select onchange="fx.net=+this.value">${FX_NETS.map(([v, l]) => `<option value="${v}"${+v === fx.net ? " selected" : ""}>${l}</option>`).join("")}</select>` : `<button type="button" class="st-btn" onclick="fx.calib={};fx.step='calibTop';fxRender()">ネットも指定する(真横から撮ったとき)</button>`}</div>
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pickSpiker';fx.calib={};fx.pick=null;fxRender();fxDraw()">やり直す</button><button type="button" class="st-btn fx-go" ${fx.step === "ready" ? "" : "disabled"} onclick="fxRun()">読み取る</button></div>`;
+            } else if (fx.step === "busy") {
+                body = `<div class="fx-guide" id="fxMsg">準備しています…</div>`;
+            } else {
+                const evs = FX_EVENTS.map(([k, l]) => `<div class="fx-ev"><button type="button" class="fx-evt" onclick="fxGoEvent('${k}')" ${fx.ev[k] == null ? "disabled" : ""}>${l}<small>${fx.ev[k] == null ? "見つからない" : (fx.ev[k] / (fx.slow || 1)).toFixed(2) + "秒"}</small></button><button type="button" class="fx-set" onclick="fxSetEvent('${k}')">今の画面</button></div>`).join("");
+                body = `${ctrl}
+                    <div class="fx-grp"><h5>見つけた瞬間<small>違っていたら、コマ送りで合わせて「今の画面」</small></h5>${evs}
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender()">この画面のボールをタップで指定</button></div></div>
+                    ${fx.step === "ballTap" ? `<div class="fx-guide">ボールの位置をタップ</div>` : ""}
+                    ${fxResHtml(fx.res)}
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
+                    <div class="fx-note">数字の目安: 長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。頭との前後・腕の角度・振る速さは、体の3Dの形から出すので向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div>`;
+            }
+            ov.innerHTML = `<div class="fx-wrap">${top}<div class="fx-cvbox"><canvas id="fxCv" onclick="fxTap(event)"></canvas></div>${body}</div>`;
+            fxDraw();
+        }
         // ------- 勝率の予想(チームAがチームBに勝つ確率): 強さ / 勝敗の要因 / 相性 の3つ -------
         function predictMatch(A, B) {
             const sig = x => 1 / (1 + Math.exp(-x)), lg = p => Math.log(p / (1 - p)), clamp = p => Math.max(0.03, Math.min(0.97, p));
@@ -10458,6 +10883,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const hd = (k, l) => `<button type="button" class="rs-h${rstatSort === k ? " on" : ""}" onclick="setRstat('s','${k}')">${l}${rstatSort === k ? " ▾" : ""}</button>`;
             // 上: 期間と勝率の数え方(1行) / 下: 項目ごとに開く(説明は「?」の中)
             el.innerHTML = `<div class="rs-top"><span class="rs-seg2">${per}</span>${matchUnitSegHtml()}</div>
+                <button type="button" class="fx-open" onclick="openFormAna()">動画でフォーム分析</button>
                 ${proposeNextHtml()}
                 ${strengthHtml(rosterStatsFrom())}
                 ${chemHtml(rosterStatsFrom())}
