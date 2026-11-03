@@ -3376,8 +3376,8 @@
         #fxOv .fx-pickbtn input { position: absolute; inset: 0; opacity: 0; }
         #fxOv .fx-tips, #fxOv .fx-grp { margin: 12px 0 0; padding: 12px 16px; border-radius: 16px; background: var(--surface); font-size: 13px; color: var(--ink-2); }
         #fxOv .fx-tips ul { margin: 6px 0 0; padding-left: 1.2em; line-height: 1.7; }
-        #fxOv .fx-grp h5 { margin: 0 0 6px; font-size: 12px; font-weight: 800; color: var(--ink); display: flex; align-items: baseline; gap: 8px; }
-        #fxOv .fx-grp h5 small { font-weight: 500; color: var(--ink-3); }
+        #fxOv .fx-grp h5 { margin: 0 0 6px; font-size: 12px; font-weight: 800; color: var(--ink); }
+        #fxOv .fx-grp h5 small { display: block; margin-top: 2px; font-weight: 500; color: var(--ink-3); }
         #fxOv .fx-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 10px; padding: 7px 0; border-top: 1px solid var(--line); }
         #fxOv .fx-row:first-of-type { border-top: none; }
         #fxOv .fx-row b { font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -3411,6 +3411,27 @@
         #fxOv .fx-set { flex: none; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink-2); font-size: 11.5px; padding: 6px 10px; }
         #settingsPanel .fx-open { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 50px; margin: 0 0 10px; padding: 0 16px; border: none; border-radius: 16px; background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 600; text-align: left; }
         #settingsPanel .fx-open::after { content: "›"; color: var(--ink-3); font-size: 18px; }
+        #fxOv .fx-tagrow { display: grid; grid-template-columns: 3.6em 1fr; align-items: start; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+        #fxOv .fx-tagrow:first-of-type { border-top: none; }
+        #fxOv .fx-tagrow > span { font-size: 12px; color: var(--ink-3); padding-top: 6px; }
+        #fxOv .fx-tagrow div { display: flex; flex-wrap: wrap; gap: 6px; }
+        #fxOv .fx-tagrow button { border: 1px solid var(--line); border-radius: 15px; background: var(--bg); color: var(--ink-2); font-size: 12px; padding: 6px 11px; }
+        #fxOv .fx-tagrow button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+        #fxOv .fx-hrow em { font-style: normal; font-size: 10.5px; margin-left: 6px; padding: 1px 7px; border-radius: 8px; background: var(--bg); color: var(--ink-2); }
+        #fxOv .fx-hedit { padding: 4px 0 10px; }
+        #fxOv .fx-cmphead { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
+        #fxOv .fx-cmphead select { height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 0 6px; font-size: 12px; }
+        #fxOv .fx-seg { display: flex; margin-left: auto; border-radius: 10px; background: var(--bg); padding: 2px; }
+        #fxOv .fx-seg button { border: none; background: none; padding: 6px 10px; border-radius: 8px; font-size: 12px; color: var(--ink-3); }
+        #fxOv .fx-seg button.on { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        #fxOv .fx-cmp { display: grid; gap: 6px 10px; align-items: baseline; font-size: 12.5px; }
+        #fxOv .fx-cmp > b { text-align: right; font-size: 11.5px; color: var(--ink); }
+        #fxOv .fx-cmp > b small { display: block; font-weight: 400; color: var(--ink-3); font-size: 10px; }
+        #fxOv .fx-cmp > span { color: var(--ink-2); }
+        #fxOv .fx-cmp > span small { margin-left: 4px; color: var(--ink-3); font-size: 10px; }
+        #fxOv .fx-cmp > i { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+        #fxOv .fx-cmp .hot { color: var(--ink); font-weight: 800; }
+        #fxOv .fx-cmp i.hot { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -10264,6 +10285,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxHistSave(a) { try { localStorage.setItem(FX_KEY, JSON.stringify(a.slice(-200))); } catch (e) { console.warn(e); } }
 
         function openFormAna() {
+            if (!isAdmin()) return;   // 分析は管理者だけ
             let ov = document.getElementById("fxOv");
             if (!ov) { ov = document.createElement("div"); ov.id = "fxOv"; document.body.appendChild(ov); }
             fx = { step: "pick", slow: 1, net: 2.43, calib: {}, frames: [], ev: {}, player: "", height: 1.70 };
@@ -10301,7 +10323,7 @@ const namesBtn = isAdmin() && dates.length > 0
             { const old = document.getElementById("fxVid"); if (old) old.remove(); } v.id = "fxVid"; document.body.appendChild(v);
             v.addEventListener("loadeddata", async () => {
                 fx.video = v; fx.w = v.videoWidth; fx.h = v.videoHeight; fx.dur = v.duration; fx.t = 0;
-                fx.step = "ready"; fx.frames = []; fx.ev = {}; fx.res = null; fx.calib = {}; fx.pick = null;
+                fx.step = "ready"; fx.frames = []; fx.ev = {}; fx.res = null; fx.calib = {}; fx.pick = null; fx.tags = {}; fx.saved = false; fx.savedId = null;
                 fxRender(); await fxSeek(0);
             }, { once: true });
             v.addEventListener("error", () => { alert("この動画は読み込めませんでした。"); }, { once: true });
@@ -10604,10 +10626,48 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxStepFrame(d) { if (fx && fx.video) fxSeek(fx.t + d * FX_STEP); }
         function fxSetEvent(k) { if (!fx) return; fx.ev[k] = fx.t; if (k === "takeoff" && (fx.ev.land == null || fx.ev.land <= fx.t)) fx.ev.land = fx.t + 0.5; fxCompute(); fxRender(); fxDraw(); }
         function fxGoEvent(k) { if (fx && fx.ev[k] != null) fxSeek(fx.ev[k]); }
+        // ---- 印(結果・感覚・コース)を付けて、違いを比べる ----
+        const FX_TAGS = [
+            ["out", "結果", [["good", "決まった"], ["mid", "つながった"], ["miss", "ミス"]]],
+            ["feel", "感覚", [["good", "気持ちよく打てた"], ["ok", "ふつう"], ["bad", "詰まった"]]],
+            ["course", "コース", [["straight", "ストレート"], ["cross", "クロス"], ["inner", "インナー"], ["feint", "フェイント"], ["other", "その他"]]]
+        ];
+        const FX_CMP_METRICS = [
+            ["runVsToss", "助走開始(トスから)", "秒", 2], ["takeoffVsApex", "踏み切り(トスの頂点から)", "秒", 2], ["tossH", "トスの高さ", "m", 2], ["tossToHit", "トスからインパクト", "秒", 2],
+            ["jump", "ジャンプ", "m", 2], ["hitH", "打点の高さ", "m", 2], ["hitFront", "打点の前後(頭より前+)", "m", 2], ["elbow", "ひじの角度", "°", 0], ["shoulder", "肩の角度", "°", 0], ["swing", "腕を振る速さ", "m/秒", 1]
+        ];
+        function fxTagChips(tags, fn, id) {
+            const pre = id != null ? id + "," : "";
+            return FX_TAGS.map(([k, lb, opts]) => `<div class="fx-tagrow"><span>${lb}</span><div>${opts.map(([v, l]) => `<button type="button" class="${tags[k] === v ? "on" : ""}" onclick="${fn}(${pre}'${k}','${v}')">${l}</button>`).join("")}</div></div>`).join("");
+        }
+        function fxTagSet(k, v) { if (!fx) return; fx.tags = fx.tags || {}; fx.tags[k] = fx.tags[k] === v ? "" : v; if (fx.saved && fx.savedId) fxHistTag(fx.savedId, k, fx.tags[k], true); fxRender(); }
+        function fxHistTag(id, k, v, raw) { const a = fxHist(), h = a.find(x => x.id === id); if (!h) return; h.tags = h.tags || {}; h.tags[k] = raw ? v : (h.tags[k] === v ? "" : v); fxHistSave(a); if (!raw) fxRender(); }
+        var fxOpenHist = null, fxCmp = { axis: "out", who: "" };
+        function fxHistToggle(id) { fxOpenHist = fxOpenHist === id ? null : id; fxRender(); }
+        function fxTagLabel(k, v) { const t = FX_TAGS.find(x => x[0] === k), o = t && t[2].find(x => x[0] === v); return o ? o[1] : ""; }
+        // 比べる: 選んだ印(結果・感覚・コース)ごとに平均を出して、差が大きい数字を上に
+        function fxCmpHtml(hist) {
+            const names = [...new Set(hist.map(h => h.name).filter(Boolean))];
+            const ax = FX_TAGS.find(x => x[0] === fxCmp.axis) || FX_TAGS[0];
+            const rows = hist.filter(h => (!fxCmp.who || h.name === fxCmp.who) && h.tags && h.tags[ax[0]]);
+            const groups = ax[2].map(([v, l]) => ({ v, l, items: rows.filter(h => h.tags[ax[0]] === v) })).filter(g => g.items.length);
+            const head = `<div class="fx-cmphead"><select onchange="fxCmp.who=this.value;fxRender()"><option value="">全員</option>${names.map(n => `<option${n === fxCmp.who ? " selected" : ""}>${escapeHtml(n)}</option>`).join("")}</select>
+                <span class="fx-seg">${FX_TAGS.map(([k, lb]) => `<button type="button" class="${fxCmp.axis === k ? "on" : ""}" onclick="fxCmp.axis='${k}';fxRender()">${lb}</button>`).join("")}</span></div>`;
+            if (groups.length < 2) return `<div class="fx-grp"><h5>比べる</h5>${head}<div class="fx-note">「${ax[1]}」の印が付いた記録が、2種類以上そろうと比べられます(記録をタップすると、あとから印を付けられます)。</div></div>`;
+            const mean = (a, k) => { const v = a.map(h => h.res[k]).filter(x => x != null && isFinite(x)); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+            const sd = k => { const v = rows.map(h => h.res[k]).filter(x => x != null && isFinite(x)); if (v.length < 3) return null; const m = v.reduce((s, x) => s + x, 0) / v.length; return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1)) || null; };
+            // 差の大きさ = グループの平均のいちばん大きい差 ÷ ふだんのばらつき(大きいほど、その印で違いが出ている)
+            const ms = FX_CMP_METRICS.map(([k, lb, u, d]) => { const vs = groups.map(g => mean(g.items, k)), ok = vs.filter(x => x != null), s0 = sd(k); return { k, lb, u, d, vs, eff: ok.length >= 2 && s0 ? (Math.max(...ok) - Math.min(...ok)) / s0 : 0 }; }).filter(m => m.vs.filter(x => x != null).length >= 2).sort((a, b) => b.eff - a.eff);
+            const fmt = (v, u, d) => { if (v == null) return "—"; const t = u === "°" ? String(Math.round(v)) : (+v).toFixed(d); return (/^-0(\.0+)?$/.test(t) ? t.slice(1) : t) + (u === "°" ? "°" : ""); };
+            return `<div class="fx-grp"><h5>比べる<small>差が大きい順(上の3つが、その印でいちばん違いが出ている数字)</small></h5>${head}
+                <div class="fx-cmp" style="grid-template-columns:1fr repeat(${groups.length}, minmax(3.6em, auto))"><span></span>${groups.map(g => `<b>${g.l}<small>${g.items.length}本</small></b>`).join("")}
+                ${ms.map((m, i) => `<span class="${i < 3 && m.eff >= 0.8 ? "hot" : ""}">${m.lb}<small>${m.u}</small></span>${m.vs.map(v => `<i class="${i < 3 && m.eff >= 0.8 ? "hot" : ""}">${fmt(v, m.u, m.d)}</i>`).join("")}`).join("")}</div>
+                <div class="fx-note">本数が少ないうちは、たまたまの差もあります。同じ角度・同じ場所から撮った記録どうしで比べてください。</div></div>`;
+        }
         function fxSave() {
             if (!fx || !fx.res) return;
-            const a = fxHist(); a.push({ id: Date.now(), at: formatDateKey(new Date()), name: fx.player || "", net: fx.net, res: { ...fx.res, ev: undefined } });
-            fxHistSave(a); fx.saved = true; fxRender();
+            const id = Date.now(), a = fxHist(); a.push({ id, at: formatDateKey(new Date()), name: fx.player || "", net: fx.net, tags: { ...(fx.tags || {}) }, res: { ...fx.res, ev: undefined } });
+            fxHistSave(a); fx.saved = true; fx.savedId = id; fxRender();
         }
         function fxDelHist(id) { fxHistSave(fxHist().filter(x => x.id !== id)); fxRender(); }
         const fxF = (v, u, d = 2) => v == null || !isFinite(v) ? "—" : `${(+v).toFixed(d)}${u}`;
@@ -10628,7 +10688,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 ov.innerHTML = `<div class="fx-wrap">${top}
                     <label class="fx-pickbtn"><input type="file" accept="video/*" onchange="fxPickFile(this)"><span>動画を選ぶ・撮る</span></label>
                     <div class="fx-tips"><b>撮り方</b><ul><li>横・ななめ・後ろ、<b>どの向きからでも</b>大丈夫です。スマホは<b>傾けず</b>(縦・横どちらでも)、<b>動かさずに固定</b>して(追いかけて動かすと、高さがずれます)</li><li>スパイカーの<b>頭から足まで全身</b>と、トスのボールが入るように</li><li>長さは<b>スパイカーの身長</b>から測ります(選手ごとに覚えます)</li><li>スロー撮影(120・240コマ)だと細かく測れます</li></ul></div>
-                    ${hist.length ? `<div class="fx-grp"><h5>これまでの記録</h5>${hist.map(h => `<div class="fx-hrow"><span>${escapeHtml(h.at)} ${escapeHtml(h.name || "—")}</span><small>打点 ${fxF(h.res.hitH, "m")}・ジャンプ ${h.res.jump == null ? "—" : Math.round(h.res.jump * 100) + "cm"}・助走 ${h.res.runVsToss == null ? "—" : "トスの" + Math.abs(h.res.runVsToss).toFixed(2) + "秒" + (h.res.runVsToss < 0 ? "前" : "後")}</small><button type="button" onclick="fxDelHist(${h.id})" aria-label="消す">✕</button></div>`).join("")}</div>` : ""}
+                    ${hist.length ? fxCmpHtml(hist) : ""}
+                    ${hist.length ? `<div class="fx-grp"><h5>これまでの記録<small>タップで印を付ける・直す</small></h5>${hist.map(h => `<div class="fx-hrow" onclick="if(!event.target.closest('button'))fxHistToggle(${h.id})"><span>${escapeHtml(h.at)} ${escapeHtml(h.name || "—")}${["out", "feel", "course"].map(k => h.tags && h.tags[k] ? `<em>${fxTagLabel(k, h.tags[k])}</em>` : "").join("")}</span><small>打点 ${fxF(h.res.hitH, "m")}・ジャンプ ${h.res.jump == null ? "—" : Math.round(h.res.jump * 100) + "cm"}・助走 ${h.res.runVsToss == null ? "—" : "トスの" + Math.abs(h.res.runVsToss).toFixed(2) + "秒" + (h.res.runVsToss < 0 ? "前" : "後")}</small><button type="button" onclick="fxDelHist(${h.id})" aria-label="消す">✕</button></div>${fxOpenHist === h.id ? `<div class="fx-hedit">${fxTagChips(h.tags || {}, "fxHistTag", h.id)}</div>` : ""}`).join("")}</div>` : ""}
                     <div class="fx-note">骨格とボールの読み取りは、スマホの中だけで行います(Google の MediaPipe・無料)。動画はどこにも送りません。はじめて使うときだけ、読み取りのデータ(約10MB)をダウンロードします。</div></div>`;
                 return;
             }
@@ -10653,6 +10714,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender()">この画面のボールをタップで指定</button></div></div>
                     ${fx.step === "ballTap" ? `<div class="fx-guide">ボールの位置をタップ</div>` : ""}
                     ${fxResHtml(fx.res)}
+                    <div class="fx-grp"><h5>印を付ける<small>あとで比べるため(保存したあとも直せます)</small></h5>${fxTagChips(fx.tags || {}, "fxTagSet")}</div>
                     <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
                     <div class="fx-note">数字の目安: 長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。頭との前後・腕の角度・振る速さは、体の3Dの形から出すので向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div>`;
             }
@@ -14846,6 +14908,7 @@ const namesBtn = isAdmin() && dates.length > 0
             toggleSettings();
             const h = panel.querySelector(".panel-head h3");
             if (!kind) return;
+            if (!isAdmin()) return;   // 名簿・分析は管理者だけ
             panel.dataset.solo = kind;
             if (h) h.textContent = kind === "roster" ? "名簿" : "分析";
             const acc = document.getElementById("rosterAcc"); if (acc) acc.open = true;
