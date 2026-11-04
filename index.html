@@ -10445,6 +10445,9 @@ const namesBtn = isAdmin() && dates.length > 0
         const FX_VER = "0.10.14";
         const FX_CDN = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${FX_VER}`;
         const FX_POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task";
+        const FX_POSE_HEAVY = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task";
+        const FX_Q_KEY = "form_quality_v1";
+        var fxPoseKind = "", fxPoseCrop = null, fxPoseCropKind = "";
         const FX_BALL_MODEL = "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite";
         const FX_KEY = "form_ana_v1";   // この端末だけ
         const FX_STEP = 1 / 60;         // 読み取る間隔(動画の秒)
@@ -10480,6 +10483,7 @@ const namesBtn = isAdmin() && dates.length > 0
             let ov = document.getElementById("fxOv");
             if (!ov) { ov = document.createElement("div"); ov.id = "fxOv"; document.body.appendChild(ov); }
             fx = { step: "pick", slow: 1, net: 2.43, calib: {}, frames: [], ev: {}, player: "", height: 1.70 };
+            try { fx.quality = localStorage.getItem(FX_Q_KEY) === "heavy" ? "heavy" : "full"; } catch (e) { fx.quality = "full"; }
             try { fx.hand = +localStorage.getItem(FX_HAND_KEY) || 0; } catch (e) { /* ignore */ }
             ov.classList.add("open"); document.body.style.overflow = "hidden";
             fxRender();
@@ -10495,10 +10499,19 @@ const namesBtn = isAdmin() && dates.length > 0
         async function fxLoadModels(onMsg) {
             if (!fxLib) { onMsg("読み取りの準備をしています(はじめてのときは数十秒かかります)"); fxLib = await import(`${FX_CDN}/vision_bundle.mjs`); }
             const files = await fxLib.FilesetResolver.forVisionTasks(`${FX_CDN}/wasm`);
+            const q = (fx && fx.quality) === "heavy" ? "heavy" : "full", url = q === "heavy" ? FX_POSE_HEAVY : FX_POSE_MODEL;
+            if (fxPose && fxPoseKind !== q) { try { fxPose.close(); } catch (e) { /* ignore */ } fxPose = null; }   // 精度を変えたら読み込みなおす
+            if (fxPoseCrop && fxPoseCropKind !== q) { try { fxPoseCrop.close(); } catch (e) { /* ignore */ } fxPoseCrop = null; }
             if (!fxPose) {
-                onMsg("骨格のモデルを読み込んでいます");
-                const mk = (delegate) => fxLib.PoseLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: FX_POSE_MODEL, delegate }, runningMode: "VIDEO", numPoses: 4, minPoseDetectionConfidence: 0.4, minTrackingConfidence: 0.4 });
+                onMsg(q === "heavy" ? "骨格のモデル(高い精度)を読み込んでいます" : "骨格のモデルを読み込んでいます");
+                const mk = (delegate) => fxLib.PoseLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: url, delegate }, runningMode: "VIDEO", numPoses: 4, minPoseDetectionConfidence: 0.4, minTrackingConfidence: 0.4 });
                 try { fxPose = await mk("GPU"); } catch (e) { fxPose = await mk("CPU"); }
+                fxPoseKind = q;
+            }
+            if (!fxPoseCrop) {   // 切り出した画像を 1 枚ずつ読む(前のコマに引きずられない)
+                const mk = (delegate) => fxLib.PoseLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: url, delegate }, runningMode: "IMAGE", numPoses: 2, minPoseDetectionConfidence: 0.3 });
+                try { fxPoseCrop = await mk("GPU"); } catch (e) { try { fxPoseCrop = await mk("CPU"); } catch (e2) { fxPoseCrop = null; } }
+                fxPoseCropKind = q;
             }
             if (!fxBall) {
                 onMsg("ボールのモデルを読み込んでいます");
@@ -10621,7 +10634,47 @@ const namesBtn = isAdmin() && dates.length > 0
             fx.diag = { n: fx.frames.length, found, rot: fx.rot || 0, err: errMsg };
             if (!found) { fx.step = "ready"; fxRender(); alert("人が見つかりませんでした。明るさ・ピント・全身が写っているかを確認してください。" + (errMsg ? `\n(読み取りのエラー: ${errMsg.slice(0, 120)})` : "")); return; }
             fxTrack();
+            try { const n2 = await fxRetryMissing(v, seek, msg); fx.diag.retry = n2; if (n2) fxTrack(); } catch (e) { console.warn(e); }
             fx.step = "result"; fxRender(); await fxSeek(fx.ev.impact != null ? fx.ev.impact : (fx.pick ? fx.pick.t : 0));
+        }
+        // ---- 読めなかったコマの読み直し ----
+        //   スパイカーの骨格が抜けたコマ(と、通り道の前後 0.5 秒)で、前後のコマの腰の位置と体の大きさから「いるはずの場所」を出し、
+        //   そのまわりだけを切り出して拡大(512画素)して、もう一度読む。小さく写った・ぶれた・ほかのものにまぎれたコマが読めることがある
+        //   見つかった骨格は、そのコマの「写っている人」に足し、あとで通り道をつなぎなおす(位置が予想から体の 0.6 倍より離れていれば使わない)
+        function fxCropRect(cx, cy, side, W, H) {   // 動画の外にはみ出す分は削って、はみ出さない四角と、切り出し画像の中の位置を返す
+            const S = 512, x0 = cx - side / 2, y0 = cy - side * 0.6, sx = Math.max(0, x0), sy = Math.max(0, y0), ex = Math.min(W, x0 + side), ey = Math.min(H, y0 + side);
+            if (ex - sx < 8 || ey - sy < 8) return null;
+            const k = S / side; return { S, sx, sy, sw: ex - sx, sh: ey - sy, dx: (sx - x0) * k, dy: (sy - y0) * k, dw: (ex - sx) * k, dh: (ey - sy) * k };
+        }
+        function fxCropMap(lm, R) {   // 切り出し画像の中の点(0〜1) → 動画の画素
+            return lm.map(p => [R.sx + (p.x * R.S - R.dx) * R.sw / R.dw, R.sy + (p.y * R.S - R.dy) * R.sh / R.dh, p.visibility == null ? 1 : p.visibility]);
+        }
+        async function fxRetryMissing(v, seek, msg) {
+            if (!fxPoseCrop) return 0;
+            const fr = fx.frames, idx = fr.map((f, i) => f.pose ? i : -1).filter(i => i >= 0); if (idx.length < 3) return 0;
+            const i0 = idx[0], i1 = idx[idx.length - 1], ext = Math.round(0.5 / FX_STEP), inside = [], outside = [];
+            for (let i = i0 + 1; i < i1; i++) if (!fr[i].pose && !fr[i].dup) inside.push(i);
+            for (let i = Math.max(0, i0 - ext); i < i0; i++) if (!fr[i].dup) outside.push(i);
+            for (let i = i1 + 1; i <= Math.min(fr.length - 1, i1 + ext); i++) if (!fr[i].dup) outside.push(i);
+            const miss = inside.concat(outside).slice(0, 180); if (!miss.length) return 0;
+            const full = document.createElement("canvas"); full.width = fx.w; full.height = fx.h; const fg = full.getContext("2d");
+            const cc = document.createElement("canvas"); cc.width = cc.height = 512; const cg = cc.getContext("2d");
+            let added = 0;
+            for (let n = 0; n < miss.length; n++) {
+                const i = miss[n]; if (n % 6 === 0) msg(`読めなかったコマを読み直しています… ${Math.round(n / miss.length * 100)}%`);
+                let a = i - 1; while (a >= 0 && !fr[a].pose) a--; let b = i + 1; while (b < fr.length && !fr[b].pose) b++;
+                const A = a >= 0 ? fr[a].pose : null, B = b < fr.length ? fr[b].pose : null; if (!A && !B) continue;
+                const u = A && B ? (i - a) / (b - a) : 0, ha = A && fxHipOf(A), hb = B && fxHipOf(B), sa = A && fxSizeOf(A), sb = B && fxSizeOf(B);
+                const hx = A && B ? ha[0] + (hb[0] - ha[0]) * u : (ha || hb)[0], hy = A && B ? ha[1] + (hb[1] - ha[1]) * u : (ha || hb)[1], sz = A && B ? sa + (sb - sa) * u : (sa || sb);
+                const R = fxCropRect(hx, hy, Math.min(Math.max(fx.w, fx.h), sz * 1.8), fx.w, fx.h); if (!R) continue;
+                await seek(fr[i].t); fxBlit(fg, v, fx.rot || 0, fx.w, fx.h);
+                cg.fillStyle = "#000"; cg.fillRect(0, 0, 512, 512); cg.drawImage(full, R.sx, R.sy, R.sw, R.sh, R.dx, R.dy, R.dw, R.dh);
+                let res = null; try { res = fxPoseCrop.detect(cc); } catch (e) { console.warn(e); continue; }
+                const cands = (res.landmarks || []).map((lm, k) => { const p = fxCropMap(lm, R); const wl = (res.worldLandmarks || [])[k]; if (wl) p.world = wl.map(q => [q.x, q.y, q.z]); p.crop = true; return p; }).filter(fxUpright);
+                let best = null, bd = 0.6; cands.forEach(p => { const h = fxHipOf(p), d = Math.hypot(h[0] - hx, h[1] - hy) / sz; if (d < bd) { bd = d; best = p; } });
+                if (best) { fr[i].people = (fr[i].people || []).concat([best]); added++; }
+            }
+            return added;
         }
         // ---- スパイカーを決める: コマどうしで同じ人をつないで「人の通り道」を作り、その中から選ぶ ----
         //   タップしていれば、そのコマでタップにいちばん近い人の通り道。していなければ、いちばん大きく跳んだ人(スパイカー)
@@ -11778,7 +11831,7 @@ const namesBtn = isAdmin() && dates.length > 0
             },
             "骨格の番号": "MediaPipe Pose の 33点。0 鼻、7/8 左右の耳、11/12 左右の肩、13/14 ひじ、15/16 手首、23/24 腰、25/26 ひざ、27/28 足首、29/30 かかと、31/32 つま先(左が奇数)。左右は MediaPipe の判断で、反ったり振り向いたりすると入れかわることがある",
             "frames の中身": {
-                "people": "そのコマで見つかった全員の骨格 [{ i: 33点の画像座標, w: 33点の3D座標 }]",
+                "people": "そのコマで見つかった全員の骨格 [{ i: 33点の画像座標, w: 33点の3D座標, c: 1 = 読めなかったコマで、スパイカーのまわりを切り出して拡大して読み直したもの }]",
                 "sp": "アプリがスパイカーとした人の people の番号(-1 = いない・使っていない)",
                 "pose": "アプリが分析に使ったスパイカーの骨格(左右の入れかわりを直したもの)。null = 使っていない",
                 "dup": "true = 前のコマと同じ画(動画からコマを取り出すときに同じ画が2回出る)。分析には使っていない",
@@ -11829,7 +11882,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 video: { w: fx.w, h: fx.h, rot: fx.rot || 0, dur: fx.dur, slow: fx.slow, step: FX_STEP }, height: fx.height, pick: fx.pick, diag: fx.diag,   // 選手名は入れない(外に渡すため)
                 app: { ev: clean(fx.ev), res: clean(fx.res ? { ...fx.res, ev: undefined } : null), ballSegs: clean(fx.ballSegs || []), net: fx.calib && fx.calib.top && fx.calib.floor ? { top: fx.calib.top, floor: fx.calib.floor, height: fx.net } : null },
                 frames: fx.frames.map(f => ({ t: r3(f.t), dup: !!f.dup, sp: f.pose ? f.people.indexOf(f.srcPose || f.pose) : -1,
-                    people: f.people.map(p => ({ i: img(p), w: wld(p) })), pose: f.pose ? { i: img(f.pose), w: wld(f.pose) } : null,
+                    people: f.people.map(p => ({ i: img(p), w: wld(p), ...(p.crop ? { c: 1 } : {}) })), pose: f.pose ? { i: img(f.pose), w: wld(f.pose) } : null,
                     balls: (f.balls || []).map(b => [r1(b.x), r1(b.y), Math.round(b.s * 100) / 100]), ball: f.ball ? [r1(f.ball.x), r1(f.ball.y)] : null, manual: f.manual || null }))
             };
             // 前の形(v1)でも読めるように
@@ -11844,6 +11897,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const sp = fx.frames.filter(f => f.pose).length, pct = Math.round(d.found / Math.max(1, d.n) * 100);
             const bits = [`人が写ったコマ ${pct}%`, `スパイカー ${sp}コマ`];
             if (d.rot) bits.push(`動画を${d.rot}°回して読みました`);
+            if (d.retry) bits.push(`読み直しで ${d.retry}コマ`);
             const why = !sp ? "" : fx.ev.takeoff == null ? "ジャンプが見つかりません。踏み切り・インパクトのコマで「今の画面」を押すと測れます" : "";
             return `<small class="fx-diag">${bits.join("・")}${why ? `<br>${why}` : ""}</small>`;
         }
@@ -12000,6 +12054,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     <div class="fx-opts"><label>選手<select onchange="fxSetPlayer(this.value)"><option value="">—</option>${names.map(n => `<option${n === fx.player ? " selected" : ""}>${escapeHtml(n)}</option>`).join("")}</select></label>
                     <label>身長(cm)<input type="number" inputmode="numeric" min="120" max="220" value="${Math.round(fx.height * 100)}" onchange="fxSetHeight(this.value)"></label>
                     ${fxHandSel()}
+                    <label>骨格の精度<select onchange="fx.quality=this.value;try{localStorage.setItem(FX_Q_KEY,this.value)}catch(e){}">${[["full", "ふつう(速い)"], ["heavy", "高い(2〜3倍遅い)"]].map(([v, l]) => `<option value="${v}"${v === (fx.quality || "full") ? " selected" : ""}>${l}</option>`).join("")}</select></label>
                     <label>スロー<select onchange="fx.slow=+this.value">${[[1, "なし(そのまま)"], [4, "1/4(120コマを30で再生)"], [8, "1/8(240コマを30で再生)"]].map(([v, l]) => `<option value="${v}"${v === fx.slow ? " selected" : ""}>${l}</option>`).join("")}</select></label>
                     </div>
                     <div class="fx-netopt">${fx.calib.top && fx.calib.floor ? `ネット指定済み(ネットとの距離も出します)<select onchange="fx.net=+this.value">${FX_NETS.map(([v, l]) => `<option value="${v}"${+v === fx.net ? " selected" : ""}>${l}</option>`).join("")}</select>` : `<button type="button" class="st-btn" onclick="fx.calib={};fx.step='calibTop';fxRender()">ネットも指定する(真横から撮ったとき)</button>`}</div>
