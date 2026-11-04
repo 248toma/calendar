@@ -3624,6 +3624,10 @@
         .why-it.off { opacity: .45; }
         .why-it.off > div em { font-weight: 400; font-size: 10.5px; }
         .why-lnote { margin-top: 6px; font-size: 10px; color: var(--ink-3); }
+        .why-tg { color: var(--accent); font-weight: 700; }
+        .why-tgh { padding: 2px 0 8px; margin-bottom: 4px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--ink-2); }
+        .why-tgh > div { margin: 2px 0; }
+        .why-tgh b:first-child { margin-right: 8px; font-size: 11px; color: var(--ink); }
 </style>
 </head>
 <body>
@@ -12414,22 +12418,39 @@ const namesBtn = isAdmin() && dates.length > 0
             const Ts = ds.map(x => x.T).filter(t => t != null);
             return { w, l, n: w + l, rate: w + l ? w / (w + l) : null, T: Ts.length ? [Math.min(...Ts), Math.max(...Ts)] : null, all: ds.length, ds };
         }
+        // その要因の対象になる人(その日のメンバーの中で)。平均・格差・人数のように、特定の人がいない要因は null
+        function whyTargets(lb, ctx, P) {
+            const one = v => v == null ? new Set() : new Set([v]);
+            const k = ((ROLE_PARAM_DEFS.find(d => lb.startsWith(d.label)) || {}).key);
+            if (/1位がいる$/.test(lb) && k) return one(whyChamp(ctx, k, P));
+            if (lb === "レシーブ最下位がいる") return one(whyWorst(ctx, "receive", P));
+            if (lb === "レシーブ下位2人が同じチーム") return whyBottom2(ctx, "receive", P) || new Set();
+            if (/上位2人が同じチーム$/.test(lb) && k) return whyTop2(ctx, k, P) || new Set();
+            if (lb === "総合上位3人の人数") return whyTop3(ctx, P) || new Set();
+            if (lb === "バランス型の人数") return new Set(ctx.filter(n => { const p = P(n); return p && p.spr <= WHY_BAL + 1e-9; }));
+            if (lb === "セッターの人数") return new Set(ctx.filter(n => { const p = P(n); return p && p.setter; }));
+            return null;
+        }
         function whyListHtml(x) {
             const bin = /がいる$|が同じチーム$/.test(x.lb), cnt = !bin && x.T == null, fv = v => bin ? (v ? "あり" : "なし") : cnt ? `${Math.round(v)}${/人数/.test(x.lb) ? "人" : ""}` : v.toFixed(2);
             const md = d => { const p = (d || "").split("-"); return p.length === 3 ? `${+p[1]}/${+p[2]}` : d || ""; };
             const items = (x.ds || []).slice().sort((p, q) => (p.r.d || "").localeCompare(q.r.d || "") || (p.r.no || 0) - (q.r.no || 0));
             if (!items.length) return "";
-            return `<div class="why-list">${items.map(it => { const r = it.r, hi = it.d > 0 ? 0 : 1, lb = r.lbs && r.lbs.length === 2 ? r.lbs : ["チーム1", "チーム2"];
-                const mem = k => (r.teams[k] || []).map(escapeHtml).join("・");
+            // 対象の人: 日ごとに(その日のメンバーで決まる)
+            const tgOf = r => x.P ? whyTargets(x.lb, r.ctx || r.teams[0].concat(r.teams[1]), x.P) : null;
+            const byDay = []; items.forEach(it => { const d0 = it.r.d || ""; if (byDay.some(b => b.d === d0)) return; const t = tgOf(it.r); if (t) byDay.push({ d: d0, t }); });
+            const tgHead = byDay.length ? `<div class="why-tgh">${byDay.map(b => `<div><b>${md(b.d)} の対象</b>${b.t.size ? [...b.t].map(n => `<span class="why-tg">${escapeHtml(n)}</span>`).join("・") : "なし(同じ値の人がいて決まらない)"}</div>`).join("")}</div>` : "";
+            return `<div class="why-list">${tgHead}${items.map(it => { const r = it.r, hi = it.d > 0 ? 0 : 1, lb = r.lbs && r.lbs.length === 2 ? r.lbs : ["チーム1", "チーム2"];
+                const tg = tgOf(r), mem = k => (r.teams[k] || []).map(n => tg && tg.has(n) ? `<b class="why-tg">${escapeHtml(n)}</b>` : escapeHtml(n)).join("・");
                 return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b><span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${it.T != null ? `(差 ${Math.abs(it.d).toFixed(2)} / 基準 ${it.T.toFixed(2)})` : ""}</span><em>${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
                     <small>${escapeHtml(lb[0])}${r.win === 0 ? "(勝ち)" : ""}: ${mem(0)}<br>${escapeHtml(lb[1])}${r.win === 1 ? "(勝ち)" : ""}: ${mem(1)}</small></div>`; }).join("")}
-                <div class="why-lnote">◯ = 「${escapeHtml(whyCond(x.lb))}」が勝った、× = 負けた。薄い試合は差が基準より小さく、数えていません。${x.T != null ? (x.lb === "チーム内格差あり" ? "基準 = その日のメンバーの総合のばらつき(標準偏差)の半分" : "基準 = その日のメンバーのばらつき(標準偏差)× 2 ÷ チームの人数(ばらつき1つ分ちがう2人を1組入れかえたくらいの差)") : ""}</div></div>`;
+                <div class="why-lnote">${byDay.length ? "色の付いた名前 = 対象の人。" : ""}◯ = 「${escapeHtml(whyCond(x.lb))}」が勝った、× = 負けた。薄い試合は差が基準より小さく、数えていません。${x.T != null ? (x.lb === "チーム内格差あり" ? "基準 = その日のメンバーの総合のばらつき(標準偏差)の半分" : "基準 = その日のメンバーのばらつき(標準偏差)× 2 ÷ チームの人数(ばらつき1つ分ちがう2人を1組入れかえたくらいの差)") : ""}</div></div>`;
         }
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
             const recs = chemRecords(from), { F } = whyFactors();
             const sp = Object.values(m.prof).filter(Boolean), nAll = sp.filter(x => x.spr <= WHY_BAL + 1e-9).length;
-            const { P: P0 } = whyFactors(); const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min, lb, P0), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr }; });
+            const { P: P0 } = whyFactors(); const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min, lb, P0), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr, P: P0 }; });
             const ok = rows.filter(x => x.n >= 3).sort((a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5));
             const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "バランス型の人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
             const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかの条件をそろえても、この向きに効いている" : "△ ほかの条件の影響かもしれない(ほかをそろえると逆の向き)"; };
