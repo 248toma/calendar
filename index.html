@@ -3604,6 +3604,11 @@
         @keyframes prFlash { 0% { background: color-mix(in srgb, var(--fl) 20%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--fl) 20%, transparent); transform: scale(1.03); } 70% { transform: scale(1); } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; transform: scale(1); } }
         #prDayInfo { border-radius: 12px; padding: 6px 8px; margin: -6px -8px; }
         #prDayInfo.pr-flash { animation: prFlash 1.2s ease-out both; }
+        .why-cap { margin-top: 8px; font-size: 11px; color: var(--ink-3); }
+        .why-row { row-gap: 4px; padding: 6px 0; }
+        .why-row .why-nm { grid-column: 1 / -1; white-space: normal; overflow: visible; text-overflow: clip; }
+        .why-row .stg-d { white-space: nowrap; text-align: right; }
+        .why-row .why-nt { grid-column: 1 / -1; margin-top: -2px; font-size: 10.5px; color: var(--ink-3); }
 </style>
 </head>
 <body>
@@ -12307,18 +12312,18 @@ const namesBtn = isAdmin() && dates.length > 0
             <p>「どんなチームが勝ちやすいか」を、これまでの試合の記録から探します。たとえば「スパイク1位がいるチームは勝ちやすい?」「レシーブが低い人が固まると負けやすい?」を、数字で確かめます。</p>
             <h6>数字の読み方</h6>
             <ul>
-                <li><b>+15%</b> … その特徴があると(平均なら1高いと)、五分五分の試合が <b>50% → 65%</b> の勝ちやすさになる、という意味です。</li>
-                <li><b>−10%</b> … 逆に <b>50% → 40%</b> に下がる(負けやすくなる)。</li>
-                <li><b>緑で右へ</b>=有利、<b>灰色で左へ</b>=不利。棒が長いほど効き目が大きい。</li>
-                <li><b>濃い行</b>=はっきりしている。<b>薄い行</b>=まだはっきりしない(たまたまの可能性が高い)。薄い行の数字は、あまり信じないでください。</li>
-                <li><b>右端の数字</b>=その特徴で2チームに差がついた試合の数。少ないほど当てになりません(5試合未満は計算しない)。</li>
+                <li><b>67%(10勝5敗)</b> … その条件のチーム(例: スパイク1位がいるチーム)が、その条件で2チームに差がついた試合で、10勝5敗だった、という意味です。<b>50% なら関係なし</b>、50% より大きいほど勝ちやすい。</li>
+                <li><b>緑で右へ</b>=勝ち越し、<b>灰色で左へ</b>=負け越し。棒が長いほど差が大きい。</li>
+                <li><b>薄い行</b>=差がついた試合が 8 試合未満。たまたまの可能性が高いので、あまり信じないでください(3 試合未満は出しません)。</li>
             </ul>
-            <h6>どう計算しているか</h6>
-            <p><b>① 試合ごとに、2チームの特徴を比べる</b><br>例: チーム1のレシーブ平均 4.2、チーム2は 3.6 → 差は +0.6。スパイク1位はチーム1にいる → +1。</p>
-            <p><b>② 勝ち負けを「どれだけはっきり勝ったか」にする</b><br>点差があれば、大差の勝ちほど重く数えます(1点差の勝ちはほぼ互角、10点差はほぼ完勝)。点差がないゲームは、ふつうの勝ちとして数えます。</p>
-            <p><b>③ 全部の特徴を、まとめて同時に当てはめる</b><br>「勝ちやすさ = スパイク1位の効き目×差 + レシーブ平均の効き目×差 + …」という式を作り、すべての試合の結果にいちばん合うように、それぞれの効き目を決めます。</p>
-            <p><b>なぜ「まとめて」なのか</b><br>特徴どうしは重なっています。たとえば、レシーブが低い2人がいるチームは、レシーブの平均も低くなります。1つずつ数えると、本当はどちらが効いているのか分かりません。まとめて当てはめると、<b>「ほかの特徴が同じだったとしても、その特徴だけでどれだけ変わるか」</b>に切り分けられます。</p>
-            <p><b>④ データが少ないうちは控えめに</b><br>効き目は少しだけ0に寄せています。数試合の偶然で、極端な数字が出ないようにするためです。そのぶん、試合がたまるほど本当の効き目に近づきます。</p>
+            <h6>「✓」「△」の意味</h6>
+            <p>条件どうしは重なっています(例: レシーブが低い2人がいるチームは、レシーブの平均も低い)。そこで、全部の条件をまとめて当てはめる計算もして、<b>ほかの条件が同じだったとしても</b>その条件で勝ちやすさが変わるかを確かめています。</p>
+            <ul>
+                <li><b>✓</b> … ほかの条件をそろえても、勝率と同じ向きに効いている(この条件そのものが効いていそう)。</li>
+                <li><b>△</b> … ほかの条件をそろえると、逆の向きになる(勝率の差は、ほかの条件のせいかもしれない)。</li>
+                <li>何も付かない … まだどちらとも言えない。</li>
+            </ul>
+            <p>勝敗は、ゲームごと(または試合ごと。期間の横の切り替え)に数えます。点差は使いません。</p>
             <h6>それぞれの特徴</h6>
             <ul>
                 <li><b>〇〇の平均</b> … チームの平均(機動力の補正を入れた値)。平均が1高いと何%か。</li>
@@ -12340,16 +12345,36 @@ const namesBtn = isAdmin() && dates.length > 0
                 <li>期間(3か月など)と「ゲーム/試合」の切り替えで、使う試合が変わります。</li>
             </ul>
         </div>`;
+        // 条件の言い方(「どんなチームか」)
+        function whyCond(lb) {
+            if (/の平均$/.test(lb)) return lb + "が高いチーム";
+            if (/がいる$/.test(lb)) return lb + "チーム";
+            if (/が同じチーム$/.test(lb)) return lb.replace(/が同じチーム$/, "がそろったチーム");
+            if (lb === "総合上位3人の人数") return "総合上位3人が多いチーム(2-1 の 2 のほう)";
+            if (lb === "チーム内格差あり") return "チーム内の格差が大きいチーム";
+            if (/の人数$/.test(lb)) return lb.replace(/の人数$/, "が多いチーム");
+            if (lb === "人数") return "人数が多いチーム";
+            return lb;
+        }
+        // その条件のチームの、実際の勝敗(条件で2チームに差がついた試合だけ数える)
+        function whySimple(recs, f, min) {
+            let w = 0, l = 0;
+            recs.forEach(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return; if (r.win === (a > b ? 0 : 1)) w++; else l++; });
+            return { w, l, n: w + l, rate: w + l ? w / (w + l) : null };
+        }
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
-            const sp = Object.values(m.prof).filter(Boolean), nSpec = sp.filter(x => x.spr >= WHY_SPEC).length, nAll = sp.filter(x => x.min >= WHY_ALL_MIN).length;
-            const ok = m.rows.filter(x => x.ok).sort((a, b) => (Math.abs(b.z) >= 1) - (Math.abs(a.z) >= 1) || Math.abs(b.eff) - Math.abs(a.eff));
-            const ng = m.rows.filter(x => !x.ok).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "その日の下位2人が分かれてばかりで比べられない" : (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
-            const unitTxt = lb => /がいる|同じチーム/.test(lb) ? "いる" : /人数/.test(lb) ? "1人多い" : /格差/.test(lb) ? "格差0.5大" : "1高い";
+            const recs = chemRecords(from), { F } = whyFactors();
+            const sp = Object.values(m.prof).filter(Boolean), nAll = sp.filter(x => x.min >= WHY_ALL_MIN).length;
+            const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr }; });
+            const ok = rows.filter(x => x.n >= 3).sort((a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5));
+            const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : "どのチームも同じくらいで差がつかない" }));
+            const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかの条件をそろえても、この向きに効いている" : "△ ほかの条件の影響かもしれない(ほかをそろえると逆の向き)"; };
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
-                <div class="rs-tbl" style="margin-top:8px">${ok.map(x => { const pct = Math.round(x.eff * 100), up = x.eff >= 0, wv = Math.min(50, Math.abs(x.eff) * 100), sure = Math.abs(x.z) >= 1;
-                    return `<div class="stg-row" style="grid-template-columns:9.6em 1fr 3.4em 2.4em;${sure ? "" : "opacity:.45"}"><span class="rs-nm">${escapeHtml(x.lb)}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && sure ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pct > 0 ? "+" : pct < 0 ? "−" : "±"}${Math.abs(pct)}%</span><span class="stg-d">${x.n}</span></div>`; }).join("")}
-                ${ng.map(x => `<div class="stg-row" style="grid-template-columns:9.6em 1fr;color:var(--ink-3)"><span class="rs-nm">${escapeHtml(x.lb)}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
+                <div class="why-cap">その条件のチームの勝率(条件で2チームに差がついた試合だけ)。50% なら関係なし</div>
+                <div class="rs-tbl" style="margin-top:6px">${ok.map(x => { const pc = Math.round(x.rate * 100), up = pc >= 50, wv = Math.min(50, Math.abs(pc - 50)), few = x.n < 8, nt = note(x);
+                    return `<div class="stg-row why-row" style="grid-template-columns:1fr 3em 4.6em;${few ? "opacity:.5" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && !few ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few ? `<small class="why-nt">${few ? "まだ試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</div>`; }).join("")}
+                ${ng.map(x => `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary>${WHY_HELP}</details></details>`;
         }
         // 強さ: 名簿のパラメータ(ベース)を、試合結果で補正したもの。パラメータと同じ 1〜5 のものさしで出す
