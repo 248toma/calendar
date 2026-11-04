@@ -11258,7 +11258,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
                 r.hang = sec(ev.land - ev.takeoff);
                 // 滞空時間 T と高さ h は、重力で結びつく: h = 9.8·T²/8、T = 2√(2h/9.8)。2つがずれていれば、どちらか(瞬間・動画の速さ・長さの基準)がずれている
-                if (r.airRise != null && r.hang > 0) { r.hangH = 9.8 * r.hang * r.hang / 8; r.riseT = 2 * Math.sqrt(2 * r.airRise / 9.8); const d = Math.abs(r.hangH - r.airRise); r.hangOk = !(d > 0.08 && d / Math.max(r.hangH, r.airRise) > 0.25); }
+                if (r.airRise != null) r.riseT = 2 * Math.sqrt(2 * r.airRise / 9.8);   // 高さから計算した滞空(動画の速さが分からなくても出せる)
+                if (r.airRise != null && r.hang > 0) { r.hangH = 9.8 * r.hang * r.hang / 8; const d = Math.abs(r.hangH - r.airRise); r.hangOk = !(d > 0.08 && d / Math.max(r.hangH, r.airRise) > 0.25); }
             }
             if (ev.run != null && ev.takeoff != null) r.approach = sec(ev.takeoff - ev.run);
             // インパクト: 打点の高さ・頭との前後(体の向きから)・腕の角度・腕を振る速さ(体の3Dの位置から。撮った向きに左右されない)
@@ -11375,7 +11376,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (ev.apex != null && ev.takeoff != null) r.takeoffVsApex = sec(ev.takeoff - ev.apex);
             // スローらしいのに倍率がわからない(途中で速さが変わる編集も): 時間・速さの値は出さない(高さ・角度・形は時間に関係ないので出す)
             if (ev._varSpeed) r.varSpeed = true;
-            if (ev._slowSus) { ["hang", "hangH", "riseT", "hangOk", "approach", "swing", "runVsToss", "takeoffVsApex", "tossUp", "tossToHit"].forEach(k => delete r[k]); if (r.peakGap != null) { r.peakSide = r.peakGap / (ev._slowSus && ev.land > ev.takeoff ? (ev.land - ev.takeoff) / 0.6 : 1); r.peakGap = null; } r.slowSus = true; }
+            if (ev._slowSus) { ["hang", "hangH", "hangOk", "approach", "swing", "runVsToss", "takeoffVsApex", "tossUp", "tossToHit"].forEach(k => delete r[k]); if (r.peakGap != null) { r.peakSide = r.peakGap / (ev._slowSus && ev.land > ev.takeoff ? (ev.land - ev.takeoff) / 0.6 : 1); r.peakGap = null; } r.slowSus = true; }
             return r;
         }
         // ---- スロー再生: 動画をコマごとに進めて見せる(動画の再生速度に頼らないので、どの速さでも、重ねた動画とも、ずれない) ----
@@ -11898,8 +11899,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const tk = tm ? (tm.level === "ok" ? "ぴったり" : `あと${Math.abs(tm.delta).toFixed(2)}秒 ${tm.delta > 0 ? "遅く" : "早く"}`) : null;
             const tkSub = tm ? (tm.level === "ok" ? "トスに合わせて、ジャンプの頂点で打てる踏み切りです" : tm.delta > 0 ? "踏み切りが早い(ボールが落ちてくる前に頂点)" : "踏み切りが遅い(頂点を過ぎてからボールが来る)") : (r.tmWhy ? (r.varSpeed ? r.tmWhy : "ボールが追えていないので出せません(「見つけた瞬間」でボールの位置を指定)") : "");
             const jumpBad = r.jump != null && r.jump < 0.05, jumpNote = jumpBad ? `<div class="fx-notice">ジャンプが読み取れていません(0cm)。踏み切りの瞬間がずれているか、骨格が読めていないコマが多い可能性があります。「見つけた瞬間(直す)」で、踏み切り・着地を動画に合わせて直してください。</div>` : "";
-            const rows = row("踏み切り", tk || (r.tmWhy ? "—" : null), tkSub, "takeoff") + row("打つタイミング", w.tim, w.timSub, "impact")
+            const rows = row("トスとのタイミング", tk || (r.tmWhy ? (r.varSpeed ? "出せません" : "ボールが必要") : null), tk ? tkSub : r.tmWhy ? (r.varSpeed ? r.tmWhy : "トスに対して、踏み切りが早いか遅いかを出します。シーンの「ボール」で、トスのボールを3点(手を離れた所・てっぺん・打つ直前)指定すると出ます") : "", "takeoff") + row("打つタイミング", w.tim, w.timSub, "impact")
                 + row("ジャンプ", r.jump == null ? null : jumpBad ? "読めていません" : `${Math.round(r.jump * 100)}cm`, jumpBad ? "踏み切りを直すと出ます" : `立った姿勢から腰が上がった高さ${r.hangOk === false ? "。滞空時間と合っていません(下の滞空時間を確認)" : ""}`)
+                + (r.hang == null && r.riseT != null ? row("滞空時間", "測れません", `${r.varSpeed ? "途中で再生の速さが変わる動画" : "動画の速さ(スロー倍率)が分からない動画"}なので、動画の時間からは測れません。映像で測った高さ ${Math.round(r.airRise * 100)}cm(踏み切り→頂点)から計算すると、滞空は約 ${r.riseT.toFixed(2)}秒のはずです`, "land") : "")
                 + row("滞空時間", r.hang == null ? null : `${r.hang.toFixed(2)}秒`, r.hang == null ? "" : r.hangH == null ? "踏み切りから着地まで" : r.tscaleAir ? `踏み切りから着地まで(スロー動画の倍率を、この滞空と高さの関係から決めたので、照らし合わせはしていません。映像の高さ ${Math.round(r.airRise * 100)}cm)` : r.hangOk ? `時間と高さが合っています。滞空から計算した高さ ${Math.round(r.hangH * 100)}cm / 映像で測った高さ ${Math.round(r.airRise * 100)}cm(踏み切り→頂点)` : `<span class="fx-warn">時間と高さが合っていません</span>。滞空から計算すると ${Math.round(r.hangH * 100)}cm、映像では ${Math.round(r.airRise * 100)}cm(この高さなら滞空 ${r.riseT.toFixed(2)}秒)。${r.hangH < r.airRise ? "滞空が短すぎます: 踏み切り・着地の瞬間か、動画の速さ(スロー)がずれている可能性" : "滞空が長すぎます: 踏み切り・着地の瞬間がずれているか、身長の入力・カメラの動きで高さが小さく出ている可能性"}。下の「シーン」で踏み切り・着地を確かめてください`, "land") + row("打点", r.hitH == null ? null : `${r.hitH.toFixed(2)}m`, `インパクトの${arm || "手"}の手のひらの高さ(床から。ボールが手のそばならボールの高さ)${r.armAuto ? "。右・左が違っていれば、「打つ手」を指定" : ""}`, "impact")
                 + row("① 空中で膝を曲げる", w.air, w.airSub) + row("② 足を前に振る", w.leg, w.legSub) + row("③ 腰からくの字", w.hip, w.hipSub)
                 + row("撮った向き", view, view == null ? "" : r.view >= 60 ? "横から撮れています。足・体の折れ・腕の角度が測りやすい向きです" : r.view >= 30 ? "斜めからです。高さ・タイミングは問題なし、足・体の折れは少しずれます" : "正面・後ろ寄りです。高さ・タイミングは測れますが、足・体の折れ・腕の角度は精度が落ちます");
