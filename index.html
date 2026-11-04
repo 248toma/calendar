@@ -12217,6 +12217,14 @@ const namesBtn = isAdmin() && dates.length > 0
             const v = vs.length >= 3 ? new Set(vs.filter(x => x[1] >= vs[1][1]).map(x => x[0])) : null;
             whyChampMemo.set(mk, v); return v;
         }
+        // その日のメンバー(ctx)の中で、総合(パラメータの平均・機動力の補正込み)が高い順の3人(3番目と同じ値の人も含む)
+        //   試合の結果から出す「強さ」は使わない(勝ち負けから決めた値で勝ち負けを説明すると、堂々めぐりになるため)
+        function whyTop3(ctx, P) {
+            const mk = "t3|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
+            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.avg]).sort((a, b) => b[1] - a[1]);
+            const v = vs.length >= 4 ? new Set(vs.filter(x => x[1] >= vs[2][1] - 1e-9).map(x => x[0])) : null;
+            whyChampMemo.set(mk, v); return v;
+        }
         function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
             const mean = (t, f) => { const xs = t.map(P).filter(Boolean).map(f); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
@@ -12233,6 +12241,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["レシーブ下位2人が同じチーム", (t, ctx) => { const b = whyBottom2(ctx || t, "receive", P); return b == null ? null : (t.filter(n => b.has(n)).length >= 2 ? 1 : 0); }, 1],
                 // スパイク・セットの上位2人(2番目と同じ値の人も含む)のうち2人以上が同じチーム。ふだんのチーム分け(キーパラメータ)ではバラけるので、提案で重なったときに別の要因として切り分ける
                 ...[["spike", "スパイク"], ["set", "セット"]].map(([k, lb]) => [lb + "上位2人が同じチーム", (t, ctx) => { const b = whyTop2(ctx || t, k, P); return b == null ? null : (t.filter(n => b.has(n)).length >= 2 ? 1 : 0); }, 1]),
+                // その日の総合上位3人の偏り: 3人のうち何人がそのチームにいるか(2-1 なら、2人のチームが +1)
+                ["総合上位3人の人数", (t, ctx) => { const b = whyTop3(ctx || t, P); return b == null ? null : t.filter(n => b.has(n)).length; }, 1],
                 ["オールラウンダーの人数", t => cnt(t, x => x.min >= WHY_ALL_MIN), 1],
                 ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
@@ -12314,6 +12324,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <li><b>〇〇の平均</b> … チームの平均(機動力の補正を入れた値)。平均が1高いと何%か。</li>
                 <li><b>スパイク1位・セット1位がいる</b> … その日来たメンバーの中で、その項目が単独1位の人がいるか。同率1位の日は数えない。</li>
                 <li><b>レシーブ最下位がいる</b> … その日のメンバーで、レシーブが単独で一番低い人がいるか。</li>
+                <li><b>総合上位3人の人数</b> … その日のメンバーのうち、総合(パラメータの平均・機動力の補正込み)が高い順の3人(3番目と同じ値の人も含む)が、そのチームに何人いるか。2-1 に分かれたら、2人のチームが +1。試合の結果から出す「強さ」は使いません(勝ち負けで決めた値で勝ち負けを説明すると、堂々めぐりになるため)</li>
                 <li><b>レシーブ下位2人が同じチーム</b> … その日のレシーブが低い順の2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。</li>
                 <li><b>スパイク・セット上位2人が同じチーム</b> … その日の上位2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。ふだんのチーム分けではキーパラメータとしてバラけるので、提案などで重なったときの影響を、ほかの特徴と切り分けるための項目。</li>
                 <li><b>チーム内格差あり</b> … チームの中の実力差(強い人と弱い人の差)。格差が1大きいと何%か。</li>
