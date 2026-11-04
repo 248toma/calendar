@@ -10733,7 +10733,10 @@ const namesBtn = isAdmin() && dates.length > 0
             const pts = [];
             // 手で指定した点: 3点以上つながっていれば、その点だけで放物線を作る(自動の放物線より優先)。1〜2点なら、自動で探すときの目印にする
             const man = fr.map((f, fi) => f.manual ? { fi, t: f.t, x: f.manual.x, y: f.manual.y, w: 1 } : null).filter(Boolean);
-            const manGroups = []; man.forEach(m => { const g = manGroups[manGroups.length - 1]; if (g && m.t - g[g.length - 1].t <= 1.5) g.push(m); else manGroups.push([m]); });
+            // 手で指定した点のまとまり: 1.5 秒(スローなら、その倍率ぶん長く)より離れたら別のボール。どれも 3 点にならなければ、指定した点を全部 1 つのボールとみなす
+            const gapK = fx.slow > 1 ? fx.slow : (fx.ev && fx.ev._tscale) || ((fx._slowSus || (fx.ev && fx.ev._slowSus)) ? 8 : 1);
+            let manGroups = []; man.forEach(m => { const g = manGroups[manGroups.length - 1]; if (g && m.t - g[g.length - 1].t <= 1.5 * gapK) g.push(m); else manGroups.push([m]); });
+            if (man.length >= 3 && !manGroups.some(g => g.length >= 3)) manGroups = [man];
             fr.forEach((f, fi) => { if (!f.dup) (f.balls || []).forEach(b => pts.push({ fi, t: f.t, x: b.x, y: b.y, w: 1 })); });
             manGroups.filter(g => g.length < 3).forEach(g => g.forEach(m => pts.push({ ...m, w: 5, man: true })));
             const ps = fxScaleSeries(fr, fx.height || 1.7), pv = [...ps.values()].sort((a, b) => a - b), ppm = pv.length ? pv[Math.floor(pv.length / 2)] : null;
@@ -10888,6 +10891,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const h = (hY(f0) - hY(top)) / sc; if (!(h > 0.1 && h < 1.2)) return null;
             return (ev.land - ev.takeoff) / (2 * Math.sqrt(2 * h / 9.8));
         }
+        // 手で指定したボールの放物線から: ボールは重力だけで飛ぶので、縦の曲がり方(e)と 1m の画素から、実際の1秒が動画の何秒か
+        function fxBallTimeScale(frames, heightM, segs) {
+            const sg = (segs || []).filter(g => g.manual && g.e > 0).sort((a, b) => (b.t2 - b.t1) - (a.t2 - a.t1))[0]; if (!sg) return null;
+            const ppmS = fxScaleSeries(frames, heightM), v = [...ppmS.values()].sort((a, b) => a - b), ppm = v.length ? v[Math.floor(v.length / 2)] : 0; if (!ppm) return null;
+            const k = Math.sqrt(9.8 / (2 * sg.e / ppm)); return isFinite(k) && k > 0.5 && k < 25 ? k : null;
+        }
         function fxDetect(frames, heightM, segs) {
             const ts = fxTimeScale(frames, heightM);
             const run = k => {   // 実際の時間に直して判定し、時刻は動画の時間に戻す
@@ -10909,6 +10918,24 @@ const namesBtn = isAdmin() && dates.length > 0
                     const kb = snap(k2), ev2 = run(kb), k3 = fxAirScale(frames, heightM, ev2);
                     if (k3 && Math.abs(Math.max(1, k3) / Math.max(1, kb) - 1) <= 0.3 && !ev2._slowSus) { ev = ev2; k = kb; if (kb > 1) ev._tscaleAir = true; }
                     else if (kx > 1.001 || ev._slowSus) { delete ev._tscale; ev._slowSus = true; }   // 倍率が決まらない: 瞬間はそのまま、時間の値は出さない
+                }
+            }
+            // ボールを手で指定したとき: ボールの放物線から求めた倍率がいちばん確か。その倍率で探しなおし、
+            //   踏み切り・インパクト・着地がそろい、インパクトがボールの軌道の終わり(打った瞬間)に近ければ、その結果を使う。
+            //   そうでなければ(カメラが動いて腰の動きがくずれた など)、瞬間は前の結果のまま、時間だけボールの倍率で直す
+            if (!(ts && ts.user)) {
+                const kb0 = fxBallTimeScale(frames, heightM, segs);
+                if (kb0) {
+                    let kb = kb0; [2, 4, 8, 16].forEach(s0 => { if (Math.abs(kb / s0 - 1) < 0.2) kb = s0; }); kb = kb < 1.6 ? 1 : Math.min(20, kb);
+                    const sg = (segs || []).filter(g => g.manual).sort((a, b) => (b.t2 - b.t1) - (a.t2 - a.t1))[0];
+                    const okEv = e => e.takeoff != null && e.impact != null && e.land != null && e.land > e.takeoff && e.impact >= e.takeoff && (!sg || Math.abs(e.impact - sg.t2) <= 0.3 * kb);
+                    const kNow = ev._tscale || 1;
+                    if (ev._slowSus || Math.abs(kNow / kb - 1) > 0.15) {
+                        const evB = run(kb);
+                        if (okEv(evB)) ev = evB;
+                        else { delete ev._slowSus; if (kb > 1.001) ev._tscale = kb; else delete ev._tscale; }
+                    }
+                    if (kb > 1.001) ev._tscaleBall = true;
                 }
             }
             if (ts && ts.user) ev._tscaleUser = true;
@@ -11075,7 +11102,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxFrameAt(t) { if (!fx.frames.length || t == null) return null; return fx.frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, fx.frames[0]); }
         function fxCompute() {
             fx.res = fxMetrics(fx.frames, fx.ev, fx.height, fx.calib, fxSlow(), fx.net);
-            if (fx.res && fx.ev._tscale > 1) { fx.res.tscale = fx.ev._tscale; fx.res.tscaleUser = !!fx.ev._tscaleUser; }
+            if (fx.res && fx.ev._tscale > 1) { fx.res.tscale = fx.ev._tscale; fx.res.tscaleUser = !!fx.ev._tscaleUser; fx.res.tscaleBall = !!fx.ev._tscaleBall; }
         }
         function fxAngle(a, b, c) {   // b を頂点とする角度(度)
             const u = a.map((v, i) => v - b[i]), w = c.map((v, i) => v - b[i]);
@@ -11806,7 +11833,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!r) return "";
             const w = fxBodyWords(r), tm = r.tm, row = (k, v, sub, go) => v == null ? "" : `<div class="fx-row"${go ? ` onclick="fxJump('${go}')" style="cursor:pointer"` : ""}><span>${k}${go ? " ›" : ""}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
             const view = r.view == null ? null : r.view >= 60 ? "ほぼ真横" : r.view >= 30 ? "斜め" : "正面・後ろ寄り", arm = r.arm ? `${r.arm}手${r.armAuto ? "(骨格の判定)" : ""}` : null;
-            const slowNote = (r.tscale > 1 && !r.tscaleUser ? `<div class="fx-notice">スロー動画(約1/${Math.round(r.tscale)})と判定して、実際の時間に直して計算しました(空中の腰の落ち方から自動で判定)。</div>` : "") + (r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "")
+            const slowNote = (r.tscale > 1 && !r.tscaleUser ? `<div class="fx-notice">スロー動画(約1/${Math.round(r.tscale)})と判定して、実際の時間に直して計算しました(${r.tscaleBall ? "指定したボールの落ち方" : "空中の腰の落ち方"}から自動で判定)。</div>` : "") + (r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "")
                 + "";
             const tk = tm ? (tm.level === "ok" ? "ぴったり" : `あと${Math.abs(tm.delta).toFixed(2)}秒 ${tm.delta > 0 ? "遅く" : "早く"}`) : null;
             const tkSub = tm ? (tm.level === "ok" ? "トスに合わせて、ジャンプの頂点で打てる踏み切りです" : tm.delta > 0 ? "踏み切りが早い(ボールが落ちてくる前に頂点)" : "踏み切りが遅い(頂点を過ぎてからボールが来る)") : (r.tmWhy ? "ボールが追えていないので出せません(「見つけた瞬間」でボールの位置を指定)" : "");
