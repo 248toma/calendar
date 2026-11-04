@@ -10392,7 +10392,15 @@ const namesBtn = isAdmin() && dates.length > 0
             const { F, P } = whyFactors();
             const scaleOf = lb => /の平均$|格差/.test(lb) ? 0.6 : 1;   // 差の大きさの目安(平均は0.6、人数・いる/いないは1)
             const feats = F.filter(([lb]) => lb !== "総合" && lb !== "人数").map(([lb, f]) => ({ lb, f, sc: scaleOf(lb) }));
-            const xOf = (A, B, ctx) => feats.map(ft => { const a = ft.f(A, ctx), b = ft.f(B, ctx); return a == null || b == null ? 0 : (a - b) / ft.sc; });
+            // 差は、勝ち負けの要因と同じ「差がある」と言える基準で割る(1 以上なら、勝率の計算で数えられる差)。いる・いない・人数は 1 つ = 1
+            const xOf = (A, B, ctx) => feats.map(ft => { const a = ft.f(A, ctx), b = ft.f(B, ctx); if (a == null || b == null) return 0; if (ft.sc >= 1) return a - b; const T = whyThresh(ft.lb, { teams: [A, B], ctx }, P); return T ? Math.max(-2, Math.min(2, (a - b) / T)) : 0; });
+            const sgn = v => Math.abs(v) >= 1 - 1e-9 ? Math.sign(v) : 0;
+            // かぶっている特徴の組: これまで差がついた試合で、8割以上同じ側(または8割以上逆の側)にそろっていた2つ(3試合以上)
+            const Sx = recs.map(r => xOf(r.teams[0], r.teams[1], r.ctx).map(sgn)), overl = [];
+            for (let a = 0; a < feats.length; a++) for (let b = a + 1; b < feats.length; b++) {
+                let same = 0, opp = 0; Sx.forEach(v => { if (v[a] && v[b]) { if (v[a] === v[b]) same++; else opp++; } });
+                const n = same + opp; if (n >= 3 && Math.abs(same - opp) / n >= 0.6) overl.push({ a, b, o: (same - opp) / n, n, same, opp });
+            }
             // これまでの試合の情報(特徴の差の集まり)。少しだけ足して、まだ一度も差がついていない特徴は「知りたい度」が大きくなる
             const K = feats.length, LAMI = 0.5;
             const H = feats.map((_, a) => feats.map((__, b) => a === b ? LAMI : 0));
@@ -10432,6 +10440,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     let dg = 0; for (let k = 0; k < K; k++) dg += x[k] * x[k] / H[k][k];
                     const g = gain(x), dir = dg > 0 ? g / dg : 0, mag = Math.min(1, Math.sqrt(dg) / 1.5);
                     sc += 4 * pz * (1 - pz) * dir * mag; if (!x0) x0 = x;
+                    if (a === 0 && b === 1) overl.forEach(p => { const sa = sgn(x[p.a]), sb = sgn(x[p.b]); if (sa && sb && sa * sb === -Math.sign(p.o)) sc += 1.5 * 4 * pz * (1 - pz) * Math.abs(p.o) * Math.min(1, p.n / 5); });   // 一方的な試合ほど、分かることが少ない
                 }
                 let nov = 0, np = 0; teams.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { nov += 1 / (1 + gOf(t[i], t[j])); np++; } });
                 sc += 0.3 * nov / Math.max(1, np);
@@ -10439,7 +10448,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             return { best, bestX };
             };
-            const testsOf = (bx) => feats.map((ft, a) => { let t = 0; for (let b = 0; b < K; b++) t += inv[a][b] * bx[b]; return { lb: ft.lb, c: bx[a] * t, x: bx[a] }; }).filter(o => o.x && o.c > 0).sort((p, q) => q.c - p.c).slice(0, 3);
+            const testsOf = (bx) => feats.map((ft, a) => { let t = 0; for (let b = 0; b < K; b++) t += inv[a][b] * bx[b]; return { lb: ft.lb, c: bx[a] * t, x: bx[a] }; }).filter(o => sgn(o.x) && o.c > 0).sort((p, q) => q.c - p.c).slice(0, 3);   // 基準に届く差がついた特徴だけ
             // まずは重なりも許して、いちばん情報が増える分け方を探す。重なっているのに、それが「ためす」特徴に入っていなければ、重ならない分け方にし直す
             let { best, bestX } = run(true);
             { const st0 = stacks(best), tl = testsOf(bestX).map(o => o.lb); if (st0.length && !st0.every(lb => tl.includes(lb))) ({ best, bestX } = run(false)); }
@@ -10447,10 +10456,16 @@ const namesBtn = isAdmin() && dates.length > 0
             const contrib = testsOf(bestX);
             let fresh = 0; best.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) if (!gOf(t[i], t[j])) fresh++; });
             const pm = teamCount === 2 ? predictMatch(best[0], best[1]) : null;
-            return { teams: best, info: { win: pm ? pm.str : null, whyWin: pm ? pm.why : null, fresh, tests: contrib.map(o => ({ lb: o.lb, side: o.x > 0 ? 1 : 2 })) } };
+            // この分け方で切り分けられる「かぶっている組」(チーム1とチーム2を比べて)
+            const splits = bestX ? overl.filter(p => { const sa = sgn(bestX[p.a]), sb = sgn(bestX[p.b]); return sa && sb && sa * sb === -Math.sign(p.o); }).sort((p, q) => Math.abs(q.o) * q.n - Math.abs(p.o) * p.n).slice(0, 3)
+                .map(p => ({ a: feats[p.a].lb, b: feats[p.b].lb, sa: bestX[p.a] > 0 ? 1 : 2, sb: bestX[p.b] > 0 ? 1 : 2, same: p.o > 0, n: p.n, k: p.o > 0 ? p.same : p.opp })) : [];
+            const gOk = !genGap(best);
+            return { teams: best, info: { win: pm ? pm.str : null, whyWin: pm ? pm.why : null, fresh, tests: contrib.map(o => ({ lb: o.lb, side: o.x > 0 ? 1 : 2 })), splits, overl: overl.length, gOk } };
         }
         function proposeNoteHtml(info) {
             const bits = [];
+            if (info.splits && info.splits.length) bits.push("切り分け: " + info.splits.map(p => `「${whyCond(p.a).replace(/チーム$|チーム\(.*\)$/, "")}」と「${whyCond(p.b).replace(/チーム$|チーム\(.*\)$/, "")}」を${p.same ? "別のチーム" : "同じチーム"}に(これまで ${p.n}試合中 ${p.k}試合で${p.same ? "同じ" : "反対の"}チームだった)`).join("・"));
+            else if (info.overl === 0) bits.push("かぶっている要因の組はまだ見つかっていません");
             if (info.tests && info.tests.length) bits.push("ためす: " + info.tests.map(t => `${t.lb.replace("チーム内格差あり", "チーム内格差")}(${t.side})`).join("・"));
             if (info.win != null) bits.push(`予想 強さ ${Math.round(info.win * 100)}:${100 - Math.round(info.win * 100)}${info.whyWin != null ? `・要因 ${Math.round(info.whyWin * 100)}:${100 - Math.round(info.whyWin * 100)}` : ""}`);
             if (info.fresh) bits.push(`初めて組む2人 ${info.fresh}組`);
@@ -12180,7 +12195,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     <p>「勝ち負けの要因」を見分けやすくするための分け方です。勝率を五分五分にはしません(片方に有利でもかまわない)。</p>
                     <h6>決め方</h6>
                     <ul>
-                        <li><b>重なりをほどく</b> … これまでの試合で一緒に動いてしまっている特徴(例: スパイク1位がいるチームは、いつもレシーブの平均も高い)は、どちらが効いているか分かりません。そこで、わざと逆向きに組ませます。例: スパイク1位を、セット1位がいない・レシーブ下位2人がいるチームに入れる。</li>
+                        <li><b>かぶっている要因を切り分ける</b> … これまでの試合で、いつも同じチームに来ている2つの特徴(差がついた試合の8割以上で同じ側。例: 「スパイクの平均が高いチーム」と「総合上位3人が多いチーム」)は、どちらが効いているか分かりません。そこで、わざと別々のチームに来るように組ませます。「切り分け」に、どの組を分けたかを出します。この分け方で何試合かすると、2つの勝率がちがってくれば、効いているほうが分かります。</li>
+                        <li><b>差の大きさ</b> … 平均の差は、「勝ち負けの要因」と同じ「差がある」と言える基準(その日のメンバーのばらつきから決める)以上になるようにします。基準より小さい差は、勝率の計算で数えられないためです。</li>
                         <li><b>まだ差がついたことのない特徴</b>にも差がつくようにします。</li>
                         <li>計算では、これまでの試合の「特徴の差」の集まりに、この分け方を1試合足したとき、いちばん新しい情報が増える分け方を選んでいます。</li>
                         <li>一緒に出た回数が少ない2人も、少しだけ同じチームにしやすくします(相性のデータ)。</li>
