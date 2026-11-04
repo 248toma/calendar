@@ -11153,11 +11153,17 @@ const namesBtn = isAdmin() && dates.length > 0
                         // 前の向き: 踏み切る前(体が起きていて、鼻が前にある)から、時間順につなぐ
                         const fref = {}; P.filter(f => f.pose.world && f.t >= tk - 0.3 * tsc && f.t < pre[0].t).forEach(f => fxHipFlex(f.pose.world, fref));
                         const ks = pre.map(f => fxKnee(f.pose.world)).filter(v => v != null), hf = pre.map(f => fxHipFlex(f.pose.world, fref)).filter(v => v != null);
-                        if (ks.length) { r.kneeAir = Math.min(...ks); r.kneeImp = fxKnee(W3); if (r.kneeImp != null) r.kneeExt = r.kneeImp - r.kneeAir; }
+                        const med = a => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : null; };
+                        const ksm = ks.map((v, i) => med(ks.slice(Math.max(0, i - 1), i + 2)));   // 3コマの中央値(1コマだけの読みまちがいをならす)
+                        const k2 = f => { const q = f.pose, ok = [23, 25, 27, 24, 26, 28].every(j => (q[j][2] == null ? 1 : q[j][2]) > 0.4); if (!ok) return null; const a = fxAngle(q[23].slice(0, 2), q[25].slice(0, 2), q[27].slice(0, 2)), b = fxAngle(q[24].slice(0, 2), q[26].slice(0, 2), q[28].slice(0, 2)); return a == null || b == null ? null : (a + b) / 2; };
+                        const near = P.filter(f => f.pose.world && Math.abs(f.t - ev.impact) <= 0.035 * tsc), i3 = med(near.map(f => fxKnee(f.pose.world)).filter(v => v != null)), i2 = med(near.map(k2).filter(v => v != null));
+                        if (ksm.length) { r.kneeAir = Math.min(...ksm); r.kneeImp = i3 != null && i2 != null ? Math.min(i3, i2) : (i3 != null ? i3 : i2); r.kneeImp3 = i3; r.kneeImp2 = i2; if (r.kneeImp != null) r.kneeExt = r.kneeImp - r.kneeAir; }
                         if (hf.length) {
                             const lo = Math.min(...hf); r.arch = Math.max(0, -lo);
                             const after = post.map(f => fxHipFlex(f.pose.world, fref)).filter(v => v != null), hiAfter = after.length ? Math.max(...after) : null;
                             if (hiAfter != null) r.fold = Math.max(0, hiAfter - lo);
+                            const around = win(-0.06, 0.12).map(f => fxHipFlex(f.pose.world, fref)).filter(v => v != null);
+                            if (around.length) r.hipFold = Math.max(...around);   // マイナスなら、まだ反ったまま
                         }
                     }
                 }
@@ -11607,6 +11613,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 "swing": "腕を振る速さ(m/秒): インパクト前 0.35 秒の手首の 3D の速さの最大", "ballGap": "インパクトの手首とボールの距離(m)",
                 "peakGap": "インパクト − 腰の頂点(秒)。+ は頂点のあと", "peakDrop": "インパクトのときの腰の、頂点からの下がり(m)",
                 "kneeAir": "インパクト前 0.45 秒の、両ひざの角度の平均のいちばん小さい値(°)", "kneeImp": "インパクトのひざの角度(°)", "kneeExt": "kneeImp − kneeAir",
+                "hipFold": "腰のくの字(°): インパクトの 0.06 秒前〜0.12 秒後で、真横から見た「上体の前傾 + 太ももの前への上がり」の最大(0 = まっすぐ、大きいほど腰から折れている)。腰の角度 = 180 − hipFold",
                 "arch": "体の反り(°): 真横から見た「上体の前傾 + 太ももの前への上がり」がいちばんマイナスになった大きさ", "fold": "たたみ込み(°): 反りのいちばん後ろから、インパクト後 0.15 秒までに前へ折れた大きさ",
                 "hipTraj": "腰の軌道 [u, 高さ%]。u = (t − 踏み切り) / (着地 − 踏み切り)、高さ = 床からの腰の高さ ÷ 身長 × 100", "impU": "インパクトの u", "apexU": "腰の頂点の u",
                 "tm": "ベストなタイミング(トスの自由落下 × ジャンプの頂点)。HA = ボール軌道の頂点の高さ(m)、reach = 手が届く最高の高さ(m) = ジャンプの頂点の腰の高さ + インパクトでの手の腰からの高さ、fall = 頂点から reach まで自由落下する秒 √(2(HA−reach)/9.8)、rise = 踏み切りからジャンプの頂点(腰の放物線の頂点)までの秒、delta = (トスの頂点 + fall) − ジャンプの頂点(秒。+ なら遅く踏み切るとぴったり、− なら早く)、takeoffAct / takeoffBest = トスの頂点からの踏み切り(実際 / ベスト)、peakBall = ジャンプの頂点のときのボールの高さ − reach、low = トスの頂点が reach より低い、est = スロー倍率が分からずボールの落ち方から時間を推定、gCheck = ボールの落ち方から求めた重力 ÷ 9.8(1 に近いほど長さの基準と合う)、cv = 図の点列(横 = トスの頂点からの秒、縦 = 高さ m)",
@@ -11661,11 +11668,19 @@ const namesBtn = isAdmin() && dates.length > 0
                 tim = g == null ? null : Math.abs(g) < 0.005 ? "頂点ちょうど" : `頂点の${Math.abs(g).toFixed(2)}秒${g < 0 ? "前" : "後"}`;
                 timSub = g == null ? "" : Math.abs(g) <= 0.05 ? "いちばん高いところで打てています" : g < 0 ? "上がっている途中で打っています(早い)" : `落ち始めてから打っています(頂点から${Math.round((r.peakDrop || 0) * 100)}cm 下)`;
             }
-            const knee = r.kneeExt == null ? null : r.kneeExt >= 30 ? "伸ばして打てている" : r.kneeAir > 140 ? "あまり曲げていない" : "曲げたまま打っている";
-            const kneeSub = r.kneeExt == null ? "" : r.kneeExt >= 30 ? "曲げた足を、伸ばしながら打てています" : r.kneeAir > 140 ? "空中で足があまり曲がっていません(反動が使えていない)" : "足が曲がったまま打っています(伸ばしきれていない)";
+            // インパクトの足: 伸びている(150°以上)かどうかを、いちばん大きな基準に。空中で曲げてからの伸びは、そのうえで見る
+            const ki = r.kneeImp, kneeSub0 = ki == null ? "" : `インパクトのひざ ${Math.round(ki)}°(180°でまっすぐ)`;
+            const knee = ki == null ? null : ki >= 150 ? (r.kneeExt >= 25 ? "曲げて、伸ばして打てている" : "伸びている") : ki >= 120 ? "伸ばしきれていない" : "曲がったまま打っている";
+            const kneeSub = ki == null ? "" : `${kneeSub0}。${ki >= 150 ? (r.kneeExt >= 25 ? "空中で曲げた足を、伸ばして打てています" : "足は伸びています(空中であまり曲げていないので、反動は小さめ)") : ki >= 120 ? "足が少し曲がっています" : "足が曲がったままです"}`;
+            const air = r.kneeAir == null ? null : r.kneeAir <= 100 ? "しっかり曲げている" : r.kneeAir <= 130 ? "曲げている" : r.kneeAir <= 150 ? "少し曲げている" : "あまり曲げていない";
+            const airSub = r.kneeAir == null ? "" : `空中でいちばん曲げたとき ${Math.round(r.kneeAir)}°(180°でまっすぐ)。曲げてためて、インパクトで伸ばすのが理想`;
             const fold = r.fold == null ? null : r.fold >= 25 ? "折りたためている" : "折りたたみが小さい";
             const foldSub = r.fold == null ? "" : r.fold >= 25 ? "反った体を、腹筋で折りたたんで打てています" : r.arch != null && r.arch < 5 ? "反りが小さく、体の折りたたみも小さめ(腕だけで打っている可能性)" : "反ったあとの折りたたみが小さめ";
-            return { tim, timSub, knee, kneeSub, fold, foldSub };
+            // 腰からくの字: 肩・腰・ひざの角度が、まっすぐ(180°)から何度折れたか。反りは、その前に胸を張って後ろへ反った角度
+            const hf = r.hipFold, hip = hf == null ? null : hf >= 60 ? "しっかりくの字" : hf >= 35 ? "くの字になっている" : hf >= 15 ? "少し折れている" : hf >= 0 ? "ほぼ伸びたまま" : "反ったまま";
+            const hipSub = hf == null ? "" : `インパクトの前後で、腰の角度(肩・腰・ひざ)は最小 ${Math.round(180 - hf)}°(180°でまっすぐ)。${hf >= 35 ? "腰から折りたたんで打てています" : hf >= 0 ? "腰からの折りたたみが小さめです(腕だけで打っている可能性)" : "体が反ったままで、折りたたむ前に打っています(インパクトが早い、または折りたたみが足りません)"}`;
+            const arch = r.arch == null ? null : r.arch >= 25 ? "しっかり反っている" : r.arch >= 10 ? "少し反っている" : "反りが小さい", archSub = r.arch == null ? "" : `胸を張って、後ろへ ${Math.round(r.arch)}° 反りました。反ってためて、くの字に折るのが理想`;
+            return { tim, timSub, knee, kneeSub, air, airSub, fold, foldSub, hip, hipSub, arch, archSub };
         }
         // 体の使い方(くわしい数字の中)
         function fxBodyHtml(r, row) {
@@ -11674,8 +11689,9 @@ const namesBtn = isAdmin() && dates.length > 0
             return `<div class="fx-grp"><h5>体の使い方<small>目安</small></h5>
                 ${row("打つタイミング", w.tim || "—", w.timSub || "ジャンプの頂点(腰がいちばん高いとき)から")}
                 ${row("空中でのひざ(いちばん曲げたとき)", fxF(r.kneeAir, "°", 0), "180°でまっすぐ。小さいほど曲げている")}
-                ${row("インパクトのひざ", r.kneeImp == null ? "—" : `${Math.round(r.kneeImp)}°${r.kneeExt != null ? `(${r.kneeExt >= 0 ? "+" : ""}${Math.round(r.kneeExt)}°)` : ""}`, w.kneeSub)}
+                ${row("インパクトのひざ", r.kneeImp == null ? "—" : `${Math.round(r.kneeImp)}°${r.kneeExt != null ? `(${r.kneeExt >= 0 ? "+" : ""}${Math.round(r.kneeExt)}°)` : ""}`, r.kneeImp3 != null && r.kneeImp2 != null ? `3Dで ${Math.round(r.kneeImp3)}° / 画像で ${Math.round(r.kneeImp2)}°(小さいほうを使用)` : w.kneeSub)}
                 ${row("体の反り", fxF(r.arch, "°", 0), "胸を張って、肩とひざが後ろへ反った大きさ")}
+                ${row("腰の角度(いちばん折れたとき)", r.hipFold == null ? "—" : `${Math.round(180 - r.hipFold)}°`, "インパクトの少し前〜後で、肩・腰・ひざがなす角度。180°でまっすぐ、小さいほど「く」の字")}
                 ${row("たたみ込み(腹筋)", fxF(r.fold, "°", 0), w.foldSub || "反った形から、インパクトにかけて体を前に折った大きさ")}</div>`;
         }
         // いちばん上に出す「結果」: 見る項目はこれだけ(あとは、閉じたカードの中)
@@ -11687,11 +11703,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 + "";
             const tk = tm ? (tm.level === "ok" ? "ぴったり" : `あと${Math.abs(tm.delta).toFixed(2)}秒 ${tm.delta > 0 ? "遅く" : "早く"}`) : null;
             const tkSub = tm ? (tm.level === "ok" ? "トスに合わせて、ジャンプの頂点で打てる踏み切りです" : tm.delta > 0 ? "踏み切りが早い(ボールが落ちてくる前に頂点)" : "踏み切りが遅い(頂点を過ぎてからボールが来る)") : (r.tmWhy ? "ボールが追えていないので出せません(「見つけた瞬間」でボールの位置を指定)" : "");
+            const jumpBad = r.jump != null && r.jump < 0.05, jumpNote = jumpBad ? `<div class="fx-notice">ジャンプが読み取れていません(0cm)。踏み切りの瞬間がずれているか、骨格が読めていないコマが多い可能性があります。「見つけた瞬間(直す)」で、踏み切り・着地を動画に合わせて直してください。</div>` : "";
             const rows = row("踏み切り", tk || (r.tmWhy ? "—" : null), tkSub, "takeoff") + row("打つタイミング", w.tim, w.timSub, "impact")
-                + row("ジャンプ", r.jump == null ? null : `${Math.round(r.jump * 100)}cm`, "腰が上がった高さ") + row("打点", r.hitH == null ? null : `${r.hitH.toFixed(2)}m`, `インパクトの${arm || "手"}の手のひらの高さ(床から。ボールが手のそばならボールの高さ)${r.armAuto ? "。右・左が違っていれば、「打つ手」を指定" : ""}`, "impact")
-                + row("足", w.knee, w.kneeSub) + row("腹筋(折りたたみ)", w.fold, w.foldSub)
+                + row("ジャンプ", r.jump == null ? null : jumpBad ? "読めていません" : `${Math.round(r.jump * 100)}cm`, jumpBad ? "踏み切りを直すと出ます" : "腰が上がった高さ") + row("打点", r.hitH == null ? null : `${r.hitH.toFixed(2)}m`, `インパクトの${arm || "手"}の手のひらの高さ(床から。ボールが手のそばならボールの高さ)${r.armAuto ? "。右・左が違っていれば、「打つ手」を指定" : ""}`, "impact")
+                + row("空中で反る", w.arch, w.archSub) + row("腰からくの字", w.hip, w.hipSub)
                 + row("撮った向き", view, view == null ? "" : r.view >= 60 ? "横から撮れています。足・体の折れ・腕の角度が測りやすい向きです" : r.view >= 30 ? "斜めからです。高さ・タイミングは問題なし、足・体の折れは少しずれます" : "正面・後ろ寄りです。高さ・タイミングは測れますが、足・体の折れ・腕の角度は精度が落ちます");
-            return rows.replace(/\s/g, "") ? `${slowNote}<div class="fx-grp"><h5>結果<small>目安</small></h5>${rows}</div>` : slowNote;
+            return rows.replace(/\s/g, "") ? `${slowNote}${jumpNote}<div class="fx-grp"><h5>結果<small>目安</small></h5>${rows}</div>` : slowNote;
         }
         // ベストなタイミング(トスの自由落下 × ジャンプの頂点)
         function fxTimingSub(r) {
