@@ -2731,6 +2731,9 @@
         .chem-svg line { stroke-linecap: round; transition: opacity .2s; }
         .chem-svg line.good { stroke: var(--accent); }
         .chem-svg line.bad { stroke: var(--ink-3); stroke-dasharray: 2 4; }
+        .chem-svg text.pc { font-size: 9px; font-weight: 800; cursor: default; pointer-events: none; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+        .chem-svg text.pc.g { fill: var(--accent); }
+        .chem-svg text.pc.b { fill: var(--ink-3); }
         .chem-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin: 8px 2px 0; font-size: 12px; }
         .chem-list h5 { grid-column: 1 / -1; margin: 6px 0 0; font-size: 10.5px; color: var(--ink-3); font-weight: 700; letter-spacing: .04em; }
         .chem-list div { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
@@ -10347,11 +10350,16 @@ const namesBtn = isAdmin() && dates.length > 0
             const W = 340, cx = W / 2, cy = W / 2, R = W / 2 - 62, N = order.length, pos = {};
             order.forEach((n, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / N; pos[n] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a), a }; });
             const maxG = Math.max(...pairs.map(p => p.g)), f = chemFocus;
-            let shown = pairs.filter(p => pos[p.a] && pos[p.b] && Math.abs(p.c) >= 0.015 && (!f || p.a === f || p.b === f)).sort((x, y) => Math.abs(y.c) - Math.abs(x.c));
+            // 線も一覧も、組んだときの勝率で決める(50% より上 = 組むと勝ちやすい、下 = 負けやすい)
+            const wrOf = p => p.g ? p.w / p.g : 0.5;
+            let shown = pairs.filter(p => pos[p.a] && pos[p.b] && (f ? (p.a === f || p.b === f) : Math.abs(wrOf(p) - 0.5) >= 0.15)).sort((x, y) => Math.abs(wrOf(y) - 0.5) - Math.abs(wrOf(x) - 0.5) || y.g - x.g);
             if (!f) shown = shown.slice(0, Math.max(8, Math.round(N * 1.2)));   // 全体表示は、差の大きい組だけ(線だらけにしない)
             shown.reverse();   // 濃い線を上に
-            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], good = p.c > 0, op = Math.min(1, 0.25 + Math.abs(p.c) * 6) * (f ? 1 : 0.85), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
+            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], wr = wrOf(p), good = wr >= 0.5, op = Math.min(1, 0.3 + Math.abs(wr - 0.5) * 1.6) * (f ? 1 : 0.85), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
                 return `<line class="${good ? "good" : "bad"}" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke-width="${(good ? w : Math.max(1, w * 0.7)).toFixed(2)}" opacity="${op.toFixed(2)}"></line>`; }).join("");
+            // 人を選んでいるとき: 線の上に、その組の相性(%)を出す(選んだ人の側から 6割のところ。中心に集まって重ならないように)
+            const pcts = !f ? "" : shown.map(p => { const o = p.a === f ? p.b : p.a, A = pos[f], B = pos[o], t = 0.6, x = A.x + (B.x - A.x) * t, y = A.y + (B.y - A.y) * t;
+                const wr = p.g ? p.w / p.g : 0; return `<text class="pc ${wr >= 0.5 ? "g" : "b"}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle">${Math.round(wr * 100)}%</text>`; }).join("");   // 組んだときの勝率
             const linked = new Set(); if (f) shown.forEach(p => { linked.add(p.a); linked.add(p.b); });
             const labels = order.map(n => { const P0 = pos[n], c = Math.cos(P0.a), s = Math.sin(P0.a), lx = cx + (R + 9) * c, ly = cy + (R + 9) * s, anc = Math.abs(c) < 0.25 ? "middle" : c > 0 ? "start" : "end", dy = Math.abs(c) < 0.25 ? (s > 0 ? 9 : -3) : 3.5;
                 const cls = f ? (n === f ? "on" : linked.has(n) ? "" : "dim") : "";
@@ -10361,21 +10369,22 @@ const namesBtn = isAdmin() && dates.length > 0
             let list = "";
             if (f) {
                 const mine = pairs.filter(p => p.a === f || p.b === f).map(p => ({ n: p.a === f ? p.b : p.a, c: p.c, g: p.g, w: p.w }));
-                const best = mine.filter(x => x.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 3), worst = mine.filter(x => x.c < -0.01).sort((a, b) => a.c - b.c).slice(0, 2);
+                const R0 = x => x.g ? x.w / x.g : 0.5;
+                const best = mine.filter(x => R0(x) > 0.5).sort((a, b) => R0(b) - R0(a) || b.g - a.g).slice(0, 3), worst = mine.filter(x => R0(x) < 0.5).sort((a, b) => R0(a) - R0(b) || b.g - a.g).slice(0, 2);
                 const rv = rivals.filter(o => o.a === f || o.b === f).map(o => ({ n: o.a === f ? o.b : o.a, c: o.a === f ? o.c : -o.c, g: o.g, w: o.a === f ? o.w : o.g - o.w }));
-                const tough = rv.filter(x => x.c < -0.01).sort((a, b) => a.c - b.c).slice(0, 2), easy = rv.filter(x => x.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 2);
-                const it = (x, cls) => `<div><span>${escapeHtml(x.n)}</span><b class="${cls}">${pct(x.c)}</b><small>${x.w}-${x.g - x.w}</small></div>`;
+                const tough = rv.filter(x => R0(x) < 0.5).sort((a, b) => R0(a) - R0(b) || b.g - a.g).slice(0, 2), easy = rv.filter(x => R0(x) > 0.5).sort((a, b) => R0(b) - R0(a) || b.g - a.g).slice(0, 2);
+                const it = (x, cls) => `<div><span>${escapeHtml(x.n)}</span><b class="${cls}">${x.g ? Math.round(x.w / x.g * 100) : 0}%</b><small>${x.w}勝${x.g - x.w}敗</small></div>`;   // 組んだとき(当たったとき)の勝率
                 const sec = (t, arr, cls) => arr.length ? `<h5>${t}</h5>${arr.map(x => it(x, cls)).join("")}` : "";
                 const gap = (base[f] || 0) - (prior[f] || 0), gl = gap > 0.12 ? "パラメータより強い" : gap < -0.12 ? "パラメータより弱い" : "パラメータどおり";
                 list = `<div class="chem-hint">${escapeHtml(f)}　<b style="color:var(--ink-2)">${gl}</b></div><div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">まだ目立った相性はありません</div>`);
             } else {
-                const top = pairs.filter(p => p.c > 0.01).sort((a, b) => b.c - a.c).slice(0, 4);
-                list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${pct(p.c)}</b><small>${p.w}-${p.g - p.w}</small></div>`).join("")}</div>` : "";
+                const top = pairs.filter(p => p.g && p.w / p.g > 0.5).sort((a, b) => b.w / b.g - a.w / a.g || b.g - a.g).slice(0, 4);
+                list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${p.g ? Math.round(p.w / p.g * 100) : 0}%</b><small>${p.w}勝${p.g - p.w}敗</small></div>`).join("")}</div>` : "";
                 list += `<div class="chem-hint">名前を押すと、その人の相性</div>`;
             }
             return `<details class="note-details chem"${chemOpen ? " open" : ""} ontoggle="chemOpen=this.open"><summary>相性</summary>
-                <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${labels}</svg>${list}
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">緑=組むと勝ちやすい / 点線=組むと負けやすい(強さ=名簿のパラメータをベースに試合結果で補正。それを差し引いた差)。太さ=一緒に出た数</div></details></details>`;
+                <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${pcts}${labels}</svg>${list}
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">%は、組んだとき(「当たると」は相手チームにいたとき)の勝率。緑の線=勝率が50%より上 / 点線=50%より下。線の太さ=一緒に出た数。全体の図は、勝率が 35% 以下か 65% 以上の組だけ。強い2人が組めば勝率は高くなりやすいので、強さの差も見ながら読んでください</div></details></details>`;
         }
         var chemOpen = false, stgOpen = false, whyOpen = false, propOpen = false;
         // 提案の分け方を作る: 強さ(パラメータ+試合結果)の合計はほぼ五分のまま、
