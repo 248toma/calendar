@@ -12330,7 +12330,10 @@ const namesBtn = isAdmin() && dates.length > 0
             <ul>
                 <li><b>67%(10勝5敗)</b> … その条件のチーム(例: スパイク1位がいるチーム)が、その条件で2チームに差がついた試合で、10勝5敗だった、という意味です。<b>50% なら関係なし</b>、50% より大きいほど勝ちやすい。</li>
                 <li><b>緑で右へ</b>=勝ち越し、<b>灰色で左へ</b>=負け越し。棒が長いほど差が大きい。</li>
-                <li><b>平均・格差</b>のような細かい値は、<b>はっきり差がある試合だけ</b>数えます。基準は自動: 差がついた試合を差の大きさで並べて、<b>大きいほうの半分</b>(差の中央値以上)。ただし、差が小さい試合ばかりのときのために、<b>最低 0.15</b>(6人チームで1人が1段階ちがうくらい)にします。行の下に、使った基準を出しています。</li>
+                <li><b>平均・格差</b>のような細かい値は、<b>「差がある」と言える試合だけ</b>数えます。基準は、その日のメンバーの実力のばらつき(標準偏差)から決めます。
+                    <br>・<b>平均</b> … ばらつき × 2 ÷ チームの人数。「その日の選手で、実力がばらつき1つ分ちがう2人を、1組入れかえた」くらいの差です(例: 6人チームで、ばらつき 1.5 なら 0.5)。
+                    <br>・<b>チーム内格差</b> … 両チームのばらつきの差が、その日の選手のばらつきの半分以上。
+                    <br>10段階でも5段階でも、その日の顔ぶれに合わせて決まります。行の下と、試合の一覧に、使った基準を出しています。</li>
                 <li><b>薄い行</b>=差がついた試合が 8 試合未満。たまたまの可能性が高いので、あまり信じないでください(3 試合未満は出しません)。</li>
             </ul>
             <h6>「✓」「△」の意味</h6>
@@ -12349,7 +12352,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <li><b>総合上位3人の人数</b> … その日のメンバーのうち、総合(パラメータの平均・機動力の補正込み)が高い順の3人(3番目と同じ値の人も含む)が、そのチームに何人いるか。2-1 に分かれたら、2人のチームが +1。試合の結果から出す「強さ」は使いません(勝ち負けで決めた値で勝ち負けを説明すると、堂々めぐりになるため)</li>
                 <li><b>レシーブ下位2人が同じチーム</b> … その日のレシーブが低い順の2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。</li>
                 <li><b>スパイク・セット上位2人が同じチーム</b> … その日の上位2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。ふだんのチーム分けではキーパラメータとしてバラけるので、提案などで重なったときの影響を、ほかの特徴と切り分けるための項目。</li>
-                <li><b>チーム内の格差がはっきり大きいチーム</b> … チームの中の実力差(総合のばらつき = 標準偏差)が、はっきり大きいほうのチーム。両チームに同じくらいの格差がある試合は数えません。</li>
+                <li><b>チーム内の格差がはっきり大きいチーム</b> … チームの中の実力差(総合のばらつき = 標準偏差)が、相手より「その日の選手のばらつきの半分」以上大きいチーム。両チームに同じくらいの格差がある試合は数えません。</li>
                 <li><b>オールラウンダーの人数</b> … サーブ・レシーブ・セット・スパイク(機動力の補正後)が<b>すべて${WHY_ALL_MIN}以上</b>の人が何人いるか。多いチームが勝ちやすいかを見ます。</li>
                 <li><b>セッターの人数</b> … 名簿の希望ポジションがセッターの人の数(セットの値とは別)。</li>
             </ul>
@@ -12374,17 +12377,26 @@ const namesBtn = isAdmin() && dates.length > 0
             return lb;
         }
         // その条件のチームの、実際の勝敗(条件で2チームに差がついた試合だけ数える)
-        //   平均・格差のような細かい値は、「はっきり差がある試合」だけ: 差が大きいほうの半分(差の中央値以上)、ただし最低 0.15(6人チームで1人が1段階ちがうくらい)
+        //   平均・格差のような細かい値は、「差がある」と言える試合だけ数える。基準は、その日のメンバーの実力のばらつき(標準偏差 σ)から決める:
+        //   ・平均 … 2σ ÷ チームの人数 = 「その日の選手で、実力が σ ちがう2人を1組入れかえた」くらいの差(10段階でも5段階でも、顔ぶれに合わせて決まる)
+        //   ・チーム内格差 … 両チームのばらつきの差が σ の半分以上
         //   いる・いない、人数のような 1 つずつの値は、差があれば数える
-        const WHY_FLOOR = 0.15;
-        function whySimple(recs, f, min) {
-            const ds = []; recs.forEach(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return; ds.push({ d: a - b, win: r.win, a, b, r }); });
-            let T = min;
-            if (min < 1 && ds.length) { const ab = ds.map(x => Math.abs(x.d)).sort((x, y) => x - y); T = Math.max(WHY_FLOOR, ab[Math.floor((ab.length - 1) / 2)]); }
-            let w = 0, l = 0; ds.forEach(x => { x.used = Math.abs(x.d) >= T - 1e-9; if (!x.used) return; x.ok = x.win === (x.d > 0 ? 0 : 1); if (x.ok) w++; else l++; });
-            return { w, l, n: w + l, rate: w + l ? w / (w + l) : null, T: min < 1 ? T : null, all: ds.length, ds };
+        function whyThresh(lb, r, P) {
+            const key = lb === "チーム内格差あり" ? "avg" : lb === "機動力の平均" ? "mob" : ((ROLE_PARAM_DEFS.find(d => d.label + "の平均" === lb) || {}).key);
+            if (!key) return null;
+            const val = n => { const x = P(n); return x ? (key === "avg" ? x.avg : key === "mob" ? x.mob : x[key]) : null; };
+            const v = (r.ctx || r.teams[0].concat(r.teams[1])).map(val).filter(x => x != null); if (v.length < 4) return null;
+            const m = v.reduce((a, b) => a + b, 0) / v.length, sg = Math.sqrt(v.reduce((a, b) => a + (b - m) * (b - m), 0) / v.length);
+            if (key === "avg" && lb === "チーム内格差あり") return 0.5 * sg;
+            const n = (r.teams[0].length + r.teams[1].length) / 2;
+            return 2 * sg / n;
         }
-        // その要因の計算に使った試合: 日付・何試合目・両チームの値・差・勝敗(◯ = 条件のチームが勝った)。基準に届かず数えなかった試合は薄く
+        function whySimple(recs, f, min, lb, P) {
+            const ds = []; recs.forEach(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return; ds.push({ d: a - b, win: r.win, a, b, r, T: min < 1 && P ? whyThresh(lb, r, P) : null }); });
+            let w = 0, l = 0; ds.forEach(x => { x.used = x.T == null ? min >= 1 : Math.abs(x.d) >= x.T - 1e-9; if (!x.used) return; x.ok = x.win === (x.d > 0 ? 0 : 1); if (x.ok) w++; else l++; });
+            const Ts = ds.map(x => x.T).filter(t => t != null);
+            return { w, l, n: w + l, rate: w + l ? w / (w + l) : null, T: Ts.length ? [Math.min(...Ts), Math.max(...Ts)] : null, all: ds.length, ds };
+        }
         function whyListHtml(x) {
             const bin = /がいる$|が同じチーム$/.test(x.lb), cnt = !bin && x.T == null, fv = v => bin ? (v ? "あり" : "なし") : cnt ? `${Math.round(v)}${/人数/.test(x.lb) ? "人" : ""}` : v.toFixed(2);
             const md = d => { const p = (d || "").split("-"); return p.length === 3 ? `${+p[1]}/${+p[2]}` : d || ""; };
@@ -12392,22 +12404,22 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!items.length) return "";
             return `<div class="why-list">${items.map(it => { const r = it.r, hi = it.d > 0 ? 0 : 1, lb = r.lbs && r.lbs.length === 2 ? r.lbs : ["チーム1", "チーム2"];
                 const mem = k => (r.teams[k] || []).map(escapeHtml).join("・");
-                return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b><span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${x.T != null ? `(差 ${Math.abs(it.d).toFixed(2)})` : ""}</span><em>${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
+                return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b><span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${it.T != null ? `(差 ${Math.abs(it.d).toFixed(2)} / 基準 ${it.T.toFixed(2)})` : ""}</span><em>${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
                     <small>${escapeHtml(lb[0])}${r.win === 0 ? "(勝ち)" : ""}: ${mem(0)}<br>${escapeHtml(lb[1])}${r.win === 1 ? "(勝ち)" : ""}: ${mem(1)}</small></div>`; }).join("")}
-                <div class="why-lnote">◯ = 「${escapeHtml(whyCond(x.lb))}」が勝った、× = 負けた。薄い試合は差が基準より小さく、数えていません</div></div>`;
+                <div class="why-lnote">◯ = 「${escapeHtml(whyCond(x.lb))}」が勝った、× = 負けた。薄い試合は差が基準より小さく、数えていません。${x.T != null ? (x.lb === "チーム内格差あり" ? "基準 = その日のメンバーの総合のばらつき(標準偏差)の半分" : "基準 = その日のメンバーのばらつき(標準偏差)× 2 ÷ チームの人数(ばらつき1つ分ちがう2人を1組入れかえたくらいの差)") : ""}</div></div>`;
         }
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
             const recs = chemRecords(from), { F } = whyFactors();
             const sp = Object.values(m.prof).filter(Boolean), nAll = sp.filter(x => x.min >= WHY_ALL_MIN).length;
-            const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr }; });
+            const { P: P0 } = whyFactors(); const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min, lb, P0), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr }; });
             const ok = rows.filter(x => x.n >= 3).sort((a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5));
             const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "オールラウンダーの人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
             const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかの条件をそろえても、この向きに効いている" : "△ ほかの条件の影響かもしれない(ほかをそろえると逆の向き)"; };
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="why-cap">その条件のチームの勝率(条件で2チームに差がついた試合だけ)。50% なら関係なし</div>
                 <div class="rs-tbl" style="margin-top:6px">${ok.map(x => { const pc = Math.round(x.rate * 100), up = pc >= 50, wv = Math.min(50, Math.abs(pc - 50)), few = x.n < 8, nt = note(x);
-                    return `<details class="why-det"><summary class="stg-row why-row" style="grid-template-columns:1fr 3em 4.6em;${few ? "opacity:.5" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && !few ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few || x.T != null ? `<small class="why-nt">${x.T != null ? `差が ${x.T.toFixed(2)} 以上の試合だけ(差がついた ${x.all} 試合のうち)` + (few || nt ? "・" : "") : ""}${few ? "まだ試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</summary>${whyListHtml(x)}</details>`; }).join("")}
+                    return `<details class="why-det"><summary class="stg-row why-row" style="grid-template-columns:1fr 3em 4.6em;${few ? "opacity:.5" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && !few ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few || x.T != null ? `<small class="why-nt">${x.T != null ? `差が基準(${x.T[0] === x.T[1] || x.T[1] - x.T[0] < 0.01 ? x.T[0].toFixed(2) : x.T[0].toFixed(2) + "〜" + x.T[1].toFixed(2)})以上の試合だけ(差がついた ${x.all} 試合のうち)` + (few || nt ? "・" : "") : ""}${few ? "まだ試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</summary>${whyListHtml(x)}</details>`; }).join("")}
                 ${ng.map(x => `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary>${WHY_HELP}</details></details>`;
         }
