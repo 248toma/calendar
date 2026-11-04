@@ -3631,6 +3631,7 @@
         .why-tgh { padding: 2px 0 8px; margin-bottom: 4px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--ink-2); }
         .why-tgh > div { margin: 2px 0; }
         .why-tgh b:first-child { margin-right: 8px; font-size: 11px; color: var(--ink); }
+        .rs-build { margin-top: 10px; text-align: center; font-size: 10.5px; color: var(--ink-3); }
 </style>
 </head>
 <body>
@@ -10340,6 +10341,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return { ind, pairs, rivals, games: recs.length, base, prior };
         }
         function chemFocusSet(n) { chemFocus = chemFocus === n ? "" : n; renderRosterStats(); }
+        document.addEventListener("click", e => { const g = e.target && e.target.closest && e.target.closest(".chem-svg .chem-nm"); if (!g) return; e.preventDefault(); chemFocusSet(decodeURIComponent(g.getAttribute("data-n") || "")); });
         function chemHtml(from) {
             const { ind, pairs, rivals, base, prior } = chemData(from);
             const guests = new Set(roster.filter(r => r.position === GUEST_POS).map(r => r.name));
@@ -10364,7 +10366,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const labels = order.map(n => { const P0 = pos[n], c = Math.cos(P0.a), s = Math.sin(P0.a), lx = cx + (R + 9) * c, ly = cy + (R + 9) * s, anc = Math.abs(c) < 0.25 ? "middle" : c > 0 ? "start" : "end", dy = Math.abs(c) < 0.25 ? (s > 0 ? 9 : -3) : 3.5;
                 const cls = f ? (n === f ? "on" : linked.has(n) ? "" : "dim") : "";
                 const nm = n.length > 6 ? n.slice(0, 6) + "…" : n;
-                return `<g onclick="chemFocusSet(decodeURIComponent('${encodeURIComponent(n).replace(/'/g, "%27")}'))"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="14" fill="transparent"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}">${escapeHtml(nm)}</text></g>`; }).join("");
+                return `<g class="chem-nm" data-n="${encodeURIComponent(n)}" style="cursor:pointer"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="16" fill="transparent" style="cursor:pointer"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}" style="cursor:pointer">${escapeHtml(nm)}</text></g>`; }).join("");
             const pct = v => (v > 0 ? "+" : "−") + Math.round(Math.abs(v) * 100) + "%";
             let list = "";
             if (f) {
@@ -12544,7 +12546,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div></details></details>
                 <details class="note-details chem" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
-                <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データと結果を書き出す(検証用・名前は記号に)</button></div>`;
+                <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データと結果を書き出す(検証用・名前は記号に)</button></div><div class="rs-build">この画面の版: ${APP_BUILD}</div>`;
         }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
@@ -14641,6 +14643,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
+        var APP_BUILD = "11/05 01:25";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
