@@ -3646,6 +3646,18 @@
         .prop-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
         .prop-acts .prop-go { color: var(--accent); font-weight: 700; }
         .why-sort { display: inline-flex; margin-top: 6px; }
+        /* カレンダーの下に常に出すメニュー(設定で切り替え) */
+        #protoUI .pr-menubar { position: absolute; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 3; display: flex; gap: 4px; padding: 6px; border-radius: 22px; background: var(--pr-bg, #e9ecf2); box-shadow: 5px 5px 12px rgba(0,0,0,.14), -4px -4px 10px rgba(255,255,255,.75); }
+        #protoUI .pr-menubar button { position: relative; flex: 1 1 0; min-width: 0; height: 54px; padding: 0; border: none; border-radius: 16px; background: none; color: var(--pr-ink2, #4a5262); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 9.5px; font-weight: 700; letter-spacing: .02em; }
+        #protoUI .pr-menubar button span { white-space: nowrap; }
+        #protoUI .pr-menubar button.main { color: #2f6fe0; }
+        #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 7px rgba(0,0,0,.14), inset -3px -3px 7px rgba(255,255,255,.7); }
+        #protoUI .pr-menubar .svdot { position: absolute; top: 8px; right: calc(50% - 15px); width: 8px; height: 8px; border-radius: 50%; background: #e5484d; }
+        @media (prefers-color-scheme: dark) { #protoUI .pr-menubar { box-shadow: 4px 4px 10px rgba(0,0,0,.45), -3px -3px 8px rgba(255,255,255,.04); } }
+        @media (orientation: landscape) and (max-height: 620px) {
+            #protoUI .pr-wrap > .pr-menubar { position: relative; left: auto; right: auto; bottom: auto; grid-column: 3; grid-row: 1; flex-direction: column; align-self: center; width: 64px; }
+            #protoUI .pr-menubar button { flex: none; height: 44px; }
+        }
 </style>
 </head>
 <body>
@@ -4256,6 +4268,7 @@ await main();
             <div class="st-row pr-only"><span class="st-lbl">リングの時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
             <div class="st-row"><span class="st-lbl">祝日・行事</span><span class="st-seg" id="jpSeg"><button type="button" data-k="hol" onclick="setJpcal('hol')">祝日</button><button type="button" data-k="ev" onclick="setJpcal('ev')">行事</button></span></div>
             <div class="st-row pr-only"><span class="st-lbl">アニメーション</span><span class="st-seg" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)">オフ</button><button type="button" data-v="1" onclick="setAnim(true)">オン</button></span></div>
+            <div class="st-row pr-only"><span class="st-lbl">メニュー</span><span class="st-seg" id="menuSeg"><button type="button" data-v="hold" onclick="setMenuMode('hold')">長押しで出す</button><button type="button" data-v="bar" onclick="setMenuMode('bar')">下に常に出す</button></span></div>
             <div class="st-row pr-only"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
             <div class="st-sub">アカウント</div>
             <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
@@ -16195,7 +16208,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
                 <div class="pr-grid" style="position:relative;flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cellsHtml}</div>
               </div>`;
-            const dockHtml = pin ? "" : `
+            const dockHtml = pin ? "" : prMenuMode() === "bar" ? prMenuBarHtml() : `
               <div class="pr-dock">
                 <button type="button" onclick="protoToday()" style="height:44px;padding:0 20px;border-radius:22px;font-family:${en};font-size:13px;font-weight:700;color:${sel === todayKey ? P.ink3 : P.today};${raiseS}">Today</button>
                 <span style="flex:1"></span>
@@ -16323,7 +16336,7 @@ const namesBtn = isAdmin() && dates.length > 0
             protoVV();
             protoLandFit();
             protoFitCells();
-            if (!protoCapMode) { try { if (!localStorage.getItem("pr_hold_hint_v1")) { localStorage.setItem("pr_hold_hint_v1", "1"); const h = document.createElement("div"); h.className = "pr-hint"; h.textContent = "画面を長押しでメニュー"; document.body.appendChild(h); setTimeout(() => h.remove(), 3800); } } catch (e) { /* ignore */ } }
+            if (!protoCapMode && prMenuMode() !== "bar") { try { if (!localStorage.getItem("pr_hold_hint_v1")) { localStorage.setItem("pr_hold_hint_v1", "1"); const h = document.createElement("div"); h.className = "pr-hint"; h.textContent = "画面を長押しでメニュー"; document.body.appendChild(h); setTimeout(() => h.remove(), 3800); } } catch (e) { /* ignore */ } }
             const rb = document.getElementById("prRows"); if (rb && protoRowsTop) rb.scrollTop = protoRowsTop * PROTO_ROW_H;
             protoSvBtnSync();
         }
@@ -16534,6 +16547,24 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "today", label: "Today", run: () => protoToday() }
         ];
         function prRadItems() { return PR_RAD_ITEMS.filter(it => !it.adm || isAdmin()); }
+        // メニューの出し方: "hold" = 長押しで扇のメニュー / "bar" = カレンダーの下に常に並べる(設定で切り替え。この端末に覚える)
+        const PR_MENU_KEY = "pr_menu_mode_v1";
+        function prMenuMode() { try { return localStorage.getItem(PR_MENU_KEY) === "bar" ? "bar" : "hold"; } catch (e) { return "hold"; } }
+        function setMenuMode(v) {
+            try { localStorage.setItem(PR_MENU_KEY, v === "bar" ? "bar" : "hold"); } catch (e) { /* ignore */ }
+            applyMenuSeg(); try { renderProto(); } catch (e) { console.warn(e); }
+        }
+        function applyMenuSeg() { const m = prMenuMode(); document.querySelectorAll("#menuSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); }
+        function prMenuBarHtml() {
+            const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
+            return `<div class="pr-menubar">${prRadItems().map((it, i) => `<button type="button" class="${it.k === "add" ? "main" : ""}" onclick="prMenuRun(${i}, this)" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="svdot"></i>` : ""}</button>`).join("")}</div>`;
+        }
+        function prMenuRun(i, btn) {
+            const it = prRadItems()[i]; if (!it) return;
+            protoHaptic && protoHaptic();
+            if (it.k === "add" && isAdmin()) { const r = btn.getBoundingClientRect(); prRadLast = [r.left + r.width / 2, r.top]; prRadSub(); return; }   // 追加は、その場で「Volley / 予定 / 節約」を出す
+            it.run();
+        }
         // 設定パネルの一部だけを、単独の画面として開く(""=ふつうの設定 / "roster"=名簿 / "ana"=分析)
         function protoSolo(kind) {
             const panel = document.getElementById("settingsPanel"); if (!panel) return;
@@ -16560,6 +16591,7 @@ const namesBtn = isAdmin() && dates.length > 0
         const PR_RAD_HOLD = 300;
         var prRad = null;   // { x, y, sx, sy, timer, open, sel, tap }
         function prRadAllowed(t) {
+            if (prMenuMode() === "bar") return false;   // メニューを下に常に出しているときは、長押しでは出さない
             const ui = document.getElementById("protoUI");
             if (!ui || !ui.offsetParent && getComputedStyle(ui).display === "none") return false;
             if (!t || !t.closest || !t.closest("#protoUI")) return false;
@@ -16775,6 +16807,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ボタンの中に入れる透明スイッチ(Android は vibrate で鳴らすので入れない)
         // 設定の「触覚フィードバック」(この端末だけ。最初はオン)
         const HAP_KEY = "haptic_v1";
+        try { applyMenuSeg(); } catch (e) { /* ignore */ }
         var hapOn = true;
         try { hapOn = localStorage.getItem(HAP_KEY) !== "0"; } catch (e) { /* ignore */ }
         function hapSegSync() {
