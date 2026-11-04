@@ -10651,28 +10651,45 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         async function fxRetryMissing(v, seek, msg) {
             if (!fxPoseCrop) return 0;
-            const fr = fx.frames, idx = fr.map((f, i) => f.pose ? i : -1).filter(i => i >= 0); if (idx.length < 3) return 0;
-            const i0 = idx[0], i1 = idx[idx.length - 1], ext = Math.round(0.5 / FX_STEP), inside = [], outside = [];
-            for (let i = i0 + 1; i < i1; i++) if (!fr[i].pose && !fr[i].dup) inside.push(i);
-            for (let i = Math.max(0, i0 - ext); i < i0; i++) if (!fr[i].dup) outside.push(i);
-            for (let i = i1 + 1; i <= Math.min(fr.length - 1, i1 + ext); i++) if (!fr[i].dup) outside.push(i);
-            const miss = inside.concat(outside).slice(0, 180); if (!miss.length) return 0;
+            const fr = fx.frames, tried = new Set(), ext = Math.round(0.5 / FX_STEP), CAP = 240;
             const full = document.createElement("canvas"); full.width = fx.w; full.height = fx.h; const fg = full.getContext("2d");
             const cc = document.createElement("canvas"); cc.width = cc.height = 512; const cg = cc.getContext("2d");
+            const fw = Math.min(960, fx.w), fh = Math.round(fx.h * fw / fx.w), fc = document.createElement("canvas"); fc.width = fw; fc.height = fh; const fcg = fc.getContext("2d");
             let added = 0;
-            for (let n = 0; n < miss.length; n++) {
-                const i = miss[n]; if (n % 6 === 0) msg(`読めなかったコマを読み直しています… ${Math.round(n / miss.length * 100)}%`);
-                let a = i - 1; while (a >= 0 && !fr[a].pose) a--; let b = i + 1; while (b < fr.length && !fr[b].pose) b++;
-                const A = a >= 0 ? fr[a].pose : null, B = b < fr.length ? fr[b].pose : null; if (!A && !B) continue;
-                const u = A && B ? (i - a) / (b - a) : 0, ha = A && fxHipOf(A), hb = B && fxHipOf(B), sa = A && fxSizeOf(A), sb = B && fxSizeOf(B);
-                const hx = A && B ? ha[0] + (hb[0] - ha[0]) * u : (ha || hb)[0], hy = A && B ? ha[1] + (hb[1] - ha[1]) * u : (ha || hb)[1], sz = A && B ? sa + (sb - sa) * u : (sa || sb);
-                const R = fxCropRect(hx, hy, Math.min(Math.max(fx.w, fx.h), sz * 1.8), fx.w, fx.h); if (!R) continue;
-                await seek(fr[i].t); fxBlit(fg, v, fx.rot || 0, fx.w, fx.h);
-                cg.fillStyle = "#000"; cg.fillRect(0, 0, 512, 512); cg.drawImage(full, R.sx, R.sy, R.sw, R.sh, R.dx, R.dy, R.dw, R.dh);
-                let res = null; try { res = fxPoseCrop.detect(cc); } catch (e) { console.warn(e); continue; }
-                const cands = (res.landmarks || []).map((lm, k) => { const p = fxCropMap(lm, R); const wl = (res.worldLandmarks || [])[k]; if (wl) p.world = wl.map(q => [q.x, q.y, q.z]); p.crop = true; return p; }).filter(fxUpright);
-                let best = null, bd = 0.6; cands.forEach(p => { const h = fxHipOf(p), d = Math.hypot(h[0] - hx, h[1] - hy) / sz; if (d < bd) { bd = d; best = p; } });
-                if (best) { fr[i].people = (fr[i].people || []).concat([best]); added++; }
+            // 何回か: 読み直して見つかったら、通り道をつなぎなおし、延びた先をまた読み直す
+            for (let round = 0; round < 3 && tried.size < CAP; round++) {
+                const idx = fr.map((f, i) => f.pose ? i : -1).filter(i => i >= 0); if (idx.length < 3) break;
+                const i0 = idx[0], i1 = idx[idx.length - 1], miss = [];
+                for (let i = i0 + 1; i < i1; i++) if (!fr[i].pose && !fr[i].dup && !tried.has(i)) miss.push(i);
+                for (let i = i1 + 1; i <= Math.min(fr.length - 1, i1 + ext); i++) if (!fr[i].dup && !tried.has(i)) miss.push(i);
+                for (let i = i0 - 1; i >= Math.max(0, i0 - ext); i--) if (!fr[i].dup && !tried.has(i)) miss.push(i);
+                if (!miss.length) break;
+                let got = 0;
+                for (let n = 0; n < miss.length && tried.size < CAP; n++) {
+                    const i = miss[n]; tried.add(i); if (n % 6 === 0) msg(`読めなかったコマを読み直しています…(${round + 1}回目 ${Math.round(n / miss.length * 100)}%)`);
+                    let a = i - 1; while (a >= 0 && !fr[a].pose) a--; let b = i + 1; while (b < fr.length && !fr[b].pose) b++;
+                    const A = a >= 0 ? fr[a].pose : null, B = b < fr.length ? fr[b].pose : null; if (!A && !B) continue;
+                    const u = A && B ? (i - a) / (b - a) : 0, ha = A && fxHipOf(A), hb = B && fxHipOf(B), sa = A && fxSizeOf(A), sb = B && fxSizeOf(B);
+                    const hx = A && B ? ha[0] + (hb[0] - ha[0]) * u : (ha || hb)[0], hy = A && B ? ha[1] + (hb[1] - ha[1]) * u : (ha || hb)[1], sz = A && B ? sa + (sb - sa) * u : (sa || sb);
+                    const gap = Math.min(i - (a >= 0 ? a : i), (b < fr.length ? b : i) - i, 999), lim = 0.6 + 0.02 * Math.min(gap, 30);   // 離れたコマほど、予想の位置から動いていてよい
+                    const pickNear = ps => { let best = null, bd = lim; ps.filter(fxUpright).forEach(p => { const h = fxHipOf(p), d = Math.hypot(h[0] - hx, h[1] - hy) / sz; if (d < bd) { bd = d; best = p; } }); return best; };
+                    await seek(fr[i].t); fxBlit(fg, v, fx.rot || 0, fx.w, fx.h);
+                    let best = null;
+                    // 1) スパイカーのまわりを切り出して拡大
+                    const R = fxCropRect(hx, hy, Math.min(Math.max(fx.w, fx.h), sz * 1.8), fx.w, fx.h);
+                    if (R) {
+                        cg.fillStyle = "#000"; cg.fillRect(0, 0, 512, 512); cg.drawImage(full, R.sx, R.sy, R.sw, R.sh, R.dx, R.dy, R.dw, R.dh);
+                        try { const res = fxPoseCrop.detect(cc); best = pickNear((res.landmarks || []).map((lm, k) => { const p = fxCropMap(lm, R); const wl = (res.worldLandmarks || [])[k]; if (wl) p.world = wl.map(q => [q.x, q.y, q.z]); p.crop = true; return p; })); } catch (e) { console.warn(e); }
+                    }
+                    // 2) 見つからなければ、画面全体を前のコマに頼らずに読む(動画の読み方で逆さまに読み続けたとき)
+                    if (!best) {
+                        fcg.drawImage(full, 0, 0, fw, fh);
+                        try { const res = fxPoseCrop.detect(fc); best = pickNear((res.landmarks || []).map((lm, k) => { const p = lm.map(q => [q.x * fx.w, q.y * fx.h, q.visibility == null ? 1 : q.visibility]); const wl = (res.worldLandmarks || [])[k]; if (wl) p.world = wl.map(q => [q.x, q.y, q.z]); p.crop = true; return p; })); } catch (e) { console.warn(e); }
+                    }
+                    if (best) { fr[i].people = (fr[i].people || []).concat([best]); added++; got++; }
+                }
+                if (!got) break;
+                fxTrack();   // 見つかったコマで通り道をつなぎなおす(延びた先を、次の回で読み直す)
             }
             return added;
         }
