@@ -3609,6 +3609,21 @@
         .why-row .why-nm { grid-column: 1 / -1; white-space: normal; overflow: visible; text-overflow: clip; }
         .why-row .stg-d { white-space: nowrap; text-align: right; }
         .why-row .why-nt { grid-column: 1 / -1; margin-top: -2px; font-size: 10.5px; color: var(--ink-3); }
+        .why-det > summary { list-style: none; cursor: pointer; }
+        .why-det > summary::-webkit-details-marker { display: none; }
+        .why-open { float: right; font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--ink-3); }
+        .why-det[open] .why-open { color: var(--accent); }
+        .why-list { margin: 2px 0 8px; padding: 8px 10px; border-radius: 12px; background: var(--bg); box-shadow: var(--sink); }
+        .why-it { padding: 6px 0; border-top: 1px solid var(--line); }
+        .why-it:first-child { border-top: none; }
+        .why-it > div { display: flex; align-items: baseline; gap: 8px; font-size: 11.5px; }
+        .why-it > div b { flex: none; font-size: 11.5px; }
+        .why-it > div span { flex: 1; min-width: 0; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+        .why-it > div em { flex: none; font-style: normal; font-weight: 700; }
+        .why-it small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.5; color: var(--ink-3); }
+        .why-it.off { opacity: .45; }
+        .why-it.off > div em { font-weight: 400; font-size: 10.5px; }
+        .why-lnote { margin-top: 6px; font-size: 10px; color: var(--ink-3); }
 </style>
 </head>
 <body>
@@ -10240,7 +10255,7 @@ const namesBtn = isAdmin() && dates.length > 0
             Object.keys(matchesByDate).filter(d => d >= from).forEach(d => {
                 const list = matchesByDate[d] || [];
                 const ctx = [...new Set(list.flatMap(m => (m.teams || []).flat()))];   // その日に試合に出た人(その日の👑を決めるため)
-                if (matchRateUnit !== "match") { list.forEach(m => { if (m.teams && m.teams.length >= 2 && (m.win === 0 || m.win === 1)) { const sc = chemWinScore(m.diff); out.push({ teams: [m.teams[0], m.teams[1]], win: m.win, diff: +m.diff || 0, y: m.win === 0 ? sc : 1 - sc, d, ctx }); } }); return; }
+                if (matchRateUnit !== "match") { list.forEach((m, gi) => { if (m.teams && m.teams.length >= 2 && (m.win === 0 || m.win === 1)) { const sc = chemWinScore(m.diff); out.push({ teams: [m.teams[0], m.teams[1]], win: m.win, diff: +m.diff || 0, y: m.win === 0 ? sc : 1 - sc, d, ctx, no: gi + 1, lbs: (m.labels || []).slice(0, 2) }); } }); return; }
                 const rule = matchRule();
                 matchGroupsOf(list).forEach(g => {
                     const s0 = matchGroupState(g, rule); if (!s0.done) return;
@@ -10251,7 +10266,7 @@ const namesBtn = isAdmin() && dates.length > 0
                         const known = g.games.every(({ m }) => (parseInt(m.diff, 10) || 0) > 0);
                         const net = known ? g.games.reduce((a, { m }) => a + (m.labels[m.win] === s0.win ? 1 : -1) * (parseInt(m.diff, 10) || 0), 0) : 0;
                         const sc = chemWinScore(net > 0 ? net : 0);
-                        out.push({ teams: tm, win: w, diff: net, y: w === 0 ? sc : 1 - sc, d, ctx });
+                        out.push({ teams: tm, win: w, diff: net, y: w === 0 ? sc : 1 - sc, d, ctx, no: out.filter(o => o.d === d).length + 1, lbs: g.labels.slice(0, 2) });
                     }   // 引き分けは数えない
                 });
             });
@@ -12363,11 +12378,23 @@ const namesBtn = isAdmin() && dates.length > 0
         //   いる・いない、人数のような 1 つずつの値は、差があれば数える
         const WHY_FLOOR = 0.15;
         function whySimple(recs, f, min) {
-            const ds = []; recs.forEach(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return; ds.push({ d: a - b, win: r.win }); });
+            const ds = []; recs.forEach(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a == null || b == null || Math.abs(a - b) < min - 1e-9) return; ds.push({ d: a - b, win: r.win, a, b, r }); });
             let T = min;
             if (min < 1 && ds.length) { const ab = ds.map(x => Math.abs(x.d)).sort((x, y) => x - y); T = Math.max(WHY_FLOOR, ab[Math.floor((ab.length - 1) / 2)]); }
-            let w = 0, l = 0; ds.forEach(x => { if (Math.abs(x.d) < T - 1e-9) return; if (x.win === (x.d > 0 ? 0 : 1)) w++; else l++; });
-            return { w, l, n: w + l, rate: w + l ? w / (w + l) : null, T: min < 1 ? T : null, all: ds.length };
+            let w = 0, l = 0; ds.forEach(x => { x.used = Math.abs(x.d) >= T - 1e-9; if (!x.used) return; x.ok = x.win === (x.d > 0 ? 0 : 1); if (x.ok) w++; else l++; });
+            return { w, l, n: w + l, rate: w + l ? w / (w + l) : null, T: min < 1 ? T : null, all: ds.length, ds };
+        }
+        // その要因の計算に使った試合: 日付・何試合目・両チームの値・差・勝敗(◯ = 条件のチームが勝った)。基準に届かず数えなかった試合は薄く
+        function whyListHtml(x) {
+            const bin = /がいる$|が同じチーム$/.test(x.lb), cnt = !bin && x.T == null, fv = v => bin ? (v ? "あり" : "なし") : cnt ? `${Math.round(v)}${/人数/.test(x.lb) ? "人" : ""}` : v.toFixed(2);
+            const md = d => { const p = (d || "").split("-"); return p.length === 3 ? `${+p[1]}/${+p[2]}` : d || ""; };
+            const items = (x.ds || []).slice().sort((p, q) => (p.r.d || "").localeCompare(q.r.d || "") || (p.r.no || 0) - (q.r.no || 0));
+            if (!items.length) return "";
+            return `<div class="why-list">${items.map(it => { const r = it.r, hi = it.d > 0 ? 0 : 1, lb = r.lbs && r.lbs.length === 2 ? r.lbs : ["チーム1", "チーム2"];
+                const mem = k => (r.teams[k] || []).map(escapeHtml).join("・");
+                return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b><span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${x.T != null ? `(差 ${Math.abs(it.d).toFixed(2)})` : ""}</span><em>${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
+                    <small>${escapeHtml(lb[0])}${r.win === 0 ? "(勝ち)" : ""}: ${mem(0)}<br>${escapeHtml(lb[1])}${r.win === 1 ? "(勝ち)" : ""}: ${mem(1)}</small></div>`; }).join("")}
+                <div class="why-lnote">◯ = 「${escapeHtml(whyCond(x.lb))}」が勝った、× = 負けた。薄い試合は差が基準より小さく、数えていません</div></div>`;
         }
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
@@ -12380,7 +12407,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="why-cap">その条件のチームの勝率(条件で2チームに差がついた試合だけ)。50% なら関係なし</div>
                 <div class="rs-tbl" style="margin-top:6px">${ok.map(x => { const pc = Math.round(x.rate * 100), up = pc >= 50, wv = Math.min(50, Math.abs(pc - 50)), few = x.n < 8, nt = note(x);
-                    return `<div class="stg-row why-row" style="grid-template-columns:1fr 3em 4.6em;${few ? "opacity:.5" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && !few ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few || x.T != null ? `<small class="why-nt">${x.T != null ? `差が ${x.T.toFixed(2)} 以上の試合だけ(差がついた ${x.all} 試合のうち)` + (few || nt ? "・" : "") : ""}${few ? "まだ試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</div>`; }).join("")}
+                    return `<details class="why-det"><summary class="stg-row why-row" style="grid-template-columns:1fr 3em 4.6em;${few ? "opacity:.5" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && !few ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few || x.T != null ? `<small class="why-nt">${x.T != null ? `差が ${x.T.toFixed(2)} 以上の試合だけ(差がついた ${x.all} 試合のうち)` + (few || nt ? "・" : "") : ""}${few ? "まだ試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</summary>${whyListHtml(x)}</details>`; }).join("")}
                 ${ng.map(x => `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary>${WHY_HELP}</details></details>`;
         }
