@@ -12313,9 +12313,9 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // その日のメンバー(ctx)の中で、総合(パラメータの平均・機動力の補正込み)が高い順の3人(3番目と同じ値の人も含む)
         //   試合の結果から出す「強さ」は使わない(勝ち負けから決めた値で勝ち負けを説明すると、堂々めぐりになるため)
-        function whyTop3(ctx, P) {
-            const mk = "t3|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
-            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.avg]).sort((a, b) => b[1] - a[1]);
+        function whyTop3(ctx, P, k) {   // k なし = 総合、k あり = その項目(補正後)
+            const mk = "t3|" + (k || "") + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
+            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, k ? (x.eff[k] ?? 3) : x.avg]).sort((a, b) => b[1] - a[1]);
             const v = vs.length >= 4 ? new Set(vs.filter(x => x[1] >= vs[2][1] - 1e-9).map(x => x[0])) : null;
             whyChampMemo.set(mk, v); return v;
         }
@@ -12329,7 +12329,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 ...ROLE_PARAM_DEFS.map(d => [d.label + "の平均", t => mean(t, x => x[d.key]), 0.05]),
                 ["機動力の平均", t => mean(t, x => x.mob), 0.05],
                 // その日のメンバーの中のスパイク1位・セット1位(同率は除く。キーパラメータの設定とは関係なし)が、そのチームにいるか
-                ...[["spike", "スパイク"], ["set", "セット"]].map(([k, lb]) => [lb + "1位がいる", (t, ctx) => { const c = whyChamp(ctx || t, k, P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1]),
+                ["スパイク1位がいる", (t, ctx) => { const c = whyChamp(ctx || t, "spike", P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1],
+                // セット1位とスパイク1位(どちらも同率は除く)が、そろって同じチームにいるか(セット1位ひとりの有無は、その人の個人の成績に近いので見ない)
+                ["セット1位とスパイク1位が同じチーム", (t, ctx) => { const a = whyChamp(ctx || t, "set", P), b = whyChamp(ctx || t, "spike", P); return a == null || b == null || a === b ? null : (t.includes(a) && t.includes(b) ? 1 : 0); }, 1],
                 // その日のレシーブ最下位(同率は除く)がいるか / レシーブが低い順の2人(2番目と同じ値の人も含む)のうち2人以上が同じチームか
                 ["レシーブ最下位がいる", (t, ctx) => { const c = whyWorst(ctx || t, "receive", P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1],
                 ["レシーブ下位2人が同じチーム", (t, ctx) => { const b = whyBottom2(ctx || t, "receive", P); return b == null ? null : (t.filter(n => b.has(n)).length >= 2 ? 1 : 0); }, 1],
@@ -12337,8 +12339,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ...[["spike", "スパイク"], ["set", "セット"]].map(([k, lb]) => [lb + "上位2人が同じチーム", (t, ctx) => { const b = whyTop2(ctx || t, k, P); return b == null ? null : (t.filter(n => b.has(n)).length >= 2 ? 1 : 0); }, 1]),
                 // その日の総合上位3人の偏り: 3人のうち何人がそのチームにいるか(2-1 なら、2人のチームが +1)
                 ["総合上位3人の人数", (t, ctx) => { const b = whyTop3(ctx || t, P); return b == null ? null : t.filter(n => b.has(n)).length; }, 1],
-                // バランス型の人数: 強い・弱いに関係なく、4項目の差が小さい人(「全部が高い人」は強い人とかぶるので使わない)
-                ["バランス型の人数", t => cnt(t, x => x.spr <= WHY_BAL + 1e-9), 1],
+                ...[["spike", "スパイク"], ["receive", "レシーブ"]].map(([k, lb]) => [lb + "上位3人の人数", (t, ctx) => { const b = whyTop3(ctx || t, P, k); return b == null ? null : t.filter(n => b.has(n)).length; }, 1]),
                 // チーム内格差(総合のばらつき = 標準偏差)。両チームに同じくらいの格差がある試合は比べない(0.3 以上ちがうときだけ)
                 ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
@@ -12422,13 +12423,14 @@ const namesBtn = isAdmin() && dates.length > 0
             <h6>それぞれの特徴</h6>
             <ul>
                 <li><b>〇〇の平均</b> … チームの平均(機動力の補正を入れた値)。平均が1高いと何%か。</li>
-                <li><b>スパイク1位・セット1位がいる</b> … その日来たメンバーの中で、その項目が単独1位の人がいるか。同率1位の日は数えない。</li>
+                <li><b>スパイク1位がいる</b> … その日来たメンバーの中で、スパイクが単独1位の人がいるか。同率1位の日は数えない。</li>
+                <li><b>セット1位とスパイク1位がそろったチーム</b> … その日のセット1位とスパイク1位(どちらも単独1位)が、2人とも同じチームにいるか。セット1位ひとりの有無は、その人の個人の成績に近いので見ません。</li>
                 <li><b>レシーブ最下位がいる</b> … その日のメンバーで、レシーブが単独で一番低い人がいるか。</li>
                 <li><b>総合上位3人の人数</b> … その日のメンバーのうち、総合(パラメータの平均・機動力の補正込み)が高い順の3人(3番目と同じ値の人も含む)が、そのチームに何人いるか。2-1 に分かれたら、2人のチームが +1。試合の結果から出す「強さ」は使いません(勝ち負けで決めた値で勝ち負けを説明すると、堂々めぐりになるため)</li>
                 <li><b>レシーブ下位2人が同じチーム</b> … その日のレシーブが低い順の2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。</li>
                 <li><b>スパイク・セット上位2人が同じチーム</b> … その日の上位2人(2番目と同じ値の人も含む)のうち、2人以上が同じチームにいるか。ふだんのチーム分けではキーパラメータとしてバラけるので、提案などで重なったときの影響を、ほかの特徴と切り分けるための項目。</li>
                 <li><b>チーム内の格差がはっきり大きいチーム</b> … チームの中の実力差(総合のばらつき = 標準偏差)が、相手より「その日の選手のばらつきの半分」以上大きいチーム。両チームに同じくらいの格差がある試合は数えません。</li>
-                <li><b>バランス型の人数</b> … サーブ・レシーブ・セット・スパイク(機動力の補正後)の、いちばん高い項目といちばん低い項目の差が<b>${WHY_BAL.toFixed(1)}以下</b>の人が何人いるか。強い・弱いには関係なく、項目の差が小さい人です(「全部が高い人」は、ただ強い人と同じになってしまうので使いません)。</li>
+                <li><b>スパイク上位3人・レシーブ上位3人</b> … 総合上位3人と同じく、その日のメンバーで、その項目(機動力の補正込み)が高い順の3人(3番目と同じ値の人も含む)が、そのチームに何人いるか。2-1 に分かれたら、2人のチームが +1。</li>
                 <li><b>セッターの人数</b> … 名簿の希望ポジションがセッターの人の数(セットの値とは別)。</li>
             </ul>
             <h6>読み解くときのコツ</h6>
@@ -12445,7 +12447,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (/の平均$/.test(lb)) return lb + "が高いチーム";
             if (/がいる$/.test(lb)) return lb + "チーム";
             if (/が同じチーム$/.test(lb)) return lb.replace(/が同じチーム$/, "がそろったチーム");
-            if (lb === "総合上位3人の人数") return "総合上位3人が多いチーム(2-1 の 2 のほう)";
+            if (/上位3人の人数$/.test(lb)) return lb.replace(/の人数$/, "") + "が多いチーム(2-1 の 2 のほう)";
             if (lb === "チーム内格差あり") return "チーム内の格差がはっきり大きいチーム";
             if (/の人数$/.test(lb)) return lb.replace(/の人数$/, "が多いチーム");
             if (lb === "人数") return "人数が多いチーム";
@@ -12481,7 +12483,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (lb === "レシーブ下位2人が同じチーム") return whyBottom2(ctx, "receive", P) || new Set();
             if (/上位2人が同じチーム$/.test(lb) && k) return whyTop2(ctx, k, P) || new Set();
             if (lb === "総合上位3人の人数") return whyTop3(ctx, P) || new Set();
-            if (lb === "バランス型の人数") return new Set(ctx.filter(n => { const p = P(n); return p && p.spr <= WHY_BAL + 1e-9; }));
+            if (/上位3人の人数$/.test(lb) && k) return whyTop3(ctx, P, k) || new Set();
+            if (lb === "セット1位とスパイク1位が同じチーム") { const a = whyChamp(ctx, "set", P), b = whyChamp(ctx, "spike", P); return new Set([a, b].filter(x => x != null)); }
             if (lb === "セッターの人数") return new Set(ctx.filter(n => { const p = P(n); return p && p.setter; }));
             return null;
         }
@@ -12507,7 +12510,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const { P: P0 } = whyFactors(); const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min, lb, P0), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr, P: P0 }; });
             const srt = { rate: (a, b) => b.rate - a.rate || b.n - a.n, gap: (a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5), n: (a, b) => b.n - a.n || b.rate - a.rate }[whySort] || ((a, b) => b.rate - a.rate);
             const ok = rows.filter(x => x.n >= 3).sort(srt);
-            const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "バランス型の人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
+            const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる|1位とスパイク1位/.test(x.lb) && !/同じチーム/.test(x.lb) ? "同率の日ばかりで比べられない" : x.lb === "セット1位とスパイク1位が同じチーム" ? "同率の日ばかりか、いつも別のチームで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
             const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかの条件をそろえても、この向きに効いている" : "△ ほかの条件の影響かもしれない(ほかをそろえると逆の向き)"; };
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="why-cap">その条件のチームの勝率(条件で2チームに差がついた試合だけ)。50% なら関係なし</div>
@@ -12555,7 +12558,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     "強さ(members.strength)": "一人ひとりの強さ s。チーム0が勝つ確率 = sigmoid(Σチーム0の s − Σチーム1の s)。y に合うように決める(ロジスティック回帰・勾配法 200回)。名簿のパラメータ(effective の4項目の平均)から決めた strengthBase に引っぱる(強さ = 3 + s / " + CHEM_PARAM_W + "、引っぱりの強さ = 試合" + CHEM_PULL + "回ぶん)。パラメータと同じものさし",
                     "相性(chemistry)": "2人の組ごとに、その2人が一緒にいない試合だけで2人の強さを出し直し、一緒にいた試合の (実際の y − 予想) の平均(回数が少ないと0寄り: 合計 ÷ (回数 + 3))。mates = 同じチーム、rivals = 相手チーム(a のいたチームから見て)。3回以上の組だけ",
                     "勝ち負けの要因(factors)": "matches.features の各項目の (チーム0 − チーム1) を説明変数、y を目的変数にした、切片なしのロジスティック回帰(L2 正則化 λ = 0.25、ニュートン法)。差がついた試合が5試合未満の項目は使わない。b = 係数、se = 標準誤差(ヘッセ行列の逆行列の対角)、z = b / se、effect = sigmoid(b × 単位) − 0.5(単位 = 1、格差だけ 0.5)。アプリは |z| ≥ 1 をはっきりしている、としている",
-                    "特徴(features)の定義": "〇〇の平均 = チームの effective の平均 / 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / バランス型の人数 = effective の4項目の 最大 − 最小 が " + WHY_BAL + " 以下の人数 / 総合上位3人の人数 = その日のメンバーで effective の4項目の平均が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数"
+                    "特徴(features)の定義": "〇〇の平均 = チームの effective の平均 / 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / スパイク上位3人・レシーブ上位3人の人数 = その項目の effective が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / セット1位とスパイク1位が同じチーム = 単独のセット1位とスパイク1位が2人とも同じチームにいれば 1 / 総合上位3人の人数 = その日のメンバーで effective の4項目の平均が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数"
                 },
                 settings: { period: rstatPeriod ? `${rstatPeriod}か月` : "全部", from, unit: matchRateUnit, mobilityWeights: { ...mobilityWeights }, keyParams: [...paramRoles.key], avgParams: [...paramRoles.avg], CHEM_PULL, CHEM_PARAM_W, factorLambda: 0.25, balanceMax: WHY_BAL },
                 members, matches,
