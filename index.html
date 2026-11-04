@@ -10663,6 +10663,8 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             return tracks;
         }
+        // 実際の1秒が動画の何秒か: スローの指定があればそれ、なければ空中の腰の放物線から求めた値
+        function fxSlow() { return !fx ? 1 : fx.slow > 1 ? fx.slow : (fx.ev && fx.ev._tscale) || 1; }
         function fxTrack() {
             const same = (a, b) => a.length === b.length && a.every((p, k) => p[0][0] === b[k][0][0] && p[0][1] === b[k][0][1] && p[23][0] === b[k][23][0] && p[16][1] === b[k][16][1]);
             fx.frames.forEach((f, i) => { const q = fx.frames[i - 1]; f.dup = !!(q && f.people.length && q.people.length && same(f.people, q.people)); f.dpose = null; f.srcPose = null; });
@@ -10691,6 +10693,24 @@ const namesBtn = isAdmin() && dates.length > 0
                         if (bp && !fr[i].dup && fxUpright(bp)) fr[i].pose = bp;
                     }
                 }
+                // 通り道の前後: 追えなくなったところから、1コマずつ「直前の位置にいちばん近い人」をつないで延ばす(跳んで形が急に変わり、別の人として切れたとき)
+                //   0.5 秒(動画の時間)以上だれも近くにいなければ止める
+                {
+                    const ext = (from, dir) => {
+                        let last = from, miss = 0;
+                        for (let i = from.i + dir; i >= 0 && i < fr.length; i += dir) {
+                            if (fr[i].pose) { last = { i, p: fr[i].pose }; miss = 0; continue; }
+                            if (fr[i].dup) continue;
+                            const h0 = fxHipOf(last.p), sz = fxSizeOf(last.p), gap = Math.abs(i - last.i);
+                            let bp = null, bd = 0.5 + 0.05 * gap;
+                            (fr[i].people || []).forEach(q => { if (!fxUpright(q)) return; const h = fxHipOf(q), d = Math.hypot(h[0] - h0[0], h[1] - h0[1]) / sz; if (d < bd) { bd = d; bp = q; } });
+                            if (bp) { fr[i].pose = bp; last = { i, p: bp }; miss = 0; }
+                            else if (Math.abs(fr[i].t - fr[last.i].t) > 0.5) break;
+                        }
+                    };
+                    const s0 = its[0], s1 = its[its.length - 1];
+                    ext(s1, 1); ext(s0, -1);
+                }
                 // 左右の入れかわりを直す(時間順に、前のコマとつながるように)
                 let prev = null;
                 fr.forEach(f => { if (!f.pose) return; const q = prev ? fxFixLR(prev, f.pose) : f.pose; if (q !== f.pose) { f.srcPose = f.pose; f.pose = q; } prev = f.pose; });
@@ -10701,6 +10721,7 @@ const namesBtn = isAdmin() && dates.length > 0
             fxFitBall();
             fx.ev = fxDetect(fr, fx.height, fx.ballSegs);
             if (fx.ev._slowSus) { fx._slowSus = true; fxFitBall(); fx.ev = fxDetect(fr, fx.height, fx.ballSegs); }
+            else if (fx.ev._tscale > 1 && !(fx.slow > 1)) { fxFitBall(); fx.ev = fxDetect(fr, fx.height, fx.ballSegs); }   // スローと分かったら、ボールの重力の範囲も合わせて、もう一度
             fxCompute();
         }
         // ---- ボールの軌道: 放物線に乗る点だけを使う ----
@@ -10716,7 +10737,7 @@ const namesBtn = isAdmin() && dates.length > 0
             fr.forEach((f, fi) => { if (!f.dup) (f.balls || []).forEach(b => pts.push({ fi, t: f.t, x: b.x, y: b.y, w: 1 })); });
             manGroups.filter(g => g.length < 3).forEach(g => g.forEach(m => pts.push({ ...m, w: 5, man: true })));
             const ps = fxScaleSeries(fr, fx.height || 1.7), pv = [...ps.values()].sort((a, b) => a - b), ppm = pv.length ? pv[Math.floor(pv.length / 2)] : null;
-            const sl = fx.slow || 1, e0 = ppm ? 4.9 * ppm / (sl * sl) : null;   // 重力 9.8m/s² の半分 × 1mの画素(スローなら、ゆっくり落ちる)
+            const sl = fxSlow(), e0 = ppm ? 4.9 * ppm / (sl * sl) : null;   // 重力 9.8m/s² の半分 × 1mの画素(スローなら、ゆっくり落ちる)
             // スローの倍率がわからない(スローらしい)ときは、6倍スローまで許す
             const eMin = e0 ? e0 * 0.35 / (fx._slowSus ? 36 : 1) : H * 0.3 / (fx._slowSus ? 36 : 1), eMax = e0 ? e0 * 2.8 : H * 6;
             const tol = Math.max(10, ppm ? 0.18 * ppm : H * 0.015);
@@ -10838,13 +10859,65 @@ const namesBtn = isAdmin() && dates.length > 0
         // 打つ手: 腕は「振りかぶり → 手がいちばん高くなる」の動きから自動で見つける(骨格の左右の名前には頼らない)。
         //   骨格の左右の名前(15 = 左 / 16 = 右)は、後ろ向きなどで入れかわることがあるので、体の左右は、指定された利き手と、見つけた腕から決める:
         //   「右手で打つ」と指定されていて、見つけた腕が 15(左の名前)なら、この動画は左右が入れかわっている
+        // 動画の速さ(スロー): 空中の腰は重力だけで動くので、頂点のまわり(頂点から 10cm 以内に下がるまで)の放物線の曲がり方から、
+        //   重力が動画の中で何 m/秒² に写っているかを測る。9.8 との比から「実際の1秒が動画の何秒か」(k)が分かる。高さで範囲を決めるので、スローでも普通でも同じに測れる
+        //   スローの指定があれば、それを使う。k が 1.6 より小さければ、普通の速さとする
+        function fxTimeScale(frames, heightM) {
+            const user = (typeof fx !== "undefined" && fx && fx.slow > 1) ? fx.slow : 0; if (user) return { k: user, user: true };
+            const P = frames.filter(f => f.pose && !f.dup); if (P.length < 8) return null;
+            const ppmS = fxScaleSeries(frames, heightM), raw = P.map(f => (f.pose[23][1] + f.pose[24][1]) / 2);
+            const hy = raw.map((v, i) => { const a = raw.slice(Math.max(0, i - 1), i + 2).sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; });   // 3コマの中央値
+            let pk = -1; for (let i = 2; i < P.length - 2; i++) if (pk < 0 || hy[i] < hy[pk]) pk = i;
+            if (pk < 0) return null;
+            const sc = ppmS.get(P[pk].t) || 0; if (!sc) return null;
+            const low = Math.max(...hy.slice(Math.max(0, pk - 400), pk)); if (!((low - hy[pk]) / sc > 0.2)) return null;   // 腰が 20cm 以上上がった(ジャンプ)
+            let a = pk, b = pk; while (a > 0 && (hy[a - 1] - hy[pk]) / sc < 0.10) a--; while (b < P.length - 1 && (hy[b + 1] - hy[pk]) / sc < 0.10) b++;
+            if (b - a < 5) return null;
+            const q = fxQuad(P.slice(a, b + 1).map((f, i) => [f.t, hy[a + i]])); if (!q || q.e <= 0) return null;
+            let k = Math.sqrt(9.8 / (2 * q.e / sc)); if (!isFinite(k)) return null;
+            if (k < 1.6) return { k: 1 };
+            [2, 4, 8, 16].forEach(s0 => { if (Math.abs(k / s0 - 1) < 0.2) k = s0; });   // よくある倍率に近ければ、その値に
+            return { k: Math.min(20, k) };
+        }
+        // 滞空時間からの倍率: 空中で腰が上がった高さ h なら、実際の滞空は 2√(2h/g)。動画の滞空との比 = 倍率
+        function fxAirScale(frames, heightM, ev) {
+            if (ev.takeoff == null || ev.land == null || !(ev.land > ev.takeoff)) return null;
+            const P = frames.filter(f => f.pose && !f.dup), ppmS = fxScaleSeries(frames, heightM), hY = f => (f.pose[23][1] + f.pose[24][1]) / 2;
+            const air = P.filter(f => f.t >= ev.takeoff && f.t <= ev.land); if (air.length < 4) return null;
+            const f0 = air[0], top = air.reduce((a, b) => hY(b) < hY(a) ? b : a), sc = ppmS.get(f0.t) || 0; if (!sc) return null;
+            const h = (hY(f0) - hY(top)) / sc; if (!(h > 0.1 && h < 1.2)) return null;
+            return (ev.land - ev.takeoff) / (2 * Math.sqrt(2 * h / 9.8));
+        }
         function fxDetect(frames, heightM, segs) {
-            const ev = fxDetect0(frames, heightM, segs, true), pref = (typeof fx !== "undefined" && fx && fx.hand) || 0;
+            const ts = fxTimeScale(frames, heightM);
+            const run = k => {   // 実際の時間に直して判定し、時刻は動画の時間に戻す
+                if (!(k > 1.001)) return fxDetect0(frames, heightM, segs, true, false);
+                const fr2 = frames.map(f => Object.assign({}, f, { t: f.t / k }));
+                const sg2 = (segs || []).map(g => ({ ...g, t0: g.t0 / k, t1: g.t1 / k, t2: g.t2 / k, b: g.b * k, d: g.d * k, e: g.e * k * k }));
+                const e2 = fxDetect0(fr2, heightM, sg2, true, true), out = {};
+                Object.keys(e2).forEach(key => { const v = e2[key]; out[key] = typeof v === "number" && key[0] !== "_" ? v * k : v; });
+                delete out._slowSus; out._tscale = k; return out;
+            };
+            let k = ts ? ts.k : 1, ev = run(k);
+            // 自動のときは、滞空時間と跳んだ高さからも倍率を出して確かめる(2つの手がかりが合えば、その倍率で正しい)
+            //   3割以上くいちがう(カメラが動いて放物線がくずれた・長すぎる滞空 など)ときは、滞空からの倍率で判定しなおし、
+            //   それでも滞空と高さが合わなければ、前の判定の瞬間を使い、時間の値は出さない(倍率が分からないスロー)
+            if (!(ts && ts.user)) {
+                const snap = x => { let kk = x; [2, 4, 8, 16].forEach(s0 => { if (Math.abs(kk / s0 - 1) < 0.2) kk = s0; }); return kk < 1.6 ? 1 : Math.min(20, kk); };
+                const k2 = fxAirScale(frames, heightM, ev), kx = Math.max(1, k);
+                if (k2 && (ev._slowSus || Math.abs(Math.max(1, k2) / kx - 1) > 0.3)) {
+                    const kb = snap(k2), ev2 = run(kb), k3 = fxAirScale(frames, heightM, ev2);
+                    if (k3 && Math.abs(Math.max(1, k3) / Math.max(1, kb) - 1) <= 0.3 && !ev2._slowSus) { ev = ev2; k = kb; if (kb > 1) ev._tscaleAir = true; }
+                    else if (kx > 1.001 || ev._slowSus) { delete ev._tscale; ev._slowSus = true; }   // 倍率が決まらない: 瞬間はそのまま、時間の値は出さない
+                }
+            }
+            if (ts && ts.user) ev._tscaleUser = true;
+            const pref = (typeof fx !== "undefined" && fx && fx.hand) || 0;
             delete ev._swap;
             if (ev._hand != null && pref) ev._swap = pref !== ev._hand;
             return ev;
         }
-        function fxDetect0(frames, heightM, segs, ignorePref) {
+        function fxDetect0(frames, heightM, segs, ignorePref, normalized) {
             const ev = {};
             const P = frames.filter(f => f.pose);
             if (P.length < 5) return ev;
@@ -10916,7 +10989,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     }
                 }
             }
-            if (bs >= 0) { ev.takeoff = T[bs]; ev.land = T[be]; if ((T[be] - T[bs]) / ((fx && fx.slow) || 1) > 1.2) ev._slowSus = true; }   // 人の滞空は長くても 1 秒ほど。それより長ければスロー
+            if (bs >= 0) { ev.takeoff = T[bs]; ev.land = T[be]; if ((T[be] - T[bs]) / (normalized ? 1 : ((fx && fx.slow) || 1)) > 1.2) ev._slowSus = true; }   // 人の滞空は長くても 1 秒ほど。それより長ければスロー
             // 助走開始: 踏み切りの前で、足が動き続けているところの始まり(足首の動きの速さ。どの向きから撮っても、足を上げ下ろしする動きは写る)
             const fv = P.map((f, i) => { if (!i) return 0; const q = P[i - 1], d = Math.max(Math.hypot(f.pose[27][0] - q.pose[27][0], f.pose[27][1] - q.pose[27][1]), Math.hypot(f.pose[28][0] - q.pose[28][0], f.pose[28][1] - q.pose[28][1])); return d / ppm(f) / Math.max(1e-3, f.t - q.t); });
             const fvs = sm(fv, 4);
@@ -11001,7 +11074,8 @@ const namesBtn = isAdmin() && dates.length > 0
         // ---- 数字を出す(瞬間が決まっていれば、そこから計算。瞬間は手で直せる) ----
         function fxFrameAt(t) { if (!fx.frames.length || t == null) return null; return fx.frames.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, fx.frames[0]); }
         function fxCompute() {
-            fx.res = fxMetrics(fx.frames, fx.ev, fx.height, fx.calib, fx.slow, fx.net);
+            fx.res = fxMetrics(fx.frames, fx.ev, fx.height, fx.calib, fxSlow(), fx.net);
+            if (fx.res && fx.ev._tscale > 1) { fx.res.tscale = fx.ev._tscale; fx.res.tscaleUser = !!fx.ev._tscaleUser; }
         }
         function fxAngle(a, b, c) {   // b を頂点とする角度(度)
             const u = a.map((v, i) => v - b[i]), w = c.map((v, i) => v - b[i]);
@@ -11208,7 +11282,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // ---- スロー再生: 動画をコマごとに進めて見せる(動画の再生速度に頼らないので、どの速さでも、重ねた動画とも、ずれない) ----
         //   速さ = 実際の時間に対する倍率(1/4 なら 4 倍ゆっくり)。踏み切りの少し前から着地の少しあとまでを、くり返す
-        const fxTs = () => { const e = fx.ev || {}; return e._slowSus && e.land > e.takeoff ? (e.land - e.takeoff) / 0.6 : (fx.slow || 1); };   // 実際の1秒が、動画の何秒か
+        const fxTs = () => { const e = fx.ev || {}; return e._slowSus && e.land > e.takeoff ? (e.land - e.takeoff) / 0.6 : fxSlow(); };   // 実際の1秒が、動画の何秒か
         function fxPlayOff() {
             if (fx && fx.play) { fx.play.on = false; fx.play = null; }
             const b = document.getElementById("fxPlayBtn"); if (b) { b.textContent = "▶ スロー再生"; b.classList.remove("on"); }
@@ -11245,7 +11319,7 @@ const namesBtn = isAdmin() && dates.length > 0
             v.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none"; v.id = "fxVid2"; document.body.appendChild(v);
             v.addEventListener("loadeddata", async () => {
                 if (!fx) return;
-                fx.ov = { url, video: v, w: v.videoWidth, h: v.videoHeight, dur: v.duration, t: 0, on: true, alpha: 0.5, flip: false, rot: 0, kind: fx.ev.takeoff != null ? "takeoff" : "impact", sync: null, slow: fx.slow || 1, cv: document.createElement("canvas") };
+                fx.ov = { url, video: v, w: v.videoWidth, h: v.videoHeight, dur: v.duration, t: 0, on: true, alpha: 0.5, flip: false, rot: 0, kind: fx.ev.takeoff != null ? "takeoff" : "impact", sync: null, slow: fxSlow(), cv: document.createElement("canvas") };
                 fxRender(); await fxOvGo(0);
             }, { once: true });
             v.addEventListener("error", () => { alert("この動画は読み込めませんでした。"); }, { once: true });
@@ -11267,7 +11341,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         async function fxOvSync() {   // 上の動画の時刻に合わせて、重ねた動画を進める
             const o = fx && fx.ov; if (!o || !o.sync || !o.on) return;
-            await fxOvGo(o.sync.t + (fx.t - o.sync.aT) / (fx.slow || 1) * o.slow);
+            await fxOvGo(o.sync.t + (fx.t - o.sync.aT) / fxSlow() * o.slow);
         }
         function fxOvPrev() {   // 重ねる動画の小さな画面(合わせる操作用)
             const c = document.getElementById("fxCv2"), o = fx && fx.ov; if (!c || !o || !o.video) return;
@@ -11371,7 +11445,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 E.forEach(([a, b]) => { g.beginPath(); g.moveTo(p[a][0], p[a][1]); g.lineTo(p[b][0], p[b][1]); g.stroke(); });
                 g.fillStyle = "#fff"; [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28].forEach(k => { g.beginPath(); g.arc(p[k][0], p[k][1], L * 1.6, 0, 7); g.fill(); });
             }
-            const tl = document.getElementById("fxTime"); if (tl) tl.textContent = `${(fx.t / (fx.slow || 1)).toFixed(2)}秒`;
+            const tl = document.getElementById("fxTime"); if (tl) tl.textContent = `${(fx.t / fxSlow()).toFixed(2)}秒`;
             const sl = document.getElementById("fxSeek"); if (sl && document.activeElement !== sl) sl.value = String(fx.t);
         }
         // 身長は、選手ごとにこの端末に覚える(長さの基準になる)
@@ -11432,9 +11506,9 @@ const namesBtn = isAdmin() && dates.length > 0
         // 動きの記録(お手本と比べるため): インパクトの1.2秒前〜0.4秒後の、体の3Dの形(体の中心からの位置・m)
         function fxSeq() {
             const ev = fx.ev || {}; if (ev.impact == null) return null;
-            const ref = ev.impact, fr = fx.frames.filter(f => f.pose && f.pose.world && f.t >= ref - 1.2 * (fx.slow || 1) && f.t <= ref + 0.4 * (fx.slow || 1));
+            const ref = ev.impact, fr = fx.frames.filter(f => f.pose && f.pose.world && f.t >= ref - 1.2 * fxSlow() && f.t <= ref + 0.4 * fxSlow());
             if (fr.length < 5) return null;
-            const r3 = v => Math.round(v * 1000) / 1000, sl = fx.slow || 1;
+            const r3 = v => Math.round(v * 1000) / 1000, sl = fxSlow();
             return { ev: Object.fromEntries(Object.entries(ev).filter(([k, v]) => v != null && k[0] !== "_").map(([k, v]) => [k, r3((v - ref) / sl)])), f: fr.map(f => ({ t: r3((f.t - ref) / sl), w: f.pose.world.map(p => p.map(r3)) })) };
         }
         // ---- お手本と比べる ----
@@ -11699,7 +11773,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!r) return "";
             const w = fxBodyWords(r), tm = r.tm, row = (k, v, sub, go) => v == null ? "" : `<div class="fx-row"${go ? ` onclick="fxJump('${go}')" style="cursor:pointer"` : ""}><span>${k}${go ? " ›" : ""}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
             const view = r.view == null ? null : r.view >= 60 ? "ほぼ真横" : r.view >= 30 ? "斜め" : "正面・後ろ寄り", arm = r.arm ? `${r.arm}手${r.armAuto ? "(骨格の判定)" : ""}` : null;
-            const slowNote = (r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "")
+            const slowNote = (r.tscale > 1 && !r.tscaleUser ? `<div class="fx-notice">スロー動画(約1/${Math.round(r.tscale)})と判定して、実際の時間に直して計算しました(空中の腰の落ち方から自動で判定)。</div>` : "") + (r.slowSus ? `<div class="fx-notice">スロー(または途中で速さが変わる編集)の動画のようです。時間・速さは出していません。</div>` : "")
                 + "";
             const tk = tm ? (tm.level === "ok" ? "ぴったり" : `あと${Math.abs(tm.delta).toFixed(2)}秒 ${tm.delta > 0 ? "遅く" : "早く"}`) : null;
             const tkSub = tm ? (tm.level === "ok" ? "トスに合わせて、ジャンプの頂点で打てる踏み切りです" : tm.delta > 0 ? "踏み切りが早い(ボールが落ちてくる前に頂点)" : "踏み切りが遅い(頂点を過ぎてからボールが来る)") : (r.tmWhy ? "ボールが追えていないので出せません(「見つけた瞬間」でボールの位置を指定)" : "");
@@ -11801,7 +11875,7 @@ const namesBtn = isAdmin() && dates.length > 0
             } else if (fx.step === "busy") {
                 body = `<div class="fx-guide" id="fxMsg">準備しています…</div>`;
             } else {
-                const evs = FX_EVENTS.map(([k, l]) => `<div class="fx-ev"><button type="button" class="fx-evt" onclick="fxGoEvent('${k}')" ${fx.ev[k] == null ? "disabled" : ""}>${l}<small>${fx.ev[k] == null ? "見つからない" : (fx.ev[k] / (fx.slow || 1)).toFixed(2) + "秒"}</small></button><button type="button" class="fx-set" onclick="fxSetEvent('${k}')">今の画面</button></div>`).join("");
+                const evs = FX_EVENTS.map(([k, l]) => `<div class="fx-ev"><button type="button" class="fx-evt" onclick="fxGoEvent('${k}')" ${fx.ev[k] == null ? "disabled" : ""}>${l}<small>${fx.ev[k] == null ? "見つからない" : (fx.ev[k] / fxSlow()).toFixed(2) + "秒"}</small></button><button type="button" class="fx-set" onclick="fxSetEvent('${k}')">今の画面</button></div>`).join("");
                 const nMan = fx.frames.filter(f => f.manual).length;
                 const ballBox = fx.step === "ballTap" ? `<div class="fx-balltap"><b>ボールをタップ(${nMan}点)</b><span>${nMan < 3 ? `コマを動かしながら、ボールの位置をタップ。トスなら「手を離れたところ・てっぺん・打つ直前」の3点以上で、その放物線になります(あと${3 - nMan}点)` : "指定した点を通る放物線にしました。ずれていれば、そのコマでもう一度タップ(置きかえ)"}</span>
                     <div><button type="button" class="st-btn" onclick="fxBallUndo()" ${nMan ? "" : "disabled"}>1つ戻す</button><button type="button" class="st-btn" onclick="fxBallClear()" ${nMan ? "" : "disabled"}>全部消す</button><button type="button" class="st-btn fx-go" onclick="fxBallDone()">完了</button></div></div>` : "";
@@ -11814,7 +11888,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     ${fx.res ? fxCard("ovr", "腰の動き・体の軸", fxOverlayHtml({ res: fx.res, seq: fxSeq() }, fxHist().slice().reverse()), "これまでと重ねる") : ""}
                     ${fx.res ? fxCard("nums", "くわしい数字", fxResHtml(fx.res, "main") + fxResHtml(fx.res, "nums"), [fx.res.jump != null ? `ジャンプ ${Math.round(fx.res.jump * 100)}cm` : "", fx.res.hitH != null ? `打点 ${fx.res.hitH.toFixed(2)}m` : ""].filter(Boolean).join("・")) : ""}
                     ${fxCard("ev", "見つけた瞬間(直す)", `<div class="fx-grp"><h5><small>違っていたら、コマ送りで合わせて「今の画面」</small></h5><div class="fx-opts" style="margin:0 0 6px">${fxHandSel()}</div>${evs}
-                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender();document.getElementById('fxCv').scrollIntoView({block:'center'})">ボールの位置を指定する</button></div></div>`, fx.ev.impact != null ? `インパクト ${(fx.ev.impact / (fx.slow || 1)).toFixed(2)}秒` : "インパクトなし")}
+                    <div class="fx-acts"><button type="button" class="st-btn" onclick="fx.step='ballTap';fxRender();document.getElementById('fxCv').scrollIntoView({block:'center'})">ボールの位置を指定する</button></div></div>`, fx.ev.impact != null ? `インパクト ${(fx.ev.impact / fxSlow()).toFixed(2)}秒` : "インパクトなし")}
                     <div class="fx-acts fx-acts-main"><button type="button" class="st-btn" onclick="fx.step='pick';fxRender()">別の動画</button><button type="button" class="st-btn" onclick="fxSave(true)" ${fx.saved ? "disabled" : ""}>お手本にする</button><button type="button" class="st-btn fx-go" onclick="fxSave()" ${fx.saved ? "disabled" : ""}>${fx.saved ? "保存しました" : "記録に保存"}</button></div>
                     ${fxCard("about", "数字について・書き出し", `<div class="fx-note" style="margin:4px 0 0">長さはスパイカーの身長から計算しています(高さは、どの向きから撮ってもほぼ同じに測れます)。トスの高さは、ボールがスパイカーより奥・手前にあるほどずれます。ジャンプは腰が上がった量で、指先の最高到達点とは違います。体の軸・腕の伸び・ひざなどは体の3Dの形から出すので、向きに左右されにくい値です。ネットとの距離は、真横から撮ってネットを指定したときだけ出ます。</div><div class="fx-acts"><button type="button" class="st-btn" onclick="fxExport()">データと結果を書き出す(検証用)</button></div>`)}`;
             }
