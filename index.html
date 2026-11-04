@@ -3632,6 +3632,20 @@
         .why-tgh > div { margin: 2px 0; }
         .why-tgh b:first-child { margin-right: 8px; font-size: 11px; color: var(--ink); }
         .rs-build { margin-top: 10px; text-align: center; font-size: 10.5px; color: var(--ink-3); }
+        .prop-teams span.key { font-weight: 700; }
+        .prop-teams span em { display: block; font-style: normal; font-size: 10px; font-weight: 600; color: var(--accent); line-height: 1.3; }
+        .prop-why { margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+        .prop-why h6 { margin: 0 0 4px; font-size: 12px; color: var(--ink); }
+        .prop-why ul { margin: 0; padding-left: 18px; }
+        .prop-why li { margin: 4px 0; line-height: 1.5; }
+        .prop-why li small, .prop-why > small { display: block; font-size: 10.5px; color: var(--ink-3); }
+        .prop-avg { margin-top: 6px; display: grid; gap: 3px; font-size: 11px; }
+        .prop-avg div { display: flex; gap: 10px; flex-wrap: wrap; }
+        .prop-avg span { color: var(--ink-3); min-width: 8em; }
+        .prop-avg b { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .prop-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .prop-acts .prop-go { color: var(--accent); font-weight: 700; }
+        .why-sort { display: inline-flex; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -9042,7 +9056,10 @@ await main();
             const el = document.getElementById("teamCountInput"), teamCount = Math.max(2, Math.min(8, parseInt(el && el.value, 10) || 2));
             if (names.length < teamCount * 2) { alert("人数が足りません。"); return; }
             swapSel = null; swapNotice = "";
-            const pr = proposeSplit(names, teamCount);
+            applyProposalTeams(proposeSplit(names, teamCount));
+        }
+        // 提案の分け方を、選んでいる日のチーム分けにする(分析の提案から持ってくるときも)
+        function applyProposalTeams(pr) {
             if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) teamPastAdd(selectedDate, lastTeamSplitResult.teams.map(t => t.map(p => p.name)));
             const teams = pr.teams.map(t => t.map(teamParticipant));
             lastTeamSplitResult = { teams, excludedKeys: [], dateKey: selectedDate, ignoreParams, lineups: teams.map(arrangeTeamLineup), at: Date.now(), proposed: true };
@@ -9054,9 +9071,19 @@ await main();
             document.getElementById("teamRerunBtn").style.display = "block";
             document.getElementById("teamResetBtn").style.display = "block";
             updateSwapUi();
-            const note = document.getElementById("teamProposeNote");
-            if (note) { note.style.display = ""; note.innerHTML = proposeNoteHtml(pr.info); }
+            const note = document.getElementById("teamProposeNote"); if (note) note.style.display = "none";   // 説明は分析の提案のほうで見る
             scrollBelowHeader(document.getElementById("teamsView"), 4);
+        }
+        // 分析の「チーム分けの提案」 → その日のチーム分けの画面に、その分け方を入れる
+        function propUseInTeams() {
+            if (!realAdmin() || !propCache || !propCache.pr || !propCache.d) return;
+            const pr = propCache.pr, d = propCache.d;
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === d && lastTeamSplitResult.manualEdited && !confirm("手動で入れ替えた結果は破棄されます。提案の分け方にしますか?")) return;
+            const panel = document.getElementById("settingsPanel"); if (panel && panel.classList.contains("open")) toggleSettings();   // 分析を閉じる
+            protoVol(d); switchView("teams", true);
+            const el = document.getElementById("teamCountInput"); if (el) el.value = String(pr.teams.length);
+            swapSel = null; swapNotice = "";
+            applyProposalTeams(pr);
         }
         // 次回の「チームを分ける」から反映される(表示中の結果は変わらない)
         function applyHideTeamParams() {
@@ -10388,7 +10415,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${pcts}${labels}</svg>${list}
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">%は、組んだとき(「当たると」は相手チームにいたとき)の勝率。緑の線=勝率が50%より上 / 点線=50%より下。線の太さ=一緒に出た数。全体の図は、勝率が 35% 以下か 65% 以上の組だけ。強い2人が組めば勝率は高くなりやすいので、強さの差も見ながら読んでください</div></details></details>`;
         }
-        var chemOpen = false, stgOpen = false, whyOpen = false, propOpen = false;
+        var chemOpen = false, stgOpen = false, whyOpen = false, propOpen = false, whySort = "rate";
         // 提案の分け方を作る: 強さ(パラメータ+試合結果)の合計はほぼ五分のまま、
         //   ① 一緒の試合がまだ少ない2人を同じチームに(相性のデータを増やす)
         //   ② 比べられた試合が少ない特徴(例: レシーブの平均)に、わざと差をつける(要因のデータを増やす)
@@ -10475,7 +10502,16 @@ const namesBtn = isAdmin() && dates.length > 0
             const splits = bestX ? overl.filter(p => { const sa = sgn(bestX[p.a]), sb = sgn(bestX[p.b]); return sa && sb && sa * sb === -Math.sign(p.o); }).sort((p, q) => Math.abs(q.o) * q.n - Math.abs(p.o) * p.n).slice(0, 3)
                 .map(p => ({ a: feats[p.a].lb, b: feats[p.b].lb, sa: bestX[p.a] > 0 ? 1 : 2, sb: bestX[p.b] > 0 ? 1 : 2, same: p.o > 0, n: p.n, k: p.o > 0 ? p.same : p.opp })) : [];
             const gOk = !genGap(best);
-            return { teams: best, info: { win: pm ? pm.str : null, whyWin: pm ? pm.why : null, fresh, tests: contrib.map(o => ({ lb: o.lb, side: o.x > 0 ? 1 : 2 })), splits, overl: overl.length, gOk } };
+            // キーになる人(要因の対象になる人)と、どちらのチームか。平均の要素は、チームごとの平均
+            const lbs = [...new Set(contrib.map(o => o.lb).concat(splits.flatMap(p => [p.a, p.b])))];
+            const keyMap = {}; lbs.forEach(lb => { const tg = whyTargets(lb, names, P); if (tg) tg.forEach(n => { (keyMap[n] = keyMap[n] || []).push(whyTag(lb)); }); });
+            const keys = Object.entries(keyMap).map(([n, tags]) => ({ n, tags: [...new Set(tags)], team: best.findIndex(t => t.includes(n)) + 1 }));
+            const avgs = lbs.filter(lb => /の平均$|格差/.test(lb)).map(lb => { const ft = feats.find(x => x.lb === lb); return ft ? { lb, v: best.map(t => ft.f(t, names)) } : null; }).filter(Boolean);
+            return { teams: best, info: { win: pm ? pm.str : null, whyWin: pm ? pm.why : null, fresh, tests: contrib.map(o => ({ lb: o.lb, side: o.x > 0 ? 1 : 2 })), splits, overl: overl.length, gOk, keys, avgs } };
+        }
+        // 要因の短い呼び名(キーになる人の印に使う)
+        function whyTag(lb) {
+            return lb.replace(/がいる$|の人数$|が同じチーム$/, "").replace("チーム内格差あり", "チーム内格差");
         }
         function proposeNoteHtml(info) {
             const bits = [];
@@ -12200,11 +12236,18 @@ const namesBtn = isAdmin() && dates.length > 0
             if (names.length < 4) return "";
             const key = d + "|" + names.join(",");
             if (!propCache || propCache.key !== key) propCache = { key, pr: proposeSplit(names, 2) };
-            const { pr } = propCache, [, mm, dd] = d.split("-").map(Number);
+            const { pr } = propCache, [, mm, dd] = d.split("-").map(Number); propCache.d = d;
+            const inf = pr.info || {}, km = {}; (inf.keys || []).forEach(k => { km[k.n] = k.tags; });
+            const fmt = v => v == null ? "—" : (+v).toFixed(2);
+            const why = [];
+            (inf.splits || []).forEach(p => why.push(`<li>「${escapeHtml(whyCond(p.a))}」と「${escapeHtml(whyCond(p.b))}」を<b>${p.same ? "別のチーム" : "同じチーム"}</b>に<small>これまで ${p.n}試合中 ${p.k}試合で${p.same ? "同じ" : "反対の"}チームだったので、どちらが効いているか切り分ける</small></li>`));
+            (inf.tests || []).filter(t => !(inf.splits || []).some(p => p.a === t.lb || p.b === t.lb)).forEach(t => why.push(`<li>「${escapeHtml(whyCond(t.lb))}」を<b>チーム${t.side}</b>に<small>まだ比べた試合が少ない要素</small></li>`));
+            const avgRows = (inf.avgs || []).map(a => `<div><span>${escapeHtml(a.lb.replace("チーム内格差あり", "チーム内格差(ばらつき)"))}</span>${a.v.map((v, i) => `<b>チーム${i + 1} ${fmt(v)}</b>`).join("")}</div>`).join("");
             return `<details class="note-details chem"${propOpen ? " open" : ""} ontoggle="propOpen=this.open"><summary>チーム分けの提案(${mm}/${dd}・${names.length}人)</summary>
-                <div class="prop-teams">${pr.teams.map((t, i) => `<div><h5>チーム${i + 1}</h5>${t.map(n => `<span>${escapeHtml(n)}</span>`).join("")}</div>`).join("")}</div>
-                <div class="prop-info">${proposeNoteHtml(pr.info)}</div>
-                <div style="text-align:right;margin-top:6px"><button type="button" class="st-btn" onclick="propCache=null;renderRosterStats()">別の案</button></div>
+                <div class="prop-teams">${pr.teams.map((t, i) => `<div><h5>チーム${i + 1}</h5>${t.map(n => `<span${km[n] ? ' class="key"' : ""}>${escapeHtml(n)}${km[n] ? `<em>${km[n].map(escapeHtml).join("・")}</em>` : ""}</span>`).join("")}</div>`).join("")}</div>
+                ${why.length ? `<div class="prop-why"><h6>分けた要素</h6><ul>${why.join("")}</ul>${avgRows ? `<div class="prop-avg">${avgRows}</div>` : ""}</div>` : `<div class="prop-why"><small>かぶっている要因の組は、まだ見つかっていません</small></div>`}
+                <div class="prop-info">${[inf.win != null ? `予想 強さ ${Math.round(inf.win * 100)}:${100 - Math.round(inf.win * 100)}` : "", inf.fresh ? `初めて組む2人 ${inf.fresh}組` : ""].filter(Boolean).join("　/　")}</div>
+                <div class="prop-acts"><button type="button" class="st-btn" onclick="propCache=null;renderRosterStats()">別の案</button><button type="button" class="st-btn prop-go" onclick="propUseInTeams()">この分け方でチーム分けへ</button></div>
                 <details class="rs-help"><summary>?</summary><div class="why-help">
                     <h6>何をする分け方か</h6>
                     <p>「勝ち負けの要因」を見分けやすくするための分け方です。勝率を五分五分にはしません(片方に有利でもかまわない)。</p>
@@ -12462,11 +12505,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const recs = chemRecords(from), { F } = whyFactors();
             const sp = Object.values(m.prof).filter(Boolean), nAll = sp.filter(x => x.spr <= WHY_BAL + 1e-9).length;
             const { P: P0 } = whyFactors(); const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min, lb, P0), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr, P: P0 }; });
-            const ok = rows.filter(x => x.n >= 3).sort((a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5));
+            const srt = { rate: (a, b) => b.rate - a.rate || b.n - a.n, gap: (a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5), n: (a, b) => b.n - a.n || b.rate - a.rate }[whySort] || ((a, b) => b.rate - a.rate);
+            const ok = rows.filter(x => x.n >= 3).sort(srt);
             const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる/.test(x.lb) ? "同率の日ばかりで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "バランス型の人数" && !nAll) || (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
             const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかの条件をそろえても、この向きに効いている" : "△ ほかの条件の影響かもしれない(ほかをそろえると逆の向き)"; };
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="why-cap">その条件のチームの勝率(条件で2チームに差がついた試合だけ)。50% なら関係なし</div>
+                <div class="rs-seg2 why-sort">${[["rate", "勝率の高い順"], ["gap", "差の大きい順"], ["n", "試合の多い順"]].map(([k, l]) => `<button type="button" class="${whySort === k ? "on" : ""}" onclick="whySort='${k}';renderRosterStats()">${l}</button>`).join("")}</div>
                 <div class="rs-tbl" style="margin-top:6px">${ok.map(x => { const pc = Math.round(x.rate * 100), up = pc >= 50, wv = Math.min(50, Math.abs(pc - 50)), few = x.n < 8, nt = note(x);
                     return `<details class="why-det"><summary class="stg-row why-row" style="grid-template-columns:1fr 3em 4.6em;${few ? "opacity:.5" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && !few ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few || x.T != null ? `<small class="why-nt">${x.T != null ? `差が基準(${x.T[0] === x.T[1] || x.T[1] - x.T[0] < 0.01 ? x.T[0].toFixed(2) : x.T[0].toFixed(2) + "〜" + x.T[1].toFixed(2)})以上の試合だけ(差がついた ${x.all} 試合のうち)` + (few || nt ? "・" : "") : ""}${few ? "まだ試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</summary>${whyListHtml(x)}</details>`; }).join("")}
                 ${ng.map(x => `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
