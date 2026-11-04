@@ -3600,6 +3600,10 @@
         #fxOv .fx-sticks > div { background: var(--bg); }
         #fxOv .fx-guide { font-size: 13px; }
         #fxOv input[type=range] { accent-color: var(--accent); }
+        /* カレンダー: 選んでいる日をもう一度押したとき、予定の詳細を一瞬強調 */
+        @keyframes prFlash { 0% { background: color-mix(in srgb, var(--fl) 20%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--fl) 20%, transparent); transform: scale(1.03); } 70% { transform: scale(1); } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; transform: scale(1); } }
+        #prDayInfo { border-radius: 12px; padding: 6px 8px; margin: -6px -8px; }
+        #prDayInfo.pr-flash { animation: prFlash 1.2s ease-out both; }
 </style>
 </head>
 <body>
@@ -15913,7 +15917,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       ${up ? `<span style="font-family:${en};font-size:8px;font-weight:700;letter-spacing:.1em;color:${P.ink3};margin-top:2px">NEXT <b style="font-size:10px;color:${up.col}">${up.n}</b></span>` : ""}
                     </div>
                   </div>
-                  <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
+                  <div id="prDayInfo" class="${Date.now() < protoFlashUntil ? "pr-flash" : ""}" style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;--fl:${P.acc};${Date.now() < protoFlashUntil ? `animation-delay:-${Date.now() - (protoFlashUntil - PROTO_FLASH_MS)}ms` : ""}">
                     <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${!vv ? sdueHtml : ""}${holP ? `<span role="button" tabindex="0" onclick="protoRow(${holP.p.id})" style="font-size:10.5px;color:${P.red};white-space:nowrap;cursor:pointer">休日</span>` : ""}${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
                     ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;cursor:pointer">
                       <span style="display:flex;align-items:center;min-width:0;font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap"><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${nextKey === sel ? "VOLLEY" : `NEXT ${+nextKey.slice(5, 7)}/${+nextKey.slice(8)}`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>${sdueHtml}</span>
@@ -16091,7 +16095,15 @@ const namesBtn = isAdmin() && dates.length > 0
             [["sv-badge", "surveyBadge"], ["sv-badge2", "surveyBadge2"], ["sv-badge3", "surveyBadge3"]].forEach(([c, id]) => { const t = b.querySelector("." + c), f = document.getElementById(id); if (t && f) { t.textContent = f.textContent; t.title = f.title || ""; } });
             b.title = o.title || "出欠の回答";
         }
-        // 同じ日をもう一度押すと: バレーの日はバレーの画面、それ以外はその日の予定の入力
+        // 日付のダブルタップ: バレーの日はバレーの画面、それ以外はその日の予定の入力
+        // 選んでいる日をもう一度(ゆっくり)押すと: その日の予定の詳細を、一瞬強調する
+        var protoTapK = null, protoTapAt = 0, protoFlashT = 0, protoFlashUntil = 0;
+        const PROTO_DBL_MS = 350, PROTO_FLASH_MS = 1200;
+        function protoFlashDetail() {
+            protoFlashUntil = Date.now() + PROTO_FLASH_MS;
+            const el = document.getElementById("prDayInfo"); if (el) { el.style.animationDelay = "0ms"; el.classList.remove("pr-flash"); void el.offsetWidth; el.classList.add("pr-flash"); }
+            setTimeout(() => { if (Date.now() >= protoFlashUntil) { const e = document.getElementById("prDayInfo"); if (e) e.classList.remove("pr-flash"); } }, PROTO_FLASH_MS + 50);
+        }
         // 指の動きを覚えておく(iPhone の透明スイッチは、指をすべらせても切り替わって「押した」ことになるため)
         var protoFing = { y: 0, moved: 0, edge: false, at: 0 };
         document.addEventListener("touchstart", e => { const t = e.touches[0]; if (!t || e.touches.length !== 1) return; protoFing = { x: t.clientX, y: t.clientY, moved: 0, edge: protoBottomEdge(t.clientY), at: Date.now() }; }, { capture: true, passive: true });
@@ -16110,9 +16122,17 @@ const namesBtn = isAdmin() && dates.length > 0
                 else { pinSD = k; pinRange = false; if (pinED && pinED <= k) pinED = ""; }
                 pinInput(); return;
             }
+            const now = Date.now(), dbl = protoTapK === k && now - protoTapAt < PROTO_DBL_MS;
+            protoTapK = k; protoTapAt = now;
             if (k === selectedDate) {
-                if (events[k]) openVolleyFull();   // バレーの日はバレーの画面へ
-                else protoOpenInput(null);   // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
+                clearTimeout(protoFlashT);
+                if (dbl) {   // ダブルタップ
+                    protoTapK = null;
+                    if (events[k]) openVolleyFull();   // バレーの日はバレーの画面へ
+                    else protoOpenInput(null);   // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
+                    return;
+                }
+                protoFlashT = setTimeout(protoFlashDetail, PROTO_DBL_MS - 60);   // ダブルタップでなければ、予定の詳細を強調
                 return;
             }
             protoRowsTop = 0;
