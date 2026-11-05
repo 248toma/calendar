@@ -3647,21 +3647,21 @@
         .prop-acts .prop-go { color: var(--accent); font-weight: 700; }
         .why-sort { display: inline-flex; margin-top: 6px; }
         /* カレンダーの下に常に出すメニュー(設定で切り替え) */
-        /* 下に常に出すメニュー: アイコンだけの丸い帯。画面の角(半径およそ55px)と同じ中心で丸まるよう、帯の半径(30px)+すき間(25px)=55px にそろえる */
-        #protoUI .pr-wrap { --mb-d: max(12px, calc(env(safe-area-inset-bottom, 0px) - 9px)); }
-        #protoUI .pr-menubar { position: absolute; left: var(--mb-d); right: var(--mb-d); bottom: var(--mb-d); z-index: 3; height: 60px; box-sizing: border-box; display: flex; gap: 2px; padding: 4px 6px; border-radius: 30px; background: var(--pr-bg, #e9ecf2); box-shadow: 5px 5px 12px rgba(0,0,0,.14), -4px -4px 10px rgba(255,255,255,.75); }
-        #protoUI .pr-menubar button { position: relative; flex: 1 1 0; min-width: 0; height: 52px; padding: 0; border: none; border-radius: 26px; background: none; color: var(--pr-ink2, #4a5262); display: flex; align-items: center; justify-content: center; }
-        #protoUI .pr-menubar button svg { width: 22px; height: 22px; }
+        /* 下に常に出すメニュー: アイコンだけの小さめの丸い帯を、まん中に浮かせる(画面の角から離して、角の丸みとぶつからないようにする) */
+        #protoUI .pr-wrap { --mb-d: calc(env(safe-area-inset-bottom, 0px) + 18px); }
+        #protoUI .pr-menubar { position: absolute; left: 50%; bottom: var(--mb-d); transform: translateX(-50%); z-index: 3; box-sizing: border-box; display: flex; gap: 2px; padding: 5px; border-radius: 28px; background: var(--pr-bg, #e9ecf2); box-shadow: 4px 4px 10px rgba(0,0,0,.10), -4px -4px 10px rgba(255,255,255,.8); }
+        #protoUI .pr-menubar button { position: relative; flex: none; width: 44px; height: 46px; padding: 0; border: none; border-radius: 23px; background: none; color: var(--pr-ink2, #4a5262); display: flex; align-items: center; justify-content: center; }
+        #protoUI .pr-menubar button svg { width: 21px; height: 21px; }
         #protoUI .pr-menubar button span { display: none; }
         #protoUI .pr-menubar button.main { color: #2f6fe0; }
-        #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 7px rgba(0,0,0,.14), inset -3px -3px 7px rgba(255,255,255,.7); }
-        #protoUI .pr-menubar .svdot { position: absolute; top: 11px; right: calc(50% - 15px); width: 8px; height: 8px; border-radius: 50%; background: #e5484d; }
+        #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 7px rgba(0,0,0,.12), inset -3px -3px 7px rgba(255,255,255,.7); }
+        #protoUI .pr-menubar .svdot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #e5484d; }
         @media (prefers-color-scheme: dark) { #protoUI .pr-menubar { box-shadow: 4px 4px 10px rgba(0,0,0,.45), -3px -3px 8px rgba(255,255,255,.04); } }
-        body.proto-on #protoUI .pr-wrap.has-bar > .pr-cal { padding-bottom: calc(var(--mb-d) + 70px) !important; }
+        body.proto-on #protoUI .pr-wrap.has-bar > .pr-cal { padding-bottom: calc(var(--mb-d) + 64px) !important; }
         @media (orientation: landscape) and (max-height: 620px) {
             body.proto-on #protoUI .pr-wrap.has-bar > .pr-cal { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important; }
-            #protoUI .pr-wrap > .pr-menubar { position: relative; left: auto; right: auto; bottom: auto; grid-column: 3; grid-row: 1; flex-direction: column; align-self: center; width: 60px; height: auto; padding: 6px 4px; }
-            #protoUI .pr-menubar button { flex: none; width: 52px; height: 44px; }
+            #protoUI .pr-wrap > .pr-menubar { position: relative; left: auto; right: auto; bottom: auto; grid-column: 3; grid-row: 1; flex-direction: column; align-self: center; left: auto; transform: none; width: auto; padding: 5px; }
+            #protoUI .pr-menubar button { height: 42px; }
         }
 </style>
 </head>
@@ -14709,7 +14709,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/05 21:20";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/05 21:35";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
