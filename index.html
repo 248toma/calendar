@@ -3663,6 +3663,45 @@
             #protoUI .pr-wrap > .pr-menubar { position: relative; left: auto; right: auto; bottom: auto; grid-column: 3; grid-row: 1; flex-direction: column; align-self: center; left: auto; transform: none; width: auto; padding: 5px; }
             #protoUI .pr-menubar button { height: 42px; }
         }
+        /* 題名の候補(入力欄の右に薄く) */
+        #protoUI .pin-sug { flex: none; max-width: 58%; height: 24px; margin-left: 6px; padding: 0 9px; border: none; border-radius: 12px; background: rgba(127,135,150,.12); display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+        #protoUI .pin-sug i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+        #protoUI .pin-sug em { font-style: normal; font-size: 10px; opacity: .75; }
+        /* 数秒だけ出る札(戻す / ×にする) */
+        .pr-chip { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); z-index: 9600; height: 38px; padding: 0 16px; border: none; border-radius: 19px; background: rgba(31, 33, 36, .88); color: #fff; font: 700 12.5px 'Noto Sans JP', system-ui, sans-serif; display: flex; align-items: center; gap: 6px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.18); animation: prChipIn .22s cubic-bezier(.2,.9,.3,1) both; transition: opacity .3s, transform .3s; }
+        /* 予定をつかんで動かす: 行き先のマスは押したときと同じように沈める / もとの題名は薄く / 指についてくる札 */
+        #protoUI .pr-cell.pr-drop .pr-press { opacity: 1; transition: opacity .05s; }
+        #protoUI .pr-cell.pr-drop .pr-num { transform: scale(.88); transition: transform .1s ease-out; }
+        #protoUI .pr-mv-src { opacity: .3; }
+        body.pr-mv-on #protoUI .pr-cell:not(.pr-drop) .pr-press, body.pr-mv-on #protoUI .pr-cell:not(.pr-drop) .pr-num { transition: none; }   /* 通り過ぎたマスは、すぐ元に戻す */
+        .pr-mv-ghost { position: fixed; left: 0; top: 0; z-index: 9700; pointer-events: none; max-width: 150px; height: 28px; padding: 0 12px; border-radius: 14px; box-sizing: border-box; font: 600 11.5px/28px 'Noto Sans JP', system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; will-change: transform; }
+        body.pr-mv-on, body.pr-mv-on * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none; cursor: grabbing; }
+        /* 予定を探す: カレンダーの上に重ねる小さな板 */
+        #prFind { position: fixed; inset: 0; z-index: 9550; }
+        #prFind .prf-back { position: absolute; inset: 0; background: rgba(0,0,0,.06); }
+        #prFind .prf-sheet { position: absolute; display: flex; flex-direction: column; box-sizing: border-box; padding: 12px; border-radius: 22px; animation: prFindIn .22s cubic-bezier(.2,.9,.3,1) both; }
+        @keyframes prFindIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+        #prFind .prf-bar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 13px; border-radius: 20px; flex: none; }
+        #prFind .prf-bar input { flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: none; color: var(--fi); font: 500 16px 'Noto Sans JP', system-ui, sans-serif; padding: 0; -webkit-appearance: none; appearance: none; }
+        #prFind .prf-bar input::placeholder { color: var(--fi3); }
+        #prFind .prf-bar input::-webkit-search-cancel-button { display: none; }
+        #prFind .prf-x { width: 32px; height: 32px; flex: none; border: none; background: none; display: flex; align-items: center; justify-content: center; color: var(--fi3); border-radius: 16px; cursor: pointer; }
+        #prFind .prf-stat { padding: 10px 6px 2px; font: 500 11px 'Noto Sans JP', system-ui, sans-serif; color: var(--fi3); letter-spacing: .02em; flex: none; }
+        #prFind .prf-list { overflow-y: auto; min-height: 0; margin-top: 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        #prFind .prf-list:empty { display: none; }
+        #prFind .prf-row { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 6px; border: none; background: none; color: var(--fi); text-align: left; cursor: pointer; border-radius: 10px; }
+        #prFind .prf-row:active { background: var(--fln); }
+        #prFind .prf-row.past { color: var(--fi3); }
+        #prFind .prf-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--c); }
+        #prFind .prf-dot.vol { background: none; box-sizing: border-box; border: 1.5px solid var(--c); width: 7px; height: 7px; }
+        #prFind .prf-d { flex: none; min-width: 64px; font: 600 11.5px 'Montserrat', 'Noto Sans JP', system-ui, sans-serif; white-space: nowrap; }
+        #prFind .prf-d small { font-size: 10px; font-weight: 500; margin-left: 3px; color: var(--fi3); }
+        #prFind .prf-t { flex: 1; min-width: 0; font: 500 12.5px 'Noto Sans JP', system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #prFind .prf-sep { display: block; height: 1px; margin: 6px 6px; background: var(--fln); }
+        #prFind .prf-none { padding: 10px 6px 4px; font-size: 11px; color: var(--fi3); }
+        .pr-chip.over-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); }
+        .pr-chip.out { opacity: 0; transform: translate(-50%, 8px); }
+        @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
 </style>
 </head>
 <body>
@@ -7868,9 +7907,18 @@ await main();
             renderOtherPlanBox();
             jumpToPlanDate(sd);
         }
-        function deleteOtherPlan(id) {
+        function deleteOtherPlan(id, quiet) {   // quiet = 確かめずに消す(すぐ「戻す」を出すとき)
             const target = planList.find(x => x.id === id);
             if (!target || (!isAdmin() && !target.local && !pairPlanEditable(target))) return;
+            if (quiet) {   // 画面の上だけで消し、保存は「戻す」の札が消えてから(戻したときに、共有の変更ログへ 削除→追加 が残らないように)
+                const ak = planRsvpKey(id), snap = { p: JSON.parse(JSON.stringify(target)), att: attendanceByDate[ak] ? JSON.parse(JSON.stringify(attendanceByDate[ak])) : null, done: false };
+                planList = planList.filter(x => x.id !== id); delete attendanceByDate[ak];
+                if (planDetailId === id) planDetailId = null;
+                if (planEditId === id) { planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = ""; }
+                snap.commit = () => { if (snap.done) return; snap.done = true; if (target.pp) putPairPlan({ ...target, deleted: true }); saveData(); if (target.local) syncLocalNtf(); };
+                renderCalendar(); renderOtherPlanBox();
+                return snap;
+            }
             if (!confirm("この予定を消しますか？")) return;
             if (target.pp) putPairPlan({ ...target, deleted: true });
             planList = planList.filter(x => x.id !== id);
@@ -14709,7 +14757,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/05 21:40";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 00:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -14855,7 +14903,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const TH = 70;
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
-            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
+            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #prFind, #prCal .pr-mhead, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
                 || document.body.style.overflow === "hidden";
             const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
             document.addEventListener("touchstart", e => {
@@ -15866,7 +15914,7 @@ const namesBtn = isAdmin() && dates.length > 0
             { protoYM = null; const sp = document.getElementById("settingsPanel"); if (sp && sp.classList.contains("open")) toggleSettings(); renderProto(); }
             protoTopColor();
             clearInterval(protoTick);
-            protoTick = setInterval(() => { if (!document.hidden && !protoDrag) renderProto(); }, 30000);   // 今の時刻の線を動かす
+            protoTick = setInterval(() => { if (!document.hidden && !protoDrag && !prMv) renderProto(); }, 30000);   // 今の時刻の線を動かす
         }
         // 画面のいちばん上(時計・電池の帯)も試作UIの背景と同じ色にする(色がずれて切れて見えないように)
         function protoTopColor() {
@@ -15897,7 +15945,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // 予定の色(アプリの色番号 0〜8): 渋い寒色〜茶系。バレーの人数の色(緑・黄土・小豆色)の系統は使わない
             const C = dark
                 ? ["#7f848c", "#86aef0", "#86aef0", "#f4c0d5", "#f1f2f4", "#d0789f", "#f4c0d5", "#86aef0", "#7f848c", "#f1f2f4", "#7f848c", "#d0789f", "#f4c0d5", "#86aef0"]
-                : ["#9aa0a8", "#4677c4", "#4677c4", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#4677c4", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#4677c4"];   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に寄せる
+                : ["#9aa0a8", "#4677c4", "#4677c4", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#4677c4", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#4677c4"]; window.PROTO_C = C;   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に寄せる
             const LV = dark ? { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } : { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" };
             return { dark, P, C, LV };
         }
@@ -16119,7 +16167,8 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const popEl = Date.now() - protoPressAt, popAn = popEl < 480 ? popEl : null;
             const markEl = Date.now() - protoMarkAt, markAn = !protoCapMode && protoMarkDir && markEl < 520 ? markEl : null;   // めくって来た側から、予定の印が順に出る
-            for (let i = 0; i < 42; i++) {
+            const NR = 6;   // いつも6行(月ごとにマスの大きさが変わらないように)
+            for (let i = 0; i < NR * 7; i++) {
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
                 const isSel = k === sel, isToday = k === todayKey, j = jpDay(k), red = !!j.hol || d.getDay() === 0 || planHolidayOn(k), blue = !red && d.getDay() === 6;
                 const v = volInfo(k);
@@ -16131,7 +16180,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (pin && p.id === planEditId) return;
                     const col = C[+p.color || 0] || C[0];
                     const multi = !!p.endDate && p.endDate !== p.startDate;
-                    items.push({ t: p.title || "予定", col, multi, lane: multi ? laneOf.get(p.id) : null, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6, span: multi ? Math.min(6 - col7, Math.round((new Date(p.endDate + "T00:00:00") - new Date(k + "T00:00:00")) / 864e5)) + 1 : 1 });
+                    items.push({ pid: p.id, t: p.title || "予定", col, multi, lane: multi ? laneOf.get(p.id) : null, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6, span: multi ? Math.min(6 - col7, Math.round((new Date(p.endDate + "T00:00:00") - new Date(k + "T00:00:00")) / 864e5)) + 1 : 1 });
                 });
                 if (pin && !pin.empty && k >= pin.sd && k <= (pin.ed || pin.sd)) {
                     const pc = C[planColor] || C[0];
@@ -16143,27 +16192,28 @@ const namesBtn = isAdmin() && dates.length > 0
                 const mls = items.filter(x => x.multi && x.lane != null && x.lane < MAXL), topLane = mls.reduce((a, x) => Math.max(a, x.lane), -1);
                 const lines = []; for (let ln = 0; ln <= topLane; ln++) lines.push(mls.find(x => x.lane === ln) || { col: "transparent", l: false, r: false });
                 const dots = items.filter(x => !x.multi), MAXD = 4;
-                const lineHtml = lines.map(x => `<i style="display:block;height:3px;margin:0 ${x.r ? 6 : 0}px 0 ${x.l ? 6 : 0}px;border-radius:${x.l ? 2 : 0}px ${x.r ? 2 : 0}px ${x.r ? 2 : 0}px ${x.l ? 2 : 0}px;background:${x.col}"></i>`).join("");
+                const pidA = x => x.pid != null ? ` data-pid="${esc(String(x.pid))}"` : "";   // つかんで動かすときに、どの予定かわかるように
+                const lineHtml = lines.map(x => `<i${pidA(x)} style="display:block;height:3px;margin:0 ${x.r ? 6 : 0}px 0 ${x.l ? 6 : 0}px;border-radius:${x.l ? 2 : 0}px ${x.r ? 2 : 0}px ${x.r ? 2 : 0}px ${x.l ? 2 : 0}px;background:${x.col}"></i>`).join("");
                 const dotHtml = dots.slice(0, MAXD).map(x => x.vol
                     ? `<i style="width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:2px solid ${x.col}"></i>`
-                    : `<i style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
+                    : `<i${pidA(x)} style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
                 let volMark = "";
                 let tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
                 if (protoCalPlans) {
                     // 「点」の細い線の上に、題名を重ねる(線は文字のところだけ切れる)。連続予定は日をつなぐ線で、題名は始まりの日と週のはじめだけ
                     // 1日の予定は短い線。"en" は英語に置きかえ(辞書にない言葉はそのまま)
                     const word = t => protoPlanStyle === "en" ? planEnglish(t) : t;
-                    const row = (col, l, r, label, span) => `<span class="pr-lt"><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}${span > 1 ? `;max-width:calc(${span * 100}% - 8px)` : ""}">${esc(word(label))}</b>` : ""}</span>`;
-                    const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : "", x.span || 1).replace('class="pr-lt"', 'class="pr-lt pr-lt-lane"'));
+                    const row = (col, l, r, label, span, pid) => `<span class="pr-lt"${pid != null ? ` data-pid="${esc(String(pid))}"` : ""}><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}${span > 1 ? `;max-width:calc(${span * 100}% - 8px)` : ""}">${esc(word(label))}</b>` : ""}</span>`;
+                    const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : "", x.span || 1, x.pid).replace('class="pr-lt"', 'class="pr-lt pr-lt-lane"'));
                     // 1日の予定(バレーも)は線なしで題名だけ / 3行まで(残りは右上に +N) / 過ぎた日は薄く
-                    const sg = dots.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"><b style="color:${x.col};--c:${x.col}">${esc(word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
+                    const sg = dots.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"${pidA(x)}><b style="color:${x.col};--c:${x.col}">${esc(word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
                     const all = laneRows.concat(sg), room = 3;
                     tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}${k < todayKey ? " past" : ""}">${all.slice(0, room).join("")}</span>${all.length > room && sg.length ? `<span class="pr-fit-more">+${all.length - room}</span>` : ""}`;
                 }
                 const moreTag = "";
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
-                cellsHtml += `<button type="button" class="pr-cell" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
+                cellsHtml += `<button type="button" class="pr-cell" data-k="${k}" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
                     <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? 1 : 0.28};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : 500};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${volMark}${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
                     <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${markAn != null ? `animation:prMarkIn .3s ease-out both;animation-delay:${(protoMarkDir > 0 ? col7 : 6 - col7) * 28 + Math.floor(i / 7) * 4 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
             }
@@ -16196,7 +16246,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
                     <div style="position:relative">
                       <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 2 * PROTO_ROW_H : 3 * PROTO_ROW_H}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
-                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.col}"></i><span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : `<span style="font-size:11.5px;color:${P.ink3};line-height:${PROTO_ROW_H}px">予定なし</span>`}
+                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer"><i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.col}"></i><span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : ""}
                       </div>
                       <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
                     </div>
@@ -16205,17 +16255,17 @@ const namesBtn = isAdmin() && dates.length > 0
               </div>`;
             const calHtml = `
               <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchmove="protoTM(event)" ontouchend="protoTE(event)" ontouchcancel="protoTC()" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:96px;touch-action:pan-y;${protoAnim}">
-                <div style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
+                <div class="pr-mhead" style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
 
-                  <div style="display:flex;align-items:center;gap:12px"><span style="font-family:${en};font-size:16px;font-weight:700">${m}<span style="font-size:12px;margin-left:1px">月</span></span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span>${typeof savingTotalHtml === "function" ? savingTotalHtml(y) : ""}<span class="pr-svdot" id="prSvDot" role="button" onclick="event.stopPropagation();openSurvey()" aria-label="アンケートの知らせ"><i class="sv-r"></i><i class="sv-o"></i><i class="sv-g"></i></span>${protoUpdPending ? `<button type="button" class="pr-upd" onclick="event.stopPropagation();refreshApp()" aria-label="更新があります(タップで反映)"></button>` : ""}</div>
+                  <div role="button" aria-label="予定を探す" onclick="protoFindTap()" style="display:flex;align-items:center;gap:12px;cursor:pointer"><span style="font-family:${en};font-size:16px;font-weight:700">${m}<span style="font-size:12px;margin-left:1px">月</span></span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span>${typeof savingTotalHtml === "function" ? savingTotalHtml(y) : ""}<span class="pr-svdot" id="prSvDot" role="button" onclick="event.stopPropagation();openSurvey()" aria-label="アンケートの知らせ"><i class="sv-r"></i><i class="sv-o"></i><i class="sv-g"></i></span>${protoUpdPending ? `<button type="button" class="pr-upd" onclick="event.stopPropagation();refreshApp()" aria-label="更新があります(タップで反映)"></button>` : ""}</div>
 
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
-                <div class="pr-grid" style="position:relative;flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cellsHtml}</div>
+                <div class="pr-mhead" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
+                <div class="pr-grid" style="position:relative;flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${NR},minmax(0,1fr))">${cellsHtml}</div>
               </div>`;
             const dockHtml = pin ? "" : prMenuMode() === "bar" ? prMenuBarHtml() : `
               <div class="pr-dock">
-                <button type="button" onclick="protoToday()" style="height:44px;padding:0 20px;border-radius:22px;font-family:${en};font-size:13px;font-weight:700;color:${sel === todayKey ? P.ink3 : P.today};${raiseS}">Today</button>
+                <button type="button" onclick="protoToday()" style="height:44px;padding:0 20px;border-radius:22px;font-family:${en};font-size:13px;font-weight:700;color:${sel === todayKey ? P.ink3 : P.today};${raiseS}">今日</button>
                 <span style="flex:1"></span>
                 <button type="button" aria-label="バレーの予約をカレンダーに追加" title="カレンダーに登録" onclick="openBulkAdd()" style="width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path></svg></button>
                 <button type="button" id="prSvBtn" aria-label="アンケート" onclick="openSurvey()" class="pr-svbtn" style="position:relative;width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg><span class="sv-badge3"></span><span class="sv-badge2"></span><span class="sv-badge"></span></button>
@@ -16305,7 +16355,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       <button type="button" aria-label="閉じる" onclick="protoCloseInput()" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:${P.ink3}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                     </div>
                     <div id="prPinLine" style="height:34px;margin-right:22px;display:flex;align-items:center;border-bottom:1.5px solid ${pinLine}">
-                      <input id="pinT" class="pin-in" type="text" enterkeyhint="next" autocomplete="off" spellcheck="false" aria-label="題名" placeholder="タイトル" oninput="pinInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();document.getElementById('pinH').focus();}">
+                      <input id="pinT" class="pin-in" type="text" enterkeyhint="next" autocomplete="off" spellcheck="false" aria-label="題名" placeholder="タイトル" oninput="pinInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();document.getElementById('pinH').focus();}"><button type="button" id="pinTS" class="pin-sug" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="pinSugApply()" style="display:none;color:${P.ink3}"></button>
                     </div>
                     <div style="height:30px;margin-top:6px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="3"></rect><path d="M4 10h16M9 3.5v4M15 3.5v4"></path></svg>
                       <div id="prPinInfo" style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;color:${P.ink}">${pinInfo}</div>
@@ -16462,7 +16512,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (protoBottomEdge(e.touches[0].clientY)) { protoDrag = null; return; }
             protoPressOn(e.target);
             const t = e.touches[0];
-            protoDrag = { x: t.clientX, y: t.clientY, lock: 0, lx: t.clientX, lt: e.timeStamp, v: 0 };
+            protoDrag = { x: t.clientX, y: t.clientY, lock: 0, lx: t.clientX, lt: e.timeStamp, v: 0, hd: !!(e.target && e.target.closest && e.target.closest("#prCal .pr-mhead")) };   // hd = 月の見出しから始めた(下に引くと「探す」)
         }
         function protoTM(e) {
             const d = protoDrag; if (!d || e.touches.length !== 1) return;
@@ -16494,6 +16544,7 @@ const namesBtn = isAdmin() && dates.length > 0
             setTimeout(protoPressOff, 0);   // 押したマスは、描き直したあと「ふわっと戻る」で戻す
             const d = protoDrag; protoDrag = null;
             if (d && d.lock === -1) protoSkipClick = Date.now();   // 縦に動かした(引っぱって更新など)あとは、日付を押したことにしない
+            if (d && d.lock === -1 && d.hd && e.changedTouches[0].clientY - d.y > 40) { protoFindOpen(); return; }   // 月の見出しを下に引いた: 予定を探す
             if (!d || d.lock !== 1 || !d.el) return;
             const dx = e.changedTouches[0].clientX - d.x, W = (d.el.offsetWidth || 360) + PROTO_PAGE_GAP;
             protoSkipClick = Date.now();
@@ -16511,8 +16562,12 @@ const namesBtn = isAdmin() && dates.length > 0
             }, ms + 10);
         }
         var protoPx = null, protoSkipClick = 0;
-        function protoPD(e) { if (e.pointerType === "mouse") { protoPx = [e.clientX, e.clientY]; protoPressOn(e.target); } }
-        function protoPU(e) { if (e.pointerType === "mouse") setTimeout(protoPressOff, 0); if (!protoPx || e.pointerType !== "mouse") return; const dx = e.clientX - protoPx[0], dy = e.clientY - protoPx[1]; protoPx = null; if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); } }
+        function protoPD(e) { if (e.pointerType === "mouse") { protoPx = [e.clientX, e.clientY, !!(e.target && e.target.closest && e.target.closest("#prCal .pr-mhead"))]; protoPressOn(e.target); } }
+        function protoPU(e) {
+            if (e.pointerType === "mouse") setTimeout(protoPressOff, 0); if (!protoPx || e.pointerType !== "mouse") return; const dx = e.clientX - protoPx[0], dy = e.clientY - protoPx[1], hd = protoPx[2]; protoPx = null;
+            if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); return; }
+            if (hd && dy > 40 && dy > Math.abs(dx) * 1.3) { protoSkipClick = Date.now(); protoFindOpen(); }   // マウスでも、月の見出しを下に引くと「探す」
+        }
         // カレンダーの予定の線がマスからはみ出す日は、入るぶんだけ出して、残りの数をマスの右上に「+N」(画面が小さい端末向け)
         function protoFitCells() {
             if (!protoCalPlans) return;
@@ -16549,7 +16604,7 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "roster", label: "名簿", adm: true, run: () => protoSolo("roster") },
             { k: "ana", label: "分析", adm: true, run: () => protoSolo("ana") },
             { k: "settings", label: "設定", run: () => protoSolo("") },
-            { k: "today", label: "Today", run: () => protoToday() }
+            { k: "today", label: "今日", run: () => protoToday() }
         ];
         function prRadItems() { return PR_RAD_ITEMS.filter(it => !it.adm || isAdmin()); }
         // メニューの出し方: "hold" = 長押しで扇のメニュー / "bar" = カレンダーの下に常に並べる(設定で切り替え。この端末に覚える)
@@ -16696,6 +16751,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var prRadTap = null;   // 開いたままのメニューをタップしたとき(指を置いた位置)
         function prRadStart(x, y, t) {
             if (prRad && prRad.open) { prRadTap = { x, y, t }; return; }
+            if (prMvTry(x, y, t)) return;   // 動かせる予定の上: 長押しでつかむ(メニューは出さない。下に並べるメニューのときも)
             if (!prRadAllowed(t, y)) return;
             prRad = { sx: x, sy: y, x, y, open: false, sel: -1 };
             prRad.timer = setTimeout(() => { if (prRad && !prRad.open) prRadOpen(prRad.x, prRad.y); }, PR_RAD_HOLD);
@@ -16723,17 +16779,18 @@ const namesBtn = isAdmin() && dates.length > 0
             prRadClose();   // 選ばずに離した: メニューを閉じる
             return true;
         }
-        document.addEventListener("touchstart", e => { if (prRad && prRad.open && !prRadInItem(e.target)) { prRadOut = true; e.stopPropagation(); return; } if (e.touches.length !== 1) { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } return; } const t = e.touches[0]; prRadStart(t.clientX, t.clientY, e.target); }, { capture: true, passive: true });
-        document.addEventListener("touchmove", e => { if (!prRad) return; if (prRad.open && prRad.tap) { e.preventDefault(); e.stopPropagation(); return; } const t = e.touches[0]; if (prRadMove(t.clientX, t.clientY)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
-        document.addEventListener("touchend", e => { if (prRadOut) { prRadOut = false; e.preventDefault(); e.stopPropagation(); if (!e.touches.length) prRadClose(); return; } const t = e.changedTouches && e.changedTouches[0]; if (prRadEnd(t ? t.clientX : null, t ? t.clientY : null)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
-        document.addEventListener("touchcancel", () => { prRadOut = false; if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } }, { capture: true });
+        document.addEventListener("touchstart", e => { if (prMv) prMvCancel(); if (prRad && prRad.open && !prRadInItem(e.target)) { prRadOut = true; e.stopPropagation(); return; } if (e.touches.length !== 1) { if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } return; } const t = e.touches[0]; prRadStart(t.clientX, t.clientY, e.target); }, { capture: true, passive: true });
+        document.addEventListener("touchmove", e => { if (prMv) { const t = e.touches[0]; if (t && prMvMove(t.clientX, t.clientY)) { e.preventDefault(); e.stopPropagation(); } return; } if (!prRad) return; if (prRad.open && prRad.tap) { e.preventDefault(); e.stopPropagation(); return; } const t = e.touches[0]; if (prRadMove(t.clientX, t.clientY)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchend", e => { if (prRadOut) { prRadOut = false; e.preventDefault(); e.stopPropagation(); if (!e.touches.length) prRadClose(); return; } const t = e.changedTouches && e.changedTouches[0]; if (prMv) { if (prMvEnd(t ? t.clientX : null, t ? t.clientY : null)) { e.preventDefault(); e.stopPropagation(); } return; } if (prRadEnd(t ? t.clientX : null, t ? t.clientY : null)) { e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchcancel", () => { if (prMv) prMvCancel(); prRadOut = false; if (prRad && !prRad.open) { clearTimeout(prRad.timer); prRad = null; } }, { capture: true });
         // マウス(パソコン)でも同じ
-        document.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse" || e.button !== 0) return; if (prRad && prRad.open && !prRadInItem(e.target)) { prRadOut = true; e.stopPropagation(); return; } prRadStart(e.clientX, e.clientY, e.target); }, true);
-        document.addEventListener("pointermove", e => { if (e.pointerType === "mouse" && prRad) prRadMove(e.clientX, e.clientY); }, true);
-        document.addEventListener("pointerup", e => { if (e.pointerType !== "mouse") return; if (prRadOut) { prRadOut = false; e.stopPropagation(); prRadClose(); return; } if (prRadEnd()) { e.stopPropagation(); } }, true);
+        document.addEventListener("pointerdown", e => { if (prMv) prMvCancel(); if (e.pointerType !== "mouse" || e.button !== 0) return; if (prRad && prRad.open && !prRadInItem(e.target)) { prRadOut = true; e.stopPropagation(); return; } prRadStart(e.clientX, e.clientY, e.target); }, true);
+        document.addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; if (prMv) { prMvMove(e.clientX, e.clientY); return; } if (prRad) prRadMove(e.clientX, e.clientY); }, true);
+        document.addEventListener("pointerup", e => { if (e.pointerType !== "mouse") return; if (prMv) { if (prMvEnd(e.clientX, e.clientY, true)) e.stopPropagation(); return; } if (prRadOut) { prRadOut = false; e.stopPropagation(); prRadClose(); return; } if (prRadEnd()) { e.stopPropagation(); } }, true);
         // メニューが出ている間(と閉じた直後)は、選択肢以外のクリックを後ろに通さない
         document.addEventListener("click", e => { if (((prRad && prRad.open) || Date.now() < prRadBlockUntil) && !prRadInItem(e.target)) { e.stopPropagation(); e.preventDefault(); } }, true);
-        document.addEventListener("contextmenu", e => { if (prRad) e.preventDefault(); }, true);
+        document.addEventListener("contextmenu", e => { if (prRad || prMv) e.preventDefault(); }, true);
+        window.addEventListener("blur", () => { if (prMv) prMvCancel(); });   // 窓の外で離した・別のアプリへ移った: つかんだ札を残さない
         // 横画面: リングを左の高さいっぱいまで大きくする(カレンダーが1マス40pxより細くならない範囲で)
         function protoLandFit() {
             const wrap = document.querySelector("#protoUI .pr-wrap"), row = document.querySelector("#protoUI .pr-headrow");
@@ -17039,6 +17096,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const [y, m] = r.sd.split("-").map(Number);
             if (!protoYM || protoYM[0] !== y || protoYM[1] !== m) protoYM = [y, m];   // 入れる日の月を下に出す
             renderProto();
+            pinSugShow();
         }
         // 欄から離れたら、読み取れた形に整える(金 → 10/30、19-21 → 19:00-21:00)
         function pinTidy(which) {
@@ -17052,15 +17110,329 @@ const namesBtn = isAdmin() && dates.length > 0
             protoHaptic();
             if (!(pinVal("pinT").trim() || pinVal("pinH").trim())) { t.focus(); return; }
             pinInput();
+            const r = pinParse();
             planPanel = { date: selectedDate, open: false };
             addOtherPlan();
-            if (planFormDate === "") protoCloseInput();   // 保存できたとき(できないときは、入力のまま)
+            if (planFormDate === "") { protoCloseInput(); protoVolClash(r); }   // 保存できたとき(できないときは、入力のまま)
         }
         function pinDelete() {
             if (pinEditId == null) return;
             const id = pinEditId;
-            deleteOtherPlan(id);
-            if (!planList.some(x => x.id === id)) protoCloseInput();
+            const snap = deleteOtherPlan(id, true);
+            if (snap) { protoCloseInput(); protoChip("戻す", () => protoUndoDel(snap), 4500, snap.commit); }
+        }
+        // ------- 下に数秒だけ出る小さな札(押せば fn) -------
+        // onEnd = 押されずに消えたとき(次の札が出たとき・アプリを離れたときも)
+        var protoChipEnd = null;
+        function protoChipFlush() { const f = protoChipEnd; protoChipEnd = null; if (f) { try { f(); } catch (e) { console.warn(e); } } }
+        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") protoChipFlush(); });
+        window.addEventListener("pagehide", protoChipFlush);
+        function protoChip(html, fn, ms, onEnd) {
+            protoChipFlush();
+            document.querySelectorAll(".pr-chip").forEach(e => e.remove());
+            const b = document.createElement("button"); b.type = "button"; b.className = "pr-chip"; b.innerHTML = html;
+            if (document.querySelector("#protoUI .pr-menubar")) b.classList.add("over-bar");
+            protoChipEnd = onEnd || null;
+            b.onclick = () => { b.remove(); if (protoChipEnd === onEnd) protoChipEnd = null; protoHaptic(); fn(); };
+            document.body.appendChild(b);
+            const T = ms || 4500;
+            setTimeout(() => b.classList.add("out"), T - 300);
+            setTimeout(() => { if (!b.isConnected) return; b.remove(); if (onEnd && protoChipEnd === onEnd) protoChipFlush(); }, T);
+        }
+        // 消した予定を戻す(まだ保存していなければ、画面の上で戻すだけ)
+        function protoUndoDel(snap) {
+            if (!snap) return;
+            const p = snap.p;
+            if (snap.done) {   // もう保存していたとき
+                if (p.pp) { const q = { ...p }; delete q.deleted; putPairPlan(q); }
+                else if (!planList.some(x => x.id === p.id)) planList.push(p);
+                if (snap.att) attendanceByDate[planRsvpKey(p.id)] = snap.att;
+                saveData(); if (p.local) syncLocalNtf();
+            } else {
+                snap.done = true;
+                if (!planList.some(x => x.id === p.id)) planList.push(p);
+                if (snap.att) attendanceByDate[planRsvpKey(p.id)] = snap.att;
+            }
+            renderCalendar(); renderOtherPlanBox(); renderProto();
+        }
+        // ------- 予定を長押しでつかんで、別の日へ動かす(月のカレンダーのマス) -------
+        //   予定の題名・点の上で長押し(指を動かさずに少し待つ)→ 題名の札が指について動く → 別の日で離すと、その日へ(何日も続く予定は長さそのまま)
+        //   同じ日・カレンダーの外で離したら、やめる。バレーの日は予定ではないので動かさない。直せない予定はつかまない(長押しメニューのまま)
+        const PR_MV_HOLD = 480, PR_MV_SLOP = 8;   // 480ms: ゆっくりのタップ(押したままの2回目のタップなど)と区別できるように
+        var prMv = null;   // { sx, sy, x, y, k(つかんだ日), p, timer, on(つかんだ), moved(つかんでから動かした), skip0(つかむ前の protoSkipClick), to(いまの行き先の日), ghost }
+        function prMvEditable(p) { return !!p && (isAdmin() || !!p.local || pairPlanEditable(p)); }
+        // 指の位置にあるマス(題名がとなりのマスにはみ出していることがあるので、要素ではなく位置で見る)
+        function prMvCellAt(x, y) {
+            if (x == null || y == null) return null;
+            const cs = document.querySelectorAll("#prCal .pr-grid > .pr-cell[data-k]");
+            for (const c of cs) { const r = c.getBoundingClientRect(); if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return c; }
+            return null;
+        }
+        // 指の下の予定(マスの予定の欄の中で、いちばん近い題名・点)。数字のあたり・予定のないところ・バレーだけのときは null
+        function prMvFind(x, y) {
+            const c = prMvCellAt(x, y); if (!c) return null;
+            const tags = c.querySelector(".pr-tags"); if (!tags) return null;
+            if (y < tags.getBoundingClientRect().top - 3) return null;   // 日付の数字のあたりは、ふつうの長押し(メニュー)
+            let best = null, bd = Infinity;
+            c.querySelectorAll("[data-pid]").forEach(el => {
+                const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;   // 入りきらずに隠した行
+                const dx = Math.max(r.left - x, 0, x - Math.min(r.right, c.getBoundingClientRect().right)), dy = Math.max(r.top - y, 0, y - r.bottom);
+                const d = Math.hypot(dx, dy * 1.4);
+                if (d < bd) { bd = d; best = el; }
+            });
+            if (!best || bd > 16) return null;
+            const p = planList.find(q => String(q.id) === best.dataset.pid);
+            return p && !p.deleted ? { p, k: c.dataset.k, ok: prMvEditable(p) } : null;
+        }
+        // 長押しの始まり: 動かせる予定の上なら、つかむ準備をして true(長押しメニューは出さない)
+        function prMvTry(x, y, t) {
+            if (prMv || pinOpen || !t || !t.closest || !t.closest("#prCal")) return false;
+            if (protoBottomEdge(y)) return false;
+            const f = prMvFind(x, y);
+            if (!f || !f.ok) return false;   // 直せない予定・予定のないところ: いつもの長押しメニュー
+            prMv = { sx: x, sy: y, x, y, k: f.k, p: f.p, on: false, to: null, ghost: null };
+            prMv.timer = setTimeout(prMvLift, PR_MV_HOLD);
+            return true;
+        }
+        // つかんだ: 題名の札を出して、指についてくるように
+        function prMvLift() {
+            const m = prMv; if (!m || m.on) return;
+            if ((protoDrag && protoDrag.lock) || !planList.some(q => q.id === m.p.id)) { prMvCancel(); return; }   // 月をめくり始めていた・予定が消えた
+            m.on = true; m.skip0 = protoSkipClick;
+            protoDrag = null; protoPx = null;   // 月めくり(指・マウス)はしない
+            protoSkipClick = Date.now();
+            try { protoPressOff(); } catch (e) { /* ignore */ }
+            const { dark, P } = protoPal(), { raiseS } = protoNeu(P, dark);
+            const g = document.createElement("div"); g.className = "pr-mv-ghost"; g.id = "prMvGhost";
+            g.textContent = m.p.title || "予定";   // textContent なので、題名はそのまま文字として出る
+            g.style.cssText = `${raiseS};color:${P.ink2}`;
+            document.body.appendChild(g); m.ghost = g;
+            document.body.classList.add("pr-mv-on");
+            document.querySelectorAll(`#prCal [data-pid="${CSS.escape(String(m.p.id))}"]`).forEach(e => e.classList.add("pr-mv-src"));
+            protoHaptic();
+            prMvOver(m.x, m.y, true);
+        }
+        function prMvOver(x, y, first) {
+            const m = prMv; if (!m || !m.on) return;
+            if (m.ghost) { const w = m.ghost.offsetWidth || 60; m.ghost.style.transform = `translate(${Math.round(x - w / 2)}px, ${Math.round(Math.max(4, y - 74))}px)`; }   // 指と、行き先の日付の数字で隠れないよう、上に
+            const c = prMvCellAt(x, y), k = c ? c.dataset.k : null;
+            document.querySelectorAll("#prCal .pr-cell.pr-drop").forEach(e => { if (e !== c) e.classList.remove("pr-drop"); });
+            if (c && k !== m.k) c.classList.add("pr-drop");   // 行き先のマスを沈める(もとの日は沈めない)
+            if (k !== m.to) { m.to = k; if (k && !first) protoHaptic(); }   // 行き先の日が変わったら「トン」
+        }
+        function prMvMove(x, y) {
+            const m = prMv; if (!m) return false;
+            m.x = x; m.y = y;
+            if (!m.on) { if (Math.hypot(x - m.sx, y - m.sy) > PR_MV_SLOP) prMvCancel(); return false; }   // つかむ前に動かした: ふつうの操作(月めくりなど)
+            if (!m.moved && Math.hypot(x - m.sx, y - m.sy) > PR_MV_SLOP) m.moved = true;   // つかんでから動かした(その場で離しても、タップにはしない)
+            prMvOver(x, y); return true;
+        }
+        function prMvClear() {
+            const m = prMv; prMv = null; if (!m) return;
+            clearTimeout(m.timer);
+            if (m.ghost) m.ghost.remove();
+            document.body.classList.remove("pr-mv-on");
+            document.querySelectorAll("#prCal .pr-drop, #prCal .pr-mv-src").forEach(e => e.classList.remove("pr-drop", "pr-mv-src"));
+            return m;
+        }
+        function prMvCancel() { const m = prMvClear(); if (m && m.on) protoSkipClick = Date.now(); }
+        // 指を離した: つかんでいたら true(このあとのタップの処理はしない)
+        // mouse = マウス(このあと本物のクリックが来る)。指は touchend を止めるのでクリックが来ない → ここで日付を押したことにする
+        function prMvEnd(x, y, mouse) {
+            const m = prMv; if (!m) return false;
+            if (!m.on) { prMvClear(); return false; }   // 長押しになる前に離した: ふつうのタップ
+            const c = prMvCellAt(x, y), to = c ? c.dataset.k : (x == null ? m.to : null);
+            if (!m.moved && to === m.k) {   // つかんだけれど動かさずに、その場で離した: ゆっくりのタップとして扱う(日付を選ぶ・2回目のタップ)
+                prMvClear();
+                protoSkipClick = m.skip0 || 0;
+                if (mouse) return false;   // マウスは、このあとのクリックで protoPick が呼ばれる
+                protoPick(m.k);
+                return true;
+            }
+            prMvClear();
+            protoSkipClick = Date.now();
+            if (to && to !== m.k) prMvDrop(m.p, m.k, to);
+            return true;
+        }
+        function prMvAddDays(k, n) { const d = new Date(k + "T00:00:00"); d.setDate(d.getDate() + n); return formatDateKey(d); }
+        // つかんだ日 → 離した日 のぶんだけ、始まりと終わりの日をずらす
+        // 画面の上だけで日付を変え、保存は「戻す」の札が消えてから(予定を消すときと同じ。戻したときに、変更が2回保存されないように)
+        function prMvDrop(p, fromK, toK) {
+            const n = Math.round((new Date(toK + "T00:00:00") - new Date(fromK + "T00:00:00")) / 864e5); if (!n) return;
+            const cur = planList.find(q => q.id === p.id); if (!cur) return;
+            const id = cur.id, snap = { done: false, sd: cur.startDate, ed: cur.endDate || "" };
+            prMvSetDates(id, prMvAddDays(cur.startDate, n), cur.endDate ? prMvAddDays(cur.endDate, n) : "");
+            snap.commit = () => {   // 札が押されずに消えた(次の札が出た・アプリを離れた): ここで保存
+                if (snap.done) return; snap.done = true;
+                const q = planList.find(x => x.id === id); if (!q) return;
+                if (q.pp) putPairPlan(q);   // ペア予定は出欠データ側へ
+                else { saveData(); if (q.local) syncLocalNtf(); }
+            };
+            protoChip("戻す", () => { if (snap.done) return; snap.done = true; prMvSetDates(id, snap.sd, snap.ed); }, 4500, snap.commit);   // 戻す: まだ保存していないので、画面の上で戻すだけ
+        }
+        function prMvSetDates(id, sd, ed) {   // 画面の上(planList)だけ変える
+            const i = planList.findIndex(q => q.id === id); if (i < 0) return;
+            const q = { ...planList[i], startDate: sd };
+            if (ed) q.endDate = ed; else delete q.endDate;
+            planList[i] = q;
+            renderCalendar(); renderOtherPlanBox(); renderProto();
+        }
+
+        // ------- 予定を探す(月の見出しを押す・下に引く) -------
+        //   題名の一部で探す(ひらがな/カタカナ・大文字/小文字の違いは無視)。新しい日付が上、今日より前は線の下で薄く
+        //   バレーの日は「バレー」で探したときだけ。題名が1つにしぼれたら、前回から何日・平均何日ごとかを1行で
+        var prFindKeyOn = false;
+        function protoFindTap() { if (Date.now() - protoSkipClick < 400) return; protoFindOpen(); }
+        function protoFindOpen() {
+            if (pinOpen || document.getElementById("prFind")) return;
+            const { dark, P } = protoPal(), { raise, insetS } = protoNeu(P, dark);
+            const cal = document.getElementById("prCal"), r = cal ? cal.getBoundingClientRect() : { left: 0, top: 60, width: innerWidth };
+            const top = Math.max(10, Math.round(r.top)), left = Math.round(r.left) + 2, w = Math.round(r.width) - 4;
+            const ov = document.createElement("div"); ov.id = "prFind";
+            ov.style.setProperty("--fi", P.ink); ov.style.setProperty("--fi3", P.ink3); ov.style.setProperty("--fln", dark ? "rgba(255,255,255,.08)" : "rgba(40,50,70,.09)");
+            const xs = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>`;
+            const lens = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg>`;
+            ov.innerHTML = `<div class="prf-back" onclick="protoFindClose()"></div>
+                <div class="prf-sheet" role="dialog" aria-label="予定を探す" style="left:${left}px;top:${top}px;width:${w}px;color:${P.ink};${raise}">
+                  <div class="prf-bar" style="color:${P.ink3};${insetS}">${lens}<input id="prFindIn" type="search" placeholder="探す" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="予定の題名" oninput="protoFindRun()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();this.blur();}"><button type="button" class="prf-x" aria-label="閉じる" onclick="protoFindClose()">${xs}</button></div>
+                  <div id="prFindStat" class="prf-stat"></div>
+                  <div id="prFindList" class="prf-list"></div>
+                </div>`;
+            document.body.appendChild(ov);
+            protoFindFit();
+            if (window.visualViewport) { visualViewport.addEventListener("resize", protoFindFit); visualViewport.addEventListener("scroll", protoFindFit); }   // キーボードが出た・しまった
+            if (!prFindKeyOn) { prFindKeyOn = true; document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("prFind")) { e.preventDefault(); protoFindClose(); } }); }
+            const inp = document.getElementById("prFindIn"); if (inp) { inp.focus(); }   // 押した操作の中で入れる(iPhone でキーボードが出るように)
+            protoFindRun();
+        }
+        // 板の高さを、キーボードに隠れない高さに(iPhone はキーボードが出ても innerHeight が変わらないので visualViewport で見る)
+        function protoFindFit() {
+            const sh = document.querySelector("#prFind .prf-sheet"); if (!sh) return;
+            const vv = window.visualViewport, vh = vv ? vv.height + vv.offsetTop : innerHeight;
+            sh.style.maxHeight = Math.max(120, Math.round(vh - (parseFloat(sh.style.top) || 0) - 12)) + "px";
+        }
+        function protoFindClose() {
+            if (window.visualViewport) { visualViewport.removeEventListener("resize", protoFindFit); visualViewport.removeEventListener("scroll", protoFindFit); }
+            const ov = document.getElementById("prFind"); if (!ov) return;
+            const inp = document.getElementById("prFindIn"); if (inp) inp.blur();
+            ov.remove();
+            protoSkipClick = Date.now();   // 閉じたタップが、後ろのカレンダーに当たらないように
+        }
+        // 探す: 題名で当たった予定(とバレーの日)を、日付の新しい順に
+        function protoFindHits(q) {
+            const toks = String(q || "").split(/[\s　]+/).map(normName).filter(Boolean);
+            if (!toks.length) return [];
+            const hit = s => { const h = normName(s); return toks.every(t => h.includes(t)); };
+            const { P, C } = protoPal();
+            const okK = k => /^\d{4}-\d\d-\d\d$/.test(String(k || ""));   // 日付の形でないもの(壊れたデータ)は出さない
+            const rows = planList.filter(p => p && !p.deleted && okK(p.startDate) && (!p.endDate || okK(p.endDate)) && planHas(p) && planVisible(p) && !!p.title && hit(p.title))
+                .map(p => ({ k: p.startDate, e: p.endDate && p.endDate !== p.startDate ? p.endDate : "", t: p.title, n: normName(p.title), col: C[+p.color || 0] || C[0] }));
+            if (hit("バレー")) Object.keys(events).filter(k => events[k] && /^\d{4}-\d\d-\d\d$/.test(k)).forEach(k => rows.push({ k, e: "", t: "バレー", n: normName("バレー"), col: P.ink2, vol: true }));
+            // 並べる日: 今日をまたいで続いている予定は「今日」として(今日より前の行の下に沈まないように)
+            const tk = formatDateKey(new Date());
+            rows.forEach(r => { r.o = r.k < tk && r.e && r.e >= tk ? tk : r.k; });
+            return rows.sort((a, b) => (a.o < b.o ? 1 : a.o > b.o ? -1 : 0));
+        }
+        // 題名が1つにしぼれたとき: 「前回N日前 · M日ごと · 次N日後」(M = 過去の平均の間隔。当てはまらないところは出さない)
+        function protoFindStat(rows, todayKey) {
+            if (!rows.length || new Set(rows.map(r => r.n)).size !== 1) return "";
+            const ds = [...new Set(rows.map(r => r.k))].sort(), day = k => new Date(k + "T00:00:00").getTime();
+            const past = ds.filter(k => k < todayKey), fut = ds.filter(k => k >= todayKey), t0 = day(todayKey), parts = [];
+            if (past.length) parts.push(`前回${Math.round((t0 - day(past[past.length - 1])) / 864e5)}日前`);
+            if (past.length >= 2) parts.push(`${Math.round((day(past[past.length - 1]) - day(past[0])) / 864e5 / (past.length - 1))}日ごと`);
+            if (fut.length) { const n = Math.round((day(fut[0]) - t0) / 864e5); parts.push(n ? `次${n}日後` : "次は今日"); }
+            return parts.join(" · ");
+        }
+        function protoFindRun() {
+            const inp = document.getElementById("prFindIn"), list = document.getElementById("prFindList"), stat = document.getElementById("prFindStat");
+            if (!inp || !list || !stat) return;
+            const tk = formatDateKey(new Date()), rows = protoFindHits(inp.value), MAX = 200;
+            const st = protoFindStat(rows, tk);
+            stat.textContent = st; stat.style.display = st ? "" : "none";
+            const WJ = ["日", "月", "火", "水", "木", "金", "土"], md = k => `${+k.slice(5, 7)}/${+k.slice(8)}`;
+            let html = "", sep = false;
+            rows.slice(0, MAX).forEach(r => {
+                const past = (r.e || r.k) < tk;
+                if (past && !sep) { sep = true; if (html) html += `<i class="prf-sep" aria-hidden="true"></i>`; }   // ここから下は今日より前
+                const w = WJ[new Date(r.k + "T00:00:00").getDay()];
+                html += `<button type="button" class="prf-row${past ? " past" : ""}" data-k="${escapeHtml(r.k)}" onclick="protoFindGo(this.dataset.k)"><i class="prf-dot${r.vol ? " vol" : ""}" style="--c:${r.col}"></i><span class="prf-d">${md(r.k)}<small>${w}</small>${r.e ? `<small>–${md(r.e)}</small>` : ""}</span><span class="prf-t">${escapeHtml(r.t)}</span></button>`;
+            });
+            if (!rows.length && inp.value.trim()) html = `<div class="prf-none">なし</div>`;
+            list.innerHTML = html;
+        }
+        // 結果を押した: その日へ(月も合わせる)
+        function protoFindGo(k) {
+            if (!/^\d{4}-\d\d-\d\d$/.test(k)) return;
+            protoFindClose();
+            const [y, m] = k.split("-").map(Number);
+            protoRowsTop = 0; protoYM = [y, m];
+            if (k !== selectedDate) selectDate(k);
+            renderProto();
+        }
+        // 入れた予定がバレーと重なったら(時間が重なる / 何日も続く予定にバレーの日が入る)、「×にする」を出す
+        function protoVolClash(r) {
+            try {
+                const who = surveyWho(); if (!who || !r || !r.sd) return;
+                const tk = formatDateKey(new Date());
+                const days = []; { const d = new Date(r.sd + "T00:00:00"), e = r.ed || r.sd; for (let i = 0; i < 60; i++) { const k = formatDateKey(d); if (k > e) break; days.push(k); d.setDate(d.getDate() + 1); } }
+                const hit = days.find(k => {
+                    if (k < tk || !events[k]) return false;
+                    const mem = (attendanceByDate[k] || []).find(m => m.name === who);
+                    if (!mem || mem.status === "来ない") return false;
+                    if (r.ed) return true;   // 何日も続く予定(旅行など)
+                    if (r.allDay || !r.st) return false;   // 1日だけの終日予定(有休など)は聞かない
+                    const prs = (reservations[k] || []).map(x => parseTimeRangeMin(x.time)).filter(Boolean); if (!prs.length) return false;
+                    const vs = Math.min(...prs.map(x => x.s)), ve = Math.max(...prs.map(x => x.e));
+                    const toM = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+                    const ps = toM(r.st), pe = r.et ? toM(r.et) : ps + 60;
+                    return ps < ve && pe > vs;
+                });
+                if (!hit) return;
+                const [, mm, dd] = hit.split("-").map(Number);
+                protoChip(`<span style="opacity:.7">${mm}/${dd} バレー</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>にする`, () => protoAns(hit, "来ない"), 6000);
+            } catch (e) { console.warn(e); }
+        }
+        // ------- 題名の候補: 前に入れた予定から、打ちはじめと合うもの(いつもの時間・色ごと) -------
+        var pinSug = null;
+        const pinKana = t => String(t || "").toLowerCase().replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).replace(/\s/g, "");
+        function pinSugFind(T) {
+            const q = pinKana(T); if (!q) return null;
+            const g = new Map();
+            planList.forEach(p => {
+                const t = (p.title || "").trim(); if (!t || p.deleted) return;
+                const kt = pinKana(t); if (!kt.startsWith(q)) return;
+                const o = g.get(t) || { t, n: 0, last: "", times: new Map(), cols: new Map() };
+                o.n++; if ((p.startDate || "") > o.last) o.last = p.startDate || "";
+                const okT = x => /^\d{1,2}:\d{2}$/.test(String(x || ""));
+                const tm = planTimed(p) && okT(p.start) ? `${p.start}|${okT(p.end) ? p.end : ""}` : "|"; o.times.set(tm, (o.times.get(tm) || 0) + 1);
+                const c = +p.color || 0; o.cols.set(c, (o.cols.get(c) || 0) + 1);
+                g.set(t, o);
+            });
+            if (!g.size) return null;
+            const best = [...g.values()].sort((a, b) => b.n - a.n || (b.last > a.last ? 1 : -1))[0];
+            const top = m => [...m.entries()].sort((a, b) => b[1] - a[1])[0][0];
+            const [st, et] = top(best.times).split("|");
+            const r = { t: best.t, st, et, col: top(best.cols) };
+            // 題名がもう同じなら、時間か色がまだ入っていないときだけ出す(いつもの時間・色を入れるため)
+            if (pinKana(best.t) === q && !((r.st && !pinVal("pinH").trim()) || (r.col && r.col !== planColor))) return null;
+            return r;
+        }
+        function pinSugShow() {
+            const b = document.getElementById("pinTS"); if (!b) return;
+            pinSug = pinEditId == null ? pinSugFind(pinVal("pinT").trim()) : null;
+            if (!pinSug) { b.style.display = "none"; return; }
+            const cc = (window.PROTO_C || [])[pinSug.col] || "currentColor";
+            b.innerHTML = `<i style="background:${cc}"></i>${escapeHtml(pinSug.t)}${pinSug.st ? `<em>${escapeHtml(pinSug.st)}</em>` : ""}`;
+            b.style.display = "flex";
+        }
+        function pinSugApply() {
+            const s = pinSug; if (!s) return;
+            protoHaptic();
+            const t = document.getElementById("pinT"), h = document.getElementById("pinH");
+            t.value = s.t; if (s.st && !h.value.trim()) h.value = pinHDigits(s.st, s.et);
+            if (s.col) setPlanColor(s.col);
+            pinInput();
+            try { t.focus(); } catch (e) { /* ignore */ }
         }
 
         // ------- 試作UIのアンケート -------
