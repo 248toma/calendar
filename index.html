@@ -15455,8 +15455,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const wait = Math.max(0, ptrAfterReloadUntil - Date.now()); ptrAfterReloadUntil = 0;
             setTimeout(hidePtrSpin, wait);
         }
+        // 上に重なる編集の画面が開いているか(開いているあいだは、ほかの人の変更での読み直しを待つ)
+        function editOverlayOpen() { return ["rotOv", "fxOv", "pairOv"].some(id => { const el = document.getElementById(id); return !!el && getComputedStyle(el).display !== "none"; }); }
+        var flushWaitT = 0;
         function flushPendingRemote() {
             if (!firestorePendingValues) return;
+            if (editOverlayOpen()) { clearTimeout(flushWaitT); flushWaitT = setTimeout(flushPendingRemote, 3000); return; }   // 閉じてから読み直す
             const rv = firestorePendingValues;
             try { if (realAdmin()) addRemoteDiffToLog(rv); } catch (e) { console.warn("他の人の変更をログに入れられませんでした。", e); }
             firestorePendingValues = null;
@@ -15779,7 +15783,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 19:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 17:05";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -15925,11 +15929,13 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const TH = 70;
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
-            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #prFind, #prFree, #prCal .pr-mhead, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
+            // 上に重なる画面(ローテ・フォーム分析・ペアなど)が開いているあいだは、引っぱって更新しない(編集の途中で読み直さない)
+            const ptrOverlayOpen = () => ["rotOv", "fxOv", "pairOv", "surveyOv", "daySheet"].some(id => { const el = document.getElementById(id); return !!el && getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden"; });
+            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #prFind, #prCal .pr-mhead, #rotOv, #fxOv, #pairOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
                 || document.body.style.overflow === "hidden";
             const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
             document.addEventListener("touchstart", e => {
-                active = e.touches.length === 1 && (window.scrollY || 0) <= 0 && !blocked(e.target);
+                active = e.touches.length === 1 && (window.scrollY || 0) <= 0 && !blocked(e.target) && !ptrOverlayOpen();
                 pulling = false; armed = false;
                 if (active) { sy = e.touches[0].clientY; sx = e.touches[0].clientX; }
             }, { passive: true });
