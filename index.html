@@ -3609,6 +3609,10 @@
         #prDayInfo.pr-flash { animation: prFlash 1.2s ease-out both; }
         .why-cap { margin-top: 8px; font-size: 11px; color: var(--ink-3); }
         .why-row { row-gap: 4px; padding: 6px 0; }
+        .why-det > .why-row { grid-template-columns: 1fr 3em 4.6em; }
+        .why-row.few { opacity: .5; }
+        .wr-bar i { background: var(--accent); opacity: .55; }   /* 勝率: 左から塗る。50% 未満は灰色(分析画面の中では赤) */
+        .wr-bar i.lo { background: var(--ink-3); }
         .why-row .why-nm { grid-column: 1 / -1; white-space: normal; overflow: visible; text-overflow: clip; }
         .why-row .stg-d { white-space: nowrap; text-align: right; }
         .why-row .why-nt { grid-column: 1 / -1; margin-top: -2px; font-size: 10.5px; color: var(--ink-3); }
@@ -3710,8 +3714,8 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel {
-            --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0;
+        #settingsPanel, #fxOv {   /* フォーム分析(#fxOv)も同じ色と影を使う */
+            --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
             --sn-eh: rgba(255,255,255,.9); --sn-el: rgba(120,132,155,.22); --sn-line: rgba(150,160,180,.18);
@@ -3724,8 +3728,8 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel {
-            --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff;
+        body.dark #settingsPanel, body.dark #fxOv {
+            --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
             --sn-eh: rgba(255,255,255,.08); --sn-el: rgba(0,0,0,.45); --sn-line: rgba(255,255,255,.07);
@@ -3821,6 +3825,271 @@
             #settingsPanel .st-av { width: 42px; height: 42px; }
             #settingsPanel .st-rows { padding: 4px 14px; }
             #settingsPanel .st-seg > button { min-width: 40px; padding: 0 10px; }
+        }
+        /* ===== 分析(11/06): 設定と同じ、やわらかい凹凸。カード=出っぱり、棒・切り替え=へこんだ溝。色は青ひとつ(負け・マイナスだけくすんだ赤) ===== */
+        /*   変数は設定の --sn-* をそのまま使う。分析(#settingsPanel[data-solo="ana"])とフォーム分析(#fxOv)の中だけ、緑のアクセントを青に・面の色を背景にそろえる */
+        #settingsPanel[data-solo="ana"], #fxOv { --accent: var(--sn-acc); --accent-ink: var(--sn-acc); --accent-soft: color-mix(in srgb, var(--sn-acc) 16%, var(--sn-bg)); --bg: var(--sn-bg); --surface: var(--sn-bg); --ink: var(--sn-ink); --ink-2: var(--sn-ink2); --ink-3: var(--sn-ink3); --line: var(--sn-line); --sink: var(--sn-insetS); --raise-xs: var(--sn-raiseXS); --raise-sm: var(--sn-raiseS);
+            --sn-insetXS: inset 2px 2px 4px var(--sn-dk), inset -2px -2px 4px var(--sn-lt);
+            --sn-fill: linear-gradient(90deg, color-mix(in srgb, var(--sn-acc) 72%, var(--sn-bg)), var(--sn-acc));   /* 棒の青 */
+            --sn-fillN: linear-gradient(90deg, color-mix(in srgb, var(--sn-neg) 72%, var(--sn-bg)), var(--sn-neg));   /* 棒の赤(50% 未満) */
+            --sn-chev: 7px; }
+        body.dark #settingsPanel[data-solo="ana"], body.dark #fxOv { --sn-insetXS: inset 1.5px 1.5px 3px rgba(0,0,0,.42), inset -1px -1px 2px rgba(255,255,255,.05); }   /* 暗いときの細い溝は、影を浅く
+        #settingsPanel[data-solo="ana"] #rosterStats { padding: 0 0 8px; }
+        /* 上の欄: 期間とゲーム/試合は、へこんだ溝の切り替え(設定の st-seg と同じ) */
+        #settingsPanel[data-solo="ana"] #rosterStats .rs-top { flex-wrap: nowrap; gap: 10px; margin: 4px 0 22px; padding: 0; }
+        #settingsPanel[data-solo="ana"] :is(.rs-top .rs-seg2, .rs-top .mt-unit-seg, .why-sort) { display: inline-flex; gap: 2px; margin: 0; padding: 3px; border-radius: 17px; background: var(--sn-pit); box-shadow: var(--sn-insetS); flex: none; }
+        #settingsPanel[data-solo="ana"] :is(.rs-top .rs-seg2, .rs-top .mt-unit-seg, .why-sort) > button { height: 28px; min-width: 0; padding: 0 11px; border: none; border-radius: 14px; background: transparent; box-shadow: none; color: var(--sn-ink3); font: 700 11px var(--sn-en); cursor: pointer; transition: color .2s ease; }
+        #settingsPanel[data-solo="ana"] :is(.rs-top .rs-seg2, .rs-top .mt-unit-seg, .why-sort) > button.on { color: var(--sn-ink); background: var(--sn-dome); box-shadow: var(--sn-raiseXS); }
+        /* フォーム分析へ: 出っぱった行。左に、へこんだ丸の中の青いアイコン */
+        #settingsPanel[data-solo="ana"] .fx-open { display: flex; align-items: center; gap: 14px; width: 100%; height: 66px; min-height: 0; margin: 0 0 22px; padding: 0 22px 0 13px; border: none; border-radius: 26px; background: var(--sn-dome); box-shadow: var(--sn-raise); color: var(--sn-ink2); font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; }
+        #settingsPanel[data-solo="ana"] .fx-open > span { flex: 1 1 auto; min-width: 0; }
+        #settingsPanel[data-solo="ana"] .fx-open:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #settingsPanel[data-solo="ana"] .ana-ic { flex: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
+        /* 開け閉めの印: 設定の行と同じ、細い「く」 */
+        #settingsPanel[data-solo="ana"] :is(.fx-open, #rosterStats > details.note-details > summary)::after { content: ""; flex: none; width: var(--sn-chev); height: var(--sn-chev); margin: 0 3px 0 auto; padding: 0; border: solid var(--sn-ink3); border-width: 0 1.8px 1.8px 0; border-radius: 1px; font-size: 0; transform: rotate(-45deg); transition: transform .18s ease; }
+        #settingsPanel[data-solo="ana"] #rosterStats > details.note-details[open] > summary::after { transform: rotate(45deg); }
+        /* 各項目: 出っぱった大きいカード */
+        #settingsPanel[data-solo="ana"] #rosterStats > details.note-details { margin: 0 0 22px; border: none; border-radius: 26px; background: var(--sn-dome); box-shadow: var(--sn-raise); overflow: visible; }
+        #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > summary { gap: 10px; min-height: 62px; padding: 0 22px; font-size: 14px; font-weight: 700; color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] #rosterStats > details.note-details[open] > summary { border-bottom: none; color: var(--sn-ink); background: linear-gradient(var(--sn-line), var(--sn-line)) no-repeat 22px 100% / calc(100% - 44px) 1px; }
+        #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > :not(summary) { margin-left: 20px; margin-right: 20px; }
+        #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > :last-child { margin-bottom: 20px; }
+        #settingsPanel[data-solo="ana"] #rosterStats summary .rs-days { font: 600 10.5px var(--sn-en); color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .chem { margin-top: 0; }
+        /* 説明は、出っぱった丸い「?」の中。開くと、へこんだ枠に小さな字 */
+        #settingsPanel[data-solo="ana"] .rs-help { margin-top: 16px; }
+        #settingsPanel[data-solo="ana"] .rs-help > summary { width: 30px; height: 30px; border-radius: 50%; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink3); font: 700 12px var(--sn-en); }
+        #settingsPanel[data-solo="ana"] .rs-help[open] > summary { background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .rs-help > div { margin: 12px 0 0; padding: 14px 16px; border-radius: 18px; background: var(--sn-pit); box-shadow: var(--sn-insetS); font-size: 11.5px; line-height: 1.7; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .why-help h6, #settingsPanel[data-solo="ana"] .why-help b { color: var(--sn-ink2); }
+        /* 強さ: へこんだ横の溝に青い棒。縦線 = パラメータ */
+        #settingsPanel[data-solo="ana"] .stg-row { grid-template-columns: 3.4em minmax(0, 1fr) 2.4em 2.6em; gap: 10px; min-height: 30px; font-size: 12px; color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .stg-row .rs-nm, #settingsPanel[data-solo="ana"] .rs-row .rs-nm { font: 600 12px var(--sn-en); color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .stg-bar { height: 12px; border-radius: 6px; background: var(--sn-pit); box-shadow: var(--sn-insetXS); }
+        #settingsPanel[data-solo="ana"] .stg-bar i { top: 2px; bottom: 2px; left: 2px; max-width: calc(100% - 4px); border-radius: 4px; background: var(--sn-fill); opacity: 1; }
+        #settingsPanel[data-solo="ana"] .stg-bar b { top: -3px; bottom: -3px; width: 2px; background: var(--sn-ink3); opacity: .7; }
+        #settingsPanel[data-solo="ana"] .stg-v { font: 700 12.5px var(--sn-en); color: var(--sn-ink); }
+        #settingsPanel[data-solo="ana"] .stg-d { font: 600 10.5px var(--sn-en); color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .stg-d.up { color: var(--sn-acc); }
+        /* 勝ち負けの要因: 行ごとに名前 → 溝の棒・%・勝敗。50% 未満は赤 */
+        #settingsPanel[data-solo="ana"] .why-cap { margin: 14px 2px 12px; font-size: 11px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .why-sort { margin: 0 0 6px; }
+        #settingsPanel[data-solo="ana"] .why-row { padding: 13px 0 12px; row-gap: 7px; border-top: 1px solid var(--sn-line); }
+        #settingsPanel[data-solo="ana"] .rs-tbl > :first-child > .why-row, #settingsPanel[data-solo="ana"] .rs-tbl > .why-row:first-child { border-top: none; }
+        #settingsPanel[data-solo="ana"] .why-det > .why-row { grid-template-columns: minmax(0, 1fr) 3.1em 4.4em; }
+        #settingsPanel[data-solo="ana"] .why-row .why-nm { font: 600 12.5px/1.5 'Noto Sans JP', system-ui, sans-serif; color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .why-open { margin-left: 8px; padding: 3px 9px; border-radius: 10px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); font-size: 10px; font-weight: 700; line-height: 1.4; color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .why-det[open] .why-open { background: var(--sn-pit); box-shadow: var(--sn-insetXS); }
+        #settingsPanel[data-solo="ana"] .wr-bar i { background: var(--sn-fill); opacity: 1; }
+        #settingsPanel[data-solo="ana"] .wr-bar i.lo { background: var(--sn-fillN); }
+        #settingsPanel[data-solo="ana"] .wr-bar b { top: 1px; bottom: 1px; width: 1.5px; background: var(--sn-ink3); opacity: .55; }
+        #settingsPanel[data-solo="ana"] .why-row .stg-v { font-size: 13px; }
+        #settingsPanel[data-solo="ana"] .why-row .why-nt { margin: 0; font-size: 10px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .rs-tbl > .why-row { padding: 11px 0; font-size: 11px; color: var(--sn-ink3) !important; }
+        #settingsPanel[data-solo="ana"] .rs-tbl > .why-row .why-nm { font-size: 12px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .rs-tbl > .why-row > span:last-child { font-size: 10.5px !important; }
+        /* 「試合を見る」: へこんだ枠の中に試合を並べる。◯ = 青、× = 赤 */
+        #settingsPanel[data-solo="ana"] .why-list { margin: 2px 0 14px; padding: 12px 14px; border-radius: 20px; background: var(--sn-pit); box-shadow: var(--sn-inset); }
+        #settingsPanel[data-solo="ana"] .why-tgh { border-bottom: 1px solid var(--sn-line); color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .why-tgh b:first-child { font: 700 11px var(--sn-en); color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .why-it { padding: 9px 0; border-top: 1px solid var(--sn-line); }
+        #settingsPanel[data-solo="ana"] .why-it:first-child, #settingsPanel[data-solo="ana"] .why-tgh + .why-it { border-top: none; }
+        #settingsPanel[data-solo="ana"] .why-it > div { flex-wrap: wrap; row-gap: 2px; }
+        #settingsPanel[data-solo="ana"] .why-it > div b { font: 700 11px var(--sn-en); color: var(--sn-ink); }
+        #settingsPanel[data-solo="ana"] .why-it > div span { font-size: 11px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .why-it > div em { margin-left: auto; font-size: 11px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .why-it > div em.w { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .why-it > div em.l { color: var(--sn-neg); }
+        #settingsPanel[data-solo="ana"] .why-it small { font-size: 10.5px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .why-tg { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .why-lnote { margin-top: 8px; font-size: 10px; color: var(--sn-ink3); }
+        /* 相性: へこんだ丸の中に図。線 = 青(勝ち越し)/ 赤の点線(負け越し) */
+        #settingsPanel[data-solo="ana"] .chem-svg { max-width: 330px; margin: 18px auto 6px; border-radius: 50%; background: var(--sn-pit); box-shadow: var(--sn-inset); }
+        #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > .chem-svg { width: calc(100% - 40px); margin: 18px auto 6px; }   /* カードの左右の余白の分だけ細く(はみ出さない) */
+        #settingsPanel[data-solo="ana"] .chem-svg text { font-family: var(--sn-en); font-weight: 600; fill: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .chem-svg text.on { fill: var(--sn-acc); font-weight: 700; }
+        #settingsPanel[data-solo="ana"] .chem-svg .nd { fill: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .chem-svg .nd.on { fill: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .chem-svg line.good { stroke: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .chem-svg line.bad { stroke: var(--sn-neg); stroke-dasharray: 2 4; }
+        #settingsPanel[data-solo="ana"] .chem-svg text.pc { font-weight: 700; stroke: var(--sn-bg); }
+        #settingsPanel[data-solo="ana"] .chem-svg text.pc.g { fill: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .chem-svg text.pc.b { fill: var(--sn-neg); }
+        #settingsPanel[data-solo="ana"] .chem-hint { margin: 10px 0 0; font-size: 11px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .chem-hint b { font-weight: 700; color: var(--sn-ink2) !important; }
+        #settingsPanel[data-solo="ana"] .chem-list { gap: 6px 18px; margin: 12px 2px 0; }
+        #settingsPanel[data-solo="ana"] .chem-list h5 { margin: 10px 0 2px; font-size: 10.5px; letter-spacing: .06em; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .chem-list div { min-height: 22px; align-items: baseline; }
+        #settingsPanel[data-solo="ana"] .chem-list div span { font: 600 12px var(--sn-en); color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .chem-list div b { font: 700 12px var(--sn-en); }
+        #settingsPanel[data-solo="ana"] .chem-list div b.g { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .chem-list div b.b { color: var(--sn-neg); }
+        #settingsPanel[data-solo="ana"] .chem-list div small { font: 500 10px var(--sn-en); color: var(--sn-ink3); }
+        /* チーム分けの提案: チームはへこんだ枠2つ。キーの人の印は、出っぱった小さな青い札 */
+        #settingsPanel[data-solo="ana"] .prop-teams { gap: 12px; }
+        #settingsPanel[data-solo="ana"] .prop-teams > div { min-width: 0; padding: 14px 14px 12px; border-radius: 20px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #settingsPanel[data-solo="ana"] .prop-teams h5 { margin: 0 0 6px; font-size: 10.5px; letter-spacing: .08em; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .prop-teams span { font: 500 13px/1.9 var(--sn-en); color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .prop-teams span.key { font-weight: 700; color: var(--sn-ink); }
+        #settingsPanel[data-solo="ana"] .prop-teams span em { width: fit-content; max-width: 100%; margin: 0 0 5px; padding: 2px 8px; border-radius: 9px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); font: 700 9.5px/1.5 'Noto Sans JP', system-ui, sans-serif; color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .prop-why { margin-top: 18px; font-size: 12px; color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .prop-why h6 { margin: 0 2px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .prop-why ul { margin: 0; padding: 0; list-style: none; }
+        #settingsPanel[data-solo="ana"] .prop-why li { margin: 0; padding: 9px 2px; border-top: 1px solid var(--sn-line); line-height: 1.6; }
+        #settingsPanel[data-solo="ana"] .prop-why li:first-child { border-top: none; }
+        #settingsPanel[data-solo="ana"] .prop-why li b { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .prop-why li small, #settingsPanel[data-solo="ana"] .prop-why > small { margin-top: 1px; font-size: 10.5px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .prop-avg { margin: 6px 0 0; padding: 10px 14px; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetXS); gap: 4px; }
+        #settingsPanel[data-solo="ana"] .prop-avg div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: baseline; }
+        #settingsPanel[data-solo="ana"] .prop-avg span { min-width: 0; font-size: 11px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .prop-avg b { font: 600 11px var(--sn-en); color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] .prop-info { margin-top: 14px; display: grid; gap: 8px; font-size: 11px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .prop-win { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+        #settingsPanel[data-solo="ana"] .prop-wbar { position: relative; height: 12px; border-radius: 6px; background: var(--sn-pit); box-shadow: var(--sn-insetXS); }
+        #settingsPanel[data-solo="ana"] .prop-wbar i { position: absolute; left: 2px; top: 2px; bottom: 2px; max-width: calc(100% - 4px); border-radius: 4px; background: var(--sn-fill); }
+        #settingsPanel[data-solo="ana"] .prop-wbar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1.5px; background: var(--sn-ink3); opacity: .55; }
+        #settingsPanel[data-solo="ana"] .prop-info b { font: 700 12.5px var(--sn-en); color: var(--sn-ink); }
+        #settingsPanel[data-solo="ana"] .prop-fresh { display: flex; justify-content: space-between; align-items: baseline; }
+        #settingsPanel[data-solo="ana"] .prop-acts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; margin-top: 18px; }
+        /* 主なボタン: 出っぱった丸い札。押すとへこむ */
+        #settingsPanel[data-solo="ana"] :is(.prop-acts, .rs-export) .st-btn { justify-content: center; height: 44px; padding: 0 18px; border: none; border-radius: 22px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #settingsPanel[data-solo="ana"] :is(.prop-acts .prop-go, .rs-export .st-btn) { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] :is(.prop-acts, .rs-export) .st-btn:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #settingsPanel[data-solo="ana"] .rs-export { margin: 26px 0 0; }
+        #settingsPanel[data-solo="ana"] .rs-export .st-btn small { margin-left: 4px; font-size: 10px; font-weight: 600; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .rs-build { margin: 18px 0 0; font: 600 9.5px var(--sn-en); letter-spacing: .14em; color: var(--sn-ink3); opacity: .8; }
+        /* 参加率・回答率・勝率の表: へこんだ溝に、うすい青(勝率 50% 未満は、うすい赤) */
+        #settingsPanel[data-solo="ana"] .rs-tbl { gap: 4px; }
+        #settingsPanel[data-solo="ana"] .rs-row { grid-template-columns: 3.4em repeat(3, minmax(0, 1fr)); gap: 8px; min-height: 28px; }
+        #settingsPanel[data-solo="ana"] .rs-head { margin-bottom: 4px; font-size: 10.5px; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] .rs-h { font-weight: 600; }
+        #settingsPanel[data-solo="ana"] .rs-h.on { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] .rs-c { height: 22px; border-radius: 11px; background: var(--sn-pit); box-shadow: var(--sn-insetXS); }
+        #settingsPanel[data-solo="ana"] .rs-bar { top: 3px; bottom: 3px; left: 3px; max-width: calc(100% - 6px); border-radius: 8px; opacity: 1; background: color-mix(in srgb, var(--sn-acc) 26%, var(--sn-bg)) !important; }
+        #settingsPanel[data-solo="ana"] .rs-bar.w.lo { background: color-mix(in srgb, var(--sn-neg) 26%, var(--sn-bg)) !important; }
+        #settingsPanel[data-solo="ana"] .rs-c b { padding-left: 9px; font: 700 10.5px/22px var(--sn-en); color: var(--sn-ink); }
+        #settingsPanel[data-solo="ana"] .rs-c b small { font: 500 8.5px var(--sn-en); color: var(--sn-ink3); }
+        /* 試合の履歴: 日付は小さな見出し、試合は線で区切った行 */
+        #settingsPanel[data-solo="ana"] #matchHistory { margin-top: 10px; }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-day { margin: 16px 2px 6px; font: 700 11px var(--sn-en); letter-spacing: .06em; color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-day:first-child { margin-top: 4px; }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-list { gap: 12px; }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-grp { padding: 12px 14px; border-radius: 20px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-grp.warn { box-shadow: var(--sn-insetS), inset 0 0 0 1.5px color-mix(in srgb, var(--sn-neg) 55%, transparent); }   /* 注意はオレンジでなく、くすんだ赤の細い線 */
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-grp.warn .mt-gs { color: var(--sn-neg); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-gt { font-family: var(--sn-en); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-gg { border-top: 1px solid var(--sn-line); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-gs, #settingsPanel[data-solo="ana"] #matchHistory .mt-no { font-family: var(--sn-en); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-diffrow { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-del.adm { color: var(--sn-ink3); }
+        #settingsPanel[data-solo="ana"] #matchHistory select.mt-gsel { border-radius: 12px !important; background: var(--sn-dome) !important; box-shadow: var(--sn-raiseXS) !important; color: var(--sn-ink2); }
+        @media (max-width: 389px) {
+            #settingsPanel[data-solo="ana"] :is(.rs-top .rs-seg2, .rs-top .mt-unit-seg, .why-sort) > button { padding: 0 8px; }
+            #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > :not(summary) { margin-left: 16px; margin-right: 16px; }
+            #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > summary { padding: 0 18px; }
+            #settingsPanel[data-solo="ana"] .stg-row { gap: 8px; }
+            #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > .chem-svg { width: calc(100% - 32px); }
+            #settingsPanel[data-solo="ana"] .rs-row { grid-template-columns: 3em repeat(3, minmax(0, 1fr)); gap: 6px; }
+            #settingsPanel[data-solo="ana"] .prop-teams { gap: 10px; }
+            #settingsPanel[data-solo="ana"] .prop-teams > div { padding: 12px 11px 10px; }
+            #settingsPanel[data-solo="ana"] .prop-acts .st-btn { padding: 0 14px; font-size: 12px; }
+        }
+        /* ===== フォーム分析(#fxOv): 同じ凹凸。見出しは英字と出っぱった ×、結果はカード、切り替えは溝 ===== */
+        #fxOv { background: var(--sn-bg); color: var(--sn-ink); font-family: 'Noto Sans JP', system-ui, sans-serif; overflow-x: hidden; }
+        #fxOv .fx-wrap { padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px calc(env(safe-area-inset-bottom, 0px) + 40px); }
+        #fxOv .fx-head { margin: 0 0 18px; }
+        #fxOv .fx-head b { font: 700 15px/1 var(--sn-en); letter-spacing: .1em; color: var(--sn-ink2); padding-left: 4px; }
+        #fxOv .fx-x { width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 14px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); cursor: pointer; }
+        #fxOv .fx-x:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #fxOv button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+        /* 動画: へこんだ枠の中 */
+        #fxOv .fx-cvbox { padding: 6px; border-radius: 26px; background: var(--sn-pit); box-shadow: var(--sn-inset); }
+        #fxOv .fx-cvbox canvas { border-radius: 20px; background: #000; }
+        #fxOv .fx-stick.on { background: var(--sn-bg); box-shadow: 0 -80px 0 0 var(--sn-bg); }
+        /* コマ送り ‹ › は出っぱった丸、シークバーはへこんだ溝と出っぱったつまみ */
+        #fxOv .fx-ctrl { gap: 10px; margin: 14px 0 12px; }
+        #fxOv .fx-ctrl > button { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); font-size: 20px; line-height: 1; }
+        #fxOv .fx-ctrl > button:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #fxOv .fx-ctrl span { font: 600 11px var(--sn-en); color: var(--sn-ink3); }
+        #fxOv input[type=range] { -webkit-appearance: none; appearance: none; height: 12px; margin: 4px 0; border-radius: 6px; background: var(--sn-pit); box-shadow: var(--sn-insetXS); outline: none; }
+        #fxOv input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border: none; border-radius: 50%; background: radial-gradient(circle, var(--sn-acc) 0 3px, transparent 3.5px), var(--sn-dome); box-shadow: var(--sn-raiseXS); cursor: pointer; }
+        #fxOv input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: none; border-radius: 50%; background: radial-gradient(circle, var(--sn-acc) 0 3px, transparent 3.5px), var(--sn-dome); box-shadow: var(--sn-raiseXS); }
+        #fxOv .fx-ctrl .fx-tk, #fxOv .fx-tk { height: 18px; border-radius: 9px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink3); font-size: 9.5px; font-weight: 700; }
+        #fxOv .fx-ctrl .fx-tk.on { background: var(--sn-pit); box-shadow: var(--sn-insetXS); color: var(--sn-acc); }
+        #fxOv .fx-tl { height: 22px; margin-top: 4px; }
+        #fxOv .fx-bd { background: var(--sn-acc); }
+        /* 再生: 出っぱった札。速さは溝の切り替え */
+        #fxOv .fx-play { gap: 10px; margin: 0 0 14px; }
+        #fxOv .fx-play > button { height: 38px; padding: 0 16px; border-radius: 19px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); font-size: 12.5px; font-weight: 700; }
+        #fxOv .fx-play > button.on { background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
+        #fxOv .fx-play .fx-sp, #fxOv .fx-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 17px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #fxOv .fx-play .fx-sp button, #fxOv .fx-seg button { height: 28px; padding: 0 10px; border-radius: 14px; background: transparent; box-shadow: none; color: var(--sn-ink3); font: 700 11px var(--sn-en); }
+        #fxOv .fx-play .fx-sp button.on, #fxOv .fx-seg button.on { background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink); }
+        /* シーン: 出っぱった札が横に並ぶ(選んだものは、へこんで青) */
+        #fxOv .fx-edbar { gap: 10px; margin: 0 0 6px; }
+        #fxOv .fx-edl { font-size: 11px; color: var(--sn-ink3); }
+        #fxOv .fx-edchips { gap: 8px; padding: 6px 6px 10px; margin: 0 -6px; }
+        #fxOv .fx-edchips button { height: 32px; padding: 0 13px; border-radius: 16px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink2); font-size: 12px; font-weight: 700; }
+        #fxOv .fx-edchips button.on { background: var(--sn-pit); box-shadow: var(--sn-insetXS); color: var(--sn-acc); }
+        #fxOv .fx-edrow, #fxOv .fx-balltap, #fxOv .fx-notice { margin: 8px 0 12px; padding: 12px 16px; border-radius: 20px; background: var(--sn-pit); box-shadow: var(--sn-insetS); font-size: 11.5px; line-height: 1.6; color: var(--sn-ink3); }
+        #fxOv .fx-edrow > span button, #fxOv .fx-balltap button, #fxOv .fx-set { height: 32px; padding: 0 12px; border: none; border-radius: 16px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink2); font-size: 11.5px; font-weight: 700; }
+        #fxOv .fx-edrow .fx-go3 { color: var(--sn-acc); }
+        #fxOv .fx-guide { color: var(--sn-acc); }
+        #fxOv .fx-guide.fx-sub { margin: 4px 4px 14px; font-size: 11px; font-weight: 600; color: var(--sn-ink3); }
+        #fxOv .fx-diag { font-size: 10.5px; }
+        #fxOv .fx-warn { color: var(--sn-neg); }
+        /* 結果とカード: 出っぱった大きいカード。数字は Montserrat */
+        #fxOv .fx-wrap > .fx-grp, #fxOv .fx-card, #fxOv .fx-tips { margin: 0 0 22px; padding: 0 20px 10px; border-radius: 26px; background: var(--sn-dome); box-shadow: var(--sn-raise); overflow: visible; }
+        #fxOv .fx-card { padding: 0; }
+        #fxOv .fx-wrap > .fx-grp > h5 { margin: 0 -20px 2px; padding: 14px 20px 12px; min-height: 58px; border-bottom: none; background: linear-gradient(var(--sn-line), var(--sn-line)) no-repeat 20px 100% / calc(100% - 40px) 1px; font-size: 14px; font-weight: 700; color: var(--sn-ink); }
+        #fxOv .fx-wrap > .fx-grp > h5 small { margin-top: 3px; font-size: 10.5px; color: var(--sn-ink3); }
+        #fxOv .fx-res > h5 { position: relative; padding-right: 60px !important; }
+        #fxOv .fx-q { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; padding: 0; border: none; border-radius: 50%; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink3); font: 700 12px var(--sn-en); cursor: pointer; }
+        #fxOv.fx-subs .fx-q { background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
+        #fxOv .fx-row { padding: 13px 0; border-top: 1px solid var(--sn-line); }
+        #fxOv .fx-row > span { font-size: 13px; font-weight: 600; color: var(--sn-ink2); }
+        #fxOv .fx-row b { font: 700 14px var(--sn-en); color: var(--sn-ink); }
+        #fxOv .fx-row small { font-size: 10.5px; color: var(--sn-ink3); }
+        /* 結果の各行の説明は、「?」を押したときだけ(合っていない警告は、いつも出す) */
+        #fxOv .fx-res .fx-row small { display: none; }
+        #fxOv.fx-subs .fx-res .fx-row small, #fxOv .fx-res .fx-row small:has(.fx-warn) { display: block; }
+        #fxOv .fx-card > summary { min-height: 58px; padding: 0 20px; font-size: 14px; font-weight: 700; color: var(--sn-ink2); }
+        #fxOv .fx-card > summary > em { font: 600 10.5px var(--sn-en); color: var(--sn-ink3); }
+        #fxOv .fx-card > summary::after { content: ""; flex: none; width: 7px; height: 7px; margin: 0 3px 0 6px; border: solid var(--sn-ink3); border-width: 0 1.8px 1.8px 0; border-radius: 1px; font-size: 0; transform: rotate(-45deg); transition: transform .18s ease; }
+        #fxOv .fx-card[open] > summary { border-bottom: none; color: var(--sn-ink); background: linear-gradient(var(--sn-line), var(--sn-line)) no-repeat 20px 100% / calc(100% - 40px) 1px; }
+        #fxOv .fx-card[open] > summary::after { transform: rotate(45deg); }
+        #fxOv .fx-cbody { padding: 4px 0 14px; }
+        #fxOv .fx-cbody .fx-grp { margin: 0; padding: 0 20px 6px; border-radius: 0; background: none; box-shadow: none; }
+        #fxOv .fx-cbody > .fx-grp + .fx-grp { border-top: 1px solid var(--sn-line); }
+        #fxOv .fx-cbody > .fx-grp > h5 { margin: 0 -20px; padding: 12px 20px 4px; color: var(--sn-ink3); }
+        #fxOv .fx-cbody > .fx-note, #fxOv .fx-cbody > .fx-acts { margin-left: 20px; margin-right: 20px; }
+        #fxOv .fx-note { font-size: 10.5px; color: var(--sn-ink3); }
+        /* 印: 出っぱった札、選んだものはへこんで青い字 */
+        #fxOv .fx-tagrow { border-top: 1px solid var(--sn-line); padding: 10px 0; }
+        #fxOv .fx-tagrow > span { font-size: 11px; color: var(--sn-ink3); }
+        #fxOv .fx-tagrow div { gap: 8px; }
+        #fxOv .fx-tagrow button { height: 32px; padding: 0 13px; border: none; border-radius: 16px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink2); font-size: 12px; font-weight: 600; }
+        #fxOv .fx-tagrow button.on { background: var(--sn-pit); box-shadow: var(--sn-insetXS); color: var(--sn-acc); font-weight: 700; }
+        #fxOv .fx-hrow em { background: var(--sn-pit); box-shadow: var(--sn-insetXS); color: var(--sn-ink2); }
+        /* ボタン: 出っぱった札。保存などの主なボタンは青い字(塗りつぶさない) */
+        #fxOv .st-btn, #fxOv .fx-pickbtn { border: none; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); }
+        #fxOv .st-btn { height: 40px; padding: 0 16px; border-radius: 20px; font-size: 12.5px; }
+        #fxOv .st-btn:active, #fxOv .fx-pickbtn:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #fxOv .fx-go { background: var(--sn-dome) !important; color: var(--sn-acc) !important; }
+        #fxOv .fx-acts { gap: 12px; }
+        #fxOv .fx-pillrow button, #fxOv .fx-pillrow label.fx-pill { border-radius: 17px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink2); }
+        #fxOv .fx-pillrow button.on { background: var(--sn-pit); box-shadow: var(--sn-insetXS); color: var(--sn-acc); }
+        #fxOv .fx-acts-main { margin: 4px 0 22px; }
+        #fxOv .fx-pickbtn { height: 66px; margin: 0 0 22px; border-radius: 26px; color: var(--sn-ink2); }
+        /* 入力・選ぶ欄、図の下地: へこみ */
+        #fxOv select, #fxOv input[type=number] { border: none !important; border-radius: 12px !important; background: var(--sn-pit) !important; box-shadow: var(--sn-insetS); color: var(--sn-ink) !important; }
+        #fxOv .fx-ov svg, #fxOv .fx-curve svg, #fxOv .fx-sticks div { background: var(--sn-pit); box-shadow: var(--sn-insetXS); border-radius: 16px; }
+        #fxOv .fx-verdict b { color: var(--sn-ink); }
+        #fxOv .fx-verdict.ok b, #fxOv .fx-cmp i.hot { color: var(--sn-acc); }
+        @media (max-width: 389px) {
+            #fxOv .fx-wrap { padding-left: 14px; padding-right: 14px; }
+            #fxOv .fx-play > button { padding: 0 12px; }
+            #fxOv .fx-play .fx-sp button { padding: 0 8px; }
         }
 </style>
 </head>
@@ -11916,7 +12185,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function fxOvHtml() {
             const o = fx.ov, e = fx.ev || {};
-            if (!o) return `<div class="fx-vsel"><div class="fx-note" style="margin:12px 0 4px">お手本や前回の動画を選ぶと、上の動画にうすく重ねて、いっしょにスロー再生できます。踏み切り(またはインパクト)の瞬間で、足元と体の大きさをそろえます。</div><div class="fx-pillrow"><label class="fx-pill">重ねる動画を選ぶ<input type="file" accept="video/*" onchange="fxOvPick(this)"></label></div></div>`;
+            if (!o) return `<div class="fx-vsel"><div class="fx-note" style="margin:12px 0 4px">お手本・前回の動画を、うすく重ねて再生</div><div class="fx-pillrow"><label class="fx-pill">重ねる動画を選ぶ<input type="file" accept="video/*" onchange="fxOvPick(this)"></label></div></div>`;
             const kinds = [["takeoff", "踏み切り"], ["impact", "インパクト"]], sl = [[1, "なし"], [4, "1/4"], [8, "1/8"]];
             return `<div class="fx-vsel">
                 <div class="fx-pillrow">${kinds.map(([k, l]) => `<button type="button" class="${o.kind === k ? "on" : ""}" ${e[k] == null ? "disabled" : ""} onclick="fx.ov.kind='${k}';fx.ov.sync=null;fxRender();fxSeek(fx.t)">${l}で合わせる</button>`).join("")}</div>
@@ -12349,7 +12618,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 + row("① 空中で膝を曲げる", w.air, w.airSub) + row("② 足を前に振る", w.leg, w.legSub) + row("③ 腰からくの字", w.hip, w.hipSub)
                 + row("撮った向き", view, view == null ? "" : r.view >= 60 ? "横から撮れています。足・体の折れ・腕の角度が測りやすい向きです" : r.view >= 30 ? "斜めからです。高さ・タイミングは問題なし、足・体の折れは少しずれます" : "正面・後ろ寄りです。高さ・タイミングは測れますが、足・体の折れ・腕の角度は精度が落ちます");
             const fl = w.flow.filter(x => x[1] != null), flowTxt = fl.length ? fl.map(x => `${x[0]} ${x[1] ? "✓" : "△"}`).join(" → ") : "目安";
-            return rows.replace(/\s/g, "") ? `${slowNote}${jumpNote}<div class="fx-grp"><h5>結果<small>${flowTxt}</small></h5>${rows}</div>` : slowNote;
+            return rows.replace(/\s/g, "") ? `${slowNote}${jumpNote}<div class="fx-grp fx-res"><h5>結果<small>${flowTxt}</small><button type="button" class="fx-q" onclick="document.getElementById('fxOv').classList.toggle('fx-subs')" aria-label="説明">?</button></h5>${rows}</div>` : slowNote;   // 各行の説明は「?」で出し入れ(#fxOv の class なので描き直しても残る)
         }
         // ベストなタイミング(トスの自由落下 × ジャンプの頂点)
         function fxTimingSub(r) {
@@ -12413,7 +12682,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxRender() {
             const ov = document.getElementById("fxOv"); if (!ov || !fx) return;
             const names = roster.filter(r => r.position !== GUEST_POS).map(r => r.name);
-            const top = `<div class="fx-head"><b>フォーム分析</b><button type="button" class="fx-x" onclick="closeFormAna()">閉じる</button></div>`;
+            const top = `<div class="fx-head"><b>FORM</b><button type="button" class="fx-x" onclick="closeFormAna()" aria-label="閉じる"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`;   // 見出しは設定・分析と同じ形(英字と出っぱった ×)
             if (fx.step === "pick") {
                 const hist = fxHist().slice().reverse();
                 ov.innerHTML = `<div class="fx-wrap">${top}
@@ -12522,13 +12791,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const inf = pr.info || {}, km = {}; (inf.keys || []).forEach(k => { km[k.n] = k.tags; });
             const fmt = v => v == null ? "—" : (+v).toFixed(2);
             const why = [];
-            (inf.splits || []).forEach(p => why.push(`<li>「${escapeHtml(whyCond(p.a))}」と「${escapeHtml(whyCond(p.b))}」を<b>${p.same ? "別のチーム" : "同じチーム"}</b>に<small>これまで ${p.n}試合中 ${p.k}試合で${p.same ? "同じ" : "反対の"}チームだったので、どちらが効いているか切り分ける</small></li>`));
-            (inf.tests || []).filter(t => !(inf.splits || []).some(p => p.a === t.lb || p.b === t.lb)).forEach(t => why.push(`<li>「${escapeHtml(whyCond(t.lb))}」を<b>チーム${t.side}</b>に<small>まだ比べた試合が少ない要素</small></li>`));
+            (inf.splits || []).forEach(p => why.push(`<li>「${escapeHtml(whyCond(p.a))}」と「${escapeHtml(whyCond(p.b))}」を<b>${p.same ? "別のチーム" : "同じチーム"}</b>に<small>${p.k}/${p.n}試合で${p.same ? "同じ" : "反対の"}チームだった</small></li>`));
+            (inf.tests || []).filter(t => !(inf.splits || []).some(p => p.a === t.lb || p.b === t.lb)).forEach(t => why.push(`<li>「${escapeHtml(whyCond(t.lb))}」を<b>チーム${t.side}</b>に<small>まだデータが少ない</small></li>`));
             const avgRows = (inf.avgs || []).map(a => `<div><span>${escapeHtml(a.lb.replace("チーム内格差あり", "チーム内格差(ばらつき)"))}</span>${a.v.map((v, i) => `<b>チーム${i + 1} ${fmt(v)}</b>`).join("")}</div>`).join("");
             return `<details class="note-details chem"${propOpen ? " open" : ""} ontoggle="propOpen=this.open"><summary>チーム分けの提案(${mm}/${dd}・${names.length}人)</summary>
                 <div class="prop-teams">${pr.teams.map((t, i) => `<div><h5>チーム${i + 1}</h5>${t.map(n => `<span${km[n] ? ' class="key"' : ""}>${escapeHtml(n)}${km[n] ? `<em>${km[n].map(escapeHtml).join("・")}</em>` : ""}</span>`).join("")}</div>`).join("")}</div>
                 ${why.length ? `<div class="prop-why"><h6>分けた要素</h6><ul>${why.join("")}</ul>${avgRows ? `<div class="prop-avg">${avgRows}</div>` : ""}</div>` : `<div class="prop-why"><small>かぶっている要因の組は、まだ見つかっていません</small></div>`}
-                <div class="prop-info">${[inf.win != null ? `予想 強さ ${Math.round(inf.win * 100)}:${100 - Math.round(inf.win * 100)}` : "", inf.fresh ? `初めて組む2人 ${inf.fresh}組` : ""].filter(Boolean).join("　/　")}</div>
+                <div class="prop-info">${inf.win != null ? `<div class="prop-win"><span>予想</span><span class="prop-wbar" aria-hidden="true"><i style="width:${Math.round(inf.win * 100)}%"></i></span><b>${Math.round(inf.win * 100)}:${100 - Math.round(inf.win * 100)}</b></div>` : ""}${inf.fresh ? `<div class="prop-fresh"><span>初めて組む2人</span><b>${inf.fresh}組</b></div>` : ""}</div>
                 <div class="prop-acts"><button type="button" class="st-btn" onclick="propCache=null;renderRosterStats()">別の案</button><button type="button" class="st-btn prop-go" onclick="propUseInTeams()">この分け方でチーム分けへ</button></div>
                 <details class="rs-help"><summary>?</summary><div class="why-help">
                     <h6>何をする分け方か</h6>
@@ -12781,9 +13050,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const tgHead = byDay.length ? `<div class="why-tgh">${byDay.map(b => `<div><b>${md(b.d)} の対象</b>${b.t.size ? [...b.t].map(n => `<span class="why-tg">${escapeHtml(n)}</span>`).join("・") : "なし(同じ値の人がいて決まらない)"}</div>`).join("")}</div>` : "";
             return `<div class="why-list">${tgHead}${items.map(it => { const r = it.r, hi = it.d > 0 ? 0 : 1, lb = r.lbs && r.lbs.length === 2 ? r.lbs : ["チーム1", "チーム2"];
                 const tg = tgOf(r), mem = k => (r.teams[k] || []).map(n => tg && tg.has(n) ? `<b class="why-tg">${escapeHtml(n)}</b>` : escapeHtml(n)).join("・");
-                return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b><span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${it.T != null ? `(差 ${Math.abs(it.d).toFixed(2)} / 基準 ${it.T.toFixed(2)})` : ""}</span><em>${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
+                return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b><span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${it.T != null ? `(差 ${Math.abs(it.d).toFixed(2)} / 基準 ${it.T.toFixed(2)})` : ""}</span><em class="${it.used ? (it.ok ? "w" : "l") : ""}">${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
                     <small>${escapeHtml(lb[0])}${r.win === 0 ? "(勝ち)" : ""}: ${mem(0)}<br>${escapeHtml(lb[1])}${r.win === 1 ? "(勝ち)" : ""}: ${mem(1)}</small></div>`; }).join("")}
-                <div class="why-lnote">${byDay.length ? "色の付いた名前 = 対象の人。" : ""}◯ = 「${escapeHtml(whyCond(x.lb))}」が勝った、× = 負けた。薄い試合は差が基準より小さく、数えていません。${x.T != null ? (x.lb === "チーム内格差あり" ? "基準 = その日のメンバーの総合のばらつき(標準偏差)の半分" : "基準 = その日のメンバーのばらつき(標準偏差)× 2 ÷ チームの人数(ばらつき1つ分ちがう2人を1組入れかえたくらいの差)") : ""}</div></div>`;
+                <div class="why-lnote">${byDay.length ? "青字 = 対象の人・" : ""}◯ 勝ち・× 負け・薄い = 差が基準未満</div></div>`;
         }
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
@@ -12793,12 +13062,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const srt = { rate: (a, b) => b.rate - a.rate || b.n - a.n, gap: (a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5), n: (a, b) => b.n - a.n || b.rate - a.rate }[whySort] || ((a, b) => b.rate - a.rate);
             const ok = rows.filter(x => x.n >= 3).sort(srt);
             const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる|1位とスパイク1位/.test(x.lb) && !/同じチーム/.test(x.lb) ? "同率の日ばかりで比べられない" : x.lb === "セット1位とスパイク1位が同じチーム" ? "同率の日ばかりか、いつも別のチームで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
-            const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかの条件をそろえても、この向きに効いている" : "△ ほかの条件の影響かもしれない(ほかをそろえると逆の向き)"; };
+            const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかをそろえても同じ向き" : "△ ほかの条件の影響かも"; };
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
-                <div class="why-cap">その条件のチームの勝率(条件で2チームに差がついた試合だけ)。50% なら関係なし</div>
+                <div class="why-cap">差がついた試合での勝率・50% = 関係なし</div>
                 <div class="rs-seg2 why-sort">${[["rate", "勝率の高い順"], ["gap", "差の大きい順"], ["n", "試合の多い順"]].map(([k, l]) => `<button type="button" class="${whySort === k ? "on" : ""}" onclick="whySort='${k}';renderRosterStats()">${l}</button>`).join("")}</div>
                 <div class="rs-tbl" style="margin-top:6px">${ok.map(x => { const pc = Math.round(x.rate * 100), up = pc >= 50, wv = Math.min(50, Math.abs(pc - 50)), few = x.n < 8, nt = note(x);
-                    return `<details class="why-det"><summary class="stg-row why-row" style="grid-template-columns:1fr 3em 4.6em;${few ? "opacity:.5" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar"><b style="left:50%"></b><i style="left:${up ? 50 : 50 - wv}%;width:${wv}%;${up && !few ? "background:var(--accent)" : ""}"></i></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few || x.T != null ? `<small class="why-nt">${x.T != null ? `差が基準(${x.T[0] === x.T[1] || x.T[1] - x.T[0] < 0.01 ? x.T[0].toFixed(2) : x.T[0].toFixed(2) + "〜" + x.T[1].toFixed(2)})以上の試合だけ(差がついた ${x.all} 試合のうち)` + (few || nt ? "・" : "") : ""}${few ? "まだ試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</summary>${whyListHtml(x)}</details>`; }).join("")}
+                    return `<details class="why-det"><summary class="stg-row why-row${few ? " few" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar wr-bar"><i class="${up ? "" : "lo"}" style="width:${pc}%"></i><b style="left:50%"></b></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span>${nt || few || x.T != null ? `<small class="why-nt">${x.T != null ? `基準 ${x.T[0] === x.T[1] || x.T[1] - x.T[0] < 0.01 ? x.T[0].toFixed(2) : x.T[0].toFixed(2) + "〜" + x.T[1].toFixed(2)} 以上(${x.all}試合中)` + (few || nt ? "・" : "") : ""}${few ? "試合が少ない" + (nt ? "・" : "") : ""}${nt}</small>` : ""}</summary>${whyListHtml(x)}</details>`; }).join("")}
                 ${ng.map(x => `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary>${WHY_HELP}</details></details>`;
         }
@@ -12861,12 +13130,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const key = { come: "cr", ans: "ar", win: "wr" }[rstatSort];
             rows.sort((a, b) => (b[key] - a[key]) || a.name.localeCompare(b.name, "ja"));
             const pct = v => v < 0 ? "—" : Math.round(v * 100) + "%";
-            const bar = (v, cls) => v < 0 ? "" : `<i class="rs-bar ${cls}" style="width:${Math.round(v * 100)}%"></i>`;
+            const bar = (v, cls) => v < 0 ? "" : `<i class="rs-bar ${cls}${cls === "w" && v < 0.5 ? " lo" : ""}" style="width:${Math.round(v * 100)}%"></i>`;   // 勝率が 50% 未満なら赤
             const per = [[3, "3か月"], [6, "6か月"], [0, "全部"]].map(([v, l]) => `<button type="button" class="${rstatPeriod === v ? "on" : ""}" onclick="setRstat('p',${v})">${l}</button>`).join("");
             const hd = (k, l) => `<button type="button" class="rs-h${rstatSort === k ? " on" : ""}" onclick="setRstat('s','${k}')">${l}${rstatSort === k ? " ▾" : ""}</button>`;
             // 上: 期間と勝率の数え方(1行) / 下: 項目ごとに開く(説明は「?」の中)
             el.innerHTML = `<div class="rs-top"><span class="rs-seg2">${per}</span>${matchUnitSegHtml()}</div>
-                <button type="button" class="fx-open" onclick="openFormAna()">動画でフォーム分析</button>
+                <button type="button" class="fx-open" onclick="openFormAna()"><i class="ana-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="3"></rect><path d="M16 10.5 21 7.5v9l-5-3"></path></svg></i><span>動画でフォーム分析</span></button>
                 ${proposeNextHtml()}
                 ${strengthHtml(rosterStatsFrom())}
                 ${chemHtml(rosterStatsFrom())}
@@ -12876,7 +13145,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div></details></details>
                 <details class="note-details chem" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
-                <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データと結果を書き出す(検証用・名前は記号に)</button></div><div class="rs-build">この画面の版: ${APP_BUILD}</div>`;
+                <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データを書き出す<small>名前は記号に</small></button></div><div class="rs-build">BUILD ${APP_BUILD}</div>`;
         }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
@@ -14974,7 +15243,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 02:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 11:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16870,7 +17139,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!kind) return;
             if (!isAdmin()) return;   // 名簿・分析は管理者だけ
             panel.dataset.solo = kind;
-            if (h) h.textContent = kind === "roster" ? "名簿" : "分析";
+            if (h) h.textContent = kind === "roster" ? "名簿" : "ANALYSIS";   // 設定の SETTINGS とそろえる
             const acc = document.getElementById("rosterAcc"); if (acc) acc.open = true;
             if (kind === "roster") { try { renderRosterPanel(); } catch (e) { console.warn(e); } }
             else { const st = document.getElementById("rosterStatsAcc"); if (st) st.open = true; try { renderRosterStats(); } catch (e) { console.warn(e); } }
