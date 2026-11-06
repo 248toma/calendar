@@ -2769,6 +2769,7 @@
         .prop-info { margin-top: 8px; font-size: 11px; color: var(--ink-2); }
         #teamProposeNote b { color: var(--ink); }
         .tpred:empty { display: none; }
+        body.hide-tparams .tpred { display: none !important; }   /* 数値を隠しているときは、強さの予想も出さない */
         .tpred { margin: 6px 2px 4px; display: flex; flex-direction: column; gap: 5px; }
         .tpred-row { display: grid; grid-template-columns: 3.2em 1fr 5.6em; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
         .tpred-row b { color: var(--ink-2); font-weight: 700; }
@@ -4376,6 +4377,14 @@
         #prDetail .pd-acts .op-delbtn { box-shadow: none !important; padding: 0 6px !important; color: var(--sn-neg) !important; font-weight: 600 !important; }
         #prDetail .pd-ans .sv-btn { border: none; border-radius: 16px; background: var(--sn-bg); box-shadow: 3px 3px 7px var(--sn-dk), -3px -3px 7px var(--sn-lt); }
         #prDetail .pd-ans .sv-btn.sel { box-shadow: inset 3px 3px 6px var(--sn-dk), inset -3px -3px 6px var(--sn-lt); }
+
+        #prDetail .pds-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+        #prDetail .pds-row { display: flex; align-items: center; gap: 10px; width: 100%; height: 48px; padding: 0 14px; border: none; border-radius: 16px; background: var(--sn-bg); box-shadow: 3px 3px 8px var(--sn-dk), -3px -3px 8px var(--sn-lt); color: var(--sn-ink); text-align: left; }
+        #prDetail .pds-row i { width: 4px; height: 18px; border-radius: 2px; flex: none; }
+        #prDetail .pds-t { width: 40px; flex: none; font: 600 11.5px 'Montserrat', sans-serif; color: var(--sn-ink3); }
+        #prDetail .pds-ttl { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #prDetail .pds-sub { flex: none; max-width: 38%; font-size: 11.5px; color: var(--sn-ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #prDetail .pds-go { flex: none; color: var(--sn-ink3); font-size: 16px; }
 </style>
 </head>
 <body>
@@ -16231,7 +16240,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/07 02:15";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/07 03:15";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -17624,7 +17633,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = !!p.endDate && p.endDate !== p.startDate;
                 const timed = !p.allDay && s0 != null && (first || !multi);
                 const endsHere = multi && last && !first && !p.allDay && e0 != null;   // 連続の最終日: 終わりの時間
-                return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
+                return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", sub: planRsvpOn(p) ? `○${planComing(p)}` : "", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
             });
             if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", sub: sv.place || "", col: P.ink2, min: sv.s != null ? sv.s : 0 });
             // そろそろ: いつもの間隔なら、そろそろ入りそうな予定(描くたびに1回だけ数える。マスごとには数えない)
@@ -17936,6 +17945,25 @@ const namesBtn = isAdmin() && dates.length > 0
             const el = document.getElementById("prDayInfo"); if (el) { el.style.animationDelay = "0ms"; el.classList.remove("pr-flash"); void el.offsetWidth; el.classList.add("pr-flash"); }
             setTimeout(() => { if (Date.now() >= protoFlashUntil) { const e = document.getElementById("prDayInfo"); if (e) e.classList.remove("pr-flash"); } }, PROTO_FLASH_MS + 50);
         }
+        // その日の詳細: 予定が1つならその予定の詳細、2つ以上(バレーを含む)なら一覧のシート(押すとそれぞれの詳細へ)
+        function protoDaySheet(k) {
+            const ps = plansOn(k).map(x => x.p), vol = !!events[k];
+            if (!ps.length && !vol) { protoFlashDetail(); return; }
+            if (ps.length === 1 && !vol) { openPlanDetail(ps[0].id); return; }
+            let ov = document.getElementById("prDetail");
+            if (!ov) { ov = document.createElement("div"); ov.id = "prDetail"; ov.innerHTML = `<div class="prd-back" onclick="closePlanDetail()"></div><div class="prd-sheet"></div>`; document.body.appendChild(ov); }
+            const [, mm, dd] = k.split("-").map(Number), wd = WEEKDAYS[new Date(k + "T00:00:00").getDay()];
+            const row = (onclick, t, title, sub, col) => `<button type="button" class="pds-row" onclick="${onclick}"><i style="background:${col}"></i><span class="pds-t">${escapeHtml(t)}</span><span class="pds-ttl">${escapeHtml(title)}</span>${sub ? `<span class="pds-sub">${escapeHtml(sub)}</span>` : ""}<span class="pds-go">›</span></button>`;
+            const rows = [];
+            if (vol) {
+                const rs = reservations[k] || [], prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean);
+                const place = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
+                rows.push(row(`closePlanDetail();protoVol('${k}')`, prs.length ? fmtMin(Math.min(...prs.map(x => x.s))) : "", "バレー" + (place ? " " + place : ""), `○${countComing(k)}`, "var(--sn-ink3)"));
+            }
+            ps.forEach(p => rows.push(row(`openPlanDetail(${Number(p.id)})`, planTimed(p) && p.start ? p.start : "終日", p.title || "予定", planRsvpOn(p) ? `○${planComing(p)}` : (p.memo ? p.memo : ""), (window.PROTO_C || [])[+p.color || 0] || "var(--sn-ink3)")));
+            ov.querySelector(".prd-sheet").innerHTML = `<div class="nv-detail pds"><div class="pd-head"><div class="pd-ttl">${mm}/${dd}(${wd})</div></div><div class="pds-list">${rows.join("")}</div><div class="pd-acts"><span class="op-grow" style="flex:1"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button></div></div>`;
+            ov.classList.add("open");
+        }
         // 指の動きを覚えておく(iPhone の透明スイッチは、指をすべらせても切り替わって「押した」ことになるため)
         var protoFing = { y: 0, moved: 0, edge: false, at: 0 };
         document.addEventListener("touchstart", e => { const t = e.touches[0]; if (!t || e.touches.length !== 1) return; protoFing = { x: t.clientX, y: t.clientY, moved: 0, edge: protoBottomEdge(t.clientY), at: Date.now() }; }, { capture: true, passive: true });
@@ -17964,7 +17992,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     else protoOpenInput(null);   // それ以外の日は、その日の予定の入力(ヘッダーが入力欄になる)
                     return;
                 }
-                protoFlashT = setTimeout(protoFlashDetail, PROTO_DBL_MS - 60);   // ダブルタップでなければ、予定の詳細を強調
+                protoFlashT = setTimeout(() => protoDaySheet(k), PROTO_DBL_MS - 60);   // ダブルタップでなければ、その日の詳細を出す
                 return;
             }
             protoRowsTop = 0;
@@ -18121,7 +18149,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function prRadItems() { return PR_RAD_ITEMS.filter(it => !it.adm || isAdmin()); }
         // メニューの出し方: "hold" = 長押しで扇のメニュー / "bar" = カレンダーの下に常に並べる(設定で切り替え。この端末に覚える)
         const PR_MENU_KEY = "pr_menu_mode_v1";
-        function prMenuMode() { try { return localStorage.getItem(PR_MENU_KEY) === "bar" ? "bar" : "hold"; } catch (e) { return "hold"; } }
+        function prMenuMode() { try { return localStorage.getItem(PR_MENU_KEY) === "hold" ? "hold" : "bar"; } catch (e) { return "bar"; } }   // 最初は「下に常に出す」
         function setMenuMode(v) {
             try { localStorage.setItem(PR_MENU_KEY, v === "bar" ? "bar" : "hold"); } catch (e) { /* ignore */ }
             applyMenuSeg(); try { renderProto(); } catch (e) { console.warn(e); }
@@ -18556,7 +18584,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return { empty, sd, ed: ed0 && ed0 > sd ? ed0 : "", st: planAllDay ? "" : $op("opStart").value, et: planAllDay ? "" : $op("opEnd").value, allDay: planAllDay, title: [$op("opTitle").value, $op("opMemo").value].filter(Boolean).join(" ") };
         }
         function protoOpenInput(id) {
-            protoPinBottom = prRadBottom && !(window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches); prRadBottom = false;   // 横画面は今のまま
+            protoPinBottom = prMenuMode() !== "bar" && !(window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches); prRadBottom = false;   // 横画面は今のまま
             planDetailId = null; pinShareOpen = false; pinColOpen = false; pinSetOpen = false; pinRange = false; pinGhost = { d: "", h: "" };
             pinEditId = id != null ? id : null;
             const p = pinEditId != null ? planList.find(x => x.id === pinEditId) : null;
@@ -18970,7 +18998,7 @@ const namesBtn = isAdmin() && dates.length > 0
         const WX_KEY = "pr_wx_v1", WX_LOC_KEY = "pr_wx_loc_v1", WX_CACHE_KEY = "pr_wx_cache_v2", WX_TOKYO = { lat: 35.18, lon: 136.91 }, WX_TTL = 3 * 3600e3;
         var protoWxOnV = false, protoWxData = null, protoWxBusy = false, protoWxFailAt = 0;
         try { localStorage.removeItem("pr_wx_cache_v1"); } catch (e) { /* ignore */ }   // 前の形の保存(1日の最大で決めていたもの)は捨てる
-        try { protoWxOnV = localStorage.getItem(WX_KEY) === "1"; protoWxData = JSON.parse(localStorage.getItem(WX_CACHE_KEY) || "null"); } catch (e) { /* ignore */ }
+        try { protoWxOnV = localStorage.getItem(WX_KEY) !== "0"; protoWxData = JSON.parse(localStorage.getItem(WX_CACHE_KEY) || "null"); } catch (e) { /* ignore */ }
         function applyWxSeg() { document.querySelectorAll("#wxSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === protoWxOnV)); }
         function protoWxLoc() {
             try { const v = JSON.parse(localStorage.getItem(WX_LOC_KEY) || "null"); if (v && isFinite(v.lat) && isFinite(v.lon)) return { lat: +v.lat, lon: +v.lon }; } catch (e) { /* ignore */ }
@@ -19340,19 +19368,25 @@ const namesBtn = isAdmin() && dates.length > 0
         // ======================================================================
         // はじめての人向けチュートリアル(ログインしていない人が起動・更新したときに出る。閲覧モードの使い方だけ)
         // ログインしていないと、本物の画面は中身が空で回答ボタンも出ない。そこで「見本の画面」の上で、押してほしい所を光らせて案内する
-        // 流れ: ①日付をタップ → ②人数と場所 → ③画面を長押し → ④メニューの「アンケート」を選ぶ → ⑤○✖△で答える → ⑥サインイン / ゲストでログイン
+        // 流れ: ①日付をタップ → ②人数と場所 → ③もう一度タップで詳細 → ④ダブルタップで入力 → (長押しモードなら長押し) → ⑤メニューの「アンケート」 → ⑥○✖△で答える → サインイン / ゲストでログイン
         // (本物の画面は下のボタンを出さず、長押しメニューで操作するので、見本にも下のボタンは置かない)
         // ======================================================================
         var tutAuthChecked, tutOpen, tutIdx, tutS, tutScreen, tutDays, tutOnResize;   // var: 起動時の認証確認から先に参照されても大丈夫なように(初期値は入れない)
-        const TUT_STEPS = [
-            { id: "intro", center: true, screen: "main" },
-            { id: "day", target: "day", tap: true, screen: "main" },
-            { id: "head", target: "head", screen: "main" },
-            { id: "hold", target: "hold", tap: true, hold: true, screen: "main" },
-            { id: "menu", target: "menusv", tap: true, screen: "main" },
-            { id: "ans", target: "seg", tap: true, screen: "survey" },
-            { id: "login", center: true, screen: "survey" }
-        ];
+        // 手順はメニューの出し方で変える(下に常に出す = 長押しの手順はいらない)
+        function tutStepsFor(bar) {
+            return [
+                { id: "intro", center: true, screen: "main" },
+                { id: "day", target: "day", tap: true, screen: "main" },
+                { id: "head", target: "head", screen: "main" },
+                { id: "detail", target: "day", tap: true, screen: "main" },
+                { id: "dbl", target: "day", screen: "main" },
+                ...(bar ? [] : [{ id: "hold", target: "hold", tap: true, hold: true, screen: "main" }]),
+                { id: "menu", target: "menusv", tap: true, screen: "main" },
+                { id: "ans", target: "seg", tap: true, screen: "survey" },
+                { id: "login", center: true, screen: "survey" }
+            ];
+        }
+        let TUT_STEPS = tutStepsFor(true);
         const TUT_EN = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif";
         const TUT_WN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
         // 見本のバレーの日: 今月の土曜(今日をのぞく)の2つ目と4つ目
@@ -19396,6 +19430,21 @@ const namesBtn = isAdmin() && dates.length > 0
                     return `<div ${sv ? 'data-tut="menusv" data-tr="29"' : ""} style="position:absolute;left:${ix}px;top:${iy}px;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:${it.k === "add" ? "#2f6fe0" : P.ink2};${raiseS};animation:tutFade .2s ease ${i * 18}ms both">${PR_RAD_ICONS[it.k] || ""}<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;line-height:1">${it.label}</span>${sv ? `<i style="position:absolute;top:6px;right:8px;width:9px;height:9px;border-radius:50%;background:#e5484d;box-shadow:0 0 0 2px ${P.bg}"></i>` : ""}</div>`;
                 }).join("");
         }
+        // 下に常に出すメニューの見本(本物と同じアイコンだけの丸い帯)
+        function tutBarHtml(P, dark) {
+            const { raiseS } = protoNeu(P, dark), items = PR_RAD_ITEMS.filter(it => !it.adm);
+            return `<div style="position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom, 0px) + 18px);transform:translateX(-50%);display:flex;gap:2px;padding:5px;border-radius:28px;background:${P.bg};${raiseS}">${items.map(it => `<span ${it.k === "survey" ? 'data-tut="menusv" data-tr="23"' : ""} style="position:relative;width:44px;height:46px;border-radius:23px;display:flex;align-items:center;justify-content:center;color:${it.k === "add" ? "#2f6fe0" : P.ink2}"><span style="display:flex;width:21px;height:21px">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" ? `<i style="position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:#e5484d"></i>` : ""}</span>`).join("")}</div>`;
+        }
+        // 予定の詳細の見本(選んでいる日をもう一度タップしたとき)
+        function tutSheetHtml(P, dark) {
+            const { raiseS } = protoNeu(P, dark), d = new Date(tutDays.d1 + "T00:00:00");
+            const row = (t, ttl, sub, col) => `<div style="display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;border-radius:16px;${raiseS}"><i style="width:4px;height:18px;border-radius:2px;background:${col}"></i><span style="width:40px;font-family:${TUT_EN};font-size:11.5px;font-weight:600;color:${P.ink3}">${t}</span><span style="flex:1;font-size:14px;font-weight:700">${ttl}</span><span style="font-size:11.5px;color:${P.ink3}">${sub}</span><span style="color:${P.ink3}">›</span></div>`;
+            return `<div style="position:absolute;inset:0;background:rgba(20,24,32,.18)"></div>
+              <div data-tut="sheet" data-tr="28" style="position:absolute;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom, 0px) + 10px);border-radius:28px;padding:20px 18px 18px;background:${P.bg};display:flex;flex-direction:column;gap:8px;box-shadow:0 -6px 28px rgba(0,0,0,.14)">
+                <div style="font-size:17px;font-weight:700;margin-bottom:4px">${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})</div>
+                ${row("19:00", "バレー 稲沢総合 北", "○8", P.ink3)}${row("終日", "飲み会", "○5", "#9c3d68")}${row("12:00", "美容院", "前髪だけ", "#e597b7")}
+              </div>`;
+        }
         // 見本のホーム画面(上: その日の人数と場所 / 下: カレンダー。ボタンは長押しメニューで出す)
         function tutMainHtml() {
             const { dark, P, LV } = protoPal(), { raise, raiseS, insetS } = protoNeu(P, dark), D = tutDays;
@@ -19432,13 +19481,15 @@ const namesBtn = isAdmin() && dates.length > 0
                   </div>
                 </div>
                 <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 14px)">
-                  <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 2px 8px"><span style="font-family:${TUT_EN};font-size:16px;font-weight:700">${MN[D.m]}</span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${TUT_EN};font-size:13px;font-weight:600;color:${P.ink3}">${D.y}</span></div>
+                  <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 2px 8px"><span style="font-family:${TUT_EN};font-size:16px;font-weight:700">${D.m + 1}<span style="font-size:12px">月</span></span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${TUT_EN};font-size:13px;font-weight:600;color:${P.ink3}">${D.y}</span></div>
                   <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${TUT_EN};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === satIdx ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
                   <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cells}</div>
                 </div>
                 <div data-tut="hold" data-tr="40" style="position:absolute;right:34px;bottom:calc(env(safe-area-inset-bottom, 0px) + 60px);width:80px;height:80px;border-radius:40px"></div>
               </div>
-              ${TUT_STEPS[tutIdx].id === "menu" ? tutFanHtml(P, dark) : ""}
+              ${TUT_STEPS[tutIdx].id === "menu" && prMenuMode() !== "bar" ? tutFanHtml(P, dark) : ""}
+              ${prMenuMode() === "bar" ? tutBarHtml(P, dark) : ""}
+              ${TUT_STEPS[tutIdx].id === "detail" && tutS.detail ? tutSheetHtml(P, dark) : ""}
               <div class="tut-sample">SAMPLE</div>
             </div>`;
         }
@@ -19475,11 +19526,15 @@ const namesBtn = isAdmin() && dates.length > 0
             if (id === "intro") return { ttl: "ようこそ!", msg: "出欠の見かたと答えかたを、実際に押しながら<b>30秒</b>で体験しましょう。ここから先は<b>見本の画面</b>です(本物のデータは使いません)。", btn: "はじめる" };
             if (id === "day") return { ttl: "① バレーの日をタップ", msg: "カレンダーで<b>「バレー」</b>と書いてある日が、バレーのある日です。光っている日をタップしてみましょう。" };
             if (id === "head") return { ttl: "② 人数・時間・場所が見られる", msg: "上のリングは<b>「来る」と答えた人数</b>です。マスが埋まるほど集まっています。時間と場所もここに出ます。", btn: "次へ" };
-            if (id === "hold") return { ttl: "③ 画面を長押ししてみよう", msg: "ボタンは普段は隠れています。画面を<b>指で押したまま、少し待つ</b>と、まわりに<b>メニュー</b>が開きます(画面のどこでもOK)。光っている所を<b>長押し</b>してみましょう。" };
-            if (id === "menu") return { ttl: "④ 「アンケート」を選ぶ", msg: "出欠の回答は、メニューの<b>アンケート</b>から。赤い点がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
+            if (id === "detail") return tutS.detail
+                ? { ttl: "その日の詳細が出ました", msg: "予定の<b>メモ</b>や<b>出欠</b>、バレーの場所はここで見られます。予定の行を押すと、その予定の詳細へ進みます。", btn: "次へ" }
+                : { ttl: "③ もう一度タップすると詳細", msg: "選んでいる日を<b>もう一度タップ</b>すると、その日の詳細が下から出ます。光っている日を押してみましょう。" };
+            if (id === "dbl") return { ttl: "④ ダブルタップで予定を入れる", msg: "日付を<b>すばやく2回</b>タップすると、その日の予定の入力が開きます(バレーの日はバレーの画面)。<br>上の予定の行を押しても、その予定の詳細が出ます。", btn: "次へ" };
+            if (id === "hold") return { ttl: "画面を長押ししてみよう", msg: "ボタンは普段は隠れています。画面を<b>指で押したまま、少し待つ</b>と、まわりに<b>メニュー</b>が開きます(画面のどこでもOK)。光っている所を<b>長押し</b>してみましょう。" };
+            if (id === "menu") return { ttl: "⑤ 「アンケート」を選ぶ", msg: (prMenuMode() === "bar" ? "画面の下に、いつもメニューが出ています。" : "") + "出欠の回答は、メニューの<b>アンケート</b>から。赤い点がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
             if (id === "ans") return tutS.ans
                 ? { ttl: "回答できました!", msg: "答えはすぐにみんなへ共有されます。あとから何度でも変えられます。", btn: "次へ" }
-                : { ttl: "⑤ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
+                : { ttl: "⑥ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
             return { ttl: "最後に、ログインしましょう", msg: "出欠への回答は、<b>ログインした人</b>ができます。どちらかを選んでください。" };
         }
         function tutTip() {
@@ -19504,7 +19559,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const st = TUT_STEPS[tutIdx], q = id => document.getElementById(id);
             const spot = q("tutSpot"), hit = q("tutHit"), fin = q("tutFinger"), tip = q("tutTip"), arrow = q("tutArrow");
             const W = ov.clientWidth, H = ov.clientHeight, safeTop = 50;
-            const name = st.id === "ans" && tutS.ans ? "card" : st.target;
+            const name = st.id === "ans" && tutS.ans ? "card" : st.id === "detail" && tutS.detail ? "sheet" : st.target;
             const el = !st.center && name ? demo.querySelector(`[data-tut="${name}"]`) : null;
             let r = null;
             if (el) { const b = el.getBoundingClientRect(), pad = name === "menusv" ? 5 : 4; r = { l: b.left - pad, t: b.top - pad, w: b.width + pad * 2, h: b.height + pad * 2, rad: (+el.getAttribute("data-tr") || 14) + pad }; }
@@ -19512,7 +19567,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (r) { spot.style.left = px(r.l); spot.style.top = px(r.t); spot.style.width = px(r.w); spot.style.height = px(r.h); spot.style.borderRadius = px(r.rad); }
             else { spot.style.left = px(W / 2); spot.style.top = px(H / 2); spot.style.width = "1px"; spot.style.height = "1px"; spot.style.borderRadius = "0px"; }
             spot.firstElementChild.style.display = r ? "" : "none";
-            const tappable = !!r && !!st.tap && !(st.id === "ans" && tutS.ans);
+            const tappable = !!r && !!st.tap && !(st.id === "ans" && tutS.ans) && !(st.id === "detail" && tutS.detail);
             if (tappable) { hit.style.display = "block"; hit.style.left = px(r.l); hit.style.top = px(r.t); hit.style.width = px(r.w); hit.style.height = px(r.h); hit.style.borderRadius = px(r.rad); }
             else hit.style.display = "none";
             fin.style.animation = st.hold ? "none" : "";
@@ -19554,6 +19609,7 @@ const namesBtn = isAdmin() && dates.length > 0
             try { if (typeof protoHaptic === "function") protoHaptic(); } catch (x) { /* ignore */ }
             if (st.id === "day") { tutS.sel = tutDays.d1; tutShow(tutIdx + 1); }
             else if (st.id === "menu") tutShow(tutIdx + 1);
+            else if (st.id === "detail" && !tutS.detail) { tutS.detail = true; tutShow(tutIdx); }   // 同じ手順のまま、詳細が出た見た目に
             else if (st.id === "ans") {
                 const b = document.getElementById("tutHit").getBoundingClientRect(), x = e && e.clientX != null ? e.clientX : b.left + b.width / 2;
                 tutS.ans = ["来る", "来ない", "未定"][Math.max(0, Math.min(2, Math.floor((x - b.left) / Math.max(1, b.width) * 3)))];
@@ -19570,7 +19626,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (tutOpen || authUid || !firebaseAvailable) return;
             try { closeSurveyIfOpen(); } catch (e) { /* ignore */ }
             const old = document.getElementById("tutOv"); if (old) old.remove();
-            tutOpen = true; tutScreen = ""; tutDays = tutDaysOf(); tutS = { sel: tutDays.todayKey, ans: "" };
+            tutOpen = true; tutScreen = ""; tutDays = tutDaysOf(); tutS = { sel: tutDays.todayKey, ans: "", detail: false };
+            TUT_STEPS = tutStepsFor(prMenuMode() === "bar");
             const ov = document.createElement("div"); ov.id = "tutOv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "使い方");
             ov.innerHTML = `<div class="tut-demo" id="tutDemo"></div><div class="tut-spot" id="tutSpot"><i class="tut-ring"></i></div><div class="tut-block" id="tutBlock"></div>
                 <button type="button" class="tut-hit" id="tutHit" aria-label="ここを押す"></button><div class="tut-finger" id="tutFinger" aria-hidden="true"><span>👆</span></div>
