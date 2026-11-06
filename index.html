@@ -3708,6 +3708,120 @@
         .pr-chip.over-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); }
         .pr-chip.out { opacity: 0; transform: translate(-50%, 8px); }
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
+        /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
+        /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
+        #settingsPanel {
+            --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0;
+            --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
+            --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
+            --sn-eh: rgba(255,255,255,.9); --sn-el: rgba(120,132,155,.22); --sn-line: rgba(150,160,180,.18);
+            --sn-dome: linear-gradient(145deg, var(--sn-hi), var(--sn-lo));
+            --sn-pit: linear-gradient(145deg, var(--sn-lo), var(--sn-hi));
+            --sn-raise: 8px 8px 18px var(--sn-dk), -8px -8px 18px var(--sn-lt), inset 1px 1px 0 var(--sn-eh), inset -1px -1px 0 var(--sn-el);
+            --sn-raiseS: 4px 4px 9px var(--sn-dk), -4px -4px 9px var(--sn-lt), inset 1px 1px 0 var(--sn-eh), inset -1px -1px 0 var(--sn-el);
+            --sn-raiseXS: 2px 2px 5px var(--sn-dk), -2px -2px 5px var(--sn-lt), inset 1px 1px 0 var(--sn-eh);
+            --sn-inset: inset 5px 5px 9px var(--sn-dk), inset -5px -5px 9px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
+            --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
+            --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
+        }
+        body.dark #settingsPanel {
+            --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff;
+            --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
+            --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
+            --sn-eh: rgba(255,255,255,.08); --sn-el: rgba(0,0,0,.45); --sn-line: rgba(255,255,255,.07);
+        }
+        /* ふつうの設定の中だけ、緑のアクセントを青に・面の色を背景にそろえる(名簿・分析の単独画面はそのまま) */
+        #settingsPanel:not([data-solo]) { --accent: var(--sn-acc); --accent-ink: var(--sn-acc); --accent-soft: color-mix(in srgb, var(--sn-acc) 16%, var(--sn-bg)); --bg: var(--sn-bg); --ink: var(--sn-ink); --ink-2: var(--sn-ink2); --ink-3: var(--sn-ink3); --line: var(--sn-line); --sink: var(--sn-insetS); --raise-xs: var(--sn-raiseXS); }
+        #settingsPanel.open { background: var(--sn-bg); color: var(--sn-ink); font-family: 'Noto Sans JP', system-ui, sans-serif; padding: 0 max(18px, env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); overflow-x: hidden; }
+        /* 見出し: 小さく字間をあけた SETTINGS と、出っぱった四角い × */
+        #settingsPanel > .panel-sticky { margin: 0 calc(-1 * max(18px, env(safe-area-inset-right))) 8px calc(-1 * max(18px, env(safe-area-inset-left))); padding: calc(env(safe-area-inset-top, 0px) + 18px) max(18px, env(safe-area-inset-right)) 14px max(18px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--sn-bg) 86%, transparent); }
+        #settingsPanel > .panel-sticky .panel-head { align-items: center; }
+        #settingsPanel > .panel-sticky h3 { font: 700 15px/1 var(--sn-en); letter-spacing: .1em; color: var(--sn-ink2); padding-left: 4px; }
+        #settingsPanel .panel-actions { gap: 10px; align-items: center; }
+        #settingsPanel .set-saved { font: 700 10.5px var(--sn-en); color: var(--sn-ink3); }
+        #settingsPanel .set-saved:empty { display: none; }
+        #settingsPanel .panel-x { width: 40px; height: 40px; min-height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 14px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); }
+        #settingsPanel .panel-x:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        /* 上の欄: カードを縦に並べる */
+        #settingsPanel #setTop { display: flex; flex-direction: column; gap: 22px; margin: 6px 0 8px; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+        #settingsPanel .st-card { border-radius: 28px; background: var(--sn-dome); box-shadow: var(--sn-raise); }
+        #settingsPanel .st-hidden { display: none !important; }
+        #settingsPanel button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+        /* アカウント */
+        #settingsPanel .st-acct { display: flex; align-items: center; gap: 14px; padding: 18px 18px; min-width: 0; }
+        #settingsPanel .st-av { flex: none; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-ink2); font: 700 16px var(--sn-en); }
+        #settingsPanel .st-acct-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        #settingsPanel .st-acct-n { font: 700 16px/1.2 var(--sn-en); letter-spacing: .02em; color: var(--sn-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #settingsPanel #setAccount { display: block; margin: 0; font-size: 11px; line-height: 1.4; color: var(--sn-ink3); min-width: 0; }
+        #settingsPanel #setAccount #firestoreSyncStatus { display: flex !important; flex-wrap: wrap !important; justify-content: flex-start !important; gap: 4px 8px !important; margin: 0; white-space: normal; overflow: visible; font-size: 11px !important; font-weight: 500 !important; }
+        #settingsPanel #setAccount #firestoreSyncStatus button { border: none !important; background: var(--sn-dome) !important; box-shadow: var(--sn-raiseXS); color: var(--sn-acc) !important; border-radius: 10px !important; padding: 3px 10px !important; font: 700 10.5px var(--sn-en) !important; }
+        /* VIEW / ADMIN: へこんだ細い溝 */
+        #settingsPanel .st-mode { flex: none; height: 30px; padding: 3px; border-radius: 15px; }
+        #settingsPanel .st-mode button { height: 24px; min-width: 0; padding: 0 9px; border-radius: 12px; font: 700 10.5px var(--sn-en); letter-spacing: .04em; }
+        #settingsPanel .st-mode button.on { color: var(--sn-acc); }
+        /* オン・オフの丸いボタン(4列) */
+        #settingsPanel .st-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 6px; padding: 20px 12px 18px; }
+        #settingsPanel .st-tile-w { display: flex; justify-content: center; min-width: 0; }
+        #settingsPanel .st-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; width: 100%; padding: 0; border: none; background: none; box-shadow: none; color: var(--sn-ink3); cursor: pointer; }
+        #settingsPanel .st-ti { width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink3); transition: box-shadow .18s ease, color .18s ease; }
+        #settingsPanel .st-ti svg { width: 20px; height: 20px; }
+        #settingsPanel .st-tile.on .st-ti { background: var(--sn-pit); box-shadow: var(--sn-inset); color: var(--sn-acc); }
+        #settingsPanel .st-tile:active .st-ti { box-shadow: var(--sn-insetS); }
+        #settingsPanel .st-tl { max-width: 100%; font-size: 10.5px; font-weight: 700; line-height: 1.25; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sn-ink3); }
+        #settingsPanel .st-tile.on .st-tl { color: var(--sn-ink2); }
+        #settingsPanel .st-tl small { display: block; margin-top: 2px; font: 700 8px var(--sn-en); letter-spacing: .1em; color: var(--sn-ink3); opacity: .85; }
+        /* 選ぶ設定: 1枚のカードに行を並べ、右にへこんだ溝 */
+        #settingsPanel .st-rows { padding: 6px 18px; }
+        #settingsPanel #setTop .st-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; margin: 0; padding: 0; background: none; border: none; border-radius: 0; box-shadow: none; }
+        #settingsPanel #setTop .st-rows .st-row + .st-row { border-top: 1px solid var(--sn-line); }
+        #settingsPanel #setTop .st-lbl { flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 600; color: var(--sn-ink2); }
+        #settingsPanel .st-seg { position: relative; display: inline-flex; gap: 2px; padding: 3px; border-radius: 17px; background: var(--sn-pit); box-shadow: var(--sn-insetS); isolation: isolate; }
+        #settingsPanel .st-seg > button { position: relative; z-index: 1; height: 28px; min-width: 44px; padding: 0 12px; border: none; border-radius: 14px; background: transparent; box-shadow: none; color: var(--sn-ink3); font: 700 11px var(--sn-en); cursor: pointer; transition: color .2s ease; }
+        #settingsPanel .st-seg > button.on { color: var(--sn-ink); background: var(--sn-dome); box-shadow: var(--sn-raiseXS); }
+        /* 動くつまみ(st-pill)がある溝では、ボタン自身は塗らず、つまみが下を滑る */
+        #settingsPanel .st-seg:has(> .st-pill) > button.on { background: transparent; box-shadow: none; }
+        #settingsPanel .st-mode:has(> .st-pill) > button.on { color: var(--sn-acc); }
+        #settingsPanel .st-pill { position: absolute; z-index: 0; left: 0; top: 3px; bottom: 3px; width: 0; border-radius: 14px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); pointer-events: none; transition: transform .26s cubic-bezier(.3,.7,.2,1), width .26s cubic-bezier(.3,.7,.2,1); }
+        #settingsPanel .st-mode .st-pill { border-radius: 12px; }
+        body.pr-noanim #settingsPanel .st-pill, body.pr-noanim #settingsPanel .st-ti { transition: none; }
+        @media (prefers-reduced-motion: reduce) { #settingsPanel .st-pill { transition: none; } }
+        /* 使い方などのリンク: 出っぱった細長い行と › */
+        #settingsPanel .st-link { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 52px; padding: 0 18px; border: none; border-radius: 20px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; }
+        #settingsPanel #setTop .st-link + .st-link { margin-top: -8px; }
+        #settingsPanel .st-link:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #settingsPanel .st-chev { flex: none; color: var(--sn-ink3); }
+        /* 下の項目(管理者): 同じカードと行。見出しは小さく字間をあける */
+        #settingsPanel .panel-group-label { margin: 30px 8px 12px; padding: 0; border: none; font: 700 11px var(--sn-en); letter-spacing: .1em; color: var(--sn-ink3); }
+        #settingsPanel .st-group { padding: 4px 0; overflow: hidden; }
+        #settingsPanel .st-group > .acc { margin: 0; border: none; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+        #settingsPanel .st-group > .acc > summary { min-height: 54px; padding: 0 20px; font-size: 13px; font-weight: 600; color: var(--sn-ink2); background: none; border: none; }
+        #settingsPanel .st-group > .acc > summary::after { content: ""; width: 7px; height: 7px; margin-right: 3px; border: solid var(--sn-ink3); border-width: 0 1.8px 1.8px 0; border-radius: 1px; transform: rotate(-45deg); transition: transform .18s ease; }
+        #settingsPanel .st-group > .acc[open] > summary { background: none; border-bottom: none; color: var(--sn-ink); }
+        #settingsPanel .st-group > .acc + .acc > summary, #settingsPanel .st-group > .acc + .acc[open] > summary { background: linear-gradient(var(--sn-line), var(--sn-line)) no-repeat 20px 0 / calc(100% - 40px) 1px; }   /* 区切り線は左右をあける */
+        #settingsPanel .st-group > .acc[open] > summary::after { transform: rotate(45deg); }
+        #settingsPanel .st-group > .acc > .acc-body { padding: 2px 20px 20px; }
+        #settingsPanel .acc-desc { color: var(--sn-ink3); }
+        #settingsPanel .settings-note, #settingsPanel .team-split-note { color: var(--sn-ink3); background: none; border: none; }
+        #settingsPanel .note-details { border: none; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #settingsPanel .note-details > summary { color: var(--sn-ink2); background: none; }
+        #settingsPanel .note-details .note-details { background: none; box-shadow: none; }
+        /* 入力欄・プルダウン: へこみ */
+        #settingsPanel:not([data-solo]) .acc-body input[type="text"], #settingsPanel:not([data-solo]) .acc-body input[type="number"], #settingsPanel:not([data-solo]) .acc-body textarea, #settingsPanel:not([data-solo]) .acc-body select { border: none !important; border-radius: 14px; background: var(--sn-pit) !important; box-shadow: var(--sn-insetS) !important; color: var(--sn-ink); font-family: inherit; outline: none; }
+        #settingsPanel:not([data-solo]) .acc-body input:focus-visible, #settingsPanel:not([data-solo]) .acc-body textarea:focus-visible, #settingsPanel:not([data-solo]) .acc-body select:focus-visible { box-shadow: var(--sn-insetS), 0 0 0 2px color-mix(in srgb, var(--sn-acc) 45%, transparent) !important; }
+        #settingsPanel:not([data-solo]) .settings-row.checkbox-row input[type="checkbox"] { background: var(--sn-pit); box-shadow: var(--sn-insetS); border: none; }
+        #settingsPanel:not([data-solo]) .settings-row.checkbox-row input[type="checkbox"]:checked { background: var(--sn-acc); }
+        /* 主なボタン: 出っぱりと青い字 */
+        #settingsPanel:not([data-solo]) .acc-body :is(.add-btn, .pair-add-row button, .roles-edit-row button, .conflict-add-btn, .template-reset-btn, .st-btn, .rs-export button) { border: none !important; border-radius: 14px; background: var(--sn-dome) !important; box-shadow: var(--sn-raiseS) !important; color: var(--sn-acc) !important; font-weight: 700; }
+        #settingsPanel:not([data-solo]) .acc-body :is(.add-btn, .pair-add-row button, .roles-edit-row button, .conflict-add-btn, .template-reset-btn, .st-btn):active { background: var(--sn-pit) !important; box-shadow: var(--sn-insetS) !important; }
+        #settingsPanel:not([data-solo]) .acc-body .template-reset-btn { padding: 0 14px; min-height: 34px; margin-top: 10px; text-decoration: none; }
+        @media (max-width: 389px) {
+            #settingsPanel .st-tiles { gap: 14px 4px; padding: 18px 8px 16px; }
+            #settingsPanel .st-ti { width: 50px; height: 50px; }
+            #settingsPanel .st-acct { gap: 12px; padding: 16px 14px; }
+            #settingsPanel .st-av { width: 42px; height: 42px; }
+            #settingsPanel .st-rows { padding: 4px 14px; }
+            #settingsPanel .st-seg > button { min-width: 40px; padding: 0 10px; }
+        }
 </style>
 </head>
 <body>
@@ -4303,35 +4417,53 @@ await main();
     <div class="settings-panel" id="settingsPanel">
         <div class="panel-sticky">
             <div class="panel-head">
-                <h3>設定</h3>
+                <h3>SETTINGS</h3>
                 <div class="panel-actions">
-                    <span class="panel-auto set-saved" id="setSaved">変更はすぐ保存</span>
-                    <button type="button" class="panel-x" onclick="toggleSettings()">閉じる</button>
+                    <span class="panel-auto set-saved" id="setSaved"></span>
+                    <button type="button" class="panel-x" onclick="toggleSettings()" aria-label="閉じる"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
                 </div>
             </div>
         </div>
-        <!-- 誰でも使う設定(いちばん上) -->
+        <!-- 誰でも使う設定(いちばん上): アカウント → オン・オフのボタン → 選ぶ項目 → 使い方 -->
         <div id="setTop">
-            <div class="st-sub">表示</div>
-            <div class="st-row"><span class="st-lbl" id="themeLbl">表示</span><button type="button" class="st-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="ic ic-sun"></i></button></div>
-            <div class="st-row pr-only"><span class="st-lbl">カレンダーの予定</span><span class="st-seg" id="pvSeg"><button type="button" data-v="dot" onclick="setProtoPlanView('dot')">点</button><button type="button" data-v="text" onclick="setProtoPlanView('text')">文字</button><button type="button" data-v="en" onclick="setProtoPlanView('en')">EN</button></span></div>
-            <div class="st-row pr-only"><span class="st-lbl">リングの時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
-            <div class="st-row"><span class="st-lbl">祝日・行事</span><span class="st-seg" id="jpSeg"><button type="button" data-k="hol" onclick="setJpcal('hol')">祝日</button><button type="button" data-k="ev" onclick="setJpcal('ev')">行事</button></span></div>
-            <div class="st-row pr-only"><span class="st-lbl">アニメーション</span><span class="st-seg" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)">オフ</button><button type="button" data-v="1" onclick="setAnim(true)">オン</button></span></div>
-            <div class="st-row pr-only"><span class="st-lbl">メニュー</span><span class="st-seg" id="menuSeg"><button type="button" data-v="hold" onclick="setMenuMode('hold')">長押しで出す</button><button type="button" data-v="bar" onclick="setMenuMode('bar')">下に常に出す</button></span></div>
-            <div class="st-row pr-only"><span class="st-lbl">そろそろ</span><span class="st-seg" id="soonSeg"><button type="button" data-v="0" onclick="setSoon(false)">オフ</button><button type="button" data-v="1" onclick="setSoon(true)">オン</button></span></div>
-            <div class="st-row pr-only"><span class="st-lbl">天気</span><span class="st-seg" id="wxSeg"><button type="button" data-v="0" onclick="setWx(false)">オフ</button><button type="button" data-v="1" onclick="setWx(true)">オン</button></span></div>
-            <div class="st-row pr-only"><span class="st-lbl">触覚フィードバック</span><span class="st-seg" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" style="position:relative">オン</button></span></div>
-            <div class="st-sub">アカウント</div>
-            <div class="st-row"><span class="st-lbl">アカウント</span><span class="app-title" id="setAccount"></span></div>
-            <div class="st-row real-admin-only"><span class="st-lbl">モード</span>
-                <select class="st-sel mode-select" id="modeSelect" onchange="setViewMode(this.value)" aria-label="モード(管理・閲覧)">
+            <!-- アカウント: 頭文字の丸・名前と状態・(管理者アカウントだけ)VIEW / ADMIN -->
+            <div class="st-card st-acct">
+                <span class="st-av" id="setAvatar" aria-hidden="true"></span>
+                <div class="st-acct-t"><b class="st-acct-n" id="setAccName"></b><span class="app-title" id="setAccount"></span></div>
+                <span class="st-seg st-mode real-admin-only" id="modeSeg" role="group" aria-label="モード(管理・閲覧)"><button type="button" data-m="view" onclick="setModePill('view')">VIEW</button><button type="button" data-m="admin" onclick="setModePill('admin')">ADMIN</button></span>
+                <select class="st-sel mode-select real-admin-only" id="modeSelect" onchange="setViewMode(this.value)" aria-label="モード(管理・閲覧)" hidden>
                     <option value="admin">Admin</option>
                     <option value="view">View</option>
-                </select></div>
-            <div class="st-row" id="pairRow" style="display:none"><span class="st-lbl">ペアモード</span><button type="button" class="pair-btn st-btn" id="pairBtn" onclick="openPairPanel()" aria-label="ペアモード"></button></div>
-            <div class="st-sub">使い方</div>
-            <div class="st-row"><span class="st-lbl">説明</span><span class="st-seg st-guide"><button type="button" onclick="openGuide('home')">ホーム</button><button type="button" onclick="openGuide('widget')">ウィジェット</button></span></div>
+                </select>
+            </div>
+            <!-- オン・オフの設定: 丸いボタンを4列に。オン=へこんで青 / オフ=出っぱって灰色。もとの切替ボタン(st-seg)は隠して、押すとそれを押す -->
+            <div class="st-card st-tiles" id="setTiles">
+                <button type="button" class="st-tile" id="themeTile" onclick="toggleTheme()" aria-label="ライト/ダーク切替"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></i><span class="st-tl" id="themeLbl">ダーク</span></button>
+                <button type="button" class="st-tile pr-only" data-seg="animSeg" onclick="setTileTap(this)" aria-label="アニメーション"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12c3-6 5-6 8 0s5 6 8 0"/></svg></i><span class="st-tl">動き</span></button>
+                <button type="button" class="st-tile pr-only" id="hapTile" data-seg="hapSeg" onclick="setTileTap(this)" aria-label="触覚フィードバック"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3.5" width="8" height="17" rx="2.5"/><path d="M4 9v6M20 9v6"/></svg></i><span class="st-tl">振動</span></button>
+                <button type="button" class="st-tile pr-only" data-seg="wxSeg" onclick="setTileTap(this)" aria-label="天気"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4 4 0 1 1 .5-8A6 6 0 0 1 19 11a3.5 3.5 0 0 1-1 7z"/></svg></i><span class="st-tl">天気</span></button>
+                <button type="button" class="st-tile pr-only" data-seg="soonSeg" onclick="setTileTap(this)" aria-label="そろそろ"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5" stroke-dasharray="2.5 2.5"/></svg></i><span class="st-tl">そろそろ</span></button>
+                <button type="button" class="st-tile" data-seg="jpSeg" data-k="hol" onclick="setTileTap(this)" aria-label="祝日"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg></i><span class="st-tl">祝日</span></button>
+                <button type="button" class="st-tile" data-seg="jpSeg" data-k="ev" onclick="setTileTap(this)" aria-label="行事"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M7 20V10l5-5 5 5v10"/></svg></i><span class="st-tl">行事</span></button>
+                <div class="st-tile-w" id="pairRow" style="display:none"><button type="button" class="st-tile" id="pairBtn" onclick="openPairPanel()" aria-label="ペアモード"></button></div>
+            </div>
+            <!-- もとの切替ボタン(画面には出さない。状態の「on」はここに付く) -->
+            <div class="st-hidden" aria-hidden="true">
+                <span class="st-seg" id="jpSeg"><button type="button" data-k="hol" onclick="setJpcal('hol')" tabindex="-1">祝日</button><button type="button" data-k="ev" onclick="setJpcal('ev')" tabindex="-1">行事</button></span>
+                <span class="st-seg pr-only" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setAnim(true)" tabindex="-1">オン</button></span>
+                <span class="st-seg pr-only" id="soonSeg"><button type="button" data-v="0" onclick="setSoon(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setSoon(true)" tabindex="-1">オン</button></span>
+                <span class="st-seg pr-only" id="wxSeg"><button type="button" data-v="0" onclick="setWx(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setWx(true)" tabindex="-1">オン</button></span>
+                <span class="st-seg pr-only" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" tabindex="-1" style="position:relative">オン</button></span>
+            </div>
+            <!-- 選ぶ設定: 1枚のカードに、へこんだ溝と動くつまみ -->
+            <div class="st-card st-rows">
+                <div class="st-row pr-only"><span class="st-lbl">予定の表示</span><span class="st-seg" id="pvSeg"><button type="button" data-v="dot" onclick="setProtoPlanView('dot')">点</button><button type="button" data-v="text" onclick="setProtoPlanView('text')">文字</button><button type="button" data-v="en" onclick="setProtoPlanView('en')">EN</button></span></div>
+                <div class="st-row pr-only"><span class="st-lbl">時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
+                <div class="st-row pr-only"><span class="st-lbl">メニュー</span><span class="st-seg" id="menuSeg"><button type="button" data-v="hold" onclick="setMenuMode('hold')">長押し</button><button type="button" data-v="bar" onclick="setMenuMode('bar')">下</button></span></div>
+            </div>
+            <!-- 使い方: 出っぱった細長い行 -->
+            <button type="button" class="st-link" onclick="openGuide('home')">ホーム画面に追加<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+            <button type="button" class="st-link" onclick="openGuide('widget')">ホームウィジェット<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
         </div>
         <details class="acc" id="rosterAcc">
             <summary>名簿</summary>
@@ -4388,222 +4520,232 @@ await main();
             </div>
         </details>
         <div class="panel-group-label">チーム分け</div>
-        <details class="acc">
-            <summary>ペア(同じチーム)</summary>
-            <div class="acc-body">
-                <div class="acc-desc">選んだ2人は必ず同じチームになります(希望ポジションより優先)。</div>
+        <div class="st-card st-group">
+            <details class="acc">
+                <summary>ペア(同じチーム)</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">選んだ2人は必ず同じチームになります(希望ポジションより優先)。</div>
 
-                <div class="pair-add-row">
-                    <select id="pairSelectA"></select>
-                    <span>と</span>
-                    <select id="pairSelectB"></select>
-                    <button onclick="addPair()">追加</button>
+                    <div class="pair-add-row">
+                        <select id="pairSelectA"></select>
+                        <span>と</span>
+                        <select id="pairSelectB"></select>
+                        <button onclick="addPair()">追加</button>
+                    </div>
+                    <div id="pairList"></div>
+            
                 </div>
-                <div id="pairList"></div>
-            
-            </div>
-        </details>
-        <details class="acc">
-            <summary>希望ポジション</summary>
-            <div class="acc-body">
-                <div class="acc-desc">カンマ区切りで入力します。チーム分けはポジションごとに均等に分けます。</div>
-                <div class="acc-desc st-note">※「ゲスト」はここに書かなくても、名簿の希望ポジションでいつでも選べます。ゲストの人は、チーム分けでは初心者として扱い、アンケートの対象外になります。LINE通知では「来る」のときだけ名前が載ります。</div>
+            </details>
+            <details class="acc">
+                <summary>希望ポジション</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">カンマ区切りで入力します。チーム分けはポジションごとに均等に分けます。</div>
+                    <div class="acc-desc st-note">※「ゲスト」はここに書かなくても、名簿の希望ポジションでいつでも選べます。ゲストの人は、チーム分けでは初心者として扱い、アンケートの対象外になります。LINE通知では「来る」のときだけ名前が載ります。</div>
 
-                <div class="roles-edit-row">
-                    <input type="text" id="inputRolesText" placeholder="例: セッター, リベロ, スパイカー, 初心者">
+                    <div class="roles-edit-row">
+                        <input type="text" id="inputRolesText" placeholder="例: セッター, リベロ, スパイカー, 初心者">
+                    </div>
+            
                 </div>
-            
-            </div>
-        </details>
-        <details class="acc">
-            <summary>コート位置</summary>
-            <div class="acc-body">
-                <div class="acc-desc">自動配置で置きたい位置をタップで選びます(複数ならその中の1か所。未選択はおまかせ)。上段が前衛(4・3・2)、下段が後衛(5・6・1)。</div>
+            </details>
+            <details class="acc">
+                <summary>コート位置</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">自動配置で置きたい位置をタップで選びます(複数ならその中の1か所。未選択はおまかせ)。上段が前衛(4・3・2)、下段が後衛(5・6・1)。</div>
 
-                <div id="roleSlotList"></div>
+                    <div id="roleSlotList"></div>
             
-            </div>
-        </details>
-        <details class="acc dev-only">
-            <summary>分け方の計算</summary>
-            <div class="acc-body">
-                <div class="acc-desc">キー・平均値パラメータと、平均を高くする差・背反の設定です。</div>
-<div class="set-err" id="paramErr"></div>
-                <h4>キーパラメータ(1〜3つ)</h4>
-                <div class="param-checkbox-grid" id="keyParamCheckboxes"></div>
-                <h4>平均値パラメータ(1〜3つ)</h4>
-                <div class="param-checkbox-grid" id="avgParamCheckboxes"></div>
-                <details class="note-details">
-                    <summary>詳しく(選び方)</summary>
-                    <div class="settings-note">各1〜3つ選びます。同じ項目をキーと平均値の両方に選べます。選ばなかった項目は表示のみです。キーパラメータは結果画面で ◎・◉・◆ で区別します。</div>
-                </details>
-
-                <div class="settings-row" style="margin-top:10px;">
-                    <label for="inputHolderlessMargin">希望者のいないチームの平均を高くする差</label>
-                    <input type="number" id="inputHolderlessMargin" min="0" max="2" step="0.1" inputmode="decimal">
                 </div>
-                <div class="settings-note" style="margin-top:-4px;">セット・スパイクが平均値パラメータのとき、希望者のいないチームの平均を、いるチームよりこの値以上高くします(0〜2・初期値0.3)。</div>
+            </details>
+            <details class="acc dev-only">
+                <summary>分け方の計算</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">キー・平均値パラメータと、平均を高くする差・背反の設定です。</div>
+    <div class="set-err" id="paramErr"></div>
+                    <h4>キーパラメータ(1〜3つ)</h4>
+                    <div class="param-checkbox-grid" id="keyParamCheckboxes"></div>
+                    <h4>平均値パラメータ(1〜3つ)</h4>
+                    <div class="param-checkbox-grid" id="avgParamCheckboxes"></div>
+                    <details class="note-details">
+                        <summary>詳しく(選び方)</summary>
+                        <div class="settings-note">各1〜3つ選びます。同じ項目をキーと平均値の両方に選べます。選ばなかった項目は表示のみです。キーパラメータは結果画面で ◎・◉・◆ で区別します。</div>
+                    </details>
 
-                <div class="settings-row" style="margin-top:10px;">
-                    <label for="inputSmallTeamMargin">6人未満のチームの平均を高くする差</label>
-                    <input type="number" id="inputSmallTeamMargin" min="0" max="2" step="0.1" inputmode="decimal">
+                    <div class="settings-row" style="margin-top:10px;">
+                        <label for="inputHolderlessMargin">希望者のいないチームの平均を高くする差</label>
+                        <input type="number" id="inputHolderlessMargin" min="0" max="2" step="0.1" inputmode="decimal">
+                    </div>
+                    <div class="settings-note" style="margin-top:-4px;">セット・スパイクが平均値パラメータのとき、希望者のいないチームの平均を、いるチームよりこの値以上高くします(0〜2・初期値0.3)。</div>
+
+                    <div class="settings-row" style="margin-top:10px;">
+                        <label for="inputSmallTeamMargin">6人未満のチームの平均を高くする差</label>
+                        <input type="number" id="inputSmallTeamMargin" min="0" max="2" step="0.1" inputmode="decimal">
+                    </div>
+                    <div class="settings-note" style="margin-top:-4px;">6人未満のチームと6人以上のチームが混在するとき、6人未満のチームの平均値パラメータを、他のチームよりこの値以上高くします(0〜2・初期値0.3)。この場合は、上の「希望者のいないチームの平均を高くする差」は無視されます。</div>
+
+                    <h4>背反パラメータ(平均から除外)</h4>
+                    <div id="conflictRuleList"></div>
+                    <button class="conflict-add-btn" onclick="addConflictRule()">＋ 背反ペアを追加</button>
+                    <details class="note-details">
+                        <summary>詳しく(背反)</summary>
+                        <div class="settings-note">左=パラメータ、右=対応する希望ポジション。例: セット(セッター)⇔レシーブ(リベロ) → セッターはレシーブの平均から、リベロはセットの平均から除外します。</div>
+                    </details>
+
+            
                 </div>
-                <div class="settings-note" style="margin-top:-4px;">6人未満のチームと6人以上のチームが混在するとき、6人未満のチームの平均値パラメータを、他のチームよりこの値以上高くします(0〜2・初期値0.3)。この場合は、上の「希望者のいないチームの平均を高くする差」は無視されます。</div>
+            </details>
+            <details class="acc">
+                <summary>仕組みと使い方</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">チーム分けの優先順と、結果画面での入れ替え方です。</div>
 
-                <h4>背反パラメータ(平均から除外)</h4>
-                <div id="conflictRuleList"></div>
-                <button class="conflict-add-btn" onclick="addConflictRule()">＋ 背反ペアを追加</button>
-                <details class="note-details">
-                    <summary>詳しく(背反)</summary>
-                    <div class="settings-note">左=パラメータ、右=対応する希望ポジション。例: セット(セッター)⇔レシーブ(リベロ) → セッターはレシーブの平均から、リベロはセットの平均から除外します。</div>
-                </details>
-
-            
-            </div>
-        </details>
-        <details class="acc">
-            <summary>仕組みと使い方</summary>
-            <div class="acc-body">
-                <div class="acc-desc">チーム分けの優先順と、結果画面での入れ替え方です。</div>
-
-                <div class="settings-note" style="margin-top:0;">メンバーの性別・希望ポジション・パラメータは「名簿」で登録します。</div>
-                <div class="settings-note">結果画面で、選手をタップ → 入れ替え先をタップすると入れ替えできます。</div>
+                    <div class="settings-note" style="margin-top:0;">メンバーの性別・希望ポジション・パラメータは「名簿」で登録します。</div>
+                    <div class="settings-note">結果画面で、選手をタップ → 入れ替え先をタップすると入れ替えできます。</div>
             
 
             
-            <div class="team-split-note">
-                対象は「来る」のメンバーです。
-                <ol>
-                    <li><b>ペア</b>:必ず同じチーム</li>
-                    <li><b>希望ポジション</b>:各チームへ均等に配分</li>
-                    <li class="dev-only"><b>キーパラメータ(◎◉◆)</b>:項目ごとに上位(チーム数)人を選び、各チーム1人ずつ。同値はランダム。希望ポジションありの人は対象外(対応ポジションが各チーム1人ずつなら省略)</li>
-                    <li><b>人数</b>:差は基本1人以内</li>
-                    <li class="dev-only"><b>平均値</b>:平均値パラメータをチーム間で揃える。背反設定の人は除外。希望者のいないチームは平均を高く。6人未満のチームがある場合は、そのチームの平均を高く(希望者の補正は無視)</li>
-                    <li><b>性別</b>:偏りを減らす</li>
-                    <li><b>配置</b>:コート位置を設定した人はその位置へ、他は前衛・後衛でレシーブ・スパイク(機動力補正後)が偏らないよう並べる。結果画面で手動の並べ替えもできる</li>
-                    <li><b>もう一度分ける</b>:候補を40通り作り、その日すでに同じチームになった2人がいちばん少ない分け方を選ぶ(何度も一緒の2人ほど強く避け、直前の組み合わせほど重く数える。数えるのは分け直す前のチームと、記録した試合のチーム)。過去とまったく同じ分け方は、ほかに候補があれば選ばない(重複したら警告を表示)。その日1回目は、重複しない結果を最大30回探す</li>
-                    <li><b>ベンチ</b>:早退・けがなどで一時的に抜ける人。チームから外し、その日のうちは分け直しても入れない(出欠・精算は「来る」のまま)</li>
-                    <li class="admin-only"><b>分け方の予測</b>:分けるたびに自動で計算し、「30回分けると約N通り」と表示</li>
-                    <li><b>チーム分けをリセット</b>:結果・過去の分け方の記録・予測を消して、最初からやり直す</li>
-                    <li class="admin-only"><b>同期</b>:今のチーム分け(入れ替え・ベンチを含む)を、ほかの管理者の端末にも出す</li>
-                </ol>
-                「ランダム」をONにすると、キー・平均値・配置の数値調整をせず、ペア・希望ポジション・性別・人数だけで分けます。
-            </div>
+                <div class="team-split-note">
+                    対象は「来る」のメンバーです。
+                    <ol>
+                        <li><b>ペア</b>:必ず同じチーム</li>
+                        <li><b>希望ポジション</b>:各チームへ均等に配分</li>
+                        <li class="dev-only"><b>キーパラメータ(◎◉◆)</b>:項目ごとに上位(チーム数)人を選び、各チーム1人ずつ。同値はランダム。希望ポジションありの人は対象外(対応ポジションが各チーム1人ずつなら省略)</li>
+                        <li><b>人数</b>:差は基本1人以内</li>
+                        <li class="dev-only"><b>平均値</b>:平均値パラメータをチーム間で揃える。背反設定の人は除外。希望者のいないチームは平均を高く。6人未満のチームがある場合は、そのチームの平均を高く(希望者の補正は無視)</li>
+                        <li><b>性別</b>:偏りを減らす</li>
+                        <li><b>配置</b>:コート位置を設定した人はその位置へ、他は前衛・後衛でレシーブ・スパイク(機動力補正後)が偏らないよう並べる。結果画面で手動の並べ替えもできる</li>
+                        <li><b>もう一度分ける</b>:候補を40通り作り、その日すでに同じチームになった2人がいちばん少ない分け方を選ぶ(何度も一緒の2人ほど強く避け、直前の組み合わせほど重く数える。数えるのは分け直す前のチームと、記録した試合のチーム)。過去とまったく同じ分け方は、ほかに候補があれば選ばない(重複したら警告を表示)。その日1回目は、重複しない結果を最大30回探す</li>
+                        <li><b>ベンチ</b>:早退・けがなどで一時的に抜ける人。チームから外し、その日のうちは分け直しても入れない(出欠・精算は「来る」のまま)</li>
+                        <li class="admin-only"><b>分け方の予測</b>:分けるたびに自動で計算し、「30回分けると約N通り」と表示</li>
+                        <li><b>チーム分けをリセット</b>:結果・過去の分け方の記録・予測を消して、最初からやり直す</li>
+                        <li class="admin-only"><b>同期</b>:今のチーム分け(入れ替え・ベンチを含む)を、ほかの管理者の端末にも出す</li>
+                    </ol>
+                    「ランダム」をONにすると、キー・平均値・配置の数値調整をせず、ペア・希望ポジション・性別・人数だけで分けます。
+                </div>
                         
-            </div>
-        </details>
+                </div>
+            </details>
+        </div>
         <div class="panel-group-label">出欠・連絡</div>
-        <details class="acc">
-            <summary>色分けのしきい値</summary>
-            <div class="acc-body">
-                <div class="acc-desc">カレンダーの人数の色。少なすぎても多すぎても赤になります。</div>
-<div class="set-err" id="threshErr"></div>
-        <div class="settings-row">
-            <label>この人数未満は「不足」(赤)</label>
-            <input type="number" id="inputYellowMin" min="1" inputmode="numeric">
-        </div>
-        <div class="settings-row">
-            <label>この人数以上で「十分」(緑)</label>
-            <input type="number" id="inputCyanMin" min="1" inputmode="numeric">
-        </div>
-        <div class="settings-row">
-            <label>この人数を超えたら人数過多で「不足」(赤)</label>
-            <input type="number" id="inputCyanMax" min="1" inputmode="numeric">
-        </div>
+        <div class="st-card st-group">
+            <details class="acc">
+                <summary>色分けのしきい値</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">カレンダーの人数の色。少なすぎても多すぎても赤になります。</div>
+    <div class="set-err" id="threshErr"></div>
+            <div class="settings-row">
+                <label>この人数未満は「不足」(赤)</label>
+                <input type="number" id="inputYellowMin" min="1" inputmode="numeric">
+            </div>
+            <div class="settings-row">
+                <label>この人数以上で「十分」(緑)</label>
+                <input type="number" id="inputCyanMin" min="1" inputmode="numeric">
+            </div>
+            <div class="settings-row">
+                <label>この人数を超えたら人数過多で「不足」(赤)</label>
+                <input type="number" id="inputCyanMax" min="1" inputmode="numeric">
+            </div>
         
 
             
-            </div>
-        </details>
-        <details class="acc">
-            <summary>フォロー文のテンプレート</summary>
-            <div class="acc-body">
-                <div class="acc-desc">未定・未確認の人に送る文章のひな形です。</div>
-
-        <textarea class="follow-template-input" id="inputFollowTemplate"></textarea>
-        <button class="template-reset-btn" onclick="resetFollowTemplate()">初期のテンプレートに戻す</button>
-
-        <div class="settings-row checkbox-row" style="margin-top: 6px;">
-            <label>フォロー文に「未定」メンバーを記載する</label>
-            <input type="checkbox" id="inputIncludePending">
-        </div>
-        <div class="settings-row checkbox-row">
-            <label>フォロー文に「未確認」メンバーを記載する</label>
-            <input type="checkbox" id="inputIncludeUnconfirmed">
-        </div>
-            
-        <details class="note-details">
-            <summary>詳しく(使える置き換え文字)</summary>
-            <div class="settings-note">
-                {date} → 日付(例: 9/17)<br>
-                {pending_list} → 未定メンバーの一覧<br>
-                {unconfirmed_list} → 未確認メンバーの一覧<br>
-                {pending_count} / {unconfirmed_count} → それぞれの人数のみ
-            </div>
-        </details>
-            </div>
-        </details>
-        <div class="panel-group-label">LINE通知</div>
-        <details class="acc" id="notifyAcc">
-            <summary>通知のタイミング</summary>
-            <div class="acc-body">
-                <div class="acc-desc">LINEのボットがお知らせを送るタイミングです。予定ごとの設定(予定の「通知」・バレーの日の「通知」)があれば、そちらが優先されます。</div>
-                <div id="ntfSettings"></div>
-            </div>
-        </details>
-        <details class="acc" id="notifyTextAcc">
-            <summary>通知の文章</summary>
-            <div class="acc-body">
-                <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
-                <div id="ntfText"></div>
-            </div>
-        </details>
-        <details class="acc" id="notifyExAcc">
-            <summary>通知に載せない人</summary>
-            <div class="acc-body">
-                <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
-                <div class="ntf-chips" id="ntfExclude"></div>
-                <div class="acc-desc ntf-guest-note">点線で「ゲスト」と付いている人は、名簿の希望ポジションがゲストの人です。ここでは選べず、自動で「来る」のときだけ載ります。</div>
-            </div>
-        </details>
-        <div class="panel-group-label">予約・精算</div>
-        <details class="acc">
-            <summary>予約情報プリセット</summary>
-            <div class="acc-body">
-                <div class="acc-desc">予約の画面で選ぶ場所・時間・値段です。場所は最大5つ、時間・値段は場所ごとに1〜4つ。</div>
-
-                <div id="rvPresetEditor"></div>
-            
-            </div>
-        </details>
-        <details class="acc admin-only">
-            <summary>料金の計算(一人当たり)</summary>
-            <div class="acc-body">
-                <div class="acc-desc">料金を「来る」の人数で割って、この単位で切り上げます(例: 100円なら250→300円)。</div>
-
-                <div class="settings-row">
-                    <label for="inputRoundUnit">端数の切り上げ単位(円)</label>
-                    <input type="number" id="inputRoundUnit" min="1" step="1" inputmode="numeric" onchange="setRoundUnit(this.value)">
                 </div>
-            
-            </div>
-        </details>
-        <div class="panel-group-label">記録</div>
-        <details class="acc" id="changeLogAcc">
-            <summary>変更ログ</summary>
-            <div class="acc-body">
-                <div class="acc-desc">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
+            </details>
+            <details class="acc">
+                <summary>フォロー文のテンプレート</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">未定・未確認の人に送る文章のひな形です。</div>
 
-                <div id="changeLogList" class="cl-list"></div>
-                <details class="note-details admin-only" style="margin-top:10px;">
-                    <summary>バックアップから予定を戻す</summary>
-                    <div class="acc-desc" style="margin:8px 2px;">GAS が毎日ドライブの「バレー日程バックアップ」フォルダに保存しているファイル(backup-日付.json)を開いて、中身を全部コピーしてここに貼り付けます。今の共有データに無い予定だけを、確認してから戻します(ほかは変えません)。</div>
-                    <textarea id="backupPaste" rows="4" style="width:100%;box-sizing:border-box;font-size:12px;border-radius:10px;padding:8px;" placeholder="バックアップの中身を貼り付け"></textarea>
-                    <button type="button" class="st-btn" style="margin-top:6px;" onclick="restorePlansFromBackup()">貼り付けたバックアップから戻す</button>
-                </details>
-            
+            <textarea class="follow-template-input" id="inputFollowTemplate"></textarea>
+            <button class="template-reset-btn" onclick="resetFollowTemplate()">初期のテンプレートに戻す</button>
+
+            <div class="settings-row checkbox-row" style="margin-top: 6px;">
+                <label>フォロー文に「未定」メンバーを記載する</label>
+                <input type="checkbox" id="inputIncludePending">
             </div>
-        </details>
+            <div class="settings-row checkbox-row">
+                <label>フォロー文に「未確認」メンバーを記載する</label>
+                <input type="checkbox" id="inputIncludeUnconfirmed">
+            </div>
+            
+            <details class="note-details">
+                <summary>詳しく(使える置き換え文字)</summary>
+                <div class="settings-note">
+                    {date} → 日付(例: 9/17)<br>
+                    {pending_list} → 未定メンバーの一覧<br>
+                    {unconfirmed_list} → 未確認メンバーの一覧<br>
+                    {pending_count} / {unconfirmed_count} → それぞれの人数のみ
+                </div>
+            </details>
+                </div>
+            </details>
+        </div>
+        <div class="panel-group-label">LINE通知</div>
+        <div class="st-card st-group">
+            <details class="acc" id="notifyAcc">
+                <summary>通知のタイミング</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">LINEのボットがお知らせを送るタイミングです。予定ごとの設定(予定の「通知」・バレーの日の「通知」)があれば、そちらが優先されます。</div>
+                    <div id="ntfSettings"></div>
+                </div>
+            </details>
+            <details class="acc" id="notifyTextAcc">
+                <summary>通知の文章</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
+                    <div id="ntfText"></div>
+                </div>
+            </details>
+            <details class="acc" id="notifyExAcc">
+                <summary>通知に載せない人</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
+                    <div class="ntf-chips" id="ntfExclude"></div>
+                    <div class="acc-desc ntf-guest-note">点線で「ゲスト」と付いている人は、名簿の希望ポジションがゲストの人です。ここでは選べず、自動で「来る」のときだけ載ります。</div>
+                </div>
+            </details>
+        </div>
+        <div class="panel-group-label">予約・精算</div>
+        <div class="st-card st-group">
+            <details class="acc">
+                <summary>予約情報プリセット</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">予約の画面で選ぶ場所・時間・値段です。場所は最大5つ、時間・値段は場所ごとに1〜4つ。</div>
+
+                    <div id="rvPresetEditor"></div>
+            
+                </div>
+            </details>
+            <details class="acc admin-only">
+                <summary>料金の計算(一人当たり)</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">料金を「来る」の人数で割って、この単位で切り上げます(例: 100円なら250→300円)。</div>
+
+                    <div class="settings-row">
+                        <label for="inputRoundUnit">端数の切り上げ単位(円)</label>
+                        <input type="number" id="inputRoundUnit" min="1" step="1" inputmode="numeric" onchange="setRoundUnit(this.value)">
+                    </div>
+            
+                </div>
+            </details>
+        </div>
+        <div class="panel-group-label">記録</div>
+        <div class="st-card st-group">
+            <details class="acc" id="changeLogAcc">
+                <summary>変更ログ</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">管理者の変更と、メンバーの出欠回答の履歴です(新しい順・最新300件)。</div>
+
+                    <div id="changeLogList" class="cl-list"></div>
+                    <details class="note-details admin-only" style="margin-top:10px;">
+                        <summary>バックアップから予定を戻す</summary>
+                        <div class="acc-desc" style="margin:8px 2px;">GAS が毎日ドライブの「バレー日程バックアップ」フォルダに保存しているファイル(backup-日付.json)を開いて、中身を全部コピーしてここに貼り付けます。今の共有データに無い予定だけを、確認してから戻します(ほかは変えません)。</div>
+                        <textarea id="backupPaste" rows="4" style="width:100%;box-sizing:border-box;font-size:12px;border-radius:10px;padding:8px;" placeholder="バックアップの中身を貼り付け"></textarea>
+                        <button type="button" class="st-btn" style="margin-top:6px;" onclick="restorePlansFromBackup()">貼り付けたバックアップから戻す</button>
+                    </details>
+            
+                </div>
+            </details>
+        </div>
     </div>
 
 
@@ -5586,7 +5728,7 @@ await main();
         function toggleSettings() {
             const panel = document.getElementById("settingsPanel");
             const opening = !panel.classList.contains("open");
-            if (!opening) { delete panel.dataset.solo; const h = panel.querySelector(".panel-head h3"); if (h) h.textContent = "設定"; }
+            if (!opening) { delete panel.dataset.solo; const h = panel.querySelector(".panel-head h3"); if (h) h.textContent = "SETTINGS"; }
             if (!opening) panel.querySelectorAll("details.acc[open]").forEach(d => { d.open = false; });   // 閉じるときは、開いていた項目も閉じる
             if (!opening) panel.scrollTop = 0;
             if (opening) closeOtherPanels("settingsPanel");
@@ -5604,8 +5746,71 @@ await main();
                 renderNotifySettings();
                 try { renderJpcalSeg(); } catch (e) { /* ignore */ }
                 if (document.getElementById("rosterAcc").open) renderRosterPanel();
+                renderSetAcct();
+                requestAnimationFrame(() => syncSetTop(true));   // 開いて大きさが決まってから、つまみの位置を合わせる
             }
         }
+
+        // ------- 設定の上の欄(丸いボタン・動くつまみ・アカウント) -------
+        //   オン・オフは、隠したもとの切替ボタン(#animSeg など)の「on」を読んで丸いボタンに写す(apply*Seg の決まりはそのまま)
+        function setTileOn(t) {
+            const seg = document.getElementById(t.dataset.seg); if (!seg) return false;
+            const b = t.dataset.k ? seg.querySelector(`button[data-k="${t.dataset.k}"]`) : seg.querySelector('button[data-v="1"]');
+            return !!(b && b.classList.contains("on"));
+        }
+        // 丸いボタンを押した: もとの切替ボタンのうち、今と逆のほうを押す(祝日・行事は、それぞれのボタンを押すと切り替わる)
+        function setTileTap(t) {
+            const seg = document.getElementById(t.dataset.seg); if (!seg) return;
+            const b = t.dataset.k ? seg.querySelector(`button[data-k="${t.dataset.k}"]`) : seg.querySelector(`button[data-v="${setTileOn(t) ? "0" : "1"}"]`);
+            if (b) b.click();
+            syncSetTop();
+        }
+        // VIEW / ADMIN のつまみ: 隠したプルダウンの値を変えて、今までどおり setViewMode を呼ぶ
+        function setModePill(v) {
+            const ms = document.getElementById("modeSelect"); if (!ms || ms.value === v) return;
+            ms.value = v;
+            setViewMode(v);
+            syncSetTop();
+        }
+        // へこんだ溝の中の「つまみ」を、on のボタンの位置へ動かす(first=true のときは動かさずに置く)
+        function setSegPill(seg, first) {
+            let pill = seg.querySelector(":scope > .st-pill");
+            if (!pill) { pill = document.createElement("i"); pill.className = "st-pill"; pill.setAttribute("aria-hidden", "true"); seg.prepend(pill); }
+            const on = seg.querySelector(":scope > button.on");
+            if (!on || !on.offsetWidth) { pill.style.opacity = on ? "" : "0"; return; }
+            if (first || !pill.dataset.ok) pill.style.transition = "none";
+            pill.style.opacity = "";
+            pill.style.width = on.offsetWidth + "px";
+            pill.style.transform = `translateX(${on.offsetLeft}px)`;
+            if (first || !pill.dataset.ok) { void pill.offsetWidth; pill.style.transition = ""; pill.dataset.ok = "1"; }
+        }
+        function syncSetTop(first) {
+            const top = document.getElementById("setTop"); if (!top) return;
+            top.querySelectorAll(".st-tile[data-seg]").forEach(t => { const on = setTileOn(t); t.classList.toggle("on", on); t.setAttribute("aria-pressed", String(on)); });
+            const th = document.getElementById("themeTile");
+            if (th) { const d = document.body.classList.contains("dark"); th.classList.toggle("on", d); th.setAttribute("aria-pressed", String(d)); }
+            const ms = document.getElementById("modeSelect");
+            document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", !!ms && b.dataset.m === ms.value));
+            top.querySelectorAll(".st-rows .st-seg, #modeSeg").forEach(sg => setSegPill(sg, first));
+        }
+        // アカウントのカード: 頭文字(名前がなければ人の形)・名前(なければ Admin / Guest)
+        function renderSetAcct() {
+            const av = document.getElementById("setAvatar"), nm = document.getElementById("setAccName");
+            if (!av || !nm) return;
+            let n = ""; try { n = myMemberName() || ""; } catch (e) { n = ""; }
+            const adm = (() => { try { return realAdmin(); } catch (e) { return false; } })();
+            av.innerHTML = n ? escapeHtml(Array.from(n)[0]) : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>`;
+            nm.textContent = n || (adm ? "Admin" : "Guest");
+        }
+        // 隠した切替ボタンの「on」が変わったら(どこから変えても)、丸いボタンとつまみを合わせる
+        (() => {
+            const top = document.getElementById("setTop"); if (!top || typeof MutationObserver === "undefined") return;
+            let q = 0;
+            const mo = new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; syncSetTop(); }); });
+            mo.observe(top, { subtree: true, attributes: true, attributeFilter: ["class"] });
+            mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });   // ダーク表示の切り替え
+            addEventListener("resize", () => { if (document.getElementById("settingsPanel").classList.contains("open")) syncSetTop(true); });
+        })();
 
         function resetFollowTemplate() {
             document.getElementById("inputFollowTemplate").value = DEFAULT_FOLLOW_TEMPLATE;
@@ -5618,7 +5823,7 @@ await main();
             if (!el) return;
             el.textContent = msg; el.classList.toggle("err", !!err); el.classList.toggle("ok", !err);
             clearTimeout(el._t);
-            if (!err) el._t = setTimeout(() => { el.textContent = "変更はすぐ保存"; el.classList.remove("ok"); }, 1600);
+            if (!err) el._t = setTimeout(() => { el.textContent = ""; el.classList.remove("ok"); }, 1600);
         }
         function setErr(id, msg) { const e = document.getElementById(id); if (e) { e.textContent = msg || ""; e.classList.toggle("show", !!msg); } }
         // alert を出す古い保存処理を、画面内の表示に置き換えて呼ぶ
@@ -7110,8 +7315,9 @@ await main();
             if (!show) return;
             const on = pairActive();
             const names = pairIds().map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
-            b.classList.toggle("on", on);
-            b.innerHTML = IC("users") + `<span>${on ? escapeHtml(names.join("・") || "オン") : "オフ"}</span>`;
+            b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+            // 設定の丸いボタン: 輪が2つの絵と「ペア」(オンのときは相手の名前)
+            b.innerHTML = `<i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="12" r="3.5"/><circle cx="16" cy="12" r="3.5"/></svg></i><span class="st-tl">${on ? escapeHtml(names.join("・") || "ペア") : "ペア"}</span>`;
             b.title = on ? "ペアモード: " + names.join("・") : "ペアモード(オフ)";
         }
         function openPairPanel() {
@@ -9956,11 +10162,12 @@ await main();
             if (meta) meta.setAttribute("content", dark ? "#313746" : "#eceff4");
             setTimeout(() => { renderProto(); protoTopColor(); }, 0);   // 画面の色も切り替える
             const lb = document.getElementById("themeLbl");
-            if (lb) lb.textContent = typeof realAdmin === "function" && realAdmin() ? (themeIsViewSlot() ? "表示(Viewのとき)" : "表示(Adminのとき)") : "表示";
-            const btn = document.getElementById("themeToggleBtn");
+            // 丸いボタンの名前は「ダーク」だけ。管理者アカウントは、どちらのモードの表示かを小さく添える(表示(Adminのとき)/(Viewのとき))
+            if (lb) lb.innerHTML = "ダーク" + (typeof realAdmin === "function" && realAdmin() ? `<small>${themeIsViewSlot() ? "VIEW" : "ADMIN"}</small>` : "");
+            const btn = document.getElementById("themeTile");
             if (btn) {
-                btn.innerHTML = IC(dark ? "moon" : "sun") + `<span>${dark ? "ダーク" : "ライト"}</span>`;
-                btn.title = (dark ? "ダーク表示" : "ライト表示") + " / タップで切替";
+                btn.classList.toggle("on", dark); btn.setAttribute("aria-pressed", String(dark));
+                btn.title = (typeof realAdmin === "function" && realAdmin() ? (themeIsViewSlot() ? "表示(Viewのとき): " : "表示(Adminのとき): ") : "") + (dark ? "ダーク表示" : "ライト表示") + " / タップで切替";
             }
         }
         function toggleTheme() {
@@ -9983,6 +10190,7 @@ await main();
             document.body.classList.toggle("real-admin", realAdmin());
             const ms = document.getElementById("modeSelect");
             if (ms) ms.value = viewPreview ? "view" : "admin";
+            try { syncSetTop(); renderSetAcct(); } catch (e) { /* ignore */ }   // VIEW / ADMIN のつまみ
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }
             if (rosterIsOpen()) renderRosterPanel();
             if (document.getElementById("settingsPanel").classList.contains("open")) renderTeamSettingsPanel();
@@ -14559,6 +14767,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
             }
             renderPairBtn();
+            renderSetAcct();
         }
 
         function signInForFirestore() {
@@ -14765,7 +14974,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 00:25";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 02:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16904,6 +17113,9 @@ const namesBtn = isAdmin() && dates.length > 0
             document.querySelectorAll("#hapSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === hapOn));
             const onB = document.querySelector('#hapSeg button[data-v="1"]');   // オンにした瞬間に一度鳴らす(iPhone は透明スイッチで)
             if (onB) { const old = onB.querySelector(".pr-hap"); if (old) old.remove(); if (!hapOn && !navigator.vibrate) onB.insertAdjacentHTML("beforeend", `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`); }
+            // 設定の丸いボタン「振動」にも同じ透明スイッチを置く(もとのボタンは隠してあり押せないため)
+            const tile = document.getElementById("hapTile");
+            if (tile) { const old = tile.querySelector(".pr-hap"); if (old) old.remove(); if (!hapOn && !navigator.vibrate) tile.insertAdjacentHTML("beforeend", `<input type="checkbox" switch class="pr-hap" tabindex="-1" aria-hidden="true" onclick="protoHapTap(event,this)">`); }
         }
         function setHaptic(on) {
             const was = hapOn; hapOn = !!on;
