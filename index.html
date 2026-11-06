@@ -16212,7 +16212,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/07 01:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/07 02:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -17607,7 +17607,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const endsHere = multi && last && !first && !p.allDay && e0 != null;   // 連続の最終日: 終わりの時間
                 return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
             });
-            if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
+            if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", sub: sv.place || "", col: P.ink2, min: sv.s != null ? sv.s : 0 });
             // そろそろ: いつもの間隔なら、そろそろ入りそうな予定(描くたびに1回だけ数える。マスごとには数えない)
             const soon = protoSoonOn && !pin ? protoSoonCalc(todayKey) : null;
             protoSoonSel = soon ? (soon.get(sel) || []) : [];
@@ -17646,10 +17646,11 @@ const namesBtn = isAdmin() && dates.length > 0
             const NR = 6;   // いつも6行(月ごとにマスの大きさが変わらないように)
             // 入力を下に出しているとき(キーボードの上)は、入れる日の週だけ出す(6行を押しこむと文字が重なるため)。何日も続くときは終わりの週まで(2週まで)
             let rowLo = 0, rowHi = NR - 1;
-            if (pin && protoPinBottom) {
+            // 入力中(上でも下でも)は、入れる日の週から3週間だけ出す(6行を押しこむと文字がつぶれるため)
+            if (pin) {
                 const idx = k0 => Math.round((new Date(k0 + "T00:00:00") - new Date(y, m - 1, 1 - off)) / 864e5);
-                const a = idx(pin.sd), b = idx(pin.ed || pin.sd);
-                if (a >= 0 && a < NR * 7) { rowLo = Math.floor(a / 7); rowHi = Math.min(NR - 1, Math.max(rowLo, Math.floor(Math.min(b, NR * 7 - 1) / 7)), rowLo + 1); }
+                const a = idx(pin.sd);
+                if (a >= 0 && a < NR * 7) { rowLo = Math.min(Math.floor(a / 7), NR - 3); rowHi = rowLo + 2; }
             }
             const compact = rowLo !== 0 || rowHi !== NR - 1;
             for (let i = rowLo * 7; i < (rowHi + 1) * 7; i++) {
@@ -17735,7 +17736,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
                     <div style="position:relative">
                       <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 2 * PROTO_ROW_H : 3 * PROTO_ROW_H}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
-                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" ${r.soon != null ? `class="pr-soon" aria-label="${esc(r.title)} を入れる" ` : ""}onclick="${r.soon != null ? `protoSoonAdd(${r.soon})` : r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer">${r.soon != null ? `<i style="width:8px;height:8px;margin:0 -1.5px;border-radius:50%;flex:none;box-sizing:border-box;border:1.2px dashed ${P.ink3}"></i>` : `<i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.col}"></i>`}<span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}</span></div>`).join("") : ""}
+                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" ${r.soon != null ? `class="pr-soon" aria-label="${esc(r.title)} を入れる" ` : ""}onclick="${r.soon != null ? `protoSoonAdd(${r.soon})` : r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer">${r.soon != null ? `<i style="width:8px;height:8px;margin:0 -1.5px;border-radius:50%;flex:none;box-sizing:border-box;border:1.2px dashed ${P.ink3}"></i>` : `<i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.col}"></i>`}<span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:1;min-width:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}${r.sub ? `<span style="margin-left:6px;font-size:11px;font-weight:500;color:${P.ink3}">${esc(r.sub)}</span>` : ""}</span></div>`).join("") : ""}
                       </div>
                       <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
                     </div>
@@ -17743,14 +17744,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 </div>
               </div>`;
             const calHtml = `
-              <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchmove="protoTM(event)" ontouchend="protoTE(event)" ontouchcancel="protoTC()" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;${compact ? "justify-content:flex-end;" : ""}padding-bottom:96px;touch-action:pan-y;${protoAnim}">
+              <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchmove="protoTM(event)" ontouchend="protoTE(event)" ontouchcancel="protoTC()" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;${compact && protoPinBottom ? "justify-content:flex-end;" : ""}padding-bottom:96px;touch-action:pan-y;${protoAnim}">
                 <div class="pr-mhead" style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
 
                   <div role="button" aria-label="予定を探す" onclick="protoFindTap()" style="display:flex;align-items:center;gap:12px;cursor:pointer"><span style="font-family:${en};font-size:16px;font-weight:700">${m}<span style="font-size:12px;margin-left:1px">月</span></span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span>${typeof savingTotalHtml === "function" ? savingTotalHtml(y) : ""}<span class="pr-svdot" id="prSvDot" role="button" onclick="event.stopPropagation();openSurvey()" aria-label="アンケートの知らせ"><i class="sv-r"></i><i class="sv-o"></i><i class="sv-g"></i></span>${protoUpdPending ? `<button type="button" class="pr-upd" onclick="event.stopPropagation();refreshApp()" aria-label="更新があります(タップで反映)"></button>` : ""}</div>
 
                 </div>
                 <div class="pr-mhead" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => `<span style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`).join("")}</div>
-                <div class="pr-grid${compact ? " compact" : ""}" style="position:relative;${compact ? "flex:none;height:" + (rowHi - rowLo + 1) * 64 + "px" : "flex:1;min-height:0"};display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${rowHi - rowLo + 1},minmax(0,1fr))">${cellsHtml}</div>
+                <div class="pr-grid${compact ? " compact" : ""}" style="position:relative;${compact ? "flex:none;height:" + (rowHi - rowLo + 1) * 52 + "px" : "flex:1;min-height:0"};display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${rowHi - rowLo + 1},minmax(0,1fr))">${cellsHtml}</div>
               </div>`;
             const dockHtml = pin ? "" : prMenuMode() === "bar" ? prMenuBarHtml() : `
               <div class="pr-dock">
@@ -17762,7 +17763,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 <button type="button" aria-label="予定を追加" onclick="protoAdd()" style="width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:${P.acc};${raise}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
               </div>`;
             // 入力中: ヘッダーが入力欄になる(上: かんたん入力 / 左: 入れる日の文字盤 / 右: 読み取った日時・題名と色 / 下: 保存先などのボタン)
-            let pinDialH = "", pinInfo = "", pinOpts = "", pinLine = P.ink3;
+            let pinDialH = "", pinInfo = "", pinOpts = "", pinCols = "", pinLine = P.ink3;
             if (pin) {
                 const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
                 const dd = (k, big) => { const [yy, mm, d0] = k.split("-").map(Number); const w = new Date(yy, mm - 1, d0).getDay(); return `<span style="font-family:${en};font-size:14px;font-weight:700">${mm}/${d0}</span><span style="font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span>`; };
@@ -17824,19 +17825,20 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (isAdmin()) op.push(ib("bell", !!planNtf && !planNtf.off, "通知", "openPlanNtf()"));
                     if (planEditId != null) op.push(ib("trash", false, "削除", "pinDelete()"));
                 }
-                if (!pinShareOpen && !pinSetOpen) {   // ふだん: 色5つ + ⚙
+                pinCols = dots.replace(/width:24px;height:24px;border-radius:12px/g, "width:32px;height:32px;border-radius:16px").replace(/width:(10|12)px;height:(10|12)px/g, (m0, a1) => a1 === "10" ? "width:12px;height:12px" : "width:15px;height:15px");   // 色はいつも1段目に
+                if (false) {   // (前は: 色5つ + ⚙ にたたんでいた)
                     const on = op.some(x => /aria-pressed="true"/.test(x) && !/aria-label="(共有|ペアと共有)/.test(x)) || planScope === "local";
                     op.length = 0;
                     op.push(dots.replace(/width:24px;height:24px;border-radius:12px/g, "width:32px;height:32px;border-radius:16px").replace(/width:(10|12)px;height:(10|12)px/g, (m0, a1) => a1 === "10" ? "width:12px;height:12px" : "width:15px;height:15px"));
                     op.push(`<button type="button" aria-label="設定(共有・休日・出欠・通知${planEditId != null ? "・削除" : ""})" title="設定" onclick="pinSetOpen=true;renderProto()" style="position:relative;width:32px;height:32px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink3};${raiseS}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle></svg>${on ? `<i style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:3px;background:${P.acc}"></i>` : ""}</button>`);
-                } else if (pinSetOpen && !pinShareOpen) op.unshift(pill(false, "‹", "pinSetOpen=false;renderProto()", "width:32px;height:32px;padding:0;border-radius:16px;font-size:14px"));
+                }
                 if (false) { op.length = 0; op.push(pill(false, "‹", "pinColOpen=false;renderProto()", "width:32px;height:32px;padding:0;border-radius:16px;font-size:14px")); op.push(dots.replace(/setPlanColor\((\d+)\);renderProto\(\)/g, "setPlanColor($1);pinColOpen=false;renderProto()").replace(/width:24px;height:24px;border-radius:12px/g, "width:32px;height:32px;border-radius:16px").replace(/width:(10|12)px;height:(10|12)px/g, "width:14px;height:14px")); }
 
                 pinOpts = op.join("");
             }
             // 入力中のヘッダー: ふだんのヘッダーと同じ並び(左に文字盤、右に文字)。入力欄は線だけの1行
             const headPin = `
-              <div style="position:relative;height:${up ? 204 : 198}px;box-sizing:border-box;border-radius:28px;padding:16px 20px 12px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
+              <div style="position:relative;height:${up ? 292 : 286}px;box-sizing:border-box;border-radius:28px;padding:16px 20px 12px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
                 <div style="display:flex;align-items:center;gap:18px;flex:1;min-height:0">
                   <div id="prPinDial" style="flex:none">${pinDialH}</div>
                   <div style="display:flex;flex-direction:column;min-width:0;flex:1">
@@ -17852,8 +17854,12 @@ const namesBtn = isAdmin() && dates.length > 0
                     <div style="height:30px;margin:6px 0 4px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5V12l3 2"></path></svg>
                       <div style="position:relative;flex:1;min-width:0;height:100%;color:${P.ink}"><input id="pinH" class="pin-in" type="text" inputmode="numeric" maxlength="8" placeholder="17001800" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="時間(4桁ずつ: 17001800 = 17:00-18:00。空なら終日)" oninput="pinInput()" onblur="pinTidy('h')" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();this.blur();pinSave();}"><span id="pinHG" style="position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.06em;color:${P.ink3};pointer-events:none;white-space:nowrap">${pinGhost.h}</span></div>
                     </div>
+                    <div style="height:30px;margin:2px 0 0;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h14M5 11h14M5 16h9"></path></svg>
+                      <input id="pinM" class="pin-in" type="text" enterkeyhint="done" autocomplete="off" aria-label="メモ" placeholder="メモ" oninput="pinMemoInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();this.blur();}" style="font-size:13px">
+                    </div>
                   </div>
                 </div>
+                <div id="prPinCols" style="display:flex;align-items:center;gap:9px;height:40px;flex:none;margin:6px -10px 0 -18px;padding:0 10px 0 18px;overflow-x:auto;scrollbar-width:none">${pinCols}</div>
                 <div style="display:flex;align-items:center;gap:10px;height:40px;flex:none">
                   <div id="prPinOpts" style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;height:40px;box-sizing:content-box;margin:-12px -10px -12px -18px;padding:12px 10px 12px 18px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none">${pinOpts}</div>
                   <button type="button" aria-label="保存" onclick="pinSave()" style="position:relative;width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.acc};${raiseS}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>${protoHapHtml()}</button>
@@ -17866,6 +17872,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 document.getElementById("prPinDial").innerHTML = pinDialH;
                 document.getElementById("prPinInfo").innerHTML = pinInfo;
                 document.getElementById("prPinOpts").innerHTML = pinOpts;
+                document.getElementById("prPinCols").innerHTML = pinCols;
                 document.getElementById("prPinLine").style.borderBottomColor = pinLine;
                 document.getElementById("pinHG").textContent = pinGhost.h;
                 const cal0 = document.getElementById("prCal"); if (cal0) cal0.outerHTML = calHtml;
@@ -18483,7 +18490,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoRow(id) {
             const p = planList.find(x => x.id === id); if (!p) return;
             const editable = isAdmin() || !!p.local || pairPlanEditable(p);
-            if (editable) protoOpenInput(id); else openPlanDetail(id);
+            openPlanDetail(id);   // まず詳細(メモ・出欠)を見せる。直すときは詳細の「編集」から
         }
         function protoAdd() { planDetailId = null; protoOpenInput(null); }
         var PROTO_ROW_H = 20;   // ヘッダーの予定1行の高さ
@@ -18553,6 +18560,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (p) {
                 t.value = p.title || "";
                 h.value = planTimed(p) ? pinHDigits(p.start, p.end) : "";
+                const mm = document.getElementById("pinM"); if (mm) mm.value = p.memo || "";
             }
             pinInput();
             setTimeout(() => { try { t.focus(); } catch (e) { /* ignore */ } }, 30);
@@ -18573,13 +18581,20 @@ const namesBtn = isAdmin() && dates.length > 0
             const [y, m] = selectedDate.split("-").map(Number); protoYM = [y, m];
             renderProto();
         }
+        // メモ: 題名の13文字目からあふれた分 + メモ欄
+        function pinMemoSync() {
+            const t = Array.from(pinVal("pinT")), m = document.getElementById("pinM");
+            const over = t.length > 12 ? t.slice(12).join("").trim() : "";
+            $op("opMemo").value = [over, m ? m.value.trim() : ""].filter(Boolean).join(" ");
+        }
+        function pinMemoInput() { pinMemoSync(); }
         // 打つたびに: 今の入力欄(題名・日付・時間)へ入れて、文字盤とカレンダーを描き直す
         function pinInput() {
             if (!document.getElementById("pinT")) return;
             const r = pinParse();
             const title = Array.from(r.T);
             $op("opTitle").value = title.slice(0, 12).join("");
-            if (title.length > 12) $op("opMemo").value = title.slice(12).join("").trim();
+            pinMemoSync();
             $op("opStartDate").value = r.sd; $op("opEndDate").min = r.sd; $op("opEndDate").value = r.ed;
             setPlanAllDay(r.allDay);
             if (!r.allDay) { $op("opStart").value = r.st; $op("opEnd").value = r.et; }
