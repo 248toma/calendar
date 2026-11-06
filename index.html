@@ -3714,7 +3714,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv {   /* フォーム分析(#fxOv)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv {   /* フォーム分析(#fxOv)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3728,7 +3728,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -4091,6 +4091,23 @@
             #fxOv .fx-play > button { padding: 0 12px; }
             #fxOv .fx-play .fx-sp button { padding: 0 8px; }
         }
+
+        /* 分析・設定の折りたたみ: 中の板の影が左右で切れないよう、はみ出しを許す幅(パネルの余白ぶん)を外側に取る */
+        #settingsPanel details.acc { margin-left: -18px !important; margin-right: -18px !important; padding-left: 18px !important; padding-right: 18px !important; }
+        /* ペアモードの板: 設定より手前に出し、設定と同じやわらかい凹凸にする */
+        #pairOv { z-index: 9700; background: rgba(20,24,32,.28); }
+        #pairOv .pair-box { background: var(--sn-bg); border-radius: 28px 28px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.12); padding: 22px 20px calc(20px + env(safe-area-inset-bottom)); }
+        #pairOv .pair-head b { font-size: 15px; color: var(--sn-ink); letter-spacing: .02em; }
+        #pairOv .pair-sw { width: 54px; height: 30px; border-radius: 15px; background: var(--sn-bg); box-shadow: inset 3px 3px 6px var(--sn-dk), inset -3px -3px 6px var(--sn-lt); }
+        #pairOv .pair-sw span { top: 4px; left: 4px; width: 22px; height: 22px; background: var(--sn-bg); box-shadow: 2px 2px 5px var(--sn-dk), -2px -2px 5px var(--sn-lt); }
+        #pairOv .pair-sw.on { background: var(--sn-bg); }
+        #pairOv .pair-sw.on span { left: 28px; background: var(--sn-acc); box-shadow: 2px 2px 5px var(--sn-dk); }
+        #pairOv .pair-note { color: var(--sn-ink3); font-size: 11.5px; }
+        #pairOv .pair-lbl { color: var(--sn-ink3); }
+        #pairOv .pair-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        #pairOv .op-sc { border: none; background: var(--sn-bg); color: var(--sn-ink2); border-radius: 16px; padding: 7px 14px; font-size: 12.5px; box-shadow: 3px 3px 7px var(--sn-dk), -3px -3px 7px var(--sn-lt); }
+        #pairOv .op-sc.on { color: var(--sn-acc); font-weight: 700; box-shadow: inset 3px 3px 6px var(--sn-dk), inset -3px -3px 6px var(--sn-lt); }
+        #pairOv .op-add { border: none; background: var(--sn-bg); color: var(--sn-acc); font-weight: 700; border-radius: 18px; padding: 0 26px; height: 42px; box-shadow: 4px 4px 9px var(--sn-dk), -4px -4px 9px var(--sn-lt); }
 </style>
 </head>
 <body>
@@ -15243,7 +15260,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 11:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 12:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -17952,8 +17969,9 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 天気(Open-Meteo: 無料・鍵なし)。設定でオンにしたときだけ取りに行く -------
         //   場所: 愛知(名古屋)に決めておく(現在地は聞かない)
         //   3時間はこの端末に覚えたものを使う。つながらないときは何も出さない
-        const WX_KEY = "pr_wx_v1", WX_LOC_KEY = "pr_wx_loc_v1", WX_CACHE_KEY = "pr_wx_cache_v1", WX_TOKYO = { lat: 35.18, lon: 136.91 }, WX_TTL = 3 * 3600e3;
+        const WX_KEY = "pr_wx_v1", WX_LOC_KEY = "pr_wx_loc_v1", WX_CACHE_KEY = "pr_wx_cache_v2", WX_TOKYO = { lat: 35.18, lon: 136.91 }, WX_TTL = 3 * 3600e3;
         var protoWxOnV = false, protoWxData = null, protoWxBusy = false, protoWxFailAt = 0;
+        try { localStorage.removeItem("pr_wx_cache_v1"); } catch (e) { /* ignore */ }   // 前の形の保存(1日の最大で決めていたもの)は捨てる
         try { protoWxOnV = localStorage.getItem(WX_KEY) === "1"; protoWxData = JSON.parse(localStorage.getItem(WX_CACHE_KEY) || "null"); } catch (e) { /* ignore */ }
         function applyWxSeg() { document.querySelectorAll("#wxSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === protoWxOnV)); }
         function protoWxLoc() {
@@ -17981,15 +17999,29 @@ const namesBtn = isAdmin() && dates.length > 0
             protoWxBusy = true;
             const ac = typeof AbortController === "function" ? new AbortController() : null;
             const to = setTimeout(() => { try { if (ac) ac.abort(); } catch (e) { /* ignore */ } protoWxBusy = false; }, 10000);   // 10秒で打ち切る
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${l.lat}&longitude=${l.lon}&daily=weather_code,temperature_2m_max,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=10`, ac ? { signal: ac.signal } : undefined)
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${l.lat}&longitude=${l.lon}&hourly=weather_code,precipitation_probability,temperature_2m&timezone=Asia%2FTokyo&forecast_days=10`, ac ? { signal: ac.signal } : undefined)
                 .then(r => r.ok ? r.json() : Promise.reject(r.status))
                 .then(j => {
-                    const dl = j && j.daily; if (!dl || !Array.isArray(dl.time)) throw new Error("wx");
+                    // 1時間ごとの予報を、日中(7〜21時。今日はこれからの時間だけ)でまとめる
+                    //   1日の「いちばん悪い天気」「最大の降水確率」だと、夜中や早朝の小雨だけで一日中「雨 100%」になってしまうため
+                    const hr = j && j.hourly; if (!hr || !Array.isArray(hr.time)) throw new Error("wx");
+                    const nowK = formatDateKey(new Date()), nowH = new Date().getHours(), byDay = {};
+                    hr.time.forEach((t, i) => {
+                        const m = /^(\d{4}-\d\d-\d\d)T(\d\d)/.exec(String(t)); if (!m) return;
+                        const k = m[1], h = +m[2];
+                        if (h < 7 || h > 21 || (k === nowK && h < nowH)) return;
+                        const c = Number((hr.weather_code || [])[i]); if (!isFinite(c)) return;
+                        (byDay[k] = byDay[k] || []).push({ c, p: Number((hr.precipitation_probability || [])[i]), t: Number((hr.temperature_2m || [])[i]) });
+                    });
                     const out = {};
-                    dl.time.forEach((k, i) => {
-                        if (!/^\d{4}-\d\d-\d\d$/.test(String(k))) return;
-                        const c = Number((dl.weather_code || [])[i]); if (!isFinite(c)) return;
-                        out[k] = { c, t: (dl.temperature_2m_max || [])[i], p: (dl.precipitation_probability_max || [])[i] };
+                    Object.keys(byDay).forEach(k => {
+                        const a = byDay[k]; if (!a.length) return;
+                        const wet = a.filter(x => x.c >= 51).length, snow = a.filter(x => (x.c >= 71 && x.c <= 77) || x.c === 85 || x.c === 86).length;
+                        const cloudy = a.filter(x => x.c >= 2).length;
+                        const c = snow >= 3 ? 71 : wet >= 3 ? 61 : cloudy * 2 > a.length ? 3 : 0;   // 3時間以上の雨(雪)で雨(雪)。半分以上くもりなら、くもり
+                        const ps = a.map(x => x.p).filter(isFinite).sort((x, y) => y - x).slice(0, 3);   // 高い3時間の平均(1時間だけの山で決めない)
+                        const ts = a.map(x => x.t).filter(isFinite);
+                        out[k] = { c, p: ps.length ? Math.round(ps.reduce((x, y) => x + y, 0) / ps.length) : null, t: ts.length ? Math.max(...ts) : null };
                     });
                     protoWxData = { at: Date.now(), lat: l.lat, lon: l.lon, d: out };
                     try { localStorage.setItem(WX_CACHE_KEY, JSON.stringify(protoWxData)); } catch (e) { /* ignore */ }
