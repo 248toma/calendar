@@ -4027,14 +4027,13 @@
         #settingsPanel[data-solo="ana"] #matchHistory .mt-day:first-child { margin-top: 4px; }
         #settingsPanel[data-solo="ana"] #matchHistory .mt-list { gap: 12px; }
         #settingsPanel[data-solo="ana"] #matchHistory .mt-grp { padding: 12px 14px; border-radius: 20px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
-        #settingsPanel[data-solo="ana"] #matchHistory .mt-grp.warn { box-shadow: var(--sn-insetS), inset 0 0 0 1.5px color-mix(in srgb, var(--sn-neg) 55%, transparent); }   /* 注意はオレンジでなく、くすんだ赤の細い線 */
-        #settingsPanel[data-solo="ana"] #matchHistory .mt-grp.warn .mt-gs { color: var(--sn-neg); }
         #settingsPanel[data-solo="ana"] #matchHistory .mt-gt { font-family: var(--sn-en); }
         #settingsPanel[data-solo="ana"] #matchHistory .mt-gg { border-top: 1px solid var(--sn-line); }
         #settingsPanel[data-solo="ana"] #matchHistory .mt-gs, #settingsPanel[data-solo="ana"] #matchHistory .mt-no { font-family: var(--sn-en); }
-        #settingsPanel[data-solo="ana"] #matchHistory .mt-diffrow { color: var(--sn-acc); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-diffrow { color: var(--sn-ink3); }
         #settingsPanel[data-solo="ana"] #matchHistory .mt-del.adm { color: var(--sn-ink3); }
-        #settingsPanel[data-solo="ana"] #matchHistory select.mt-gsel { border-radius: 12px !important; background: var(--sn-dome) !important; box-shadow: var(--sn-raiseXS) !important; color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] #matchHistory select.mt-gsel { border-radius: 13px !important; background: transparent !important; box-shadow: var(--sn-insetS) !important; color: var(--sn-ink2); }
+        #settingsPanel[data-solo="ana"] #matchHistory .mt-ed-chip { background: var(--sn-dome); }
         @media (max-width: 389px) {
             #settingsPanel[data-solo="ana"] :is(.rs-top .rs-seg2, .rs-top .mt-unit-seg, .why-sort) > button { padding: 0 8px; }
             #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > :not(summary) { margin-left: 16px; margin-right: 16px; }
@@ -4170,6 +4169,74 @@
         .mt-lub.on { color: var(--accent); }
         .mt-lub.on::before { background: var(--accent); box-shadow: none; }
         .mt-ed-row .mt-rotb { margin-left: auto; }
+        /* ===== 試合(11/06 23:30): すっきり。文字は少なく、色はアクセントひとつ。チーム分けの画面は緑、分析は青(--accent に従う) ===== */
+        /* 見出し: 「試合」と、右にへこんだ静かなルールの select */
+        #matchBox .mt-rule select { height: 28px !important; padding: 0 10px !important; border-radius: 14px !important; background: transparent !important; box-shadow: var(--sink) !important; color: var(--ink-2); font-size: 12px !important; font-weight: 700; }
+        /* 入力の行: [点] – [点] [✓] [↻][▦](↻ = ローテも保存のスイッチ / ▦ = ローテの画面) */
+        #matchBox .mt-rec { flex-direction: row; align-items: center; gap: 6px; margin-bottom: 12px; }
+        #matchBox .mt-rec .sc-in { flex: 1 1 auto; gap: 6px; }
+        #matchBox .mt-rec .sc-in .sc-num { width: 58px !important; height: 42px !important; font-size: 20px !important; }
+        #matchBox .mt-rec .mt-ok { width: 44px; height: 42px; }
+        .mt-ics { flex: none; display: inline-flex; gap: 6px; }
+        .mt-ic, .mt-ic.mt-lub, .mt-ic.mt-rotb { flex: none; width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .mt-ic.mt-lub::before { content: none; }
+        .mt-ic.on { color: var(--accent); box-shadow: var(--sink); }
+        /* 組のカード: うすくへこんだ面。枠の色はなし */
+        .mt-grp, .mt-grp.warn { padding: 10px 12px; border-radius: 14px; background: var(--bg); box-shadow: var(--sink); }
+        .mt-gno { font-size: 10.5px; color: var(--ink-3); }
+        .mt-back { width: 24px; height: 24px; padding: 0; border-radius: 50%; color: var(--ink-3); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); }
+        /* メンバー: 1チーム1行。はみ出たら右を薄く消す。タップで全部 */
+        .mt-gnames { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .mt-gnames .mt-gt { align-items: center; }
+        .mt-gnames .mt-gt > span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
+        .mt-gnames.open .mt-gt { align-items: baseline; }
+        .mt-gnames.open .mt-gt > span { white-space: normal; -webkit-mask-image: none; mask-image: none; }
+        /* ゲームの行: 番号・点数・↻・(空き)・✎・✕ */
+        .mt-gg .mt-top { grid-template-columns: 1.4em auto 1.8em minmax(0, 1fr) 28px 24px; }
+        .mt-gg .mt-top .mt-edb { grid-column: 5; }
+        .mt-gg .mt-top .mt-del { grid-column: 6; }
+        .mt-diffrow { color: var(--ink-3); font-weight: 600; }
+        /* 結果: 小さなうすい1行。決着 = ✓ / まだ = うすい輪 / ゲーム数が合わない = うすい点 */
+        .mt-gs, .mt-grp.warn .mt-gs { display: flex; align-items: center; gap: 6px; margin-top: 6px; font: 600 11px 'Montserrat', 'Noto Sans JP', system-ui, sans-serif; color: var(--ink-3); }
+        .mt-gs i { font-style: normal; }
+        .mt-gs-ok { font-size: 10px; }
+        .mt-gs-wait { width: 7px; height: 7px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-3); opacity: .7; }
+        .mt-gs-wait.over { background: var(--ink-3); box-shadow: none; opacity: .55; }
+        /* ===== 直す(✎): 点数 / 1・2 の2列の名前の札 / 外れた人 / ボタン1行 ===== */
+        .mt-ed { gap: 10px; padding: 12px; border-radius: 14px; }
+        .mt-ed-sc { flex-wrap: nowrap; gap: 6px; }
+        .mt-ed-sc:has(.mt-ed-old) { flex-wrap: wrap; }   /* 点数のない古い記録だけ、2行になってもよい */
+        .mt-ed-sc .sc-in { flex: 0 1 auto; min-width: 0; gap: 6px; }
+        .mt-ed-sc .mt-gsel { flex: none; margin-left: auto; }
+        #matchBox .mt-ed select.mt-gsel, #matchHistory .mt-ed select.mt-gsel { width: 4.2em !important; height: 26px !important; padding: 0 4px !important; border-radius: 13px !important; background: transparent !important; box-shadow: var(--sink) !important; color: var(--ink-2); text-align: center; text-align-last: center; }
+        .mt-ed-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+        .mt-ed-col { min-width: 0; }
+        .mt-ed-ch { display: block; margin: 0 0 6px 4px; font: 700 10.5px 'Montserrat', system-ui, sans-serif; color: var(--ink-3); }
+        .mt-ed-chips { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; min-height: 28px; }
+        .mt-ed-chip { position: relative; display: inline-flex; align-items: center; max-width: 100%; height: 28px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-xs); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        .mt-ed-nm { min-width: 0; height: 100%; padding: 0 10px; border: none; background: none; color: var(--ink); font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        .mt-ed-chip.me .mt-ed-nm { color: var(--accent); }
+        .mt-ed-chip.sel { box-shadow: var(--sink); }
+        .mt-ed-chip.sel .mt-ed-nm { padding-right: 2px; color: var(--accent); }
+        .mt-ed-x { flex: none; width: 22px; height: 22px; margin-right: 3px; padding: 0; border: none; border-radius: 50%; background: none; color: var(--ink-3); font-size: 12px; line-height: 1; cursor: pointer; }
+        .mt-ed-plus { position: relative; flex: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: var(--sink); color: var(--ink-3); font: 600 16px/1 system-ui, sans-serif; cursor: pointer; overflow: hidden; }
+        #matchBox .mt-ed-plus select, #matchHistory .mt-ed-plus select { position: absolute; inset: 0; width: 100% !important; height: 100% !important; min-height: 0 !important; margin: 0; padding: 0 !important; opacity: 0; cursor: pointer; font-size: 16px !important; }
+        .mt-ed-out { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line, rgba(128, 128, 128, .18)); }
+        .mt-ed-oc { height: 24px; padding: 0 9px; border: none; border-radius: 12px; background: transparent; box-shadow: var(--sink); color: var(--ink-3); font-size: 11px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .mt-ed-oc.mt-ed-more { font-family: 'Montserrat', system-ui, sans-serif; font-weight: 700; }
+        .mt-ed-act { display: flex; align-items: center; gap: 8px; }
+        .mt-ed-ic { flex: none; width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 17px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); cursor: pointer; }
+        .mt-ed-ic.on { color: var(--accent); box-shadow: var(--sink); }
+        .mt-ed-allb { flex: 0 1 auto; min-width: 0; height: 28px; padding: 0 11px; border: none; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .mt-ed-allb.on { color: var(--accent); box-shadow: var(--sink); }
+        .mt-ed-act .mt-ed-cancel { flex: none; margin-left: auto; width: 34px; height: 34px; padding: 0; border-radius: 17px; font-size: 12px; }
+        .mt-ed-act .mt-add { flex: none; margin-left: 0; width: 48px; height: 34px; padding: 0; border-radius: 17px; font-size: 15px; }
+        @media (max-width: 389px) {
+            #matchBox .mt-rec .sc-in { gap: 4px; }
+            #matchBox .mt-rec .sc-in .sc-num { width: 50px !important; }
+            .mt-ics { gap: 4px; }
+            .mt-ed-allb { padding: 0 9px; font-size: 10.5px; }
+        }
         #rotOv { position: fixed; inset: 0; z-index: 9950; display: none; align-items: flex-end; justify-content: center; background: rgba(20,24,32,.28); }
         #rotOv .rot-box { width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; box-sizing: border-box; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); background: var(--sn-bg); color: var(--sn-ink); border-radius: 28px 28px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.14); font-family: 'Noto Sans JP', system-ui, sans-serif; }
         #rotOv button { font-family: inherit; -webkit-tap-highlight-color: transparent; cursor: pointer; }
@@ -10237,13 +10304,13 @@ await main();
         function matchGroupState(g, rule) {
             const wins = {}; g.games.forEach(({ m }) => { const lb = m.labels[m.win]; wins[lb] = (wins[lb] || 0) + 1; });
             const n = g.games.length, lbs = g.labels.slice(0, 2), score = lbs.map(lb => wins[lb] || 0);
-            if (rule.type === "first" ? score.filter(x => x >= rule.n).length > 1 || n > rule.n * 2 - 1 : n > rule.n) return { done: false, text: `${score.join(" - ")}　⚠` };
+            if (rule.type === "first" ? score.filter(x => x >= rule.n).length > 1 || n > rule.n * 2 - 1 : n > rule.n) return { done: false, over: true, score, text: `${score.join(" - ")}　⚠` };   // over = ゲーム数がルールと合わない
             if (rule.type === "first") {
                 const top = Math.max(...score), done = top >= rule.n, w = done ? lbs[score.indexOf(top)] : "";
-                return { done, win: w, text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
+                return { done, score, win: w, text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
             }
             const done = n >= rule.n;
-            return { done, win: done ? (score[0] > score[1] ? lbs[0] : score[1] > score[0] ? lbs[1] : "") : "", text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
+            return { done, score, win: done ? (score[0] > score[1] ? lbs[0] : score[1] > score[0] ? lbs[1] : "") : "", text: done ? `${score.join(" - ")}　✓` : `${score.join(" - ")}　⚠` };
         }
         // 組を手で直す: その試合を別の組へ / 新しい組へ / 自動に戻す
         function setMatchGroup(date, id, v) {
@@ -10275,19 +10342,59 @@ await main();
             return items;
         }
         // ------- 記録したゲームを、あとで直す(勝ち・点差・メンバー) -------
-        var matchEdit = null;   // { date, id, win, diff, teamOf: {名前: 0|1|-1}, all: この組のほかのゲームも同じメンバーにする }
+        var matchEdit = null;   // { date, id, win, diff, teamOf: {名前: 0|1|-1}, all: この組のほかのゲームも同じメンバーにする, sel: さっき触った名前(小さな × を出す), outOpen: 外れた人を広げているか }
         function matchEditOpen(date, id) {
             const m = (matchesByDate[date] || []).find(x => x.id === id); if (!m || !realAdmin()) return;
             const teamOf = {}; m.teams.forEach((t, k) => t.forEach(n => { teamOf[n] = k; }));
-            matchEdit = { date, id, win: m.win, diff: m.diff || 0, sc: Array.isArray(m.score) ? m.score.map(String) : ["", ""], teamOf, all: false };   // 点数のない古い記録は、点数を入れ直す
+            matchEdit = { date, id, win: m.win, diff: m.diff || 0, sc: Array.isArray(m.score) ? m.score.map(String) : ["", ""], teamOf, all: false, sel: null, outOpen: false };   // 点数のない古い記録は、点数を入れ直す
             matchRerender(date);
         }
         function matchEditSet(k, v) { if (!matchEdit) return; matchEdit[k] = v; matchRerender(matchEdit.date); }
-        function matchEditMem(name, k) { if (!matchEdit) return; matchEdit.teamOf[name] = k; matchRerender(matchEdit.date); }
-        function matchEditAdd(k) {
-            const sel = document.getElementById("mtEdAdd"), n = sel && sel.value; if (!n || !matchEdit) return;
-            matchEdit.teamOf[n] = k; matchRerender(matchEdit.date);
+        function matchEditMem(name, k) { if (!matchEdit) return; mtEdFlip(() => { matchEdit.teamOf[name] = k; matchRerender(matchEdit.date); }); }
+        // 名簿から足す: 列の終わりの「+」(中身は名簿の select)。選んだら、その列のチームへ
+        function matchEditAdd(k, el) {
+            const sel = el || document.getElementById("mtEdAdd" + k) || document.getElementById("mtEdAdd"), n = sel && sel.value; if (!n || !matchEdit) return;
+            matchEdit.sel = n; matchEditMem(n, k); mtEdHap();
         }
+        // ------- 名前の札(直すときのメンバー): タップ = 反対のチームへ / 長押し・小さな × = 外す / 外れた人をタップ = 少ないほうのチームへ戻す -------
+        function mtEdHap() { try { if (typeof protoHaptic === "function") protoHaptic(); } catch (e) { /* 鳴らせない端末は何もしない */ } }
+        // 描き直す前後で札の場所を比べて、前の場所からすっと動かす(FLIP)
+        function mtEdFlip(fn) {
+            const pos = el => { const m = {}; document.querySelectorAll(".mt-ed").forEach((ed, i) => ed.querySelectorAll("[data-n]").forEach(c => { m[i + "\u0001" + c.dataset.n] = c.getBoundingClientRect(); })); return m; };
+            const before = pos();
+            fn();
+            if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+            document.querySelectorAll(".mt-ed").forEach((ed, i) => ed.querySelectorAll("[data-n]").forEach(c => {
+                const a = before[i + "\u0001" + c.dataset.n]; if (!a || !c.animate) return;
+                const b = c.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+                c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
+            }));
+        }
+        var mtEdLp = null, mtEdLpAt = 0;   // 長押しの待ち { n, x, y, t }・長押しで外した時刻(そのあとのクリックは無視)
+        function mtEdDown(ev, n) {
+            clearTimeout(mtEdLp && mtEdLp.t);
+            mtEdLp = { n, x: ev.clientX, y: ev.clientY, t: setTimeout(() => { mtEdLp = null; mtEdLpAt = Date.now(); matchEditOut(n); }, 480) };
+        }
+        function mtEdMove(ev) { if (mtEdLp && Math.hypot(ev.clientX - mtEdLp.x, ev.clientY - mtEdLp.y) > 8) { clearTimeout(mtEdLp.t); mtEdLp = null; } }
+        function mtEdUp() { if (mtEdLp) { clearTimeout(mtEdLp.t); mtEdLp = null; } }
+        // タップ: 反対のチームへ(その札が「選んだ札」になり、小さな × が出る)
+        function matchEditChip(n) {
+            if (!matchEdit || Date.now() - mtEdLpAt < 500) return;
+            const k = matchEdit.teamOf[n]; if (k !== 0 && k !== 1) return;
+            matchEdit.sel = n; mtEdHap(); matchEditMem(n, 1 - k);
+        }
+        // 外す(長押し・×)
+        function matchEditOut(n) { if (!matchEdit) return; if (matchEdit.sel === n) matchEdit.sel = null; mtEdHap(); matchEditMem(n, -1); }
+        // 外れた人をタップ: 人数の少ないほうのチームへ(同じなら 1 へ)
+        function matchEditBack(n) {
+            if (!matchEdit) return;
+            const c = [0, 1].map(k => Object.values(matchEdit.teamOf).filter(x => x === k).length);
+            matchEdit.sel = n; mtEdHap(); matchEditMem(n, c[0] <= c[1] ? 0 : 1);
+        }
+        function matchEditOutToggle() { if (!matchEdit) return; mtEdFlip(() => { matchEdit.outOpen = !matchEdit.outOpen; matchRerender(matchEdit.date); }); }
+        // 「組ぜんぶに反映」: 描き直さずに、その場で切り替える
+        function matchEditAll(btn) { if (!matchEdit) return; matchEdit.all = !matchEdit.all; btn.classList.toggle("on", matchEdit.all); btn.setAttribute("aria-pressed", String(matchEdit.all)); mtEdHap(); }
         function matchEditCancel() { const d = matchEdit && matchEdit.date; matchEdit = null; if (d) matchRerender(d); }
         function matchEditSave() {
             const e = matchEdit; if (!e || !realAdmin()) return;
@@ -10314,17 +10421,31 @@ await main();
             if (date === selectedDate) renderMatchBox();
             const h = document.getElementById("matchHistory"); if (h && h.closest("details") && h.closest("details").open) renderMatchHistory();
         }
-        function matchEditHtml(m) {
-            const e = matchEdit, lb = m.labels;
-            const names = Object.keys(e.teamOf);
-            const seg = (n) => [0, 1, -1].map(k => `<button type="button" class="${e.teamOf[n] === k ? "on" : ""}" onclick="matchEditMem(decodeURIComponent('${encodeURIComponent(n)}'), ${k})" aria-label="${k < 0 ? "外す" : escapeHtml(lb[k])}">${k < 0 ? "✕" : escapeHtml(lb[k].replace("チーム", ""))}</button>`).join("");
+        // ローテの画面を開くボタンのアイコン(コートの 2×3 のマス)。「ローテも保存」のスイッチは回る矢印(ROT_ICON)
+        const ROT_SHEET_ICON = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="2.2"/><path d="M2 8h12M6 2.5v11M10 2.5v11"/></svg>`;
+        const ROT_ICON = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 6.5A5.2 5.2 0 0 0 3.6 4.4"/><path d="M3.3 1.9v2.8h2.8"/><path d="M3 9.5a5.2 5.2 0 0 0 9.4 2.1"/><path d="M12.7 14.1v-2.8H9.9"/></svg>`;
+        // 直す画面: 上に点数、その下に 1 / 2 の2列(名前の札)、外れた人は下に「+N」でまとめる。ボタンは1行(ローテ・組ぜんぶに反映 … × ✓)
+        //   gsel = 組を変える select(行からは外して、ここにだけ出す)
+        function matchEditHtml(m, gsel) {
+            const e = matchEdit, lb = m.labels, names = Object.keys(e.teamOf);
             const cands = roster.map(r => r.name).filter(n => !(n in e.teamOf));
+            const chip = n => {
+                const me = n === teamMeName(), on = e.sel === n, nm = escapeHtml(n);
+                return `<span class="mt-ed-chip${on ? " sel" : ""}${me ? " me" : ""}" data-n="${nm}"><button type="button" class="mt-ed-nm" data-n="${nm}" onclick="matchEditChip(this.dataset.n)" onpointerdown="mtEdDown(event, this.dataset.n)" onpointermove="mtEdMove(event)" onpointerup="mtEdUp()" onpointercancel="mtEdUp()" onpointerleave="mtEdUp()" oncontextmenu="return false" aria-label="${nm}(タップで反対のチームへ・長押しで外す)">${nm}</button>${on ? `<button type="button" class="mt-ed-x" data-n="${nm}" onclick="matchEditOut(this.dataset.n)" aria-label="${nm}を外す" title="外す">×</button>` : ""}</span>`;
+            };
+            // 名簿から足す「+」: 見た目は小さな札、中身は名簿の select(押すと名簿が開く)
+            const plus = k => cands.length ? `<label class="mt-ed-plus" title="名簿から足す" aria-label="${escapeHtml(lb[k])}に名簿から足す">+<select id="mtEdAdd${k}" onchange="matchEditAdd(${k}, this)"><option value="">${escapeHtml(lb[k])}に足す</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select></label>` : "";
+            const col = k => `<div class="mt-ed-col"><b class="mt-ed-ch">${escapeHtml(lb[k].replace("チーム", ""))}</b><div class="mt-ed-chips">${names.filter(n => e.teamOf[n] === k).map(chip).join("")}${plus(k)}</div></div>`;
+            const out = names.filter(n => e.teamOf[n] === -1);
+            const outHtml = out.length ? `<div class="mt-ed-out">${e.outOpen
+                ? out.map(n => `<button type="button" class="mt-ed-oc" data-n="${escapeHtml(n)}" onclick="matchEditBack(this.dataset.n)" aria-label="${escapeHtml(n)}を戻す" title="戻す">${escapeHtml(n)}</button>`).join("") + `<button type="button" class="mt-ed-oc mt-ed-more" onclick="matchEditOutToggle()" aria-label="外れた人をたたむ">−</button>`
+                : `<button type="button" class="mt-ed-oc mt-ed-more" onclick="matchEditOutToggle()" aria-label="外れた人 ${out.length}人を見る" title="外れた人">+${out.length}</button>`}</div>` : "";
+            const r = "rot" in e ? e.rot : m.rot;
             return `<div class="mt-ed">
-                <div class="mt-ed-row mt-ed-sc">${scoreInHtml("ed", lb)}${Array.isArray(m.score) ? "" : `<small class="mt-ed-old" title="点数のない古い記録">${matchResHtml(m)}</small>`}</div>
-                ${names.map(n => `<div class="mt-ed-mem"><span>${escapeHtml(n)}</span><span class="mt-ed-seg">${seg(n)}</span></div>`).join("")}
-                ${cands.length ? `<div class="mt-ed-mem"><select id="mtEdAdd"><option value="">＋ 名簿</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select><span class="mt-ed-seg">${[0, 1].map(k => `<button type="button" onclick="matchEditAdd(${k})" aria-label="${escapeHtml(lb[k])}へ">→ ${escapeHtml(lb[k].replace("チーム", ""))}</button>`).join("")}</span></div>` : ""}
-                <div class="mt-ed-row">${(() => { const r = "rot" in e ? e.rot : m.rot; return `<button type="button" class="mt-rotb${r ? " on" : ""}" onclick="rotOpenEdit('${matchEdit.date}', ${m.id})">ローテ</button>`; })()}</div>
-                <div class="mt-ed-row"><label class="mt-ed-all"><input type="checkbox" ${e.all ? "checked" : ""} onchange="matchEdit.all=this.checked"> 組ぜんぶ</label><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()" aria-label="やめる">✕</button><button type="button" class="mt-add" onclick="matchEditSave()" aria-label="保存">✓</button></div>
+                <div class="mt-ed-row mt-ed-sc">${scoreInHtml("ed", lb)}${Array.isArray(m.score) ? "" : `<small class="mt-ed-old" title="点数のない古い記録">${matchResHtml(m)}</small>`}${gsel || ""}</div>
+                <div class="mt-ed-cols">${col(0)}${col(1)}</div>
+                ${outHtml}
+                <div class="mt-ed-act"><button type="button" class="mt-ed-ic${r ? " on" : ""}" onclick="rotOpenEdit('${matchEdit.date}', ${m.id})" aria-label="ローテ" title="ローテを入れる・直す">${ROT_SHEET_ICON}</button><button type="button" class="mt-ed-allb${e.all ? " on" : ""}" onclick="matchEditAll(this)" aria-pressed="${e.all}" title="この組のほかのゲームも、同じメンバーにする">組ぜんぶに反映</button><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()" aria-label="やめる">✕</button><button type="button" class="mt-add" onclick="matchEditSave()" aria-label="保存">✓</button></div>
             </div>`;
         }
         // この組のチームを、チーム分けの画面に戻す(その日を開いているとき。あとで入れ替えたり、続きのゲームを記録したりできる)
@@ -10345,6 +10466,8 @@ await main();
             renderSwapBar(); renderTeamResults();
             const v = document.getElementById("teamResults"); if (v) scrollBelowHeader(v, 4);
         }
+        var matchNamesOpen = new Set();   // メンバーを全部見せている組(日付+組。描き直しても開いたまま)
+        function matchNamesToggle(el) { const k = el.dataset.k, on = !matchNamesOpen.has(k); if (on) matchNamesOpen.add(k); else matchNamesOpen.delete(k); el.classList.toggle("open", on); el.setAttribute("aria-expanded", String(on)); }
         function matchGroupsHtml(date, list, canDel) {
             const rule = matchRule(), groups = matchGroupsOf(list);
             return groups.map((g, gi) => {
@@ -10355,13 +10478,20 @@ await main();
                     const items = j ? matchDiffItems(g, m) : [];
                     if (items.length) anyDiff = true;
                     const editing = matchEdit && matchEdit.id === m.id && matchEdit.date === date;
-                    return `<div class="mt-top"><span class="mt-no">${j + 1}</span>${matchResHtml(m)}${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="点数・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
+                    // 組を変える select は、✎ で開いた中にだけ出す(行は「番号・点数・↻・✎・✕」だけ)
+                    const gsel = `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="このゲームの組を変える" title="このゲームを別の組へ">${opts(m)}</select>`;
+                    return `<div class="mt-top"><span class="mt-no">${j + 1}</span>${matchResHtml(m)}${canDel ? `<button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="点数・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
                         + (items.length ? `<div class="mt-diffrow">${items.join("　")}</div>` : "")
-                        + (editing ? matchEditHtml(m) : "");
+                        + (editing ? matchEditHtml(m, gsel) : "");
                 }).join("");
                 const team = lb => `<div class="mt-gt">${teamChip(lb)}<span>${st.win === lb ? `<i class="mt-crown">🏆</i>` : ""}${(g.names[lb] || []).map(n => n === teamMeName() ? `<u class="mt-me">${escapeHtml(n)}</u>` : escapeHtml(n)).join("・")}</span></div>`;
                 const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key)}'))" aria-label="チーム分けに戻す" title="チーム分けに戻す">↩</button>` : "";
-                return `<div class="mt-grp${st.done ? "" : " warn"}"><div class="mt-gno">組${gi + 1}${back}</div>${g.labels.slice(0, 2).map(team).join("")}<div class="mt-gg">${rows}</div><div class="mt-gs">${st.text}</div></div>`;
+                // メンバーは2行だけ(はみ出たら薄く消す)。タップで全部を見る
+                const nk = date + "\u0003" + g.key, nOpen = matchNamesOpen.has(nk);
+                const names = `<div class="mt-gnames${nOpen ? " open" : ""}" data-k="${escapeHtml(nk)}" onclick="matchNamesToggle(this)" role="button" tabindex="0" aria-expanded="${nOpen}" aria-label="メンバー(タップで全部)">${g.labels.slice(0, 2).map(team).join("")}</div>`;
+                // 結果は1行の小さな字: 「1 - 2 ✓」/ まだ決着していない・ゲーム数が合わないときは、うすい丸
+                const gs = `<div class="mt-gs"><span>${st.score.join(" - ")}</span>${st.done ? `<i class="mt-gs-ok" aria-label="決着">✓</i>` : `<i class="mt-gs-wait${st.over ? " over" : ""}" title="${st.over ? "ゲーム数がルールと合いません" : "まだ決着していません"}" aria-label="${st.over ? "ゲーム数がルールと合いません" : "まだ決着していません"}"></i>`}</div>`;
+                return `<div class="mt-grp${st.done ? "" : " pend"}"><div class="mt-gno">組${gi + 1}${back}</div>${names}<div class="mt-gg">${rows}</div>${gs}</div>`;
             }).join("");
         }
         function renderMatchBox() {
@@ -10376,8 +10506,13 @@ await main();
                 const sel = (k) => `<select onchange="setMatchForm('${k}', +this.value)">${teams.map((_, i) => `<option value="${i}"${matchForm[k] === i ? " selected" : ""}>チーム${i + 1}</option>`).join("")}</select>`;
                 const pick = n > 2 ? `<div class="mt-pick">${sel("a")}<span>対</span>${sel("b")}</div>` : "";
                 // 点数(A – B)を入れて ✓ で1ゲーム記録。勝ちと点差は点数から
-                form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-rec">${scoreInHtml("mt", ["チーム" + (matchForm.a + 1), "チーム" + (matchForm.b + 1)])}<button type="button" class="mt-ok" onclick="matchRecordSelected()" aria-label="記録">✓</button></div>
-                    <div class="mt-rotrow">${(() => { const lu = !(matchForm.rot && matchForm.rot.use) && lastTeamSplitResult && lastTeamSplitResult.lineups ? `<button type="button" class="mt-lub${rotLuOn(matchForm.a, matchForm.b) ? " on" : ""}" onclick="rotLuToggle()" aria-pressed="${rotLuOn(matchForm.a, matchForm.b)}" title="チーム分けのコートの並びをローテとして保存">ローテも保存</button>` : ""; const r = matchForm.rot && matchForm.rot.use; return lu + `<button type="button" class="mt-rotb${r ? " on" : ""}" onclick="rotOpenNew()" aria-label="ローテ(入れなくてもよい)">ローテ${r ? " ✓" : ""}</button>`; })()}</div>`;
+                //   ✓ のとなりに小さなアイコン2つ: 回る矢印 = 「ローテも保存」(オンで色) / コートのマス = ローテの画面を開く
+                const icons = (() => {
+                    const r = matchForm.rot && matchForm.rot.use, luOn = rotLuOn(matchForm.a, matchForm.b);
+                    const lu = !r && lastTeamSplitResult && lastTeamSplitResult.lineups ? `<button type="button" class="mt-ic mt-lub${luOn ? " on" : ""}" onclick="rotLuToggle()" aria-pressed="${luOn}" aria-label="ローテも保存" title="ローテも保存(チーム分けのコートの並びを、ローテとして一緒に記録)：${luOn ? "オン" : "オフ"}">${ROT_ICON}</button>` : "";
+                    return lu + `<button type="button" class="mt-ic mt-rotb${r ? " on" : ""}" onclick="rotOpenNew()" aria-label="ローテを入れる${r ? "(入れてあります)" : "(入れなくてもよい)"}" title="ローテを入れる${r ? "(入れてあります)" : "(入れなくてもよい)"}">${ROT_SHEET_ICON}</button>`;
+                })();
+                form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-rec">${scoreInHtml("mt", ["チーム" + (matchForm.a + 1), "チーム" + (matchForm.b + 1)])}<button type="button" class="mt-ok" onclick="matchRecordSelected()" aria-label="記録">✓</button><span class="mt-ics">${icons}</span></div>`;
             }
             // 管理者アカウント: この日の「来る」メンバーの勝率(全期間)
             let rates = "";
@@ -15987,7 +16122,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 22:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 23:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
