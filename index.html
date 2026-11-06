@@ -1716,18 +1716,9 @@
         .court-cell.fixed { box-shadow: var(--raise-sm), inset 0 0 0 1.5px var(--accent); }
         .court-net { border-radius: 8px 8px 0 0; }
         .court-grid { box-shadow: var(--sink); }
-        /* チーム分けのコート: 左右の前の端 = 控えの場所(押すとそちらに控え)。控えは縦に並べる。固定 = 🔒 */
+        /* チーム分けのコート: 左右の前の端 = 控えの場所(ローテの画面と同じ部品 .bn-edge)。固定 = 🔒 */
         .court-wrap { display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 6px; align-items: start; }
         .court-main { min-width: 0; }
-        .court-edge { display: flex; flex-direction: column; gap: 6px; margin-top: 24px; min-height: 66px; border-radius: 12px; -webkit-tap-highlight-color: transparent; }
-        .court-edge[role="button"] { cursor: pointer; }
-        .court-edge:not(.on) { align-items: center; justify-content: center; height: 66px; box-shadow: var(--sink); opacity: .55; }
-        .court-ghost { font-size: 10px; color: var(--ink-3); }
-        .court-edge .bench-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 66px; padding: 4px 3px; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-sm); font-size: 11.5px; line-height: 1.25; text-align: center; word-break: break-all; }
-        .court-edge .bench-chip .court-params { grid-template-columns: repeat(2, 1fr); font-size: 8.5px; }
-        .court-edge .bench-chip.bench-empty { background: transparent; box-shadow: var(--sink); opacity: .6; }
-        .court-edge .bench-chip.bench-empty.swap-target { opacity: 1; box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
-        .court-edge .bench-chip.swap-selected { box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
         .court-tools { display: flex; justify-content: flex-end; margin: 0 0 6px; }
         .court-fxb { height: 26px; padding: 0 12px; border: none; border-radius: 13px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 11px; font-weight: 700; }
         .court-fxb.on { color: var(--accent); box-shadow: var(--sink); }
@@ -3766,7 +3757,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv, #pairOv, #rotOv {   /* フォーム分析(#fxOv)・ローテ(#rotOv)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3780,7 +3771,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #rotOv {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #rotOv, body.dark #matchBox .mt-ed {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -4033,7 +4024,6 @@
         #settingsPanel[data-solo="ana"] #matchHistory .mt-diffrow { color: var(--sn-ink3); }
         #settingsPanel[data-solo="ana"] #matchHistory .mt-del.adm { color: var(--sn-ink3); }
         #settingsPanel[data-solo="ana"] #matchHistory select.mt-gsel { border-radius: 13px !important; background: transparent !important; box-shadow: var(--sn-insetS) !important; color: var(--sn-ink2); }
-        #settingsPanel[data-solo="ana"] #matchHistory .mt-ed-chip { background: var(--sn-dome); }
         @media (max-width: 389px) {
             #settingsPanel[data-solo="ana"] :is(.rs-top .rs-seg2, .rs-top .mt-unit-seg, .why-sort) > button { padding: 0 8px; }
             #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > :not(summary) { margin-left: 16px; margin-right: 16px; }
@@ -4209,18 +4199,6 @@
         .mt-ed-sc .sc-in { flex: 0 1 auto; min-width: 0; gap: 6px; }
         .mt-ed-sc .mt-gsel { flex: none; margin-left: auto; }
         #matchBox .mt-ed select.mt-gsel, #matchHistory .mt-ed select.mt-gsel { width: 4.2em !important; height: 26px !important; padding: 0 4px !important; border-radius: 13px !important; background: transparent !important; box-shadow: var(--sink) !important; color: var(--ink-2); text-align: center; text-align-last: center; }
-        .mt-ed-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-        .mt-ed-col { min-width: 0; }
-        .mt-ed-ch { display: block; margin: 0 0 6px 4px; font: 700 10.5px 'Montserrat', system-ui, sans-serif; color: var(--ink-3); }
-        .mt-ed-chips { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; min-height: 28px; }
-        .mt-ed-chip { position: relative; display: inline-flex; align-items: center; max-width: 100%; height: 28px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-xs); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-        .mt-ed-nm { min-width: 0; height: 100%; padding: 0 10px; border: none; background: none; color: var(--ink); font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-        .mt-ed-chip.me .mt-ed-nm { color: var(--accent); }
-        .mt-ed-chip.sel { box-shadow: var(--sink); }
-        .mt-ed-chip.sel .mt-ed-nm { padding-right: 2px; color: var(--accent); }
-        .mt-ed-x { flex: none; width: 22px; height: 22px; margin-right: 3px; padding: 0; border: none; border-radius: 50%; background: none; color: var(--ink-3); font-size: 12px; line-height: 1; cursor: pointer; }
-        .mt-ed-plus { position: relative; flex: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: var(--sink); color: var(--ink-3); font: 600 16px/1 system-ui, sans-serif; cursor: pointer; overflow: hidden; }
-        #matchBox .mt-ed-plus select, #matchHistory .mt-ed-plus select { position: absolute; inset: 0; width: 100% !important; height: 100% !important; min-height: 0 !important; margin: 0; padding: 0 !important; opacity: 0; cursor: pointer; font-size: 16px !important; }
         .mt-ed-out { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line, rgba(128, 128, 128, .18)); }
         .mt-ed-oc { height: 24px; padding: 0 9px; border: none; border-radius: 12px; background: transparent; box-shadow: var(--sink); color: var(--ink-3); font-size: 11px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .mt-ed-oc.mt-ed-more { font-family: 'Montserrat', system-ui, sans-serif; font-weight: 700; }
@@ -4231,6 +4209,37 @@
         .mt-ed-allb.on { color: var(--accent); box-shadow: var(--sink); }
         .mt-ed-act .mt-ed-cancel { flex: none; margin-left: auto; width: 34px; height: 34px; padding: 0; border-radius: 17px; font-size: 12px; }
         .mt-ed-act .mt-add { flex: none; margin-left: 0; width: 48px; height: 34px; padding: 0; border-radius: 17px; font-size: 15px; }
+        #matchBox .mt-ed { --sn-acc: var(--accent); }   /* チーム分けの画面では、アクセントはその画面の色(緑) */
+        /* ===== 控えの場所(11/07): チーム分け・ローテ・試合を直す画面で同じ部品。左前・右前に2つずつ、控えの人がいる側が控えの側 ===== */
+        .bn-edge { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin-top: var(--bn-top, 12px); }
+        .bn-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; height: var(--bn-h, 52px); padding: 3px; box-sizing: border-box; border-radius: var(--bn-r, 14px); background: var(--sn-dome, var(--bg)); box-shadow: var(--sn-raiseXS, var(--raise-sm)); color: var(--sn-ink, var(--ink)); font-size: var(--bn-fs, 10.5px); font-weight: 700; line-height: 1.2; text-align: center; word-break: break-all; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .bn-slot > span { display: block; max-width: 100%; overflow: hidden; }
+        .bn-slot.empty { background: transparent; box-shadow: var(--sn-insetS, var(--sink)); cursor: default; }
+        .bn-slot.empty[role="button"], .bn-slot.empty.swap-target { cursor: pointer; }
+        .bn-edge:not(.on) .bn-slot.empty { opacity: .42; }   /* 控えの側でない側: うすく(置き先としては押せる) */
+        .bn-slot.empty.tgt, .bn-slot.empty.swap-target { opacity: 1; box-shadow: var(--sn-insetS, var(--sink)), inset 0 0 0 1.5px color-mix(in srgb, var(--sn-acc, var(--accent)) 55%, transparent); }
+        .bn-slot.sel, .bn-slot.swap-selected { background: var(--sn-pit, var(--bg)); box-shadow: var(--sn-insetS, var(--sink)), 0 0 0 1.5px var(--sn-acc, var(--accent)); }
+        .bn-slot.is-me { color: var(--accent); }
+        .bn-slot .court-params { grid-template-columns: repeat(2, 1fr); font-size: 8.5px; }
+        .court-wrap .bn-edge { --bn-top: 24px; --bn-h: 66px; --bn-r: 12px; --bn-fs: 11.5px; }
+        .rot-court .bn-edge { --bn-top: 12px; --bn-h: 52px; }
+        /* 名簿から足す「+」(試合を直す画面だけ): 控えの側の下 */
+        .bn-add { position: relative; align-self: center; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: var(--sn-insetS, var(--sink)); color: var(--sn-ink3, var(--ink-3)); font: 600 16px/1 system-ui, sans-serif; cursor: pointer; overflow: hidden; }
+        #matchBox .bn-add select, #matchHistory .bn-add select { position: absolute; inset: 0; width: 100% !important; height: 100% !important; min-height: 0 !important; margin: 0; padding: 0 !important; opacity: 0; cursor: pointer; font-size: 16px !important; }
+        /* ローテのコートの空き(置き先)・外す × */
+        :is(#rotOv, .mt-ed) .rot-t.empty.tgt { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sn-acc) 55%, transparent); }
+        .rot-rm { position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--sn-dome, var(--bg)); box-shadow: var(--sn-raiseXS, var(--raise-xs)); color: var(--sn-ink2, var(--ink-2)); font: 600 12px/1 system-ui, sans-serif; font-style: normal; cursor: pointer; z-index: 1; }
+        /* 試合を直す画面の中のコート: パネルの幅に合わせて小さめ */
+        :is(#matchHistory, #matchBox) .mt-ed .rot-card { margin: 0; padding: 10px 8px 8px; border-radius: 18px; box-shadow: var(--sn-raiseS); }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-th { margin: 0 2px 8px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-court { grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 5px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-grid { gap: 5px; padding: 10px 5px 5px; border-radius: 14px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-t { height: 44px; padding: 11px 2px 3px; border-radius: 11px; font-size: 11px; overflow: visible; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-t > small { left: 5px; top: 3px; font-size: 8px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-court .bn-edge { --bn-top: 10px; --bn-h: 44px; --bn-r: 11px; --bn-fs: 10px; gap: 5px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-list { margin-top: 8px; padding: 4px 8px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-tb { height: 26px; padding: 0 9px; font-size: 10.5px; }
+        .mt-ed-out .mt-ed-more { padding: 0 11px; }
         @media (max-width: 389px) {
             #matchBox .mt-rec .sc-in { gap: 4px; }
             #matchBox .mt-rec .sc-in .sc-num { width: 50px !important; }
@@ -4253,59 +4262,53 @@
         #rotOv .rot-num::placeholder { color: var(--sn-ink3); opacity: .6; }
         #rotOv .rot-num:focus { outline: none; box-shadow: var(--sn-insetS), 0 0 0 2px color-mix(in srgb, var(--sn-acc) 40%, transparent); }
         /* チームごとのカード */
-        #rotOv .rot-card { margin: 0 0 18px; padding: 14px 12px 12px; border-radius: 24px; background: var(--sn-dome); box-shadow: var(--sn-raise); }
-        #rotOv .rot-th { display: flex; align-items: center; gap: 8px; margin: 0 2px 12px; }
-        #rotOv .rot-tn .tm-chip { font: 700 13px var(--sn-en); color: var(--sn-ink); }
-        #rotOv .rot-tools { display: inline-flex; gap: 6px; margin-left: auto; }
-        #rotOv .rot-tb { height: 30px; min-width: 34px; padding: 0 10px; border: none; border-radius: 15px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink2); font: 700 11px var(--sn-en); }
-        #rotOv .rot-tb.on { background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
-        #rotOv .rot-tb.best { color: var(--sn-acc); }
-        #rotOv .rot-tb:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        :is(#rotOv, .mt-ed) .rot-card { margin: 0 0 18px; padding: 14px 12px 12px; border-radius: 24px; background: var(--sn-dome); box-shadow: var(--sn-raise); }
+        :is(#rotOv, .mt-ed) .rot-th { display: flex; align-items: center; gap: 8px; margin: 0 2px 12px; }
+        :is(#rotOv, .mt-ed) .rot-tn .tm-chip { font: 700 13px var(--sn-en); color: var(--sn-ink); }
+        :is(#rotOv, .mt-ed) .rot-tools { display: inline-flex; gap: 6px; margin-left: auto; }
+        :is(#rotOv, .mt-ed) .rot-tb { height: 30px; min-width: 34px; padding: 0 10px; border: none; border-radius: 15px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink2); font: 700 11px var(--sn-en); }
+        :is(#rotOv, .mt-ed) .rot-tb.on { background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
+        :is(#rotOv, .mt-ed) .rot-tb.best { color: var(--sn-acc); }
+        :is(#rotOv, .mt-ed) .rot-tb:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
         /* コート: 上がネット。前衛 4・3・2 / 後衛 5・6・1。左右の端 = 控えの場所(押すと、そちらに控え) */
-        #rotOv .rot-court { display: grid; grid-template-columns: 60px minmax(0, 1fr) 60px; gap: 6px; align-items: start; }
-        #rotOv .rot-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 8px 8px; border-radius: 18px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
-        #rotOv .rot-net { position: absolute; left: 12px; right: 12px; top: 5px; height: 2px; border-radius: 1px; background: var(--sn-ink3); opacity: .45; }
-        #rotOv .rot-t { position: relative; min-width: 0; height: 52px; padding: 12px 4px 4px; border: none; border-radius: 14px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink); font-size: 12px; font-weight: 700; line-height: 1.2; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
-        #rotOv .rot-t > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #rotOv .rot-t > small { position: absolute; top: 4px; left: 7px; font: 600 9px var(--sn-en); color: var(--sn-ink3); }
-        #rotOv .rot-t.empty { background: transparent; box-shadow: none; }
-        #rotOv .rot-t.sel { background: var(--sn-pit); box-shadow: var(--sn-insetS), 0 0 0 1.5px var(--sn-acc); }
-        #rotOv .rot-pin { position: absolute; top: 3px; right: 6px; display: flex; color: var(--sn-ink3); }
-        #rotOv .rot-edge { display: flex; flex-direction: column; gap: 6px; min-height: 52px; padding: 0; border-radius: 14px; cursor: pointer; }
-        #rotOv .rot-edge:not(.on) { align-items: center; justify-content: center; height: 52px; margin-top: 12px; background: var(--sn-pit); box-shadow: var(--sn-insetXS, var(--sn-insetS)); opacity: .55; }
-        #rotOv .rot-edge.on { margin-top: 12px; }
-        #rotOv .rot-edge.none { visibility: hidden; }
-        #rotOv .rot-edge .rot-t { height: 52px; padding: 4px 3px; font-size: 10.5px; }
-        #rotOv .rot-ghost { font-size: 10px; color: var(--sn-ink3); }
-        #rotOv .rot-note { margin: 8px 4px 0; font: 600 10.5px var(--sn-en); color: var(--sn-acc); text-align: right; }
+        :is(#rotOv, .mt-ed) .rot-court { display: grid; grid-template-columns: 60px minmax(0, 1fr) 60px; gap: 6px; align-items: start; }
+        :is(#rotOv, .mt-ed) .rot-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 8px 8px; border-radius: 18px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        :is(#rotOv, .mt-ed) .rot-net { position: absolute; left: 12px; right: 12px; top: 5px; height: 2px; border-radius: 1px; background: var(--sn-ink3); opacity: .45; }
+        :is(#rotOv, .mt-ed) .rot-t { position: relative; min-width: 0; height: 52px; padding: 12px 4px 4px; border: none; border-radius: 14px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink); font-size: 12px; font-weight: 700; line-height: 1.2; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+        :is(#rotOv, .mt-ed) .rot-t > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        :is(#rotOv, .mt-ed) .rot-t > small { position: absolute; top: 4px; left: 7px; font: 600 9px var(--sn-en); color: var(--sn-ink3); }
+        :is(#rotOv, .mt-ed) .rot-t.empty { background: transparent; box-shadow: none; }
+        :is(#rotOv, .mt-ed) .rot-t.sel { background: var(--sn-pit); box-shadow: var(--sn-insetS), 0 0 0 1.5px var(--sn-acc); }
+        :is(#rotOv, .mt-ed) .rot-pin { position: absolute; top: 3px; right: 6px; display: flex; color: var(--sn-ink3); }
+        :is(#rotOv, .mt-ed) .rot-note { margin: 8px 4px 0; font: 600 10.5px var(--sn-en); color: var(--sn-acc); text-align: right; }
         #rotOv .rot-acts { display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px; }
         #rotOv .rot-acts button { height: 42px; padding: 0 22px; border: none; border-radius: 18px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); font-size: 13px; font-weight: 700; }
         #rotOv .rot-skip { color: var(--sn-ink3); }
         #rotOv .rot-ok { color: var(--sn-acc); }
         #rotOv .rot-acts button:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
         /* ローテの一覧(記録の画面と分析で同じ): R番号・前衛・控え・強さ。いちばん弱い行は赤い数字と、短い理由 */
-        :is(#rotOv, #settingsPanel) .rot-list { margin: 12px 0 0; padding: 6px 12px; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
-        :is(#rotOv, #settingsPanel) .rot-row { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, .55fr) 2.4em; gap: 8px; align-items: center; min-height: 28px; font-size: 11.5px; color: var(--sn-ink2); border-top: 1px solid var(--sn-line); }
-        :is(#rotOv, #settingsPanel) .rot-row:first-child, :is(#rotOv, #settingsPanel) .rot-hd + .rot-row { border-top: none; }
-        :is(#rotOv, #settingsPanel) .rot-row { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-list { margin: 12px 0 0; padding: 6px 12px; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-row { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, .55fr) 2.4em; gap: 8px; align-items: center; min-height: 28px; font-size: 11.5px; color: var(--sn-ink2); border-top: 1px solid var(--sn-line); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-row:first-child, :is(#rotOv, #settingsPanel, .mt-ed) .rot-hd + .rot-row { border-top: none; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-row { cursor: pointer; -webkit-tap-highlight-color: transparent; }
         /* 一覧の見出し(前衛・控え・強さ)と、行を押したときの内訳。どちらも小さく薄く */
-        :is(#rotOv, #settingsPanel) .rot-hd { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, .55fr) 2.4em; gap: 8px; padding: 4px 0 1px; font-size: 9.5px; color: var(--sn-ink3); }
-        :is(#rotOv, #settingsPanel) .rot-hd > span:last-child { text-align: right; }
-        :is(#rotOv, #settingsPanel) .rot-bd { display: none; margin: -4px 0 4px 2.6em; font: 500 10px var(--sn-en); color: var(--sn-ink3); }
-        :is(#rotOv, #settingsPanel) .rot-list .rot-bd.on { display: block; }
-        :is(#rotOv, #settingsPanel) .rot-list:not(.open) .rot-bd.rot-more, :is(#rotOv, #settingsPanel) .rot-list.open .rot-bd.rot-pin1 { display: none !important; }
-        :is(#rotOv, #settingsPanel) .rot-no { font: 700 10.5px var(--sn-en); color: var(--sn-ink3); }
-        :is(#rotOv, #settingsPanel) .rot-fr, :is(#rotOv, #settingsPanel) .rot-bn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        :is(#rotOv, #settingsPanel) .rot-bn { font-size: 10.5px; color: var(--sn-ink3); }
-        :is(#rotOv, #settingsPanel) .rot-s { font-style: normal; font-weight: 700; color: var(--sn-acc); }
-        :is(#rotOv, #settingsPanel) .rot-v { font: 700 12.5px var(--sn-en); color: var(--sn-ink); text-align: right; }
-        :is(#rotOv, #settingsPanel) .rot-row.weak .rot-v { color: var(--sn-neg); }
-        :is(#rotOv, #settingsPanel) .rot-why { margin: -4px 0 4px 2.6em; font-size: 10px; color: var(--sn-neg); }
-        :is(#rotOv, #settingsPanel) .rot-list:not(.open) :is(.rot-row, .rot-why).rot-more { display: none; }
-        :is(#rotOv, #settingsPanel) .rot-list.open :is(.rot-row, .rot-why).rot-pin1, :is(#rotOv, #settingsPanel) .rot-list.open .rot-plus { display: none; }
-        :is(#rotOv, #settingsPanel) .rot-row.rot-pin1 { border-top: 1px dashed var(--sn-line); }
-        :is(#rotOv, #settingsPanel) .rot-plus { display: block; margin: 6px auto 4px; height: 24px; padding: 0 14px; border: none; border-radius: 12px; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-ink2); font: 700 10.5px var(--sn-en); cursor: pointer; }   /* へこんだ小さい「+M」 */
-        :is(#rotOv, #settingsPanel) .rot-plus:active { color: var(--sn-acc); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-hd { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, .55fr) 2.4em; gap: 8px; padding: 4px 0 1px; font-size: 9.5px; color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-hd > span:last-child { text-align: right; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-bd { display: none; margin: -4px 0 4px 2.6em; font: 500 10px var(--sn-en); color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-list .rot-bd.on { display: block; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-list:not(.open) .rot-bd.rot-more, :is(#rotOv, #settingsPanel, .mt-ed) .rot-list.open .rot-bd.rot-pin1 { display: none !important; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-no { font: 700 10.5px var(--sn-en); color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-fr, :is(#rotOv, #settingsPanel, .mt-ed) .rot-bn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-bn { font-size: 10.5px; color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-s { font-style: normal; font-weight: 700; color: var(--sn-acc); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-v { font: 700 12.5px var(--sn-en); color: var(--sn-ink); text-align: right; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-row.weak .rot-v { color: var(--sn-neg); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-why { margin: -4px 0 4px 2.6em; font-size: 10px; color: var(--sn-neg); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-list:not(.open) :is(.rot-row, .rot-why).rot-more { display: none; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-list.open :is(.rot-row, .rot-why).rot-pin1, :is(#rotOv, #settingsPanel, .mt-ed) .rot-list.open .rot-plus { display: none; }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-row.rot-pin1 { border-top: 1px dashed var(--sn-line); }
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-plus { display: block; margin: 6px auto 4px; height: 24px; padding: 0 14px; border: none; border-radius: 12px; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-ink2); font: 700 10.5px var(--sn-en); cursor: pointer; }   /* へこんだ小さい「+M」 */
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-plus:active { color: var(--sn-acc); }
         #rotOv .rot-score.bad .rot-num { color: var(--sn-neg); box-shadow: var(--sn-insetS), 0 0 0 1.5px color-mix(in srgb, var(--sn-neg) 55%, transparent); }
         #rotOv .rot-score.shake { animation: rotShake .32s ease; }
         @keyframes rotShake { 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
@@ -4318,8 +4321,8 @@
         #settingsPanel .rot-lt .rot-sc { margin-left: auto; font: 700 13px var(--sn-en); color: var(--sn-ink); }
         #settingsPanel .rot-lt + .rot-list { margin-top: 6px; }
         @media (max-width: 389px) {
-            #rotOv .rot-court { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
-            #rotOv .rot-tb { padding: 0 8px; }
+            :is(#rotOv, .mt-ed) .rot-court { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
+            :is(#rotOv, .mt-ed) .rot-tb { padding: 0 8px; }
         }
 </style>
 </head>
@@ -9476,20 +9479,21 @@ await main();
         //   控えの場所は2つ(3人以上なら、その人数ぶん)。固定 = 位置の固定(ローテの記録と同じ。🔒の印)
         var teamFxMode = -1;   // 固定の付け外しをしているチーム(-1 = していない)
         function lineupFx(l) { const on = new Set(Object.values(l.slots || {}).filter(Boolean).map(p => p.name)); return (l.fx || []).filter(n => on.has(n)); }
-        function teamBenchSide(teamIdx, side) {
-            if (!isAdmin() || (side !== "L" && side !== "R")) return;
-            rotSideSave("チーム" + (teamIdx + 1), side);
-            renderTeamResults();
-        }
+        // 控えの側: 控えの人がいる側。決めていなければ、チームの番号ごとに覚えた側(ローテの画面と同じ)
+        function lineupSide(l, ti) { return l && (l.side === "L" || l.side === "R") ? l.side : rotSidePref("チーム" + (ti + 1), ti); }
         function teamFxToggleMode(teamIdx) { teamFxMode = teamFxMode === teamIdx ? -1 : teamIdx; swapSel = null; renderSwapBar(); renderTeamResults(); }
-        // 選んでいる人を、同じチームの空いている控えの場所へ(コートの位置は空きになる)
-        function swapPickBench(teamIdx) {
+        // 選んでいる人を、同じチームの控えの空き(側 s・上から j 番目)へ。コートの人ならコートの位置は空きになる
+        //   反対の側の空きへ置いたら、控えの列ごとその側へ(控えの側が変わる。チームの番号ごとに覚える)
+        function swapPickBench(teamIdx, s, j) {
             const res = lastTeamSplitResult; if (!res || !swapSel || swapSel.teamIdx !== teamIdx) return;
             const l = res.lineups[teamIdx], p = res.teams[teamIdx][swapSel.mi], at = p && lineupFind(l, p);
-            if (!at || at.type !== "slot") { swapSel = null; renderSwapBar(); renderTeamResults(); return; }
-            l.slots[at.no] = null; l.bench.push(p);
+            if (!at) { swapSel = null; renderSwapBar(); renderTeamResults(); return; }
+            const side0 = lineupSide(l, teamIdx);
+            if (at.type === "slot") { l.slots[at.no] = null; if (l.fx) l.fx = l.fx.filter(n => n !== p.name); } else l.bench.splice(at.idx, 1);
+            if (s === "L" || s === "R") { l.side = s; rotSideSave("チーム" + (teamIdx + 1), s); }
+            l.bench.splice(Math.min(+j || 0, l.bench.length), 0, p);
             res.manualEdited = true; res.at = Date.now();
-            swapNotice = `${escapeHtml(p.name)}を控えへ移しました。`;
+            swapNotice = at.type === "slot" ? `${escapeHtml(p.name)}を控えへ移しました。` : side0 !== l.side ? `控えを${l.side === "L" ? "左前" : "右前"}へ移しました。` : `${escapeHtml(p.name)}の控えの順番を変えました。`;
             swapSel = null; renderSwapBar(); renderTeamResults();
         }
         function renderCourtHtml(teamIdx) {
@@ -9500,7 +9504,7 @@ await main();
             const bench = lineup.bench;
             const teamArr = res.teams[teamIdx] || [];
             const fx = lineupFx(lineup), fxMode = teamFxMode === teamIdx && isAdmin();
-            const side = rotSidePref("チーム" + (teamIdx + 1), teamIdx);
+            const side = lineupSide(lineup, teamIdx);
             const key = ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" role="button" tabindex="0"`;
             const pin = `<i class="court-pin" aria-label="固定"><svg viewBox="0 0 12 12" width="9" height="9" fill="currentColor"><rect x="2.5" y="5.2" width="7" height="5.3" rx="1.3"/><path d="M4 5.4V4a2 2 0 0 1 4 0v1.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></i>`;
             // 入れ替え用: タップで選べる(選択中・入れ替え先の候補の見た目も付ける)
@@ -9533,15 +9537,16 @@ await main();
                 return `<div class="court-cell ${c.row}${pk.cls}${p && fx.includes(p.name) ? " pinned" : ""}${fxMode && p ? " fx-mode" : ""}${p && p.name === teamMeName() ? " is-me" : ""}"${pk.attr}><span class="court-slot-no">${c.no}${p && fx.includes(p.name) ? pin : ""}</span>${inner}</div>`;
             }).join("");
 
-            // 控えの場所(選んだ側の前の端)。2つより少なければ空きの場所を出す。反対の端は押すとそちらに控え
-            const nSlot = Math.max(2, bench.length);
-            const benchSlots = Array.from({ length: nSlot }, (_, j) => {
-                const p = bench[j];
-                if (!p) { const can = swapSel && swapSel.teamIdx === teamIdx; return `<span class="bench-chip bench-empty${can ? " swappable swap-target" : ""}"${can ? ` onclick="event.stopPropagation();swapPickBench(${teamIdx})"${key}` : ""} aria-label="控えの空き"></span>`; }
+            // 控えの場所: ローテの画面と同じ部品(benchEdgeHtml)。左前・右前に2つずつ、控えの人がいる側が控えの側
+            //   人を選んでから空きを押すと、そこへ(反対の側の空きなら、控えの列ごとその側へ)
+            const canT = isAdmin() && swapSel && swapSel.teamIdx === teamIdx;
+            const slot = (s, j, p) => {
+                const lab = `${s === "L" ? "左前" : "右前"}の控えの空き`;
+                if (!p) return { cls: canT ? " swappable swap-target" : "", attr: canT ? ` onclick="event.stopPropagation();swapPickBench(${teamIdx}, '${s}', ${j})"${key} aria-label="${lab}"` : ` aria-label="${lab}"` };
                 const pk = pickOf(p, true);
-                return `<span class="bench-chip${pk.cls}${p.name === teamMeName() ? " is-me" : ""}"${pk.attr}>${escapeHtml(p.name)}${paramsVisible() ? courtParamsHtml(p) : ""}</span>`;
-            }).join("");
-            const edge = s => `<div class="court-edge ${s}${side === s ? " on" : ""}"${isAdmin() ? ` onclick="teamBenchSide(${teamIdx}, '${s}')" role="button" aria-label="${s === "L" ? "左前" : "右前"}に控え"` : ""}>${side === s ? benchSlots : `<span class="court-ghost">控え</span>`}</div>`;
+                return { cls: pk.cls + (p.name === teamMeName() ? " is-me" : ""), attr: pk.attr + ` aria-label="${escapeHtml(p.name)}(控え${j + 1}番目)"`, inner: `<span>${escapeHtml(p.name)}</span>${paramsVisible() ? courtParamsHtml(p) : ""}` };
+            };
+            const edge = s => benchEdgeHtml(s, side, bench, slot, "");
             const tools = isAdmin() ? `<div class="court-tools"><button type="button" class="court-fxb${fxMode ? " on" : ""}" onclick="teamFxToggleMode(${teamIdx})" aria-pressed="${fxMode}">固定</button></div>` : "";
 
             return `
@@ -9967,7 +9972,7 @@ await main();
             return {
                 at: res.at || Date.now(), round: res.round || res.at || 0, manual: !!res.manualEdited, out: teamOutGet(res.dateKey),
                 teams: res.teams.map(t => t.map(nm)),
-                lineups: (res.lineups || []).map(l => l ? { slots: Object.fromEntries(Object.entries(l.slots || {}).filter(([, p]) => p).map(([no, p]) => [no, p.name])), bench: (l.bench || []).map(nm), fx: lineupFx(l) } : null)
+                lineups: (res.lineups || []).map(l => l ? { slots: Object.fromEntries(Object.entries(l.slots || {}).filter(([, p]) => p).map(([no, p]) => [no, p.name])), bench: (l.bench || []).map(nm), fx: lineupFx(l), ...(l.side === "L" || l.side === "R" ? { side: l.side } : {}) } : null)
             };
         }
         function teamRestore(sh, date) {
@@ -9978,7 +9983,7 @@ await main();
                 const l = sh.lineups && sh.lineups[i];
                 if (!l) return arrangeTeamLineup(t);
                 const slots = {}; Object.entries(l.slots || {}).forEach(([no, n]) => { slots[no] = P(n); });
-                return { ...arrangeTeamLineup(t), slots, bench: (l.bench || []).map(P), fx: Array.isArray(l.fx) ? l.fx.slice() : [] };   // 固定の記録がない古い共有は、固定なし
+                return { ...arrangeTeamLineup(t), slots, bench: (l.bench || []).map(P), fx: Array.isArray(l.fx) ? l.fx.slice() : [], ...(l.side === "L" || l.side === "R" ? { side: l.side } : {}) };   // 固定の記録がない古い共有は、固定なし(控えの側がなければ、覚えた側)
             });
             if (Array.isArray(sh.out)) teamOutSet(date, sh.out);
             return { teams, excludedKeys: new Set(), dateKey: date, ignoreParams, lineups, at: sh.at, round: sh.round || sh.at, manualEdited: !!sh.manual };
@@ -10341,71 +10346,68 @@ await main();
             gone.forEach(n => items.push(`−${escapeHtml(n)}`));
             return items;
         }
-        // ------- 記録したゲームを、あとで直す(勝ち・点差・メンバー) -------
-        var matchEdit = null;   // { date, id, win, diff, teamOf: {名前: 0|1|-1}, all: この組のほかのゲームも同じメンバーにする, sel: さっき触った名前(小さな × を出す), outOpen: 外れた人を広げているか }
+        // ------- 記録したゲームを、あとで直す(点数・メンバー・ローテ) -------
+        //   メンバーは、ローテの画面と同じコート(控えの場所・固定・おすすめ・ローテの一覧)で直す
+        //     2人を順に押すと入れかえ(チームをまたいでもよい・控えの空きへも置ける)
+        //     外す = 選んだ札の小さな × → 下の「外れた人 +N」へ(押すと、人数の少ないほうのチームの控えへ戻る)
+        //     足す = 控えの場所の「+」(名簿)→ そのチームの控えの最後へ
+        //   ローテのないゲームは、メンバーからコートを埋める(ローテの画面と同じ rotPrefill)
+        var matchEdit = null;   // { date, id, sc, all: この組のほかのゲームも同じメンバーにする, rd: 下書き { labels, names, sides, out: 外れた人 }, rui: 選んでいる札など, useRot: ローテも保存, outOpen }
+        const rotMembers = sd => sd.c.filter(Boolean).concat(sd.b);
         function matchEditOpen(date, id) {
             const m = (matchesByDate[date] || []).find(x => x.id === id); if (!m || !realAdmin()) return;
-            const teamOf = {}; m.teams.forEach((t, k) => t.forEach(n => { teamOf[n] = k; }));
-            matchEdit = { date, id, win: m.win, diff: m.diff || 0, sc: Array.isArray(m.score) ? m.score.map(String) : ["", ""], teamOf, all: false, sel: null, outOpen: false };   // 点数のない古い記録は、点数を入れ直す
+            const labels = m.labels.slice(0, 2), teams = [0, 1].map(k => (m.teams[k] || []).slice());
+            const fits = (sd, t) => rotValid(sd) && rotMembers(sd).length === t.length && t.every(n => sd.c.includes(n) || sd.b.includes(n));
+            const sides = teams.map((t, k) => m.rot && fits(m.rot[k], t) ? { c: m.rot[k].c.map(n => n || null), b: m.rot[k].b.slice(), side: m.rot[k].side, fx: (m.rot[k].fx || []).slice() } : rotPrefill(t, labels[k], k, null));
+            matchEdit = { date, id, win: m.win, diff: m.diff || 0, sc: Array.isArray(m.score) ? m.score.map(String) : ["", ""], all: false, outOpen: false,   // 点数のない古い記録は、点数を入れ直す
+                rd: { labels, names: teams, sides, out: [] }, rui: { sel: null, mode: "", mk: -1, note: {} },
+                useRot: !!m.rot || sides.every(sd => sd.c.filter(Boolean).length === 6) };   // 「ローテも保存」: ローテがあるか、両方のコートに6人いればオン
             matchRerender(date);
         }
-        function matchEditSet(k, v) { if (!matchEdit) return; matchEdit[k] = v; matchRerender(matchEdit.date); }
-        function matchEditMem(name, k) { if (!matchEdit) return; mtEdFlip(() => { matchEdit.teamOf[name] = k; matchRerender(matchEdit.date); }); }
-        // 名簿から足す: 列の終わりの「+」(中身は名簿の select)。選んだら、その列のチームへ
-        function matchEditAdd(k, el) {
-            const sel = el || document.getElementById("mtEdAdd" + k) || document.getElementById("mtEdAdd"), n = sel && sel.value; if (!n || !matchEdit) return;
-            matchEdit.sel = n; matchEditMem(n, k); mtEdHap();
-        }
-        // ------- 名前の札(直すときのメンバー): タップ = 反対のチームへ / 長押し・小さな × = 外す / 外れた人をタップ = 少ないほうのチームへ戻す -------
+        function mtEdRender() { if (matchEdit) matchRerender(matchEdit.date); }
         function mtEdHap() { try { if (typeof protoHaptic === "function") protoHaptic(); } catch (e) { /* 鳴らせない端末は何もしない */ } }
-        // 描き直す前後で札の場所を比べて、前の場所からすっと動かす(FLIP)
-        function mtEdFlip(fn) {
-            const pos = el => { const m = {}; document.querySelectorAll(".mt-ed").forEach((ed, i) => ed.querySelectorAll("[data-n]").forEach(c => { m[i + "\u0001" + c.dataset.n] = c.getBoundingClientRect(); })); return m; };
-            const before = pos();
-            fn();
-            if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-            document.querySelectorAll(".mt-ed").forEach((ed, i) => ed.querySelectorAll("[data-n]").forEach(c => {
-                const a = before[i + "\u0001" + c.dataset.n]; if (!a || !c.animate) return;
-                const b = c.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
-                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-                c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
-            }));
+        // 直す画面の中のタップ: 札(data-rt)→ ローテの画面と同じ入れかえ / 小さな ×(data-rm)→ 外す
+        function mtEdClick(ev) {
+            const x = ev.target.closest("[data-rm]");
+            if (x) { ev.stopPropagation(); const [k, w, i] = x.dataset.rm.split(":"); matchEditOut(+k, w, i); return; }
+            const t = ev.target.closest("[data-rt]");
+            if (t) { const [k, w, i] = t.dataset.rt.split(":"); rotTap(+k, w, i, "ed"); }
         }
-        var mtEdLp = null, mtEdLpAt = 0;   // 長押しの待ち { n, x, y, t }・長押しで外した時刻(そのあとのクリックは無視)
-        function mtEdDown(ev, n) {
-            clearTimeout(mtEdLp && mtEdLp.t);
-            mtEdLp = { n, x: ev.clientX, y: ev.clientY, t: setTimeout(() => { mtEdLp = null; mtEdLpAt = Date.now(); matchEditOut(n); }, 480) };
+        function matchEditOut(k, w, i) {
+            const e = matchEdit; if (!e) return;
+            const loc = { k, w, i: +i }, n = rotLocGet(e.rd, loc); if (!n) return;
+            rotLocSet(e.rd, loc, null); e.rd.sides[k].b = e.rd.sides[k].b.filter(Boolean); e.rd.sides[k].fx = (e.rd.sides[k].fx || []).filter(x => x !== n);
+            e.rd.out.push(n); e.rui.sel = null; mtEdHap(); mtEdRender();
         }
-        function mtEdMove(ev) { if (mtEdLp && Math.hypot(ev.clientX - mtEdLp.x, ev.clientY - mtEdLp.y) > 8) { clearTimeout(mtEdLp.t); mtEdLp = null; } }
-        function mtEdUp() { if (mtEdLp) { clearTimeout(mtEdLp.t); mtEdLp = null; } }
-        // タップ: 反対のチームへ(その札が「選んだ札」になり、小さな × が出る)
-        function matchEditChip(n) {
-            if (!matchEdit || Date.now() - mtEdLpAt < 500) return;
-            const k = matchEdit.teamOf[n]; if (k !== 0 && k !== 1) return;
-            matchEdit.sel = n; mtEdHap(); matchEditMem(n, 1 - k);
-        }
-        // 外す(長押し・×)
-        function matchEditOut(n) { if (!matchEdit) return; if (matchEdit.sel === n) matchEdit.sel = null; mtEdHap(); matchEditMem(n, -1); }
-        // 外れた人をタップ: 人数の少ないほうのチームへ(同じなら 1 へ)
+        // 外れた人をタップ: 人数の少ないほうのチーム(同じなら 1)の控えの最後へ
         function matchEditBack(n) {
-            if (!matchEdit) return;
-            const c = [0, 1].map(k => Object.values(matchEdit.teamOf).filter(x => x === k).length);
-            matchEdit.sel = n; mtEdHap(); matchEditMem(n, c[0] <= c[1] ? 0 : 1);
+            const e = matchEdit; if (!e) return;
+            e.rd.out = e.rd.out.filter(x => x !== n);
+            const c = e.rd.sides.map(sd => rotMembers(sd).length); e.rd.sides[c[0] <= c[1] ? 0 : 1].b.push(n);
+            mtEdHap(); mtEdRender();
         }
-        function matchEditOutToggle() { if (!matchEdit) return; mtEdFlip(() => { matchEdit.outOpen = !matchEdit.outOpen; matchRerender(matchEdit.date); }); }
-        // 「組ぜんぶに反映」: 描き直さずに、その場で切り替える
+        // 名簿から足す(控えの場所の「+」): そのチームの控えの最後へ
+        function matchEditAdd(k, el) {
+            const e = matchEdit, n = el && el.value; if (!e || !n || !e.rd.sides[k]) return;
+            e.rd.out = e.rd.out.filter(x => x !== n); e.rd.sides[k].b.push(n); e.rui.sel = null;
+            mtEdHap(); mtEdRender();
+        }
+        function matchEditOutToggle() { if (!matchEdit) return; matchEdit.outOpen = !matchEdit.outOpen; mtEdRender(); }
+        // 「組ぜんぶに反映」・「ローテも保存」: 描き直さずに、その場で切り替える
         function matchEditAll(btn) { if (!matchEdit) return; matchEdit.all = !matchEdit.all; btn.classList.toggle("on", matchEdit.all); btn.setAttribute("aria-pressed", String(matchEdit.all)); mtEdHap(); }
+        function matchEditRot(btn) { if (!matchEdit) return; matchEdit.useRot = !matchEdit.useRot; btn.classList.toggle("on", matchEdit.useRot); btn.setAttribute("aria-pressed", String(matchEdit.useRot)); mtEdHap(); }
         function matchEditCancel() { const d = matchEdit && matchEdit.date; matchEdit = null; if (d) matchRerender(d); }
         function matchEditSave() {
             const e = matchEdit; if (!e || !realAdmin()) return;
             const list = matchesByDate[e.date] || [], m = list.find(x => x.id === e.id); if (!m) { matchEditCancel(); return; }
             const st = scoreState(e.sc, false); if (!st.ok) { scoreUi("ed", true); return; }   // 同点・片方だけは保存しない
-            const teams = [0, 1].map(k => Object.keys(e.teamOf).filter(n => e.teamOf[n] === k));
+            const orig = m.teams.flat(), ord = n => { const i = orig.indexOf(n); return i < 0 ? 1e6 : i; };
+            const teams = e.rd.sides.map(sd => rotMembers(sd).sort((a, b) => ord(a) - ord(b)));   // メンバーは前の並び順のまま(足した人は後ろ)
             if (!teams[0].length || !teams[1].length) { alert("どちらのチームにも1人以上入れてください。"); return; }
             m.teams = teams; m.score = st.ok; m.win = st.ok[0] > st.ok[1] ? 0 : 1; m.diff = Math.abs(st.ok[0] - st.ok[1]);   // 勝ち・点差は点数から
-            if ("rot" in e) { if (e.rot) m.rot = e.rot; else delete m.rot; }   // 編集中に入れたローテ
+            if (e.useRot) m.rot = e.rd.sides.map(rotPack); else delete m.rot;   // 「ローテも保存」がオフ = メンバーと点数だけ(ローテは外す)
             rotSanitize(m);
-            if (e.all) { const gk = matchKeyOf(m); list.forEach(x => { if (x !== m && matchKeyOf(x) === gk) { x.teams = x.labels.map((lb, k) => { const i = m.labels.indexOf(lb); return i >= 0 ? teams[i].slice() : x.teams[k]; }); } }); }
+            if (e.all) { const gk = matchKeyOf(m); list.forEach(x => { if (x !== m && matchKeyOf(x) === gk) { x.teams = x.labels.map((lb, k) => { const i = m.labels.indexOf(lb); return i >= 0 ? teams[i].slice() : x.teams[k]; }); rotSanitize(x); } }); }   // メンバーが合わなくなったローテは外す
             matchEdit = null;
             matchHistKeep(e.id, () => { saveMatches(); matchRerender(e.date); if (typeof renderRosterStats === "function") renderRosterStats(); });
         }
@@ -10424,28 +10426,22 @@ await main();
         // ローテの画面を開くボタンのアイコン(コートの 2×3 のマス)。「ローテも保存」のスイッチは回る矢印(ROT_ICON)
         const ROT_SHEET_ICON = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="2.2"/><path d="M2 8h12M6 2.5v11M10 2.5v11"/></svg>`;
         const ROT_ICON = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 6.5A5.2 5.2 0 0 0 3.6 4.4"/><path d="M3.3 1.9v2.8h2.8"/><path d="M3 9.5a5.2 5.2 0 0 0 9.4 2.1"/><path d="M12.7 14.1v-2.8H9.9"/></svg>`;
-        // 直す画面: 上に点数、その下に 1 / 2 の2列(名前の札)、外れた人は下に「+N」でまとめる。ボタンは1行(ローテ・組ぜんぶに反映 … × ✓)
+        // 直す画面: 点数・組 / 2チームのコート(ローテの画面と同じ部品)/ 外れた人 / ボタン1行(ローテも保存・組ぜんぶに反映 … × ✓)
         //   gsel = 組を変える select(行からは外して、ここにだけ出す)
         function matchEditHtml(m, gsel) {
-            const e = matchEdit, lb = m.labels, names = Object.keys(e.teamOf);
-            const cands = roster.map(r => r.name).filter(n => !(n in e.teamOf));
-            const chip = n => {
-                const me = n === teamMeName(), on = e.sel === n, nm = escapeHtml(n);
-                return `<span class="mt-ed-chip${on ? " sel" : ""}${me ? " me" : ""}" data-n="${nm}"><button type="button" class="mt-ed-nm" data-n="${nm}" onclick="matchEditChip(this.dataset.n)" onpointerdown="mtEdDown(event, this.dataset.n)" onpointermove="mtEdMove(event)" onpointerup="mtEdUp()" onpointercancel="mtEdUp()" onpointerleave="mtEdUp()" oncontextmenu="return false" aria-label="${nm}(タップで反対のチームへ・長押しで外す)">${nm}</button>${on ? `<button type="button" class="mt-ed-x" data-n="${nm}" onclick="matchEditOut(this.dataset.n)" aria-label="${nm}を外す" title="外す">×</button>` : ""}</span>`;
-            };
-            // 名簿から足す「+」: 見た目は小さな札、中身は名簿の select(押すと名簿が開く)
-            const plus = k => cands.length ? `<label class="mt-ed-plus" title="名簿から足す" aria-label="${escapeHtml(lb[k])}に名簿から足す">+<select id="mtEdAdd${k}" onchange="matchEditAdd(${k}, this)"><option value="">${escapeHtml(lb[k])}に足す</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select></label>` : "";
-            const col = k => `<div class="mt-ed-col"><b class="mt-ed-ch">${escapeHtml(lb[k].replace("チーム", ""))}</b><div class="mt-ed-chips">${names.filter(n => e.teamOf[n] === k).map(chip).join("")}${plus(k)}</div></div>`;
-            const out = names.filter(n => e.teamOf[n] === -1);
+            const e = matchEdit, rd = e.rd, lb = m.labels;
+            rd.names = rd.sides.map(rotMembers);
+            const inGame = new Set(rd.names.flat().concat(rd.out)), cands = roster.map(r => r.name).filter(n => !inGame.has(n));
+            const pv = rotPv(), cards = rd.sides.map((_, k) => rotCardHtml(rd, e.rui, k, "ed", pv, cands)).join("");
+            const out = rd.out;
             const outHtml = out.length ? `<div class="mt-ed-out">${e.outOpen
                 ? out.map(n => `<button type="button" class="mt-ed-oc" data-n="${escapeHtml(n)}" onclick="matchEditBack(this.dataset.n)" aria-label="${escapeHtml(n)}を戻す" title="戻す">${escapeHtml(n)}</button>`).join("") + `<button type="button" class="mt-ed-oc mt-ed-more" onclick="matchEditOutToggle()" aria-label="外れた人をたたむ">−</button>`
-                : `<button type="button" class="mt-ed-oc mt-ed-more" onclick="matchEditOutToggle()" aria-label="外れた人 ${out.length}人を見る" title="外れた人">+${out.length}</button>`}</div>` : "";
-            const r = "rot" in e ? e.rot : m.rot;
-            return `<div class="mt-ed">
+                : `<button type="button" class="mt-ed-oc mt-ed-more" onclick="matchEditOutToggle()" aria-label="外れた人 ${out.length}人を見る" title="外れた人">外れた人 +${out.length}</button>`}</div>` : "";
+            return `<div class="mt-ed" onclick="mtEdClick(event)">
                 <div class="mt-ed-row mt-ed-sc">${scoreInHtml("ed", lb)}${Array.isArray(m.score) ? "" : `<small class="mt-ed-old" title="点数のない古い記録">${matchResHtml(m)}</small>`}${gsel || ""}</div>
-                <div class="mt-ed-cols">${col(0)}${col(1)}</div>
+                ${cards}
                 ${outHtml}
-                <div class="mt-ed-act"><button type="button" class="mt-ed-ic${r ? " on" : ""}" onclick="rotOpenEdit('${matchEdit.date}', ${m.id})" aria-label="ローテ" title="ローテを入れる・直す">${ROT_SHEET_ICON}</button><button type="button" class="mt-ed-allb${e.all ? " on" : ""}" onclick="matchEditAll(this)" aria-pressed="${e.all}" title="この組のほかのゲームも、同じメンバーにする">組ぜんぶに反映</button><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()" aria-label="やめる">✕</button><button type="button" class="mt-add" onclick="matchEditSave()" aria-label="保存">✓</button></div>
+                <div class="mt-ed-act"><button type="button" class="mt-ed-ic${e.useRot ? " on" : ""}" onclick="matchEditRot(this)" aria-pressed="${e.useRot}" aria-label="ローテも保存" title="ローテも保存(オフなら、メンバーと点数だけ保存して、ローテは外す)">${ROT_ICON}</button><button type="button" class="mt-ed-allb${e.all ? " on" : ""}" onclick="matchEditAll(this)" aria-pressed="${e.all}" title="この組のほかのゲームも、同じメンバーにする">組ぜんぶに反映</button><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()" aria-label="やめる">✕</button><button type="button" class="mt-add" onclick="matchEditSave()" aria-label="保存">✓</button></div>
             </div>`;
         }
         // この組のチームを、チーム分けの画面に戻す(その日を開いているとき。あとで入れ替えたり、続きのゲームを記録したりできる)
@@ -10728,18 +10724,19 @@ await main();
         function rotSideSave(lb, v) { try { const o = JSON.parse(localStorage.getItem(ROT_SIDE_KEY) || "{}") || {}; o[lb] = v; localStorage.setItem(ROT_SIDE_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } }
         // 分析と同じ値(機動力の補正後)。名簿にいない人は null
         function rotPv() { const memo = {}; return n => (n in memo ? memo[n] : (memo[n] = whyProfile(n))); }
-        // 最初の並び: その日に同じメンバーで記録したローテ → チーム分けのローテ配置 → チームの順
+        // 最初の並び: チーム分けのコート(あれば) → その日に同じメンバーで記録したローテ → チームの順
         //   セッターは位置3 の人なので、新しく並べるときは、希望ポジションがセッターの人を位置3 に置く(いなければそのまま)
         function rotPrefill(names, lb, k, ti) {
             const set = new Set(names), same = sd => rotValid(sd) && sd.c.filter(Boolean).concat(sd.b).length === names.length && sd.c.filter(Boolean).concat(sd.b).every(n => set.has(n));
-            const prev = (matchesByDate[selectedDate] || []).slice().reverse().map(m => m.rot && m.labels && m.rot[m.labels.indexOf(lb)]).find(same);
-            if (prev) return { c: prev.c.slice(), b: prev.b.slice(), side: rotSidePref(lb, k), fx: (prev.fx || []).filter(n => set.has(n)) };
             const c = Array(6).fill(null), b = [];
             const lu = lastTeamSplitResult && lastTeamSplitResult.lineups && ti != null && lastTeamSplitResult.lineups[ti];
+            //   チーム分けのコートがあれば、それがいちばん先(チーム分けの画面で記録しても、ローテの画面で記録しても同じ rot になるように)
+            const prev = lu && lu.slots ? null : (matchesByDate[selectedDate] || []).slice().reverse().map(m => m.rot && m.labels && m.rot[m.labels.indexOf(lb)]).find(same);
+            if (prev) return { c: prev.c.slice(), b: prev.b.slice(), side: rotSidePref(lb, k), fx: (prev.fx || []).filter(n => set.has(n)) };
             if (lu && lu.slots) { Object.entries(lu.slots).forEach(([no, p]) => { const n = p && (p.name || p); if (n && set.has(n) && +no >= 1 && +no <= 6) c[no - 1] = n; }); (lu.bench || []).forEach(p => { const n = p && (p.name || p); if (n && set.has(n) && !c.includes(n)) b.push(n); }); }
             const luFx = lu && lu.slots ? lineupFx(lu).filter(n => c.includes(n)) : [];   // チーム分けのコートで固定した人
             names.forEach(n => { if (c.includes(n) || b.includes(n)) return; const i = c.indexOf(null); if (i >= 0) c[i] = n; else b.push(n); });
-            if (lu && lu.slots) return { c, b, side: rotSidePref(lb, k), fx: luFx };   // チーム分けのコートの並び(固定も)のまま
+            if (lu && lu.slots) return { c, b, side: lineupSide(lu, ti), fx: luFx };   // チーム分けのコートの並び(控えの側・固定も)のまま
             const pv = rotPv(), st = names.map(n => [n, pv(n)]).filter(x => x[1] && x[1].setter).sort((p, q) => (q[1].set ?? 3) - (p[1].set ?? 3))[0];
             if (st && c[2] !== st[0]) { const n = st[0], ci = c.indexOf(n), bi = b.indexOf(n), out = c[2]; c[2] = n; if (ci >= 0) c[ci] = out; else if (out) b[bi] = out; else b.splice(bi, 1); }
             return { c, b, side: rotSidePref(lb, k), fx: [] };
@@ -10757,10 +10754,8 @@ await main();
         }
         function rotOpenEdit(date, id) {
             const m = (matchesByDate[date] || []).find(x => x.id === id); if (!m || !realAdmin()) return;
-            const labels = m.labels.slice(0, 2), ed = matchEdit && matchEdit.id === id && matchEdit.date === date ? matchEdit : null;
-            // 編集中は、編集中のメンバー・ローテで開く(編集の ✓ で一緒に保存)
-            const teams = ed ? [0, 1].map(k => Object.keys(ed.teamOf).filter(n => ed.teamOf[n] === k)) : m.teams.map(t => t.slice());
-            const cur = ed && "rot" in ed ? ed.rot : m.rot, curSc = ed ? ed.sc : m.score;
+            const labels = m.labels.slice(0, 2), ed = null;   // 直す画面は、コートを中に持つので、ここからは開かない
+            const teams = m.teams.map(t => t.slice()), cur = m.rot, curSc = m.score;
             const fits = (sd, t) => rotValid(sd) && sd.c.filter(Boolean).concat(sd.b).length === t.length && t.every(n => sd.c.includes(n) || sd.b.includes(n));
             rotDraft = { id, date, labels, edit: !!ed, names: teams, sides: teams.map((t, k) => cur && fits(cur[k], t) ? JSON.parse(JSON.stringify(cur[k])) : rotPrefill(t, labels[k], k, null)), score: curSc ? curSc.map(String) : ["", ""] };
             rotShow();
@@ -10773,9 +10768,7 @@ await main();
                 ov.onclick = (e) => {
                     if (e.target === ov) { rotClose(); return; }
                     const t = e.target.closest("[data-rt]");
-                    if (t) { const [k, w, i] = t.dataset.rt.split(":"); rotTap(+k, w, +i); return; }
-                    const ed = e.target.closest("[data-edge]");
-                    if (ed) { const [k, s] = ed.dataset.edge.split(":"); rotSetSide(+k, s); }
+                    if (t) { const [k, w, i] = t.dataset.rt.split(":"); rotTap(+k, w, i, "ov"); }
                 };
                 document.body.appendChild(ov);
             }
@@ -10783,29 +10776,52 @@ await main();
             ov.style.display = "flex";
         }
         function rotClose() { const ov = document.getElementById("rotOv"); if (ov) ov.style.display = "none"; rotDraft = null; }
-        function rotGet(sd, w, i) { return w === "c" ? sd.c[i] : sd.b[i]; }
-        function rotPut(sd, w, i, n) { if (w === "c") sd.c[i] = n || null; else sd.b[i] = n; }
-        // タップ: 2人を順に押すと入れかえ(コートと控えのあいだも)。固定のモードのときは、コートの人の固定(位置の固定)の印を付け外し
-        function rotTap(k, w, i) {
-            const sd = rotDraft && rotDraft.sides[k]; if (!sd) return;
-            const n = rotGet(sd, w, i);
-            if (rotUi.mode && rotUi.mk !== k) rotUi.mode = "";
-            if (rotUi.mode === "fx") { if (n && (w === "c" || sd.fx.includes(n))) sd.fx = sd.fx.includes(n) ? sd.fx.filter(x => x !== n) : sd.fx.concat(n); rotRender(); return; }   // 控えの人は固定にしない
-            const a = rotUi.sel;
-            if (!a || a.k !== k) { rotUi.sel = n || w === "c" ? { k, w, i } : null; rotRender(); return; }
-            rotUi.sel = null;
-            if (a.w !== w || a.i !== i) { const x = rotGet(sd, a.w, a.i), y = n; rotPut(sd, a.w, a.i, y); rotPut(sd, w, i, x); sd.b = sd.b.filter(Boolean); }
-            rotUi.note[k] = ""; rotRender();
+        // 札の場所 { k: チーム, w: "c" = コート(i = 位置-1) / "b" = 控え(i = 待ち順) / "x" = 控えの空き(i = "L0" のように側と番号) }
+        function rotLocGet(d, l) { const sd = d.sides[l.k]; return !sd || l.w === "x" ? null : l.w === "c" ? sd.c[l.i] || null : sd.b[l.i] || null; }
+        function rotLocSet(d, l, n) { const sd = d.sides[l.k]; if (!sd || l.w === "x") return; if (l.w === "c") sd.c[l.i] = n || null; else sd.b[l.i] = n || null; }
+        // 2つの場所の入れかえ。片方が控えの空きなら、その人を控えの列に入れる(反対の側の空きなら、控えの列ごとその側へ = 控えの側が変わる)
+        //   remember = 控えの側を、チームの番号ごとに覚える(これから記録するゲームのとき)
+        function rotSwapLoc(d, A, B, remember) {
+            const pa = rotLocGet(d, A), pb = rotLocGet(d, B); if (!pa && !pb) return;
+            if (A.w === "x" || B.w === "x") {
+                const X = B.w === "x" ? B : A, P = X === B ? A : B, p = rotLocGet(d, P); if (!p) return;
+                const sx = d.sides[X.k], side = String(X.i)[0], j = +String(X.i).slice(1) || 0;
+                rotLocSet(d, P, null); d.sides[P.k].b = d.sides[P.k].b.filter(Boolean);
+                if (sx.side !== side) { sx.side = side; if (remember) rotSideSave(d.labels[X.k], side); }
+                sx.b.splice(Math.min(j, sx.b.length), 0, p);
+            } else {
+                rotLocSet(d, A, pb); rotLocSet(d, B, pa);
+                [A.k, B.k].forEach(k => { d.sides[k].b = d.sides[k].b.filter(Boolean); });
+            }
+            [A.k, B.k].forEach(k => { const sd = d.sides[k]; sd.fx = (sd.fx || []).filter(n => sd.c.includes(n)); });   // 固定はコートの人だけ(チームを出た人・控えへ下がった人は外す)
         }
-        function rotSetSide(k, s) { const sd = rotDraft && rotDraft.sides[k]; if (!sd || (s !== "L" && s !== "R")) return; sd.side = s; rotSideSave(rotDraft.labels[k], s); rotRender(); }
-        function rotMode(k, m) { rotUi.mode = rotUi.mode === m && rotUi.mk === k ? "" : m; rotUi.mk = k; rotUi.sel = null; rotRender(); }
-        function rotRecommend(k) {
-            const sd = rotDraft && rotDraft.sides[k]; if (!sd) return;
-            const ctx = rotDraft.names ? rotDraft.names.flat() : null, pv = rotPv(), before = rotSummary(sd, pv, ctx), r = rotBest(sd, pv, 0, ctx);
-            rotDraft.sides[k] = r.sd;
-            rotUi.sel = null; rotUi.mode = "";
-            rotUi.note[k] = before && before.min != null && r.min > -Infinity ? `最弱 ${before.min.toFixed(1)} → ${r.min.toFixed(1)}` : "";
-            rotRender();
+        // ローテの部品の持ち主: "ov" = ローテの画面(rotDraft) / "ed" = 試合を直す画面(matchEdit.rd)
+        function rotCx(ns) {
+            if (ns === "ed") return matchEdit && matchEdit.rd ? { d: matchEdit.rd, ui: matchEdit.rui, render: mtEdRender, cross: true } : null;
+            return rotDraft ? { d: rotDraft, ui: rotUi, render: rotRender, cross: false } : null;
+        }
+        // タップ: 2人を順に押すと入れかえ(コートと控えのあいだも・控えの空きへも)。直す画面ではチームをまたいでもよい
+        //   固定のモードのときは、コートの人の固定(位置の固定)の印を付け外し
+        function rotTap(k, w, i, ns) {
+            const cx = rotCx(ns || "ov"); if (!cx) return;
+            const { d, ui } = cx, sd = d.sides[k]; if (!sd) return;
+            const loc = { k, w, i: w === "x" ? String(i) : +i }, n = rotLocGet(d, loc);
+            if (ui.mode && ui.mk !== k) ui.mode = "";
+            if (ui.mode === "fx") { if (n && (w === "c" || sd.fx.includes(n))) sd.fx = sd.fx.includes(n) ? sd.fx.filter(x => x !== n) : sd.fx.concat(n); cx.render(); return; }   // 控えの人は固定にしない
+            const a = ui.sel;
+            if (!a || (a.k !== k && !cx.cross)) { ui.sel = n || w !== "b" ? loc : null; cx.render(); return; }
+            ui.sel = null;
+            if (!(a.k === k && a.w === w && String(a.i) === String(loc.i))) { rotSwapLoc(d, a, loc, ns !== "ed"); if (ns === "ed") mtEdHap(); }
+            ui.note[k] = ""; ui.note[a.k] = ""; cx.render();
+        }
+        function rotMode(k, m, ns) { const cx = rotCx(ns || "ov"); if (!cx) return; const ui = cx.ui; ui.mode = ui.mode === m && ui.mk === k ? "" : m; ui.mk = k; ui.sel = null; cx.render(); }
+        function rotRecommend(k, ns) {
+            const cx = rotCx(ns || "ov"), sd = cx && cx.d.sides[k]; if (!sd) return;
+            const d = cx.d, ctx = d.names ? d.names.flat() : null, pv = rotPv(), before = rotSummary(sd, pv, ctx), r = rotBest(sd, pv, 0, ctx);
+            d.sides[k] = r.sd;
+            cx.ui.sel = null; cx.ui.mode = "";
+            cx.ui.note[k] = before && before.min != null && r.min > -Infinity ? `最弱 ${before.min.toFixed(1)} → ${r.min.toFixed(1)}` : "";
+            cx.render();
         }
         // 点数は共通の部品(scoreInHtml)。同点・片方だけは保存できない(両方とも空ならローテだけ保存できる)
         function rotScore(k, v) { scoreSet("rot", k, v); }
@@ -10820,6 +10836,7 @@ await main();
             const sc = rotScoreOk(d.score), rot = withRot ? d.sides.map(rotPack) : null;
             if (d.id == null) {   // これから記録するゲーム: 点数は試合の行へ、ローテは下書きへ(「点数だけ」ならローテなし)
                 matchForm.rot = rot ? { labels: d.labels, sides: d.sides, use: true } : null;
+                if (rot) d.labels.forEach((lb, k) => rotToLineup(+String(lb).replace("チーム", "") - 1, d.sides[k]));   // チーム分けのコートも同じ並びに
                 matchForm.sc = d.score.slice();
                 rotClose(); renderMatchBox(); return;
             }
@@ -10842,12 +10859,23 @@ await main();
             return rec;
         }
         // チーム分けの画面のコートの並び → ローテの記録(ローテの画面と同じ形)。コートか控えの情報がなければ null
+        //   控えの側 = 控えの人がいる側(lineupSide)。ローテの画面の rotPrefill も同じ値を使う
         function rotFromLineups(a, b) {
             const res = lastTeamSplitResult; if (!res || !res.lineups) return null;
             const one = (ti, k) => { const l = res.lineups[ti]; if (!l || !l.slots) return null;
-                return { c: [1, 2, 3, 4, 5, 6].map(no => l.slots[no] ? l.slots[no].name : null), b: (l.bench || []).map(p => p.name), side: rotSidePref("チーム" + (ti + 1), k), fx: lineupFx(l) }; };
+                return { c: [1, 2, 3, 4, 5, 6].map(no => l.slots[no] ? l.slots[no].name : null), b: (l.bench || []).map(p => p.name), side: lineupSide(l, ti), fx: lineupFx(l) }; };
             const out = [one(a, 0), one(b, 1)];
             return out.every(Boolean) ? out : null;
+        }
+        // ローテの画面の並び → チーム分けの画面のコート(同じメンバーのときだけ。コート・控えの順・控えの側・固定)
+        function rotToLineup(ti, sd) {
+            const res = lastTeamSplitResult, l = res && res.lineups && res.lineups[ti], t = res && res.teams && res.teams[ti]; if (!l || !t || !rotValid(sd)) return;
+            const P = n => t.find(p => p.name === n), ns = rotMembers(sd);
+            if (ns.length !== t.length || !ns.every(P)) return;
+            [1, 2, 3, 4, 5, 6].forEach(no => { l.slots[no] = sd.c[no - 1] ? P(sd.c[no - 1]) : null; });
+            l.bench = sd.b.map(P); l.side = sd.side; l.fx = (sd.fx || []).filter(n => sd.c.includes(n));
+            res.manualEdited = true; res.at = Date.now();
+            if (typeof renderTeamResults === "function") renderTeamResults();
         }
         // 「ローテも保存」: 入れていなければ、両チームともコートに6人そろっているときにオン
         function rotLuDefault(a, b) { const res = lastTeamSplitResult; return !!(res && res.lineups && [a, b].every(i => { const l = res.lineups[i]; return l && l.slots && [1, 2, 3, 4, 5, 6].every(no => l.slots[no]); })); }
@@ -10859,34 +10887,51 @@ await main();
             const ok = m.rot.map((sd, k) => { const t = new Set(m.teams[k] || []), ns = rotValid(sd) ? sd.c.filter(Boolean).concat(sd.b) : null; return ns && ns.length === t.size && ns.every(n => t.has(n)); });
             if (!ok.every(Boolean)) delete m.rot;
         }
-        function rotCourtHtml(k) {
-            const sd = rotDraft.sides[k], sel = rotUi.sel && rotUi.sel.k === k ? rotUi.sel : null;
+        // 控えの場所(チーム分けの画面・ローテの画面・試合を直す画面で同じ部品)
+        //   左前・右前の両方に、控えの場所を2つずつ。控えの人がいる側 = 控えの側(3人以上なら、その側だけ場所が増える)
+        //   上から順 = 待ち順(いちばん上が先に入る)。反対の側の空きは、うすく出す(置き先として押せる)
+        //   slot(側, 番号, その場所の人 or null) → { cls, attr, inner }。tail = 控えの側の下に足すもの(名簿の「+」)
+        function benchEdgeHtml(s, side, bench, slot, tail) {
+            const on = s === side, n = on ? Math.max(2, bench.length) : 2;
+            const slots = Array.from({ length: n }, (_, j) => { const p = on ? bench[j] || null : null, o = slot(s, j, p) || {}; return `<div class="bn-slot${p ? "" : " empty"}${o.cls || ""}"${o.attr || ""}>${o.inner || ""}</div>`; }).join("");
+            return `<div class="bn-edge ${s}${on ? " on" : ""}">${slots}${on ? tail || "" : ""}</div>`;
+        }
+        const BN_KEY = ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" role="button" tabindex="0"`;
+        // ローテのコート(d = 下書き、ui = 選んでいる札、ns = "ov" ローテの画面 / "ed" 試合を直す画面、cands = 名簿から足せる人(直す画面だけ))
+        function rotCourtHtml(d, ui, k, ns, cands) {
+            const sd = d.sides[k], sel = ui.sel && ui.sel.k === k ? ui.sel : null, ed = ns === "ed";
+            const tgt = !!ui.sel && (ed || ui.sel.k === k);   // 何か選んでいれば、空きの場所は置き先
+            const rm = (w, i) => ed ? `<i class="rot-rm" data-rm="${k}:${w}:${i}" role="button" aria-label="外す" title="外す">×</i>` : "";
             const tile = (w, i) => {
-                const n = rotGet(sd, w, i), on = sel && sel.w === w && sel.i === i;
+                const n = rotLocGet(d, { k, w, i }), on = sel && sel.w === w && +sel.i === i;
                 const pin = n && sd.fx.includes(n) ? `<i class="rot-pin" aria-label="固定"><svg viewBox="0 0 12 12" width="9" height="9" fill="currentColor"><rect x="2.5" y="5.2" width="7" height="5.3" rx="1.3"/><path d="M4 5.4V4a2 2 0 0 1 4 0v1.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></i>` : "";
-                return `<button type="button" class="rot-t${n ? "" : " empty"}${on ? " sel" : ""}" data-rt="${k}:${w}:${i}">${w === "c" ? `<small>${i + 1}</small>` : ""}${pin}<span>${n ? escapeHtml(n) : ""}</span></button>`;
+                return `<button type="button" class="rot-t${n ? "" : " empty"}${on ? " sel" : ""}${!n && tgt ? " tgt" : ""}" data-rt="${k}:${w}:${i}"><small>${i + 1}</small>${pin}<span>${n ? escapeHtml(n) : ""}</span>${on && n ? rm(w, i) : ""}</button>`;
             };
-            const edge = s => {
-                const on = sd.side === s, has = sd.b.length > 0;
-                return `<div class="rot-edge ${s}${on ? " on" : ""}${has ? "" : " none"}" data-edge="${k}:${s}" aria-label="${s === "L" ? "左前" : "右前"}に控え">${on && has ? sd.b.map((_, j) => tile("b", j)).join("") : `<span class="rot-ghost">${has ? "控え" : ""}</span>`}</div>`;
+            const slot = (s, j, n) => {
+                const on = sel && (n ? sel.w === "b" && +sel.i === j : sel.w === "x" && sel.i === s + j);
+                const lab = n ? `${escapeHtml(n)}(控え${j + 1}番目)` : `${s === "L" ? "左前" : "右前"}の控えの空き`;
+                return { cls: `${on ? " sel" : ""}${!n && tgt ? " tgt" : ""}`, attr: ` data-rt="${k}:${n ? "b:" + j : "x:" + s + j}"${BN_KEY} aria-label="${lab}"`, inner: n ? `<span>${escapeHtml(n)}</span>${on ? rm("b", j) : ""}` : "" };
             };
+            const add = ed && cands && cands.length ? `<label class="bn-add" title="名簿から足す" aria-label="${escapeHtml(d.labels[k])}の控えに名簿から足す">+<select onchange="matchEditAdd(${k}, this)"><option value="">${escapeHtml(d.labels[k])}の控えに足す</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select></label>` : "";
             const grid = ROT_FRONT.concat(ROT_BACK).map(p => tile("c", p - 1)).join("");
-            return `<div class="rot-court">${edge("L")}<div class="rot-grid"><div class="rot-net"></div>${grid}</div>${edge("R")}</div>`;
+            return `<div class="rot-court">${benchEdgeHtml("L", sd.side, sd.b, slot, add)}<div class="rot-grid"><div class="rot-net"></div>${grid}</div>${benchEdgeHtml("R", sd.side, sd.b, slot, add)}</div>`;
+        }
+        // 1チームのカード(固定・おすすめ・コート・ローテの一覧)。ローテの画面と試合を直す画面で同じもの
+        function rotCardHtml(d, ui, k, ns, pv, cands) {
+            const mode = ui.mk === k ? ui.mode : "";
+            return `<section class="rot-card">
+                    <div class="rot-th"><b class="rot-tn">${teamChip(d.labels[k])}</b><span class="rot-tools">
+                        <button type="button" class="rot-tb${mode === "fx" ? " on" : ""}" onclick="rotMode(${k},'fx','${ns}')" aria-pressed="${mode === "fx"}">固定</button>
+                        <button type="button" class="rot-tb best" onclick="rotRecommend(${k},'${ns}')">${ns === "ed" ? "おすすめ" : "おすすめの並び"}</button></span></div>
+                    ${rotCourtHtml(d, ui, k, ns, cands)}
+                    ${ui.note[k] ? `<div class="rot-note">${escapeHtml(ui.note[k])}</div>` : ""}
+                    ${rotListHtml(d.sides[k], pv, (ns === "ed" ? "e" : "d") + k, d.names ? d.names.flat() : null)}
+                </section>`;
         }
         function rotRender() {
             const ov = document.getElementById("rotOv"), d = rotDraft; if (!ov || !d) return;
             const pv = rotPv(), lb = k => escapeHtml(d.labels[k].replace("チーム", ""));
-            const cards = d.sides.map((sd, k) => {
-                const mode = rotUi.mk === k ? rotUi.mode : "";
-                return `<section class="rot-card">
-                    <div class="rot-th"><b class="rot-tn">${teamChip(d.labels[k])}</b><span class="rot-tools">
-                        <button type="button" class="rot-tb${mode === "fx" ? " on" : ""}" onclick="rotMode(${k},'fx')" aria-pressed="${mode === "fx"}">固定</button>
-                        <button type="button" class="rot-tb best" onclick="rotRecommend(${k})">おすすめの並び</button></span></div>
-                    ${rotCourtHtml(k)}
-                    ${rotUi.note[k] ? `<div class="rot-note">${escapeHtml(rotUi.note[k])}</div>` : ""}
-                    ${rotListHtml(sd, pv, "d" + k, d.names ? d.names.flat() : null)}
-                </section>`;
-            }).join("");
+            const cards = d.sides.map((_, k) => rotCardHtml(d, rotUi, k, "ov", pv, null)).join("");
             const sc = d.score, old = ov.querySelector(".rot-box"), top = old ? old.scrollTop : 0;   // 描き直してもスクロールの位置を保つ(チーム2を触っても上に戻らない)
             ov.innerHTML = `<div class="rot-box" role="dialog" aria-label="ローテ">
                 <div class="rot-head"><b>ROTATION</b><button type="button" class="rot-x" onclick="rotClose()" aria-label="閉じる">✕</button></div>
@@ -16122,7 +16167,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 23:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/07 00:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
