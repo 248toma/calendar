@@ -1716,6 +1716,24 @@
         .court-cell.fixed { box-shadow: var(--raise-sm), inset 0 0 0 1.5px var(--accent); }
         .court-net { border-radius: 8px 8px 0 0; }
         .court-grid { box-shadow: var(--sink); }
+        /* チーム分けのコート: 左右の前の端 = 控えの場所(押すとそちらに控え)。控えは縦に並べる。固定 = 🔒 */
+        .court-wrap { display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 6px; align-items: start; }
+        .court-main { min-width: 0; }
+        .court-edge { display: flex; flex-direction: column; gap: 6px; margin-top: 24px; min-height: 66px; border-radius: 12px; -webkit-tap-highlight-color: transparent; }
+        .court-edge[role="button"] { cursor: pointer; }
+        .court-edge:not(.on) { align-items: center; justify-content: center; height: 66px; box-shadow: var(--sink); opacity: .55; }
+        .court-ghost { font-size: 10px; color: var(--ink-3); }
+        .court-edge .bench-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 66px; padding: 4px 3px; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-sm); font-size: 11.5px; line-height: 1.25; text-align: center; word-break: break-all; }
+        .court-edge .bench-chip .court-params { grid-template-columns: repeat(2, 1fr); font-size: 8.5px; }
+        .court-edge .bench-chip.bench-empty { background: transparent; box-shadow: var(--sink); opacity: .6; }
+        .court-edge .bench-chip.bench-empty.swap-target { opacity: 1; box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
+        .court-edge .bench-chip.swap-selected { box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
+        .court-tools { display: flex; justify-content: flex-end; margin: 0 0 6px; }
+        .court-fxb { height: 26px; padding: 0 12px; border: none; border-radius: 13px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 11px; font-weight: 700; }
+        .court-fxb.on { color: var(--accent); box-shadow: var(--sink); }
+        .court-pin { display: inline-flex; margin-left: 3px; vertical-align: 0; color: var(--ink-3); font-style: normal; }
+        .court-cell.fx-mode { outline: 1px dashed var(--line-2); outline-offset: -3px; }
+        @media (max-width: 389px) { .court-wrap { grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 4px; } }
 
         /* ---- 区切り線は最小限 ---- */
         .acc, .team-member-row, .vc-links, .vc-linkrow, .confirm-group-title { border-color: var(--line); }
@@ -2402,6 +2420,13 @@
         body.hide-tparams .team-eye-btn .ic-eyeoff { display: inline-block; }
         .team-toolbar .team-eye-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
         body.hide-tparams #teamResults .court-params, body.hide-tparams #teamResults .team-avg-line, body.hide-tparams #teamResults .team-avg-table { display: none !important; }
+        /* 名簿でも、目のボタンでパラメータ(一覧の数値・棒、開いたときの入力と補正後の値)を隠す */
+        body.hide-tparams #rosterList :is(.rl-params, .rc-params, .roster-params-grid, .roster-eff) { display: none !important; }
+        body.hide-tparams #rosterSortParamRow { display: none !important; }
+        body.hide-tparams #rosterSortSeg button[onclick*="'param'"] { display: none !important; }   /* パラメータ順の並びでも値が分かるので隠す */
+        .roster-eye-btn { flex: none; width: 38px; min-height: 38px; padding: 0; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center; }
+        .roster-eye-btn .ic { width: 17px; height: 17px; }
+        .roster-eye-btn[aria-pressed="true"] { color: var(--accent); box-shadow: var(--sink); }
 
         /* ===== v57: ライトモードの凹凸を強く / お金マークを見やすく / 時間入力の凹み ===== */
         :root {
@@ -2778,6 +2803,12 @@
         .team-sync-btn.synced { color: var(--accent); }
         .tsync-note { font-size: 11.5px; color: var(--ink-3); margin: -4px 2px 8px; }
         .tsync-note:empty { display: none; }
+        /* 共有されたチーム分け: 細い帯(受け取る / 今はいい)と、「今はいい」のあとの小さな「共有あり」 */
+        .tshare-bar { display: flex; align-items: center; gap: 8px; margin: 0 2px 10px; padding: 7px 8px 7px 14px; border-radius: 16px; background: var(--bg); box-shadow: var(--sink); font-size: 12px; color: var(--ink-2); }
+        .tshare-bar > span { flex: 1 1 auto; min-width: 0; }
+        .tshare-bar button { flex: none; height: 30px; padding: 0 12px; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-xs); font-size: 12px; font-weight: 700; color: var(--ink-3); }
+        .tshare-bar .tshare-ok { color: var(--accent); }
+        .tshare-chip { flex: none; height: 24px; padding: 0 9px; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--sink); color: var(--accent); font-size: 10.5px; font-weight: 700; align-self: center; }
         /* チーム分けのあとに「来る」になった人 */
         .late-box { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-sm); }
         .late-h { font-size: 12.5px; font-weight: 800; color: var(--ink-2); margin-bottom: 6px; }
@@ -4112,6 +4143,11 @@
         .mt-rotrow { display: flex; justify-content: flex-end; margin: -2px 0 10px; }
         .mt-rotb { height: 30px; padding: 0 14px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 12px; font-weight: 700; font-family: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif; }
         .mt-rotb.on { color: var(--accent); box-shadow: var(--sink); }
+        .mt-rotrow { gap: 8px; }
+        .mt-lub { height: 30px; padding: 0 12px 0 26px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 11.5px; font-weight: 700; position: relative; }
+        .mt-lub::before { content: ""; position: absolute; left: 10px; top: 50%; width: 9px; height: 9px; margin-top: -5px; border-radius: 50%; box-shadow: var(--sink); }
+        .mt-lub.on { color: var(--accent); }
+        .mt-lub.on::before { background: var(--accent); box-shadow: none; }
         .mt-ed-row .mt-rotb { margin-left: auto; }
         #rotOv { position: fixed; inset: 0; z-index: 9950; display: none; align-items: flex-end; justify-content: center; background: rgba(20,24,32,.28); }
         #rotOv .rot-box { width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; box-sizing: border-box; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); background: var(--sn-bg); color: var(--sn-ink); border-radius: 28px 28px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.14); font-family: 'Noto Sans JP', system-ui, sans-serif; }
@@ -4782,9 +4818,9 @@ await main();
     <div class="dv-ov" id="devAskOv">
         <div class="dv-box">
             <h4>管理モードです</h4>
-            <p id="devAskMsg">今日はバレー当日です。管理モードのまま開きますか?</p>
-            <button type="button" class="primary" onclick="devAskAnswer('keep')">管理モードのまま開く</button>
-            <button type="button" onclick="devAskAnswer('view')">閲覧モードに切り替えて開く</button>
+            <p id="devAskMsg">今日はバレー当日です。パラメータを表示しますか?</p>
+            <button type="button" class="primary" onclick="devAskAnswer('keep')">管理モードのまま表示</button>
+            <button type="button" onclick="devAskAnswer('view')">閲覧モードに切り替える</button>
             <button type="button" class="cancel" onclick="devAskAnswer('cancel')">キャンセル</button>
         </div>
     </div>
@@ -4857,6 +4893,7 @@ await main();
             <div class="roster-search-row">
                 <input type="text" id="rosterSearchInput" placeholder="名前・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
                 <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
+                <button type="button" class="roster-eye-btn team-eye-btn admin-only" id="rosterEyeBtn" onclick="toggleHideTeamParams()" title="パラメータを隠す" aria-label="パラメータを隠す" aria-pressed="false"><i class="ic ic-eye"></i><i class="ic ic-eyeoff"></i></button>
             </div>
             <div class="roster-sort-row">
                 <span class="rs-label">並び順</span>
@@ -5269,9 +5306,11 @@ await main();
                 <button type="button" class="tchip admin-only" id="hideParamsBtn" onclick="toggleHideTeamParams()" title="コートの数値を隠す" aria-pressed="false"><i class="ic ic-eyeoff"></i></button>
                 <button type="button" class="tchip" id="teamResetBtn" onclick="resetTeamSplit()" title="リセット" style="display:none;"><i class="ic ic-undo"></i></button>
                 <button type="button" class="tchip admin-only" id="teamProposeBtn" onclick="runTeamPropose()" title="提案(分析に役立つ分け方)" aria-label="提案"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"></path></svg></button>
-                <button type="button" class="tchip team-sync-btn admin-only" id="teamSyncBtn" onclick="syncTeamSplit()" title="このチーム分けを、ほかの管理者の端末にも出す" style="display:none;"><i class="ic ic-refresh"></i></button>
+                <button type="button" class="tchip team-sync-btn admin-only" id="teamSyncBtn" onclick="syncTeamSplit()" title="このチーム分けを共有する" style="display:none;"><span class="tsync-l">共有</span></button>
+                <button type="button" class="tshare-chip admin-only" id="teamShareChip" onclick="teamShareReceive()" title="共有されたチーム分けを受け取る" style="display:none;">共有あり</button>
             </div>
             <div class="tsync-note" id="teamSyncNote"></div>
+            <div class="tshare-bar admin-only" id="teamShareBar" style="display:none;"></div>
             <div class="tsync-note" id="teamProposeNote" style="display:none"></div>
             <div class="tpred admin-only" id="teamPredict"></div>
 
@@ -6275,7 +6314,7 @@ await main();
             const acc = document.getElementById("rosterAcc");
             if (acc) acc.addEventListener("toggle", () => {
                 if (!acc.open) return;
-                askDevModeIfVolleyDay(() => renderRosterPanel(), () => { acc.open = false; });
+                renderRosterPanel();
             });
         });
 
@@ -6572,6 +6611,7 @@ await main();
         }
 
         function renderRosterPanel() {
+            try { applyHideTeamParams(); } catch (e) { /* ignore */ }   // 目のボタンの状態(チーム分けと同じ)
             const list = document.getElementById("rosterList");
             const countEl = document.getElementById("rosterSearchCount");
             const clearBtn = document.getElementById("rosterSearchClear");
@@ -8680,7 +8720,7 @@ await main();
             const splitBtn = document.getElementById("teamSplitBtn");
             splitBtn.disabled = unresolvedNames.length > 0 || comingMembers.length < 2;
 
-            // ほかの管理者が同期したチーム分けがあれば(この端末の結果より新しければ)、それを出す
+            // この端末に保存したチーム分けがあれば出す(ほかの管理者の共有は、受け取ったときだけ)
             if (adoptSharedTeamSplit()) {
                 renderTeamResults();
                 splitBtn.style.display = "none";
@@ -9261,9 +9301,10 @@ await main();
         // ------- 配置(ローテはしない。位置は手動で並べ替えできる) -------
         // lineup = { slots: {4,3,2,5,6,1 → 選手 or null}, bench: [控えの選手] }
         function finalizeLineup(best) {
-            const out = { slots: {}, bench: [] };
+            const out = { slots: {}, bench: [], fx: [] };
             COURT_LAYOUT.forEach(c => { out.slots[c.no] = null; });
             if (!best) return out;
+            out.fx = (best.fixed || []).map(f => f.player && f.player.name).filter(Boolean);   // 希望ポジションの位置に置いた人 = 位置の固定(ローテしない)
             const { slots, bench } = lineupSlotMap(best, 0);
             COURT_LAYOUT.forEach(c => { out.slots[c.no] = slots[c.no] || null; });
             out.bench = bench.slice();
@@ -9299,6 +9340,7 @@ await main();
             if (!l) return;
             if (l.type === "bench") lineup.bench.splice(l.idx, 1);
             else lineup.slots[l.no] = lineup.bench.length ? lineup.bench.shift() : null;
+            if (lineup.fx) lineup.fx = lineup.fx.filter(n => n !== p.name);
         }
         // チームに入る: 空いている位置があればそこへ、なければ控えへ
         function lineupAdd(lineup, p) {
@@ -9342,6 +9384,26 @@ await main();
             }).join("")}</div>`;
         }
 
+        // チーム分けのコート: 左右の前の端が控えの場所(押すと、そちらに控え。ローテの記録と同じく、チームの番号ごとにこの端末で覚える)
+        //   控えの場所は2つ(3人以上なら、その人数ぶん)。固定 = 位置の固定(ローテの記録と同じ。🔒の印)
+        var teamFxMode = -1;   // 固定の付け外しをしているチーム(-1 = していない)
+        function lineupFx(l) { const on = new Set(Object.values(l.slots || {}).filter(Boolean).map(p => p.name)); return (l.fx || []).filter(n => on.has(n)); }
+        function teamBenchSide(teamIdx, side) {
+            if (!isAdmin() || (side !== "L" && side !== "R")) return;
+            rotSideSave("チーム" + (teamIdx + 1), side);
+            renderTeamResults();
+        }
+        function teamFxToggleMode(teamIdx) { teamFxMode = teamFxMode === teamIdx ? -1 : teamIdx; swapSel = null; renderSwapBar(); renderTeamResults(); }
+        // 選んでいる人を、同じチームの空いている控えの場所へ(コートの位置は空きになる)
+        function swapPickBench(teamIdx) {
+            const res = lastTeamSplitResult; if (!res || !swapSel || swapSel.teamIdx !== teamIdx) return;
+            const l = res.lineups[teamIdx], p = res.teams[teamIdx][swapSel.mi], at = p && lineupFind(l, p);
+            if (!at || at.type !== "slot") { swapSel = null; renderSwapBar(); renderTeamResults(); return; }
+            l.slots[at.no] = null; l.bench.push(p);
+            res.manualEdited = true; res.at = Date.now();
+            swapNotice = `${escapeHtml(p.name)}を控えへ移しました。`;
+            swapSel = null; renderSwapBar(); renderTeamResults();
+        }
         function renderCourtHtml(teamIdx) {
             const res = lastTeamSplitResult;
             const lineup = res && res.lineups && res.lineups[teamIdx];
@@ -9349,16 +9411,19 @@ await main();
             const slotMap = lineup.slots;
             const bench = lineup.bench;
             const teamArr = res.teams[teamIdx] || [];
+            const fx = lineupFx(lineup), fxMode = teamFxMode === teamIdx && isAdmin();
+            const side = rotSidePref("チーム" + (teamIdx + 1), teamIdx);
             const key = ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" role="button" tabindex="0"`;
+            const pin = `<i class="court-pin" aria-label="固定"><svg viewBox="0 0 12 12" width="9" height="9" fill="currentColor"><rect x="2.5" y="5.2" width="7" height="5.3" rx="1.3"/><path d="M4 5.4V4a2 2 0 0 1 4 0v1.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></i>`;
             // 入れ替え用: タップで選べる(選択中・入れ替え先の候補の見た目も付ける)
-            const pickOf = p => {
+            const pickOf = (p, stop) => {
                 const mi = teamArr.findIndex(x => x.name === p.name);
                 if (mi < 0) return { cls: "", attr: "" };
                 let cls = " swappable";
                 const isSel = swapSel && swapSel.teamIdx === teamIdx && swapSel.mi === mi;
                 if (isSel) cls += " swap-selected";
                 else if (swapSel) cls += " swap-target";
-                return { cls, attr: ` onclick="swapPick(${teamIdx}, ${mi})"${key}` };
+                return { cls, attr: ` onclick="${stop ? "event.stopPropagation();" : ""}swapPick(${teamIdx}, ${mi})"${key}` };
             };
 
             const cells = COURT_LAYOUT.map(c => {
@@ -9377,20 +9442,26 @@ await main();
                     inner = `<div class="court-name">${genderDot}${escapeHtml(p.name)}${memberKeyBadgesHtml(p)}</div>${posTag}${params}`;
                     pk = pickOf(p);
                 }
-                return `<div class="court-cell ${c.row}${pk.cls}${p && p.name === teamMeName() ? " is-me" : ""}"${pk.attr}><span class="court-slot-no">${c.no}</span>${inner}</div>`;
+                return `<div class="court-cell ${c.row}${pk.cls}${p && fx.includes(p.name) ? " pinned" : ""}${fxMode && p ? " fx-mode" : ""}${p && p.name === teamMeName() ? " is-me" : ""}"${pk.attr}><span class="court-slot-no">${c.no}${p && fx.includes(p.name) ? pin : ""}</span>${inner}</div>`;
             }).join("");
 
-            const benchHtml = bench.length
-                ? `<div class="court-bench"><span class="bench-label">控え</span>${bench.map(p => {
-                    const pk = pickOf(p);
-                    return `<span class="bench-chip${pk.cls}${p.name === teamMeName() ? " is-me" : ""}"${pk.attr}>${escapeHtml(p.name)}${paramsVisible() ? courtParamsHtml(p) : ""}</span>`;
-                }).join("")}</div>` : "";
+            // 控えの場所(選んだ側の前の端)。2つより少なければ空きの場所を出す。反対の端は押すとそちらに控え
+            const nSlot = Math.max(2, bench.length);
+            const benchSlots = Array.from({ length: nSlot }, (_, j) => {
+                const p = bench[j];
+                if (!p) { const can = swapSel && swapSel.teamIdx === teamIdx; return `<span class="bench-chip bench-empty${can ? " swappable swap-target" : ""}"${can ? ` onclick="event.stopPropagation();swapPickBench(${teamIdx})"${key}` : ""} aria-label="控えの空き"></span>`; }
+                const pk = pickOf(p, true);
+                return `<span class="bench-chip${pk.cls}${p.name === teamMeName() ? " is-me" : ""}"${pk.attr}>${escapeHtml(p.name)}${paramsVisible() ? courtParamsHtml(p) : ""}</span>`;
+            }).join("");
+            const edge = s => `<div class="court-edge ${s}${side === s ? " on" : ""}"${isAdmin() ? ` onclick="teamBenchSide(${teamIdx}, '${s}')" role="button" aria-label="${s === "L" ? "左前" : "右前"}に控え"` : ""}>${side === s ? benchSlots : `<span class="court-ghost">控え</span>`}</div>`;
+            const tools = isAdmin() ? `<div class="court-tools"><button type="button" class="court-fxb${fxMode ? " on" : ""}" onclick="teamFxToggleMode(${teamIdx})" aria-pressed="${fxMode}">固定</button></div>` : "";
 
             return `
                 <div class="court-box">
+                    ${tools}
+                    <div class="court-wrap">${edge("L")}<div class="court-main">
                     <div class="court-net">ネット</div>
-                    <div class="court-grid">${cells}</div>
-                    ${benchHtml}
+                    <div class="court-grid">${cells}</div></div>${edge("R")}</div>
                 </div>
             `;
         }
@@ -9620,8 +9691,8 @@ await main();
             predictToken++;
             predictRunning = false;
             teamSplitHistory = { key: "", runs: [] };
-            { const sh = teamShareAll()[selectedDate]; if (sh) teamShareSkip[selectedDate] = sh.at; }
-            teamForgetLocal(selectedDate);   // 同期されたチーム分けも、この端末では出さない
+            teamShareWithdraw(selectedDate, null);   // 自分が共有していたら取り下げる
+            teamForgetLocal(selectedDate);
             lastTeamSplitResult = null;
             swapSel = null; swapNotice = "";
             { const nt = document.getElementById("teamProposeNote"); if (nt) nt.style.display = "none"; }
@@ -9743,29 +9814,30 @@ await main();
             applyProposalTeams(pr);
         }
         // 次回の「チームを分ける」から反映される(表示中の結果は変わらない)
+        // パラメータを隠す(目のボタン)。チーム分けと名簿で同じ状態(HIDE_TP_KEY。この端末だけ)
         function applyHideTeamParams() {
             let on = false;
             try { on = localStorage.getItem(HIDE_TP_KEY) === "1"; } catch (e) { /* ignore */ }
             document.body.classList.toggle("hide-tparams", on);
-            const b = document.getElementById("hideParamsBtn");
-            if (b) b.setAttribute("aria-pressed", String(on));
+            ["hideParamsBtn", "rosterEyeBtn"].forEach(id => { const b = document.getElementById(id); if (b) b.setAttribute("aria-pressed", String(on)); });
         }
         function toggleHideTeamParams() {
             const on = !document.body.classList.contains("hide-tparams");
-            try { localStorage.setItem(HIDE_TP_KEY, on ? "1" : "0"); } catch (e) { /* ignore */ }
-            applyHideTeamParams();
+            const set = v => { try { localStorage.setItem(HIDE_TP_KEY, v ? "1" : "0"); } catch (e) { /* ignore */ } applyHideTeamParams(); };
+            if (on) { set(true); return; }
+            // 隠している → 表示: バレー当日の管理者だけ、管理のまま表示するか・閲覧モードにするかを確認(キャンセルなら隠したまま)
+            askDevModeIfVolleyDay(() => set(false), () => {});
         }
         function toggleIgnoreParams() {
             ignoreParams = document.getElementById("ignoreParamsToggle").checked;
             saveIgnoreParams();
         }
 
-        // ------- チーム分けの同期(管理者が「同期」を押すと、共有データに入れて、ほかの管理者の端末にも同じチーム分けを出す) -------
+        // ------- チーム分けの共有(共有データ。受け取りは teamShareReceive) -------
         // 共有データ: { "日付": { at: 時刻, round: チーム分けボタンを押した時刻, teams: [[名前…]…], lineups: [{ slots: {番号: 名前}, bench: [名前…] }…], manual } }
         // この端末にも同じ形で保存しておき、開き直し・更新・メンバーの増減があってもチーム分けが消えないようにする
         const TEAM_SHARE_KEY = "attendance_team_share_v1";
         const TEAM_LOCAL_KEY = "team_local_v1";   // この端末だけ(共有しない)
-        var teamShareSkip = {};   // 日付 → この端末でリセットした同期分の時刻
         const teamJsonGet = (key) => { try { const v = JSON.parse(localStorage.getItem(key) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } };
         function teamShareAll() { return teamJsonGet(TEAM_SHARE_KEY); }
         // 名前 → チーム分けで使う人(名簿から。runTeamSplit と同じ形)
@@ -9807,7 +9879,7 @@ await main();
             return {
                 at: res.at || Date.now(), round: res.round || res.at || 0, manual: !!res.manualEdited, out: teamOutGet(res.dateKey),
                 teams: res.teams.map(t => t.map(nm)),
-                lineups: (res.lineups || []).map(l => l ? { slots: Object.fromEntries(Object.entries(l.slots || {}).filter(([, p]) => p).map(([no, p]) => [no, p.name])), bench: (l.bench || []).map(nm) } : null)
+                lineups: (res.lineups || []).map(l => l ? { slots: Object.fromEntries(Object.entries(l.slots || {}).filter(([, p]) => p).map(([no, p]) => [no, p.name])), bench: (l.bench || []).map(nm), fx: lineupFx(l) } : null)
             };
         }
         function teamRestore(sh, date) {
@@ -9818,7 +9890,7 @@ await main();
                 const l = sh.lineups && sh.lineups[i];
                 if (!l) return arrangeTeamLineup(t);
                 const slots = {}; Object.entries(l.slots || {}).forEach(([no, n]) => { slots[no] = P(n); });
-                return { ...arrangeTeamLineup(t), slots, bench: (l.bench || []).map(P) };
+                return { ...arrangeTeamLineup(t), slots, bench: (l.bench || []).map(P), fx: Array.isArray(l.fx) ? l.fx.slice() : [] };   // 固定の記録がない古い共有は、固定なし
             });
             if (Array.isArray(sh.out)) teamOutSet(date, sh.out);
             return { teams, excludedKeys: new Set(), dateKey: date, ignoreParams, lineups, at: sh.at, round: sh.round || sh.at, manualEdited: !!sh.manual };
@@ -9833,39 +9905,82 @@ await main();
             try { localStorage.setItem(TEAM_LOCAL_KEY, JSON.stringify(all)); } catch (e) { /* ignore */ }
         }
         function teamForgetLocal(date) { const all = teamJsonGet(TEAM_LOCAL_KEY); if (all[date]) { delete all[date]; try { localStorage.setItem(TEAM_LOCAL_KEY, JSON.stringify(all)); } catch (e) { /* ignore */ } } }
-        function syncTeamSplit() {
+        // ------- チーム分けの共有(管理者が「共有」を押すと共有データに入る。ほかの管理者は「受け取る」を押したときだけ、そのチーム分けにする) -------
+        //   共有した人が、そのあとチーム分けを変えた(分け直し・入れ替えなど)・リセットしたら、その共有は取り下げる(共有データから消す)。新しい分け方はもう一度「共有」
+        //   by = 共有した端末の印(この端末だけの値。ログインしていれば uid も入れる)。受け取る側の「今はいい」は、共有の時刻(at)ごとにこの端末に覚える
+        const TEAM_SHARE_ME_KEY = "team_share_me_v1", TEAM_SHARE_LATER_KEY = "team_share_later_v1";   // どちらもこの端末だけ(共有しない)
+        function teamShareMe() {
+            let v = ""; try { v = localStorage.getItem(TEAM_SHARE_ME_KEY) || ""; } catch (e) { /* ignore */ }
+            if (!v) { v = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); try { localStorage.setItem(TEAM_SHARE_ME_KEY, v); } catch (e) { /* ignore */ } }
+            return v;
+        }
+        function teamShareSave(all) { try { localStorage.setItem(TEAM_SHARE_KEY, JSON.stringify(all)); } catch (e) { console.warn(e); } }
+        function syncTeamSplit() {   // 「共有」
             const res = lastTeamSplitResult;
             if (!res || !isAdmin() || res.dateKey !== selectedDate) return;
             const all = teamShareAll(), cut = formatDateKey(new Date(Date.now() - 30 * 864e5));
             Object.keys(all).forEach(k => { if (k < cut) delete all[k]; });   // 30日より前は消す
             if (!res.at) res.at = Date.now();
             res.syncedAt = res.at;
-            all[selectedDate] = teamSerialize(res);
-            try { localStorage.setItem(TEAM_SHARE_KEY, JSON.stringify(all)); } catch (e) { console.warn(e); }
-            renderTeamSyncUi("同期しました。ほかの管理者の端末にも、このチーム分けが出ます。");
+            all[selectedDate] = { ...teamSerialize(res), by: teamShareMe(), ...(typeof authUid !== "undefined" && authUid ? { uid: authUid } : {}) };
+            teamShareSave(all);
+            renderTeamSyncUi();
         }
-        // この端末の結果・この端末に保存した結果・共有(同期)された結果のうち、いちばん新しいものを出す
+        // 自分の共有を取り下げる: 共有したあとにチーム分けが変わった・リセットした(res = 今のチーム分け。無ければリセット)
+        function teamShareWithdraw(date, res) {
+            const all = teamShareAll(), sh = all[date];
+            if (!sh || sh.by !== teamShareMe()) return;
+            if (res && res.at === sh.at) return;
+            delete all[date]; teamShareSave(all);
+            if (res) res.syncedAt = 0;
+        }
+        // ほかの人の共有で、今出しているものと違うもの(無ければ null)
+        function teamShareIncoming() {
+            const sh = teamShareAll()[selectedDate];
+            if (!sh || !Array.isArray(sh.teams) || sh.teams.length < 2 || sh.by === teamShareMe() || !isAdmin()) return null;
+            const cur = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
+            if (cur && (cur.at === sh.at || JSON.stringify(teamSerialize(cur).teams) === JSON.stringify(sh.teams) && JSON.stringify(teamSerialize(cur).lineups) === JSON.stringify(sh.lineups))) return null;
+            return sh;
+        }
+        function teamShareLater() { const sh = teamShareIncoming(); if (!sh) return; const v = teamJsonGet(TEAM_SHARE_LATER_KEY); v[selectedDate] = sh.at; try { localStorage.setItem(TEAM_SHARE_LATER_KEY, JSON.stringify(v)); } catch (e) { /* ignore */ } renderTeamSyncUi(); }
+        function teamShareReceive() {
+            const sh = teamShareIncoming(); if (!sh) return;
+            if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate && lastTeamSplitResult.manualEdited && !confirm("手動で入れ替えた結果は、共有されたチーム分けに置きかわります。よろしいですか?")) return;
+            matchForm.rot = null; matchForm.luRot = null;
+            lastTeamSplitResult = teamRestore(sh, selectedDate);
+            lastTeamSplitResult.syncedAt = sh.at; lastTeamSplitResult.fromShare = true;
+            swapSel = null; swapNotice = "";
+            const n = document.getElementById("teamCountInput"); if (n) n.value = lastTeamSplitResult.teams.length;
+            document.getElementById("teamSplitBtn").style.display = "none";
+            document.getElementById("teamRerunBtn").style.display = "block";
+            document.getElementById("teamResetBtn").style.display = "block";
+            document.getElementById("dupMark").textContent = "";
+            setPredictBox("", false);
+            updateSwapUi(); renderTeamResults();
+        }
+        // この端末の結果がなければ、この端末に保存した結果を出す(共有されたものは、受け取るまで出さない)
         function adoptSharedTeamSplit() {
             const cur = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
-            let best = null, from = "";
             const loc = teamJsonGet(TEAM_LOCAL_KEY)[selectedDate];
-            if (!cur && loc && Array.isArray(loc.teams) && loc.teams.length >= 2) { best = loc; from = "local"; }
+            if (cur || !loc || !Array.isArray(loc.teams) || loc.teams.length < 2) return false;
+            lastTeamSplitResult = teamRestore(loc, selectedDate);
             const sh = teamShareAll()[selectedDate];
-            if (sh && Array.isArray(sh.teams) && sh.teams.length >= 2 && (teamShareSkip[selectedDate] || 0) < sh.at && sh.at > Math.max(cur ? cur.at || 0 : 0, best ? best.at : 0)) { best = sh; from = "share"; }
-            if (!best) return false;
-            lastTeamSplitResult = teamRestore(best, selectedDate);
-            if (from === "share") { lastTeamSplitResult.syncedAt = best.at; lastTeamSplitResult.fromShare = true; }
-            else if (sh && sh.at === best.at) lastTeamSplitResult.syncedAt = best.at;
+            if (sh && sh.at === loc.at) lastTeamSplitResult.syncedAt = loc.at;
             swapSel = null; swapNotice = "";
             const n = document.getElementById("teamCountInput"); if (n) n.value = lastTeamSplitResult.teams.length;
             return true;
         }
-        function renderTeamSyncUi(msg) {
+        function renderTeamSyncUi() {
             const b = document.getElementById("teamSyncBtn"), note = document.getElementById("teamSyncNote");
             const res = lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate ? lastTeamSplitResult : null;
-            if (b) { b.style.display = res && isAdmin() ? "" : "none"; b.classList.toggle("synced", !!(res && res.syncedAt && res.syncedAt === res.at)); }
+            const mine = teamShareAll()[selectedDate], shared = !!(res && mine && mine.by === teamShareMe() && mine.at === res.at);
+            if (b) { b.style.display = res && isAdmin() ? "" : "none"; b.classList.toggle("synced", shared); b.title = shared ? "共有中(ほかの管理者が受け取れます)" : "このチーム分けを共有する"; }
             if (note) note.textContent = "";
-            if (false) note.textContent = msg || (res && res.fromShare && res.syncedAt === res.at ? "ほかの管理者が同期したチーム分けを表示中です。" : res && res.syncedAt && res.syncedAt !== res.at && isAdmin() ? "同期のあとに変更があります。ほかの管理者に出すには、もう一度「同期」を押してください。" : res && isAdmin() ? "選手をタップすると、入れ替え・移動ができます。" : "");
+            // ほかの管理者の共有: 細い帯(受け取る / 今はいい)。「今はいい」のあとは、共有のボタンの横に小さく「共有あり」
+            const sh = teamShareIncoming(), later = sh && teamJsonGet(TEAM_SHARE_LATER_KEY)[selectedDate] === sh.at;
+            const bar = document.getElementById("teamShareBar"), chip = document.getElementById("teamShareChip");
+            if (bar) { bar.style.display = sh && !later ? "" : "none"; bar.innerHTML = sh && !later ? `<span>共有されたチーム分けがあります</span><button type="button" class="tshare-ok" onclick="teamShareReceive()">受け取る</button><button type="button" class="tshare-later" onclick="teamShareLater()">今はいい</button>` : ""; }
+            if (chip) chip.style.display = sh && later ? "" : "none";
         }
         // チーム分けのあとに「来る」になった人: まだどのチームにもいない
         function lateMembers() {
@@ -9914,6 +10029,7 @@ await main();
         }
         function renderTeamResults() {
             try { teamPersistLocal(); } catch (e) { console.warn(e); }
+            try { const r = lastTeamSplitResult; if (r && r.dateKey) teamShareWithdraw(r.dateKey, r); } catch (e) { console.warn(e); }   // 共有のあとに変えたら取り下げる
             try { renderMatchBox(); } catch (e) { console.warn(e); }
             try { renderTeamSyncUi(); } catch (e) { console.warn(e); }
             try { renderTeamPredict(); } catch (e) { console.warn(e); }
@@ -9975,7 +10091,7 @@ await main();
             matchForm[k] = v;
             if (k === "a" && matchForm.b === v) matchForm.b = matchForm.a === 0 ? 1 : 0;
             if (k === "b" && matchForm.a === v) matchForm.a = matchForm.b === 0 ? 1 : 0;
-            if (k !== "win") { matchForm.win = null; matchForm.rot = null; }   // チームを変えたら、ローテの下書きも外す
+            if (k !== "win") { matchForm.win = null; matchForm.rot = null; matchForm.luRot = null; }   // チームを変えたら、ローテの下書きも外す
             renderMatchBox();
         }
         // チームの色(1=青 / 2=オレンジ / 3〜): 試合の記録・入力・チーム分けで同じ色
@@ -9991,7 +10107,7 @@ await main();
             const a = matchForm.a, b = matchForm.b;
             const list = matchesByDate[selectedDate] || (matchesByDate[selectedDate] = []);
             const rd = lastTeamSplitResult && lastTeamSplitResult.round;
-            list.push(rotAttach({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: matchForm.win === a ? 0 : 1, diff, ...(rd ? { round: rd, pair: ["チーム" + (a + 1), "チーム" + (b + 1)] } : {}) }));   // ローテ・点数は入れたときだけ
+            list.push(rotAttach({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: matchForm.win === a ? 0 : 1, diff, ...(rd ? { round: rd, pair: ["チーム" + (a + 1), "チーム" + (b + 1)] } : {}) }, a, b));   // ローテ・点数は入れたときだけ(「ローテも保存」ならコートの並びから)
             saveMatches();
             matchForm.win = null; matchForm.rot = null;
             renderMatchBox();
@@ -10209,7 +10325,7 @@ await main();
                 form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-rec">
                     <div class="mt-dstep"><button type="button" onclick="matchDiffStep(-1)" aria-label="点差を減らす">−</button><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="0" value="${escapeHtml(String(matchForm.diff || ""))}" oninput="matchForm.diff=this.value"><button type="button" onclick="matchDiffStep(1)" aria-label="点差を増やす">＋</button></div>
                     ${wb(matchForm.a)}${wb(matchForm.b)}<button type="button" class="mt-ok" onclick="matchRecordSelected()" ${matchForm.win == null ? "disabled" : ""} aria-label="記録">✓</button></div>
-                    <div class="mt-rotrow">${(() => { const r = matchForm.rot, sc = r && rotScoreOk(r.score); return `<button type="button" class="mt-rotb${r ? " on" : ""}" onclick="rotOpenNew()" aria-label="ローテと点数(入れなくてもよい)">ローテ${r && r.use ? " ✓" : ""}${sc ? ` ${sc[0]}–${sc[1]}` : ""}</button>`; })()}</div>`;
+                    <div class="mt-rotrow">${(() => { const lu = !(matchForm.rot && matchForm.rot.use) && lastTeamSplitResult && lastTeamSplitResult.lineups ? `<button type="button" class="mt-lub${rotLuOn(matchForm.a, matchForm.b) ? " on" : ""}" onclick="rotLuToggle()" aria-pressed="${rotLuOn(matchForm.a, matchForm.b)}" title="チーム分けのコートの並びをローテとして保存">ローテも保存</button>` : ""; const r = matchForm.rot, sc = r && rotScoreOk(r.score); return lu + `<button type="button" class="mt-rotb${r ? " on" : ""}" onclick="rotOpenNew()" aria-label="ローテと点数(入れなくてもよい)">ローテ${r && r.use ? " ✓" : ""}${sc ? ` ${sc[0]}–${sc[1]}` : ""}</button>`; })()}</div>`;
             }
             // 管理者アカウント: この日の「来る」メンバーの勝率(全期間)
             let rates = "";
@@ -10432,7 +10548,9 @@ await main();
             const c = Array(6).fill(null), b = [];
             const lu = lastTeamSplitResult && lastTeamSplitResult.lineups && ti != null && lastTeamSplitResult.lineups[ti];
             if (lu && lu.slots) { Object.entries(lu.slots).forEach(([no, p]) => { const n = p && (p.name || p); if (n && set.has(n) && +no >= 1 && +no <= 6) c[no - 1] = n; }); (lu.bench || []).forEach(p => { const n = p && (p.name || p); if (n && set.has(n) && !c.includes(n)) b.push(n); }); }
+            const luFx = lu && lu.slots ? lineupFx(lu).filter(n => c.includes(n)) : [];   // チーム分けのコートで固定した人
             names.forEach(n => { if (c.includes(n) || b.includes(n)) return; const i = c.indexOf(null); if (i >= 0) c[i] = n; else b.push(n); });
+            if (lu && lu.slots) return { c, b, side: rotSidePref(lb, k), fx: luFx };   // チーム分けのコートの並び(固定も)のまま
             const pv = rotPv(), st = names.map(n => [n, pv(n)]).filter(x => x[1] && x[1].setter).sort((p, q) => (q[1].set ?? 3) - (p[1].set ?? 3))[0];
             if (st && c[2] !== st[0]) { const n = st[0], ci = c.indexOf(n), bi = b.indexOf(n), out = c[2]; c[2] = n; if (ci >= 0) c[ci] = out; else if (out) b[bi] = out; else b.splice(bi, 1); }
             return { c, b, side: rotSidePref(lb, k), fx: [] };
@@ -10533,14 +10651,28 @@ await main();
             matchHistKeep(d.id, () => { saveMatches(); rotClose(); matchRerender(d.date); if (typeof renderRosterStats === "function") renderRosterStats(); });
         }
         // 記録するゲームに、下書きのローテと点数を付ける(点数の勝ちが、選んだ勝ちとちがうときは点数を付けない)
-        function rotAttach(rec) {
-            const r = matchForm.rot; if (!r || r.labels.join() !== rec.labels.join()) return rec;
-            if (r.use) rec.rot = r.sides.map(rotPack);
-            const sc = rotScoreOk(r.score);
+        //   ローテの画面で入れていなくて「ローテも保存」がオンなら、チーム分けの画面のコートの並び(控えの順・控えの側・固定)から作る
+        function rotAttach(rec, a, b) {
+            const r = matchForm.rot && matchForm.rot.labels.join() === rec.labels.join() ? matchForm.rot : null;
+            if (r && r.use) rec.rot = r.sides.map(rotPack);
+            const sc = r && rotScoreOk(r.score);
             if (sc && (sc[0] > sc[1] ? 0 : 1) === rec.win) { rec.score = sc; rec.diff = Math.abs(sc[0] - sc[1]); }
+            if (!rec.rot && a != null && rotLuOn(a, b)) { const lu = rotFromLineups(a, b); if (lu) rec.rot = lu; }
             rotSanitize(rec);   // 下書きのあとでメンバーが変わっていたら、ローテは付けない
             return rec;
         }
+        // チーム分けの画面のコートの並び → ローテの記録(ローテの画面と同じ形)。コートか控えの情報がなければ null
+        function rotFromLineups(a, b) {
+            const res = lastTeamSplitResult; if (!res || !res.lineups) return null;
+            const one = (ti, k) => { const l = res.lineups[ti]; if (!l || !l.slots) return null;
+                return { c: [1, 2, 3, 4, 5, 6].map(no => l.slots[no] ? l.slots[no].name : null), b: (l.bench || []).map(p => p.name), side: rotSidePref("チーム" + (ti + 1), k), fx: lineupFx(l) }; };
+            const out = [one(a, 0), one(b, 1)];
+            return out.every(Boolean) ? out : null;
+        }
+        // 「ローテも保存」: 入れていなければ、両チームともコートに6人そろっているときにオン
+        function rotLuDefault(a, b) { const res = lastTeamSplitResult; return !!(res && res.lineups && [a, b].every(i => { const l = res.lineups[i]; return l && l.slots && [1, 2, 3, 4, 5, 6].every(no => l.slots[no]); })); }
+        function rotLuOn(a, b) { return matchForm.luRot == null ? rotLuDefault(a, b) : !!matchForm.luRot; }
+        function rotLuToggle() { matchForm.luRot = !rotLuOn(matchForm.a, matchForm.b); renderMatchBox(); }
         // ゲームのメンバーを直したとき: メンバーと合わなくなったローテは外す
         function rotSanitize(m) {
             if (!m.rot) return;
@@ -10733,6 +10865,11 @@ await main();
         function swapPick(teamIdx, mi) {
             const res = lastTeamSplitResult;
             if (!res || !res.teams[teamIdx] || !res.teams[teamIdx][mi]) return;
+            if (teamFxMode === teamIdx && res.lineups && res.lineups[teamIdx]) {   // 固定のモード: コートの人の固定(位置の固定)を付け外し
+                const l = res.lineups[teamIdx], p = res.teams[teamIdx][mi], at = lineupFind(l, p);
+                if (at && at.type === "slot") { const fx = lineupFx(l); l.fx = fx.includes(p.name) ? fx.filter(n => n !== p.name) : fx.concat(p.name); res.manualEdited = true; res.at = Date.now(); }
+                renderTeamResults(); return;
+            }
             if (!swapSel) {
                 swapSel = { teamIdx, mi };
                 swapNotice = "";
@@ -15332,7 +15469,8 @@ const namesBtn = isAdmin() && dates.length > 0
             renderVideosView();
         }
         // ------- バレー当日の開発モード確認 -------
-        // 今日が「バレーの日」(予定マーク or 予約あり)で、開発モードONのまま名簿/チーム分けを開こうとした時に確認する
+        // 今日が「バレーの日」(予定マーク or 予約あり)に、管理者が隠したパラメータを表示しようとした時だけ確認する(目のボタン。チーム分け・名簿)
+        //   名簿・チーム分けを開くときには聞かない
         function isVolleyToday() {
             const k = formatDateKey(new Date());
             return !!(events && events[k]) || !!(reservations && reservations[k] && reservations[k].length);
@@ -15356,7 +15494,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function onTeamsTabClick() {
             if (currentView === "teams") { switchView("teams", true); return; }
-            askDevModeIfVolleyDay(() => switchView("teams", true));
+            switchView("teams", true);
         }
 
         // ------- Cloud Firestore 同期 -------
@@ -15803,7 +15941,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 20:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 22:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
