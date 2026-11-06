@@ -3714,7 +3714,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv, #pairOv {   /* フォーム分析(#fxOv)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv, #rotOv {   /* フォーム分析(#fxOv)・ローテ(#rotOv)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3728,7 +3728,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #rotOv {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -4108,6 +4108,89 @@
         #pairOv .op-sc { border: none; background: var(--sn-bg); color: var(--sn-ink2); border-radius: 16px; padding: 7px 14px; font-size: 12.5px; box-shadow: 3px 3px 7px var(--sn-dk), -3px -3px 7px var(--sn-lt); }
         #pairOv .op-sc.on { color: var(--sn-acc); font-weight: 700; box-shadow: inset 3px 3px 6px var(--sn-dk), inset -3px -3px 6px var(--sn-lt); }
         #pairOv .op-add { border: none; background: var(--sn-bg); color: var(--sn-acc); font-weight: 700; border-radius: 18px; padding: 0 26px; height: 42px; box-shadow: 4px 4px 9px var(--sn-dk), -4px -4px 9px var(--sn-lt); }
+        /* ===== ローテ(11/06): 設定と同じ、やわらかい凹凸。名前 = 出っぱった板、点数・控えの場所 = へこみ、色は青ひとつ(弱いローテだけ赤) ===== */
+        .mt-rotrow { display: flex; justify-content: flex-end; margin: -2px 0 10px; }
+        .mt-rotb { height: 30px; padding: 0 14px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 12px; font-weight: 700; font-family: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif; }
+        .mt-rotb.on { color: var(--accent); box-shadow: var(--sink); }
+        .mt-ed-row .mt-rotb { margin-left: auto; }
+        #rotOv { position: fixed; inset: 0; z-index: 9950; display: none; align-items: flex-end; justify-content: center; background: rgba(20,24,32,.28); }
+        #rotOv .rot-box { width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; box-sizing: border-box; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); background: var(--sn-bg); color: var(--sn-ink); border-radius: 28px 28px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.14); font-family: 'Noto Sans JP', system-ui, sans-serif; }
+        #rotOv button { font-family: inherit; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+        #rotOv .rot-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 14px; }
+        #rotOv .rot-head b { font: 700 13px/1 var(--sn-en); letter-spacing: .14em; color: var(--sn-ink2); }
+        #rotOv .rot-x { width: 36px; height: 36px; border: none; border-radius: 12px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); font-size: 13px; }
+        #rotOv .rot-x:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        /* 点数: へこんだ2つの数字 */
+        #rotOv .rot-score { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 18px; }
+        #rotOv .rot-score i { font: 700 16px var(--sn-en); color: var(--sn-ink3); font-style: normal; }
+        #rotOv .rot-sl { font: 700 11px var(--sn-en); color: var(--sn-ink3); min-width: 1em; text-align: center; }
+        #rotOv .rot-num { width: 72px; height: 48px; box-sizing: border-box; border: none; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-ink); font: 700 24px var(--sn-en); text-align: center; padding: 0; -moz-appearance: textfield; appearance: textfield; }
+        #rotOv .rot-num::-webkit-inner-spin-button, #rotOv .rot-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        #rotOv .rot-num::placeholder { color: var(--sn-ink3); opacity: .6; }
+        #rotOv .rot-num:focus { outline: none; box-shadow: var(--sn-insetS), 0 0 0 2px color-mix(in srgb, var(--sn-acc) 40%, transparent); }
+        /* チームごとのカード */
+        #rotOv .rot-card { margin: 0 0 18px; padding: 14px 12px 12px; border-radius: 24px; background: var(--sn-dome); box-shadow: var(--sn-raise); }
+        #rotOv .rot-th { display: flex; align-items: center; gap: 8px; margin: 0 2px 12px; }
+        #rotOv .rot-tn .tm-chip { font: 700 13px var(--sn-en); color: var(--sn-ink); }
+        #rotOv .rot-tools { display: inline-flex; gap: 6px; margin-left: auto; }
+        #rotOv .rot-tb { height: 30px; min-width: 34px; padding: 0 10px; border: none; border-radius: 15px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink2); font: 700 11px var(--sn-en); }
+        #rotOv .rot-tb.on { background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
+        #rotOv .rot-tb.best { color: var(--sn-acc); }
+        #rotOv .rot-tb:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        /* コート: 上がネット。前衛 4・3・2 / 後衛 5・6・1。左右の端 = 控えの場所(押すと、そちらに控え) */
+        #rotOv .rot-court { display: grid; grid-template-columns: 60px minmax(0, 1fr) 60px; gap: 6px; align-items: start; }
+        #rotOv .rot-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 8px 8px; border-radius: 18px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #rotOv .rot-net { position: absolute; left: 12px; right: 12px; top: 5px; height: 2px; border-radius: 1px; background: var(--sn-ink3); opacity: .45; }
+        #rotOv .rot-t { position: relative; min-width: 0; height: 52px; padding: 12px 4px 4px; border: none; border-radius: 14px; background: var(--sn-dome); box-shadow: var(--sn-raiseXS); color: var(--sn-ink); font-size: 12px; font-weight: 700; line-height: 1.2; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+        #rotOv .rot-t > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #rotOv .rot-t > small { position: absolute; top: 4px; left: 7px; font: 600 9px var(--sn-en); color: var(--sn-ink3); }
+        #rotOv .rot-t.empty { background: transparent; box-shadow: none; }
+        #rotOv .rot-t.sel { background: var(--sn-pit); box-shadow: var(--sn-insetS), 0 0 0 1.5px var(--sn-acc); }
+        #rotOv .rot-t.is-s { color: var(--sn-acc); }
+        #rotOv .rot-sb { position: absolute; top: 3px; right: 6px; font: 800 9.5px var(--sn-en); font-style: normal; color: var(--sn-acc); }
+        #rotOv .rot-pin { position: absolute; top: 3px; right: 6px; display: flex; color: var(--sn-ink3); }
+        #rotOv .rot-t.is-s .rot-pin { right: 16px; }
+        #rotOv .rot-edge { display: flex; flex-direction: column; gap: 6px; min-height: 52px; padding: 0; border-radius: 14px; cursor: pointer; }
+        #rotOv .rot-edge:not(.on) { align-items: center; justify-content: center; height: 52px; margin-top: 12px; background: var(--sn-pit); box-shadow: var(--sn-insetXS, var(--sn-insetS)); opacity: .55; }
+        #rotOv .rot-edge.on { margin-top: 12px; }
+        #rotOv .rot-edge.none { visibility: hidden; }
+        #rotOv .rot-edge .rot-t { height: 52px; padding: 4px 3px; font-size: 10.5px; }
+        #rotOv .rot-ghost { font-size: 10px; color: var(--sn-ink3); }
+        #rotOv .rot-note { margin: 8px 4px 0; font: 600 10.5px var(--sn-en); color: var(--sn-acc); text-align: right; }
+        #rotOv .rot-acts { display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px; }
+        #rotOv .rot-acts button { height: 42px; padding: 0 22px; border: none; border-radius: 18px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); font-size: 13px; font-weight: 700; }
+        #rotOv .rot-skip { color: var(--sn-ink3); }
+        #rotOv .rot-ok { color: var(--sn-acc); }
+        #rotOv .rot-acts button:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        /* ローテの一覧(記録の画面と分析で同じ): R番号・前衛・控え・強さ。いちばん弱い行は赤い数字と、短い理由 */
+        :is(#rotOv, #settingsPanel) .rot-list { margin: 12px 0 0; padding: 6px 12px; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        :is(#rotOv, #settingsPanel) .rot-row { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, .55fr) 2.4em; gap: 8px; align-items: center; min-height: 28px; font-size: 11.5px; color: var(--sn-ink2); border-top: 1px solid var(--sn-line); }
+        :is(#rotOv, #settingsPanel) .rot-row:first-child { border-top: none; }
+        :is(#rotOv, #settingsPanel) .rot-no { font: 700 10.5px var(--sn-en); color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel) .rot-fr, :is(#rotOv, #settingsPanel) .rot-bn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        :is(#rotOv, #settingsPanel) .rot-bn { font-size: 10.5px; color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel) .rot-s { font-style: normal; font-weight: 700; color: var(--sn-acc); }
+        :is(#rotOv, #settingsPanel) .rot-v { font: 700 12.5px var(--sn-en); color: var(--sn-ink); text-align: right; }
+        :is(#rotOv, #settingsPanel) .rot-row.weak .rot-v { color: var(--sn-neg); }
+        :is(#rotOv, #settingsPanel) .rot-why { margin: -4px 0 4px 2.6em; font-size: 10px; color: var(--sn-neg); }
+        :is(#rotOv, #settingsPanel) .rot-list:not(.open) :is(.rot-row, .rot-why).rot-more { display: none; }
+        :is(#rotOv, #settingsPanel) .rot-list.open :is(.rot-row, .rot-why).rot-pin1, :is(#rotOv, #settingsPanel) .rot-list.open .rot-plus { display: none; }
+        :is(#rotOv, #settingsPanel) .rot-row.rot-pin1 { border-top: 1px dashed var(--sn-line); }
+        :is(#rotOv, #settingsPanel) .rot-plus { display: block; margin: 6px auto 4px; height: 24px; padding: 0 14px; border: none; border-radius: 12px; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-ink2); font: 700 10.5px var(--sn-en); cursor: pointer; }   /* へこんだ小さい「+M」 */
+        :is(#rotOv, #settingsPanel) .rot-plus:active { color: var(--sn-acc); }
+        #rotOv .rot-score.bad .rot-num { color: var(--sn-neg); box-shadow: var(--sn-insetS), 0 0 0 1.5px color-mix(in srgb, var(--sn-neg) 55%, transparent); }
+        #rotOv .rot-score.shake { animation: rotShake .32s ease; }
+        @keyframes rotShake { 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+        #rotOv .rot-acts button.off { opacity: .45; box-shadow: var(--sn-raiseXS); cursor: default; }
+        #settingsPanel .rot-last { margin-top: 16px; }
+        #settingsPanel .rot-lh { margin: 0 2px 8px; font: 700 11px var(--sn-en); color: var(--sn-ink3); }
+        #settingsPanel .rot-lt { display: flex; align-items: center; gap: 6px; margin: 12px 2px 0; font: 700 12px var(--sn-en); color: var(--sn-ink2); }
+        #settingsPanel .rot-lt .rot-sc { margin-left: auto; font: 700 13px var(--sn-en); color: var(--sn-ink); }
+        #settingsPanel .rot-lt + .rot-list { margin-top: 6px; }
+        @media (max-width: 389px) {
+            #rotOv .rot-court { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
+            #rotOv .rot-tb { padding: 0 8px; }
+        }
 </style>
 </head>
 <body>
@@ -9594,6 +9677,7 @@ await main();
             }
             const foundNew = !known.has(partitionSignature(split.teams, () => true));
             const { teams, excludedKeys } = split;
+            matchForm.rot = null;   // 分け直したら、ローテの下書きは外す(メンバーがちがう)
             lastTeamSplitResult = {
                 teams, excludedKeys, dateKey: selectedDate, ignoreParams,
                 lineups: teams.map(arrangeTeamLineup), at: Date.now()
@@ -9628,6 +9712,7 @@ await main();
         function applyProposalTeams(pr) {
             if (lastTeamSplitResult && lastTeamSplitResult.dateKey === selectedDate) teamPastAdd(selectedDate, lastTeamSplitResult.teams.map(t => t.map(p => p.name)));
             const teams = pr.teams.map(t => t.map(teamParticipant));
+            matchForm.rot = null;   // 分け直したら、ローテの下書きは外す
             lastTeamSplitResult = { teams, excludedKeys: [], dateKey: selectedDate, ignoreParams, lineups: teams.map(arrangeTeamLineup), at: Date.now(), proposed: true };
             lastTeamSplitResult.round = lastTeamSplitResult.at;   // 新しい試合の組
             lastTeamSplitResult.history = recordTeamSplitHistory(teams, ignoreParams);
@@ -9884,7 +9969,7 @@ await main();
             matchForm[k] = v;
             if (k === "a" && matchForm.b === v) matchForm.b = matchForm.a === 0 ? 1 : 0;
             if (k === "b" && matchForm.a === v) matchForm.a = matchForm.b === 0 ? 1 : 0;
-            if (k !== "win") matchForm.win = null;
+            if (k !== "win") { matchForm.win = null; matchForm.rot = null; }   // チームを変えたら、ローテの下書きも外す
             renderMatchBox();
         }
         // チームの色(1=青 / 2=オレンジ / 3〜): 試合の記録・入力・チーム分けで同じ色
@@ -9900,9 +9985,9 @@ await main();
             const a = matchForm.a, b = matchForm.b;
             const list = matchesByDate[selectedDate] || (matchesByDate[selectedDate] = []);
             const rd = lastTeamSplitResult && lastTeamSplitResult.round;
-            list.push({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: matchForm.win === a ? 0 : 1, diff, ...(rd ? { round: rd, pair: ["チーム" + (a + 1), "チーム" + (b + 1)] } : {}) });
+            list.push(rotAttach({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: matchForm.win === a ? 0 : 1, diff, ...(rd ? { round: rd, pair: ["チーム" + (a + 1), "チーム" + (b + 1)] } : {}) }));   // ローテ・点数は入れたときだけ
             saveMatches();
-            matchForm.win = null;
+            matchForm.win = null; matchForm.rot = null;
             renderMatchBox();
             if (typeof renderRosterStats === "function") renderRosterStats();
         }
@@ -10032,6 +10117,10 @@ await main();
             const teams = [0, 1].map(k => Object.keys(e.teamOf).filter(n => e.teamOf[n] === k));
             if (!teams[0].length || !teams[1].length) { alert("どちらのチームにも1人以上入れてください。"); return; }
             m.teams = teams; m.win = e.win; m.diff = e.diff;
+            if ("rot" in e) { if (e.rot) m.rot = e.rot; else delete m.rot; }   // 編集中に入れたローテ・点数
+            if ("score" in e) { if (e.score) m.score = e.score; else delete m.score; }
+            if (m.score && ((m.score[0] > m.score[1] ? 0 : 1) !== m.win || Math.abs(m.score[0] - m.score[1]) !== m.diff)) delete m.score;   // 点数と合わなくなったら点数を外す
+            rotSanitize(m);
             if (e.all) { const gk = matchKeyOf(m); list.forEach(x => { if (x !== m && matchKeyOf(x) === gk) { x.teams = x.labels.map((lb, k) => { const i = m.labels.indexOf(lb); return i >= 0 ? teams[i].slice() : x.teams[k]; }); } }); }
             matchEdit = null;
             saveMatches(); matchRerender(e.date);
@@ -10050,6 +10139,7 @@ await main();
                 <div class="mt-ed-row">${[0, 1].map(k => `<button type="button" class="mt-wb${e.win === k ? " on" : ""}" onclick="matchEditSet('win', ${k})">🏆 ${escapeHtml(lb[k].replace("チーム", ""))}</button>`).join("")}<span>+</span><input type="number" id="mtEdDiff" min="0" max="99" inputmode="numeric" value="${e.diff}"></div>
                 ${names.map(n => `<div class="mt-ed-mem"><span>${escapeHtml(n)}</span><span class="mt-ed-seg">${seg(n)}</span></div>`).join("")}
                 ${cands.length ? `<div class="mt-ed-mem"><select id="mtEdAdd"><option value="">＋ 名簿</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select><span class="mt-ed-seg">${[0, 1].map(k => `<button type="button" onclick="matchEditAdd(${k})" aria-label="${escapeHtml(lb[k])}へ">→ ${escapeHtml(lb[k].replace("チーム", ""))}</button>`).join("")}</span></div>` : ""}
+                <div class="mt-ed-row">${(() => { const r = "rot" in e ? e.rot : m.rot, sc = "score" in e ? e.score : m.score; return `<button type="button" class="mt-rotb${r ? " on" : ""}" onclick="rotOpenEdit('${matchEdit.date}', ${m.id})">ローテ${sc ? ` ${sc[0]}–${sc[1]}` : ""}</button>`; })()}</div>
                 <div class="mt-ed-row"><label class="mt-ed-all"><input type="checkbox" ${e.all ? "checked" : ""} onchange="matchEdit.all=this.checked"> 組ぜんぶ</label><button type="button" class="mt-ed-cancel" onclick="matchEditCancel()" aria-label="やめる">✕</button><button type="button" class="mt-add" onclick="matchEditSave()" aria-label="保存">✓</button></div>
             </div>`;
         }
@@ -10061,6 +10151,7 @@ await main();
             const order = last.labels.map((lb, k) => ({ lb, t: last.teams[k] })).sort((a, b) => a.lb.localeCompare(b.lb, "ja", { numeric: true }));
             if (lastTeamSplitResult && lastTeamSplitResult.dateKey === date && !confirm("今のチーム分けを、この組のチームに置きかえますか？")) return;
             const at = Date.now();
+            matchForm.rot = null;
             lastTeamSplitResult = teamRestore({ teams: order.map(x => x.t), lineups: null, at, round: last.round || at, manual: true }, date);
             swapSel = null; swapNotice = "記録した組のチームを戻しました。";
             const n = document.getElementById("teamCountInput"); if (n) n.value = order.length;
@@ -10104,7 +10195,8 @@ await main();
                 const wb = i => `<button type="button" class="mt-wb${matchForm.win === i ? " on" : ""}" onclick="matchPickWin(${i})" aria-label="チーム${i + 1}の勝ち" aria-pressed="${matchForm.win === i}">🏆 ${i + 1}</button>`;
                 form = `${admMark() ? `<div class="mt-admrow">${admMark()}</div>` : ""}${pick}<div class="mt-rec">
                     <div class="mt-dstep"><button type="button" onclick="matchDiffStep(-1)" aria-label="点差を減らす">−</button><input type="number" id="matchDiff" min="0" max="99" inputmode="numeric" placeholder="0" value="${escapeHtml(String(matchForm.diff || ""))}" oninput="matchForm.diff=this.value"><button type="button" onclick="matchDiffStep(1)" aria-label="点差を増やす">＋</button></div>
-                    ${wb(matchForm.a)}${wb(matchForm.b)}<button type="button" class="mt-ok" onclick="matchRecordSelected()" ${matchForm.win == null ? "disabled" : ""} aria-label="記録">✓</button></div>`;
+                    ${wb(matchForm.a)}${wb(matchForm.b)}<button type="button" class="mt-ok" onclick="matchRecordSelected()" ${matchForm.win == null ? "disabled" : ""} aria-label="記録">✓</button></div>
+                    <div class="mt-rotrow">${(() => { const r = matchForm.rot, sc = r && rotScoreOk(r.score); return `<button type="button" class="mt-rotb${r ? " on" : ""}" onclick="rotOpenNew()" aria-label="ローテと点数(入れなくてもよい)">ローテ${r && r.use ? " ✓" : ""}${sc ? ` ${sc[0]}–${sc[1]}` : ""}</button>`; })()}</div>`;
             }
             // 管理者アカウント: この日の「来る」メンバーの勝率(全期間)
             let rates = "";
@@ -10123,6 +10215,388 @@ await main();
             box.innerHTML = `<div class="mt-card"><div class="mt-h">試合${ruleHtml}</div>${form}
                 ${list.length ? `<div class="mt-list">${matchGroupsHtml(selectedDate, list, adm)}</div>` : (teams ? "" : "")}
                 ${matchTrashHtml()}${rates}</div>`;
+        }
+        // ------- ローテ(ゲームごとに、コートの並び・控え・セッター・固定と、点数を記録できる。入れなくても今までどおり記録できる) -------
+        // 試合の記録に足す項目(どちらも無くてよい。共有データにはそのまま入る):
+        //   rot: [チーム0の並び, チーム1の並び](teams と同じ順) … { c: [位置1〜6の名前(空きは null)], b: [控えの名前(待ち順)], side: "L"(左前)|"R"(右前), s: セッターの名前, fx: [固定の名前] }
+        //   score: [チーム0の点, チーム1の点] … あれば、勝ち(win)と点差(diff)はこの点数から決める
+        // 位置: 1 = 後衛右(サーブ)・6 = 後衛中央・5 = 後衛左・4 = 前衛左・3 = 前衛中央・2 = 前衛右。時計回りに 2→1→6→5→4→3→2 と進む
+        //   左前に控え: 5→4 に進む人が控えへ下がり、控えの先頭が 4 に入る(後衛 → 前衛)
+        //   右前に控え: 2→1 に進む人が控えへ下がり、控えの先頭が 1 に入ってサーブ
+        //   控えは先に下がった人から入る(待ち順)。固定の人は控えに下がらない(その回は入れ替えなし。コートの中では回る)
+        const ROT_RING = [2, 1, 6, 5, 4, 3];   // 進む順。この輪でとなり同士 = セッターの左右
+        const ROT_FRONT = [4, 3, 2], ROT_BACK = [5, 6, 1];
+        const ROT_SIDE_KEY = "rot_side_v1";   // 控えの側(チームの番号ごと)。この体育館は待つ場所が得点板の側なので、ふつうは2チームで逆になる。この端末だけ
+        const ROT_MAX = 12;   // ローテを数える上限 = 人数 × 12(固定の人がいると、同じ並びに戻るまで長くなる。8人+固定で42、12人で66)
+        const ROT_FACTORS = new Set(["最弱ローテが強い", "セッターの左右にスパイク上位", "レシーブ下位2人がとなりのローテがある", "前衛にスパイカーがいないローテがある"]);
+        function rotValid(sd) { return !!sd && Array.isArray(sd.c) && sd.c.length === 6 && Array.isArray(sd.b) && (sd.side === "L" || sd.side === "R"); }
+        // 1つ回す
+        function rotStep(st) {
+            const c = st.c, nc = [c[1], c[2], c[3], c[4], c[5], c[0]];   // 位置 p の人は ROT_RING の次へ(2→1, 3→2, 4→3, 5→4, 6→5, 1→6)
+            const b = st.b.slice(), fx = st.fx || [];
+            if (b.length) {
+                const at = st.side === "R" ? 0 : 3;   // 右前: 位置1に来た人(2→1) / 左前: 位置4に来た人(5→4)
+                const out = nc[at];
+                if (out == null) nc[at] = b.shift();
+                else if (!fx.includes(out)) { nc[at] = b.shift(); b.push(out); }   // 固定の人なら、その回は入れ替えない
+            }
+            return { c: nc, b, side: st.side, s: st.s, fx };
+        }
+        // 同じ並びに戻るまで回して、ちがうローテを全部出す(7人・固定なしなら 7 つ)
+        function rotCycle(sd) {
+            if (!rotValid(sd)) return [];
+            const key = st => st.c.join("\u0001") + "\u0002" + st.b.join("\u0001");
+            let st = { c: sd.c.map(n => n || null), b: sd.b.filter(Boolean), side: sd.side, s: sd.s || "", fx: (sd.fx || []).slice() };
+            const out = [st], seen = new Set([key(st)]);
+            const cap = Math.max(40, ROT_MAX * (st.c.filter(Boolean).length + st.b.length));
+            for (let i = 0; i < cap; i++) { st = rotStep(st); const k = key(st); if (seen.has(k)) break; seen.add(k); out.push(st); }
+            return out;
+        }
+        // 1つのローテの強さ(11/06 19:00 の決め方。重みは ROT_W):
+        //   セット = セッターのセット(セッターが控えなら、コートの人のいちばん高いセット)
+        //   攻撃 = 前衛(2・3・4)のセッター以外のスパイクの平均(S が後衛なら3人、前衛なら2人)
+        //   レシーブ = セッター以外のコートの5人(W の形)のレシーブ: 0.8 × 平均 + 0.2 × いちばん低い人 − となりの減点
+        //     となりの減点: レシーブの低い2人(その5人の下位2人、またはチームの平均 − 0.5σ 未満)が、コートで縦か横にとなり合っている組ごとに引く
+        //   強さ = (セット × w + 攻撃 × w + レシーブ × w) ÷ 重みの合計(パラメータと同じものさし)。pv(名前) → { spike, receive, set, … }(分からない人は数えない)
+        const ROT_W = { set: 1, atk: 1, rcv: 1 };
+        const ROT_RCV_MEAN = 0.8, ROT_RCV_MIN = 0.2;   // レシーブ = 0.8 × 平均 + 0.2 × いちばん低い人
+        const ROT_ADJ_PEN = 0.5;   // となりの減点 = チームのレシーブのばらつき σ × 0.5(σ が小さすぎるときは 0.3 として計算。10段階でも5段階でも同じくらいの重さ)
+        const ROT_ADJ = [[4, 3], [3, 2], [5, 6], [6, 1], [4, 5], [3, 6], [2, 1]];   // コートで縦か横にとなり合う位置
+        // チームの情報(レシーブの平均・ばらつき、スパイク上位3人の基準)
+        function rotTeamInfo(names, pv) {
+            const rv = names.map(pv).filter(Boolean).map(x => x.receive ?? 3), m = rv.length ? rv.reduce((a, b) => a + b, 0) / rv.length : 3;
+            const sg = rv.length ? Math.sqrt(rv.reduce((a, b) => a + (b - m) * (b - m), 0) / rv.length) : 0;
+            const sp = names.map(pv).filter(Boolean).map(x => x.spike ?? 3).sort((a, b) => b - a);
+            return { rm: m, rs: sg, spTop: sp.length ? sp[Math.min(2, sp.length - 1)] : 3 };
+        }
+        function rotOne(st, pv, tm) {
+            const at = p => st.c[p - 1], sPos = st.s ? st.c.indexOf(st.s) + 1 : 0, val = (n, k) => { const x = pv(n); return x ? x[k] ?? 3 : null; };
+            const front = ROT_FRONT.map(at).filter(Boolean), frontNS = front.filter(n => n !== st.s), court = st.c.filter(Boolean);
+            let nb = [];
+            if (sPos) { const i = ROT_RING.indexOf(sPos); nb = [ROT_RING[(i + 5) % 6], ROT_RING[(i + 1) % 6]].map(at).filter(Boolean); }
+            const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+            // セット
+            const sv = sPos ? val(st.s, "set") : null, cs = court.map(n => val(n, "set")).filter(v => v != null);
+            const set = sv != null ? sv : cs.length ? Math.max(...cs) : null;
+            // 攻撃
+            const atk = mean(frontNS.map(n => val(n, "spike")).filter(v => v != null));
+            // レシーブ(W の5人)
+            const rcvs = court.filter(n => n !== st.s).map(n => [n, val(n, "receive")]).filter(x => x[1] != null);
+            tm = tm || rotTeamInfo(court.concat(st.b), pv);
+            // 低い人: 5人の下位2人(ただし5人の平均より低い人だけ。同じ値の人ばかりのときに全員を数えない)、またはチームの平均 − 0.5σ 未満
+            const rAvg = rcvs.length ? rcvs.reduce((a, x) => a + x[1], 0) / rcvs.length : 0, sorted = rcvs.slice().sort((a, b) => a[1] - b[1]);
+            const low = new Set(sorted.slice(0, 2).filter(x => x[1] < rAvg - 1e-9).map(x => x[0]).concat(rcvs.filter(([, v]) => v < tm.rm - 0.5 * tm.rs).map(x => x[0])));
+            const adjPairs = ROT_ADJ.filter(([p, q]) => low.has(at(p)) && low.has(at(q)) && at(p) !== st.s && at(q) !== st.s).map(([p, q]) => [at(p), at(q)]);
+            const pen = adjPairs.length * ROT_ADJ_PEN * Math.max(tm.rs, 0.3);
+            const rm = mean(rcvs.map(x => x[1])), rcv = rm == null ? null : ROT_RCV_MEAN * rm + ROT_RCV_MIN * Math.min(...rcvs.map(x => x[1])) - pen;
+            const parts = [[set, ROT_W.set], [atk, ROT_W.atk], [rcv, ROT_W.rcv]].filter(x => x[0] != null), ws = parts.reduce((a, x) => a + x[1], 0);
+            const v = ws ? parts.reduce((a, x) => a + x[0] * x[1], 0) / ws : null;
+            return { set, atk, rcv, v, pen, adjPairs, sPos, front, frontNS, nb, sBench: !!st.s && !sPos && st.b.includes(st.s) };
+        }
+        function rotSummary(sd, pv) {
+            const sts = rotCycle(sd); if (!sts.length) return null;
+            const tm = rotTeamInfo(sd.c.filter(Boolean).concat(sd.b), pv);
+            const rows = sts.map(st => ({ st, ...rotOne(st, pv, tm) })), vs = rows.map(r => r.v).filter(v => v != null);
+            if (!vs.length) return { rows, min: null, avg: null, wi: -1, tm };
+            const min = Math.min(...vs), wi = rows.findIndex(r => r.v === min), avg = k => { const xs = rows.map(r => r[k]).filter(v => v != null); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
+            return { rows, min, avg: vs.reduce((a, b) => a + b, 0) / vs.length, wi, tm, mSet: avg("set"), mAtk: avg("atk") };
+        }
+        // 項目 k が高い順の上位 n 人(n 番目と同じ値の人も含む) / 低い順
+        function rotRank(names, pv, k, n, low) {
+            const vs = names.map(x => [x, pv(x)]).filter(x => x[1]).map(([x, p]) => [x, p[k] ?? 3]).sort((a, b) => low ? a[1] - b[1] : b[1] - a[1]);
+            if (vs.length <= n) return new Set(vs.map(x => x[0]));
+            const cut = vs[n - 1][1]; return new Set(vs.filter(x => low ? x[1] <= cut + 1e-9 : x[1] >= cut - 1e-9).map(x => x[0]));
+        }
+        // いちばん弱いローテの短い理由: 当てはまる原因を、強さを下げている大きさの順に2つまで(「・」でつなぐ)
+        //   レシーブ下位2人がとなり / 前衛にスパイカーなし(前衛のセッター以外に、チームのスパイク上位3人の基準以上の人がいない) / Sが控え / 前衛が2人だけ(S が前衛)
+        function rotReason(row, sm, pv) {
+            const c = [], ws = ROT_W.set + ROT_W.atk + ROT_W.rcv, dAtk = sm.mAtk != null && row.atk != null ? Math.max(0, sm.mAtk - row.atk) * ROT_W.atk / ws : 0;
+            if (row.adjPairs.length) c.push(["レシーブ下位2人がとなり", row.pen * ROT_W.rcv / ws + 1e-6]);
+            const sp = n => { const x = pv(n); return x ? x.spike ?? 3 : -Infinity; };
+            if (!row.frontNS.some(n => sp(n) >= sm.tm.spTop - 1e-9)) c.push(["前衛にスパイカーなし", dAtk + 1e-6]);
+            if (row.sBench) c.push(["Sが控え", (sm.mSet != null && row.set != null ? Math.max(0, sm.mSet - row.set) * ROT_W.set / ws : 0) + 2e-6]);
+            if (row.sPos && ROT_FRONT.includes(row.sPos)) c.push(["前衛が2人だけ", dAtk * 0.5]);
+            if (!c.length) return row.atk != null && sm.mAtk != null && row.atk < sm.mAtk ? "前衛のスパイクが低め" : "レシーブが低め";
+            return c.sort((a, b) => b[1] - a[1]).slice(0, 2).map(x => x[0]).join("・");
+        }
+        // ローテの一覧(記録の画面と分析で同じ): R番号・前衛(4・3・2。セッターは青)・控え・強さ。いちばん弱い行は赤い数字と理由
+        //   長いときは、人数ぶん(6以上)だけ出して、残りは「+M」で その場に開く(key = 開いたことを覚える名前)。
+        //   いちばん弱い行は全部のローテから選び、隠れる位置なら最後に R番号つきで添える
+        var rotListOpen = new Set();
+        function rotListMore(key, el) { rotListOpen.add(key); const l = el.closest(".rot-list"); if (l) l.classList.add("open"); }
+        function rotListHtml(sd, pv, key) {
+            const sm = rotSummary(sd, pv); if (!sm) return "";
+            const names = sd.c.filter(Boolean).concat(sd.b), N = Math.max(6, names.length), more = sm.rows.length - N;
+            const nm = n => n === sd.s ? `<em class="rot-s">${escapeHtml(n)}</em>` : escapeHtml(n);
+            const row = (r, i, cls) => { const weak = i === sm.wi && sm.rows.length > 1;
+                return `<div class="rot-row${weak ? " weak" : ""}${cls}"><b class="rot-no">R${i + 1}</b><span class="rot-fr">${ROT_FRONT.map(p => r.st.c[p - 1]).map(n => n ? nm(n) : "—").join("・")}</span><span class="rot-bn">${r.st.b.map(nm).join("・")}</span><span class="rot-v">${r.v == null ? "—" : r.v.toFixed(1)}</span></div>${weak ? `<div class="rot-why${cls}">${escapeHtml(rotReason(r, sm, pv))}</div>` : ""}`; };
+            const open = more > 0 && key && rotListOpen.has(key);
+            const pin = more > 0 && sm.wi >= N ? row(sm.rows[sm.wi], sm.wi, " rot-pin1") : "";
+            return `<div class="rot-list${open ? " open" : ""}">${sm.rows.map((r, i) => row(r, i, i >= N ? " rot-more" : "")).join("")}${pin}${more > 0 ? `<button type="button" class="rot-plus" onclick="rotListMore('${key || ""}', this)" aria-label="残りの${more}ローテを見る">+${more}</button>` : ""}</div>`;
+        }
+        // おすすめの並び: セッターは選んだ人のまま(位置1から)、ほかの人をコートと控えの順に並べかえて、いちばん弱いローテが強くなる並びを探す(同じなら平均)
+        //   7人以下は全部の並べ方(セッターあり 6! = 720)。8人以上は、1つずつ良い人を置いていく並び(貪欲)と今の並びから、2人ずつ入れかえて良くする(約100ms まで)
+        //   固定の人は控えに置かない。budget を大きく渡すと(5000ms 以上)、人数に関係なく全部の並べ方を見る(確かめる用)
+        function rotBest(sd, pv, budget) {
+            budget = budget || 100;
+            const t0 = performance.now(), all = sd.c.filter(Boolean).concat(sd.b), s = sd.s && all.includes(sd.s) ? sd.s : "";
+            const others = all.filter(n => n !== s), fx = (sd.fx || []).filter(n => all.includes(n));
+            const nCourt = s ? 5 : 6;
+            const pool = others.concat(Array(Math.max(0, nCourt - others.length)).fill(null));   // 6人未満なら空きを入れる
+            const mk = perm => ({ c: s ? [s].concat(perm.slice(0, 5)) : perm.slice(0, 6), b: perm.slice(nCourt).filter(Boolean), side: sd.side, s, fx });
+            const scoreOf = st => { const sm = rotSummary(st, pv); return sm && sm.min != null ? [sm.min, sm.avg] : [-Infinity, -Infinity]; };
+            const better = (a, b) => a[0] > b[0] + 1e-9 || (Math.abs(a[0] - b[0]) <= 1e-9 && a[1] > b[1] + 1e-9);
+            const okFx = perm => perm.slice(nCourt).every(n => !n || !fx.includes(n));
+            const late = () => performance.now() - t0 > budget;
+            let best = { c: sd.c.slice(), b: sd.b.slice(), side: sd.side, s: sd.s, fx }, bestSc = scoreOf(best), tried = 0, full = false;
+            const take = (perm, sc) => { if (better(sc, bestSc)) { bestSc = sc; best = mk(perm); } };
+            if (all.length <= 7 || budget >= 5000) {
+                // 全部の並べ方(固定の人が控えに入る並べ方は途中で打ち切る)
+                const perm = [], used = pool.map(() => false);
+                const rec = () => {
+                    if (perm.length === pool.length) { tried++; take(perm, scoreOf(mk(perm))); return; }
+                    const seen = new Set();
+                    for (let i = 0; i < pool.length; i++) {
+                        if (used[i] || seen.has(pool[i])) continue; seen.add(pool[i]);   // 空き(null)どうしは同じ
+                        if (perm.length >= nCourt && pool[i] && fx.includes(pool[i])) continue;
+                        used[i] = true; perm.push(pool[i]); rec(); perm.pop(); used[i] = false;
+                    }
+                };
+                rec(); full = true;
+            } else {
+                // 2人ずつ入れかえて、良くなるあいだ続ける(時間で打ち切る)
+                const climb = perm => {
+                    let sc = scoreOf(mk(perm)); tried++;
+                    for (let imp = true; imp && !late();) {
+                        imp = false;
+                        for (let i = 0; i < perm.length && !imp && !late(); i++) for (let j = i + 1; j < perm.length && !imp; j++) {
+                            if (perm[i] === perm[j]) continue;
+                            const q = perm.slice(); [q[i], q[j]] = [q[j], q[i]]; if (!okFx(q)) continue;
+                            const s2 = scoreOf(mk(q)); tried++; if (better(s2, sc)) { perm = q; sc = s2; imp = true; }
+                        }
+                    }
+                    take(perm, sc);
+                };
+                // 貪欲: 前の場所から順に、残りの人をそのままの順で入れたときに いちばん良くなる人を置く
+                const greedy = () => {
+                    const rest = pool.slice(), perm = [];
+                    while (rest.length && !late()) {
+                        let bi = -1, bs = null;
+                        rest.forEach((n, i) => { if (perm.length >= nCourt && n && fx.includes(n)) return; const q = perm.concat([n], rest.filter((_, j) => j !== i)); if (!okFx(q)) return; const sc = scoreOf(mk(q)); tried++; if (bi < 0 || better(sc, bs)) { bi = i; bs = sc; } });
+                        if (bi < 0) bi = 0;
+                        perm.push(rest.splice(bi, 1)[0]);
+                    }
+                    return perm.concat(rest);
+                };
+                const cur = (s ? sd.c.filter(n => n !== s) : sd.c.slice()).concat(sd.b);   // 今の並び(セッターを抜いた順)
+                if (cur.length === pool.length && okFx(cur)) climb(cur);
+                if (!late()) climb(greedy());
+                for (let k = 0; k < 20 && !late(); k++) { const p = pool.slice().sort(() => Math.random() - 0.5); if (okFx(p)) climb(p); }
+            }
+            return { sd: { c: best.c.map(n => n || null), b: best.b.slice(), side: sd.side, s: sd.s || "", fx: (sd.fx || []).slice() }, min: bestSc[0], avg: bestSc[1], tried, full };
+        }
+        // 控えの側(チームの番号ごとに、最後に選んだ側)
+        function rotSidePref(lb, k) { try { const v = JSON.parse(localStorage.getItem(ROT_SIDE_KEY) || "{}")[lb]; if (v === "L" || v === "R") return v; } catch (e) { /* ignore */ } return k ? "R" : "L"; }
+        function rotSideSave(lb, v) { try { const o = JSON.parse(localStorage.getItem(ROT_SIDE_KEY) || "{}") || {}; o[lb] = v; localStorage.setItem(ROT_SIDE_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } }
+        // 分析と同じ値(機動力の補正後)。名簿にいない人は null
+        function rotPv() { const memo = {}; return n => (n in memo ? memo[n] : (memo[n] = whyProfile(n))); }
+        // 最初の並び: その日に同じメンバーで記録したローテ → チーム分けのローテ配置 → チームの順。セッターは希望ポジションがセッターの人、いなければセットがいちばん高い人
+        function rotPrefill(names, lb, k, ti) {
+            const set = new Set(names), same = sd => rotValid(sd) && sd.c.filter(Boolean).concat(sd.b).length === names.length && sd.c.filter(Boolean).concat(sd.b).every(n => set.has(n));
+            const prev = (matchesByDate[selectedDate] || []).slice().reverse().map(m => m.rot && m.labels && m.rot[m.labels.indexOf(lb)]).find(same);
+            if (prev) return rotSetterIn({ c: prev.c.slice(), b: prev.b.slice(), side: rotSidePref(lb, k), s: prev.s || "", fx: (prev.fx || []).filter(n => set.has(n)) });
+            const c = Array(6).fill(null), b = [];
+            const lu = lastTeamSplitResult && lastTeamSplitResult.lineups && ti != null && lastTeamSplitResult.lineups[ti];
+            if (lu && lu.slots) { Object.entries(lu.slots).forEach(([no, p]) => { const n = p && (p.name || p); if (n && set.has(n) && +no >= 1 && +no <= 6) c[no - 1] = n; }); (lu.bench || []).forEach(p => { const n = p && (p.name || p); if (n && set.has(n) && !c.includes(n)) b.push(n); }); }
+            names.forEach(n => { if (c.includes(n) || b.includes(n)) return; const i = c.indexOf(null); if (i >= 0) c[i] = n; else b.push(n); });
+            const pv = rotPv(), sets = names.map(n => [n, pv(n)]).filter(x => x[1]);
+            const st = sets.find(x => x[1].setter) || sets.slice().sort((p, q) => (q[1].set ?? 3) - (p[1].set ?? 3))[0];
+            return rotSetterIn({ c, b, side: rotSidePref(lb, k), s: st ? st[0] : "", fx: [] });
+        }
+        // セッターが控えにいたら、コートの人(固定でない人のうち、セットがいちばん低い人)と入れかえる
+        function rotSetterIn(sd) {
+            const j = sd.s ? sd.b.indexOf(sd.s) : -1; if (j < 0) return sd;
+            const pv = rotPv(), cand = sd.c.map((n, i) => [n, i]).filter(([n]) => n && !sd.fx.includes(n)).sort((p, q) => ((pv(p[0]) || {}).set ?? 3) - ((pv(q[0]) || {}).set ?? 3));
+            const i = cand.length ? cand[0][1] : sd.c.indexOf(null); if (i < 0) return sd;
+            const out = sd.c[i]; sd.c[i] = sd.s; if (out) sd.b[j] = out; else sd.b.splice(j, 1);
+            return sd;
+        }
+        // 記録の画面の下書き: { id: null = これから記録するゲーム / 記録済みのゲームの id, date, labels, sides: [並び, 並び], score: ["", ""] }
+        var rotDraft = null, rotUi = { sel: null, mode: "", mk: -1, note: {} }, rotLong = false;
+        function rotOpenNew() {
+            const teams = matchTeamsNow(); if (!teams || !realAdmin()) return;
+            const a = matchForm.a, b = matchForm.b, labels = ["チーム" + (a + 1), "チーム" + (b + 1)], names = [teams[a].map(p => p.name), teams[b].map(p => p.name)];
+            const same = r => r.sides.every((sd, k) => { const ns = sd.c.filter(Boolean).concat(sd.b); return ns.length === names[k].length && names[k].every(n => ns.includes(n)); });
+            const keep = matchForm.rot && matchForm.rot.labels.join() === labels.join() && same(matchForm.rot) ? matchForm.rot : null;
+            rotDraft = keep ? { ...JSON.parse(JSON.stringify(keep)), id: null, date: selectedDate } : { id: null, date: selectedDate, labels, sides: names.map((ns, k) => rotPrefill(ns, labels[k], k, k ? b : a)), score: ["", ""] };
+            rotDraft.names = names;
+            rotShow();
+        }
+        function rotOpenEdit(date, id) {
+            const m = (matchesByDate[date] || []).find(x => x.id === id); if (!m || !realAdmin()) return;
+            const labels = m.labels.slice(0, 2), ed = matchEdit && matchEdit.id === id && matchEdit.date === date ? matchEdit : null;
+            // 編集中は、編集中のメンバー・ローテで開く(編集の ✓ で一緒に保存)
+            const teams = ed ? [0, 1].map(k => Object.keys(ed.teamOf).filter(n => ed.teamOf[n] === k)) : m.teams.map(t => t.slice());
+            const cur = ed && "rot" in ed ? ed.rot : m.rot, curSc = ed && "score" in ed ? ed.score : m.score;
+            const fits = (sd, t) => rotValid(sd) && sd.c.filter(Boolean).concat(sd.b).length === t.length && t.every(n => sd.c.includes(n) || sd.b.includes(n));
+            rotDraft = { id, date, labels, edit: !!ed, names: teams, sides: teams.map((t, k) => cur && fits(cur[k], t) ? JSON.parse(JSON.stringify(cur[k])) : rotPrefill(t, labels[k], k, null)), score: curSc ? curSc.map(String) : ["", ""] };
+            rotShow();
+        }
+        function rotShow() {
+            rotUi = { sel: null, mode: "", mk: -1, note: {} }; ["d0", "d1"].forEach(k => rotListOpen.delete(k));
+            let ov = document.getElementById("rotOv");
+            if (!ov) {
+                ov = document.createElement("div"); ov.id = "rotOv";
+                ov.onclick = (e) => {
+                    if (e.target === ov) { rotClose(); return; }
+                    const t = e.target.closest("[data-rt]");
+                    if (t) { if (rotLong) { rotLong = false; return; } const [k, w, i] = t.dataset.rt.split(":"); rotTap(+k, w, +i); return; }
+                    const ed = e.target.closest("[data-edge]");
+                    if (ed) { const [k, s] = ed.dataset.edge.split(":"); rotSetSide(+k, s); }
+                };
+                // 長押しでセッター
+                let tm = null, sx = 0, sy = 0;
+                const cancel = () => { clearTimeout(tm); tm = null; };
+                ov.addEventListener("pointerdown", e => { const t = e.target.closest("[data-rt]"); if (!t) return; sx = e.clientX; sy = e.clientY; cancel(); rotLong = false; tm = setTimeout(() => { tm = null; rotLong = true; const [k, w, i] = t.dataset.rt.split(":"); rotSetS(+k, w, +i, true); }, 480); });
+                ov.addEventListener("pointerup", cancel); ov.addEventListener("pointercancel", cancel);
+                ov.addEventListener("pointermove", e => { if (tm && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) cancel(); });
+                ov.addEventListener("contextmenu", e => { if (e.target.closest("[data-rt]")) e.preventDefault(); });
+                document.body.appendChild(ov);
+            }
+            rotRender();
+            ov.style.display = "flex";
+        }
+        function rotClose() { const ov = document.getElementById("rotOv"); if (ov) ov.style.display = "none"; rotDraft = null; }
+        function rotGet(sd, w, i) { return w === "c" ? sd.c[i] : sd.b[i]; }
+        function rotPut(sd, w, i, n) { if (w === "c") sd.c[i] = n || null; else sd.b[i] = n; }
+        // セッター: S のモードで同じ人をもう一度押すと外す(長押しは必ずその人)
+        function rotSetS(k, w, i, keep) { const sd = rotDraft && rotDraft.sides[k], n = sd && rotGet(sd, w, i); if (!n) return; sd.s = sd.s === n && !keep ? "" : n; rotUi.mode = ""; rotUi.sel = null; rotRender(); }
+        // タップ: 2人を順に押すと入れかえ(コートと控えのあいだも)。S のときはセッター、固定のときは固定の印を付け外し
+        function rotTap(k, w, i) {
+            const sd = rotDraft && rotDraft.sides[k]; if (!sd) return;
+            const n = rotGet(sd, w, i);
+            if (rotUi.mode && rotUi.mk !== k) rotUi.mode = "";
+            if (rotUi.mode === "S") { rotSetS(k, w, i); return; }
+            if (rotUi.mode === "fx") { if (n) sd.fx = sd.fx.includes(n) ? sd.fx.filter(x => x !== n) : sd.fx.concat(n); rotRender(); return; }
+            const a = rotUi.sel;
+            if (!a || a.k !== k) { rotUi.sel = n || w === "c" ? { k, w, i } : null; rotRender(); return; }
+            rotUi.sel = null;
+            if (a.w !== w || a.i !== i) { const x = rotGet(sd, a.w, a.i), y = n; rotPut(sd, a.w, a.i, y); rotPut(sd, w, i, x); sd.b = sd.b.filter(Boolean); }
+            rotUi.note[k] = ""; rotRender();
+        }
+        function rotSetSide(k, s) { const sd = rotDraft && rotDraft.sides[k]; if (!sd || (s !== "L" && s !== "R")) return; sd.side = s; rotSideSave(rotDraft.labels[k], s); rotRender(); }
+        function rotMode(k, m) { rotUi.mode = rotUi.mode === m && rotUi.mk === k ? "" : m; rotUi.mk = k; rotUi.sel = null; rotRender(); }
+        function rotRecommend(k) {
+            const sd = rotDraft && rotDraft.sides[k]; if (!sd) return;
+            const pv = rotPv(), before = rotSummary(sd, pv), r = rotBest(sd, pv);
+            rotDraft.sides[k] = r.sd;
+            rotUi.sel = null; rotUi.mode = "";
+            rotUi.note[k] = before && before.min != null && r.min > -Infinity ? `最弱 ${before.min.toFixed(1)} → ${r.min.toFixed(1)}` : "";
+            rotRender();
+        }
+        function rotScore(k, v) { if (rotDraft) rotDraft.score[k] = String(v || "").replace(/[^0-9]/g, "").slice(0, 2); rotScoreUi(); }
+        // 同点(両方入っていて同じ)は記録できない: 点数の欄を赤く、OK・点数だけ を押せない見た目に
+        function rotTie(sc) { return !!sc && sc[0] !== "" && sc[1] !== "" && +sc[0] === +sc[1]; }
+        function rotScoreUi(shake) {
+            const ov = document.getElementById("rotOv"), tie = rotDraft && rotTie(rotDraft.score); if (!ov) return;
+            const box = ov.querySelector(".rot-score"); if (box) { box.classList.toggle("bad", tie); if (shake && tie) { box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake"); } }
+            ov.querySelectorAll(".rot-ok, .rot-skip").forEach(b => { b.setAttribute("aria-disabled", String(!!tie)); b.classList.toggle("off", !!tie); });
+        }
+        function rotScoreOk(sc) { const a = parseInt(sc && sc[0], 10), b = parseInt(sc && sc[1], 10); return isFinite(a) && isFinite(b) && a >= 0 && b >= 0 && a !== b ? [a, b] : null; }
+        // 保存する形(名前の一覧は持たない)
+        function rotPack(sd) { return { c: sd.c.map(n => n || null), b: sd.b.filter(Boolean), side: sd.side, s: sd.s || "", fx: (sd.fx || []).filter(n => sd.c.includes(n) || sd.b.includes(n)) }; }
+        // OK: これから記録するゲームなら下書きに(点数があれば勝ちと点差も入れる)、記録済みならそのゲームに保存
+        function rotDone(withRot) {
+            const d = rotDraft; if (!d) return;
+            if (rotTie(d.score)) { rotScoreUi(true); return; }   // 同点は保存しない(欄を揺らして知らせる)
+            const sc = rotScoreOk(d.score), rot = withRot ? d.sides.map(rotPack) : null;
+            if (d.id == null) {
+                matchForm.rot = rot || sc ? { labels: d.labels, sides: d.sides, score: d.score, use: !!rot } : null;
+                if (sc) { matchForm.win = sc[0] > sc[1] ? matchForm.a : matchForm.b; matchForm.diff = String(Math.abs(sc[0] - sc[1])); }
+                rotClose(); renderMatchBox(); return;
+            }
+            const m = (matchesByDate[d.date] || []).find(x => x.id === d.id); if (!m) { rotClose(); return; }
+            if (d.edit && matchEdit && matchEdit.id === d.id) {   // 編集中: 編集の ✓ で保存する
+                matchEdit.rot = rot; matchEdit.score = sc;
+                if (sc) { matchEdit.win = sc[0] > sc[1] ? 0 : 1; matchEdit.diff = Math.abs(sc[0] - sc[1]); }
+                rotClose(); matchRerender(d.date); return;
+            }
+            if (rot) m.rot = rot; else delete m.rot;
+            if (sc) { m.score = sc; m.win = sc[0] > sc[1] ? 0 : 1; m.diff = Math.abs(sc[0] - sc[1]); if (matchEdit && matchEdit.id === m.id) { matchEdit.win = m.win; matchEdit.diff = m.diff; } }
+            else delete m.score;
+            saveMatches(); rotClose(); matchRerender(d.date);
+            if (typeof renderRosterStats === "function") renderRosterStats();
+        }
+        // 記録するゲームに、下書きのローテと点数を付ける(点数の勝ちが、選んだ勝ちとちがうときは点数を付けない)
+        function rotAttach(rec) {
+            const r = matchForm.rot; if (!r || r.labels.join() !== rec.labels.join()) return rec;
+            if (r.use) rec.rot = r.sides.map(rotPack);
+            const sc = rotScoreOk(r.score);
+            if (sc && (sc[0] > sc[1] ? 0 : 1) === rec.win) { rec.score = sc; rec.diff = Math.abs(sc[0] - sc[1]); }
+            rotSanitize(rec);   // 下書きのあとでメンバーが変わっていたら、ローテは付けない
+            return rec;
+        }
+        // ゲームのメンバーを直したとき: メンバーと合わなくなったローテは外す
+        function rotSanitize(m) {
+            if (!m.rot) return;
+            const ok = m.rot.map((sd, k) => { const t = new Set(m.teams[k] || []), ns = rotValid(sd) ? sd.c.filter(Boolean).concat(sd.b) : null; return ns && ns.length === t.size && ns.every(n => t.has(n)); });
+            if (!ok.every(Boolean)) delete m.rot;
+        }
+        function rotCourtHtml(k) {
+            const sd = rotDraft.sides[k], sel = rotUi.sel && rotUi.sel.k === k ? rotUi.sel : null;
+            const tile = (w, i) => {
+                const n = rotGet(sd, w, i), on = sel && sel.w === w && sel.i === i;
+                const pin = n && sd.fx.includes(n) ? `<i class="rot-pin" aria-label="固定"><svg viewBox="0 0 12 12" width="9" height="9" fill="currentColor"><rect x="2.5" y="5.2" width="7" height="5.3" rx="1.3"/><path d="M4 5.4V4a2 2 0 0 1 4 0v1.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></i>` : "";
+                return `<button type="button" class="rot-t${n ? "" : " empty"}${n && n === sd.s ? " is-s" : ""}${on ? " sel" : ""}" data-rt="${k}:${w}:${i}">${w === "c" ? `<small>${i + 1}</small>` : ""}${n === sd.s && n ? `<i class="rot-sb">S</i>` : ""}${pin}<span>${n ? escapeHtml(n) : ""}</span></button>`;
+            };
+            const edge = s => {
+                const on = sd.side === s, has = sd.b.length > 0;
+                return `<div class="rot-edge ${s}${on ? " on" : ""}${has ? "" : " none"}" data-edge="${k}:${s}" aria-label="${s === "L" ? "左前" : "右前"}に控え">${on && has ? sd.b.map((_, j) => tile("b", j)).join("") : `<span class="rot-ghost">${has ? "控え" : ""}</span>`}</div>`;
+            };
+            const grid = ROT_FRONT.concat(ROT_BACK).map(p => tile("c", p - 1)).join("");
+            return `<div class="rot-court">${edge("L")}<div class="rot-grid"><div class="rot-net"></div>${grid}</div>${edge("R")}</div>`;
+        }
+        function rotRender() {
+            const ov = document.getElementById("rotOv"), d = rotDraft; if (!ov || !d) return;
+            const pv = rotPv(), lb = k => escapeHtml(d.labels[k].replace("チーム", ""));
+            const cards = d.sides.map((sd, k) => {
+                const mode = rotUi.mk === k ? rotUi.mode : "";
+                return `<section class="rot-card">
+                    <div class="rot-th"><b class="rot-tn">${teamChip(d.labels[k])}</b><span class="rot-tools">
+                        <button type="button" class="rot-tb${mode === "S" ? " on" : ""}" onclick="rotMode(${k},'S')" aria-label="セッターを選ぶ(名前の長押しでも)">S</button>
+                        <button type="button" class="rot-tb${mode === "fx" ? " on" : ""}" onclick="rotMode(${k},'fx')" aria-pressed="${mode === "fx"}">固定</button>
+                        <button type="button" class="rot-tb best" onclick="rotRecommend(${k})">おすすめの並び</button></span></div>
+                    ${rotCourtHtml(k)}
+                    ${rotUi.note[k] ? `<div class="rot-note">${escapeHtml(rotUi.note[k])}</div>` : ""}
+                    ${rotListHtml(sd, pv, "d" + k)}
+                </section>`;
+            }).join("");
+            const sc = d.score;
+            ov.innerHTML = `<div class="rot-box" role="dialog" aria-label="ローテ">
+                <div class="rot-head"><b>ROTATION</b><button type="button" class="rot-x" onclick="rotClose()" aria-label="閉じる">✕</button></div>
+                <div class="rot-score"><span class="rot-sl">${lb(0)}</span><input type="number" inputmode="numeric" min="0" max="99" class="rot-num" id="rotSc0" placeholder="–" value="${escapeHtml(sc[0])}" oninput="rotScore(0,this.value)" aria-label="${escapeHtml(d.labels[0])}の点"><i>–</i><input type="number" inputmode="numeric" min="0" max="99" class="rot-num" id="rotSc1" placeholder="–" value="${escapeHtml(sc[1])}" oninput="rotScore(1,this.value)" aria-label="${escapeHtml(d.labels[1])}の点"><span class="rot-sl">${lb(1)}</span></div>
+                ${cards}
+                <div class="rot-acts"><button type="button" class="rot-skip" onclick="rotDone(false)">点数だけ</button><button type="button" class="rot-ok" onclick="rotDone(true)">OK</button></div>
+            </div>`;
+            rotScoreUi();
+        }
+        // 分析: ローテ(ローテを記録したゲームだけで数える)
+        var rotAnaOpen = false;
+        function rotAnaHtml(from) {
+            let n = 0, last = null;
+            Object.keys(matchesByDate).filter(d => d >= from).sort().forEach(d => (matchesByDate[d] || []).forEach(m => { if (m.rot && m.rot.every(rotValid)) { n++; last = { d, m }; } }));
+            if (!n) return "";
+            const recs = chemRecords(from), { F, P } = whyFactors();
+            const rows = F.filter(([lb]) => ROT_FACTORS.has(lb)).map(([lb, f, min]) => ({ lb, ...whySimple(recs, f, min, lb, P), P }));
+            const rowHtml = x => { if (!x.n) return `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">まだ差がついたゲームなし</span></div>`;
+                const pc = Math.round(x.rate * 100), few = x.n < 8;
+                return `<details class="why-det"><summary class="stg-row why-row${few ? " few" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar wr-bar"><i class="${pc >= 50 ? "" : "lo"}" style="width:${pc}%"></i><b style="left:50%"></b></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span></summary>${whyListHtml(x)}</details>`; };
+            const md = d => { const p = d.split("-"); return `${+p[1]}/${+p[2]}`; }, pv = rotPv(), m = last.m;
+            const lastHtml = m.labels.slice(0, 2).map((lb, k) => `<div class="rot-lt">${teamChip(lb)}${k === m.win ? `<i class="mt-crown">🏆</i>` : ""}${m.score ? `<b class="rot-sc">${m.score[k]}</b>` : ""}</div>${rotListHtml(m.rot[k], pv, "a" + k + ":" + m.id)}`).join("");
+            return `<details class="note-details chem rot-ana"${rotAnaOpen ? " open" : ""} ontoggle="rotAnaOpen=this.open"><summary>ローテ<span class="rs-days">${n}ゲーム</span></summary>
+                <div class="rs-tbl" style="margin-top:6px">${rows.map(rowHtml).join("")}</div>
+                <div class="rot-last"><div class="rot-lh">${md(last.d)} の最後のゲーム</div>${lastHtml}</div>
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ローテを記録したゲームだけで数えます。強さ = (セット + 攻撃 + レシーブ) ÷ 3。セット = セッターのセット(控えならコートのいちばん高い人)、攻撃 = 前衛のセッター以外のスパイク平均、レシーブ = セッター以外の5人の 0.8 × 平均 + 0.2 × いちばん低い人 − レシーブの低い2人がとなり合う減点。最弱ローテが強い = いちばん弱いローテの強さが、相手より基準(その日のばらつき ÷ √5)以上に高いチーム。セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなりにその日のスパイク上位3人のだれかがいる。となり・スパイカーなしのローテがある = そのゲームのローテのどれか1つでも当てはまるチーム(両チームとも同じなら数えない)。スパイカー = その日のスパイク上位3分の1。</div></details></details>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
         // 勝率の数え方: "game" = 1ゲームごと / "match" = 1試合(組)ごと。決着していない試合は数えない
@@ -10858,7 +11332,7 @@ const namesBtn = isAdmin() && dates.length > 0
             Object.keys(matchesByDate).filter(d => d >= from).forEach(d => {
                 const list = matchesByDate[d] || [];
                 const ctx = [...new Set(list.flatMap(m => (m.teams || []).flat()))];   // その日に試合に出た人(その日の👑を決めるため)
-                if (matchRateUnit !== "match") { list.forEach((m, gi) => { if (m.teams && m.teams.length >= 2 && (m.win === 0 || m.win === 1)) { const sc = chemWinScore(m.diff); out.push({ teams: [m.teams[0], m.teams[1]], win: m.win, diff: +m.diff || 0, y: m.win === 0 ? sc : 1 - sc, d, ctx, no: gi + 1, lbs: (m.labels || []).slice(0, 2) }); } }); return; }
+                if (matchRateUnit !== "match") { list.forEach((m, gi) => { if (m.teams && m.teams.length >= 2 && (m.win === 0 || m.win === 1)) { const sc = chemWinScore(m.diff); const o = { teams: [m.teams[0], m.teams[1]], win: m.win, diff: +m.diff || 0, y: m.win === 0 ? sc : 1 - sc, d, ctx, no: gi + 1, lbs: (m.labels || []).slice(0, 2) }; rotLink(o, m.rot, m.score); out.push(o); } }); return; }
                 const rule = matchRule();
                 matchGroupsOf(list).forEach(g => {
                     const s0 = matchGroupState(g, rule); if (!s0.done) return;
@@ -10869,11 +11343,29 @@ const namesBtn = isAdmin() && dates.length > 0
                         const known = g.games.every(({ m }) => (parseInt(m.diff, 10) || 0) > 0);
                         const net = known ? g.games.reduce((a, { m }) => a + (m.labels[m.win] === s0.win ? 1 : -1) * (parseInt(m.diff, 10) || 0), 0) : 0;
                         const sc = chemWinScore(net > 0 ? net : 0);
-                        out.push({ teams: tm, win: w, diff: net, y: w === 0 ? sc : 1 - sc, d, ctx, no: out.filter(o => o.d === d).length + 1, lbs: g.labels.slice(0, 2) });
+                        const o = { teams: tm, win: w, diff: net, y: w === 0 ? sc : 1 - sc, d, ctx, no: out.filter(o => o.d === d).length + 1, lbs: g.labels.slice(0, 2) };
+                        // ローテ: その試合で最初にローテを記録したゲームの並び(チームの番号で合わせる)
+                        const rg = g.games.find(({ m }) => m.rot && m.rot.every(rotValid));
+                        if (rg) rotLink(o, g.labels.slice(0, 2).map(lb => rg.m.rot[rg.m.labels.indexOf(lb)]), null);
+                        out.push(o);
                     }   // 引き分けは数えない
                 });
             });
             return out;
+        }
+        // ローテの記録を、記録のチームの配列に結びつける(勝ち負けの要因が、チームの配列からローテを引けるように)。
+        //   チーム分けの見込みなど、記録でないチームには結びつかない(ローテの要因は null)
+        const ROT_OF = new WeakMap();
+        function rotLink(o, rot, score) {
+            if (!rot || rot.length < 2 || !rot.every(rotValid)) { o.teams.forEach(t => ROT_OF.delete(t)); return; }   // ローテを外したゲームに、前の結びつきを残さない
+            o.rot = rot; if (score) o.score = score;
+            o.teams.forEach((t, k) => ROT_OF.set(t, { sd: rot[k], P: null, sm: null }));
+        }
+        // そのチームのローテの強さ(P = 勝ち負けの要因と同じ、補正後のパラメータ)。記録が無ければ null
+        function rotOfTeam(t, P) {
+            const e = ROT_OF.get(t); if (!e) return null;
+            if (e.P !== P) { e.P = P; e.sm = rotSummary(e.sd, P); }
+            return e.sm && e.sm.min != null ? e.sm : null;
         }
         // 一人ひとりの強さ(チームの強さ = メンバーの強さの合計、その差で勝つ確率が決まるとみなす)を試合から推定する
         // ベースの強さ = 名簿のパラメータ(サーブ・レシーブ・セット・スパイク。機動力の補正込み)の平均。3 が真ん中
@@ -11001,7 +11493,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const gOf = (a, b) => mateG[a < b ? a + "\u0000" + b : b + "\u0000" + a] || 0;
             const { F, P } = whyFactors();
             const scaleOf = lb => /の平均$|格差/.test(lb) ? 0.6 : 1;   // 差の大きさの目安(平均は0.6、人数・いる/いないは1)
-            const feats = F.filter(([lb]) => lb !== "総合" && lb !== "人数").map(([lb, f]) => ({ lb, f, sc: scaleOf(lb) }));
+            const feats = F.filter(([lb]) => lb !== "総合" && lb !== "人数" && !ROT_FACTORS.has(lb)).map(([lb, f]) => ({ lb, f, sc: scaleOf(lb) }));
             // 差は、勝ち負けの要因と同じ「差がある」と言える基準で割る(1 以上なら、勝率の計算で数えられる差)。いる・いない・人数は 1 つ = 1
             const xOf = (A, B, ctx) => feats.map(ft => { const a = ft.f(A, ctx), b = ft.f(B, ctx); if (a == null || b == null) return 0; if (ft.sc >= 1) return a - b; const T = whyThresh(ft.lb, { teams: [A, B], ctx }, P); return T ? Math.max(-2, Math.min(2, (a - b) / T)) : 0; });
             const sgn = v => Math.abs(v) >= 1 - 1e-9 ? Math.sign(v) : 0;
@@ -12887,6 +13379,14 @@ const namesBtn = isAdmin() && dates.length > 0
             const v = vs.length >= 4 ? new Set(vs.filter(x => x[1] >= vs[2][1] - 1e-9).map(x => x[0])) : null;
             whyChampMemo.set(mk, v); return v;
         }
+        // その日のメンバー(ctx)の中で、項目 k が高い順の上位3分の1(切り上げ。最後と同じ値の人も含む。総合上位3人と同じ数え方)
+        //   ローテの「前衛にスパイカーがいない」に使う(上位3人だと、どのチームもほぼ毎ゲーム当てはまって比べられないため)
+        function whyTopThird(ctx, P, k) {
+            const mk = "t13|" + k + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
+            const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.eff[k] ?? 3]).sort((a, b) => b[1] - a[1]), c = Math.ceil(vs.length / 3);
+            const v = vs.length >= 4 ? new Set(vs.filter(x => x[1] >= vs[c - 1][1] - 1e-9).map(x => x[0])) : null;
+            whyChampMemo.set(mk, v); return v;
+        }
         function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
             const mean = (t, f) => { const xs = t.map(P).filter(Boolean).map(f); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
@@ -12911,7 +13411,13 @@ const namesBtn = isAdmin() && dates.length > 0
                 // チーム内格差(総合のばらつき = 標準偏差)。両チームに同じくらいの格差がある試合は比べない(0.3 以上ちがうときだけ)
                 ["チーム内格差あり", t => sd(t), 0.05],
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
-                ["人数", t => t.length, 1]
+                ["人数", t => t.length, 1],
+                // ローテ(ローテを記録したゲームだけ): いちばん弱いローテの強さ / セッターの左右にその日のスパイク上位3人(半分以上のローテで)
+                //   / レシーブ下位2人がとなりのローテがある / 前衛(セッター以外)にその日のスパイク上位3分の1がだれもいないローテがある(どちらも、そのゲームのローテ全部の中で1つでも)
+                ["最弱ローテが強い", t => { const o = rotOfTeam(t, P); return o ? o.min : null; }, 0.05],
+                ["セッターの左右にスパイク上位", (t, ctx) => { const o = rotOfTeam(t, P), top = o && whyTop3(ctx || t, P, "spike"); if (!o || !top) return null; const rs = o.rows.filter(r => r.sPos); if (!rs.length) return null; return rs.filter(r => r.nb.some(n => top.has(n))).length * 2 >= rs.length ? 1 : 0; }, 1],
+                ["レシーブ下位2人がとなりのローテがある", t => { const o = rotOfTeam(t, P); return o ? (o.rows.some(r => r.adjPairs.length) ? 1 : 0) : null; }, 1],
+                ["前衛にスパイカーがいないローテがある", (t, ctx) => { const o = rotOfTeam(t, P), top = o && whyTopThird(ctx || t, P, "spike"); if (!o || !top) return null; return o.rows.some(r => !r.frontNS.some(n => top.has(n))) ? 1 : 0; }, 1]
             ];
             return { F, prof, P };
         }
@@ -13017,6 +13523,9 @@ const namesBtn = isAdmin() && dates.length > 0
             if (/が同じチーム$/.test(lb)) return lb.replace(/が同じチーム$/, "がそろったチーム");
             if (/上位3人の人数$/.test(lb)) return lb.replace(/の人数$/, "") + "が多いチーム(2-1 の 2 のほう)";
             if (lb === "チーム内格差あり") return "チーム内の格差がはっきり大きいチーム";
+            if (lb === "最弱ローテが強い") return "いちばん弱いローテが強いチーム";
+            if (lb === "セッターの左右にスパイク上位") return "セッターの左右にスパイク上位がいるチーム";
+            if (/ローテがある$/.test(lb)) return lb + "チーム";
             if (/の人数$/.test(lb)) return lb.replace(/の人数$/, "が多いチーム");
             if (lb === "人数") return "人数が多いチーム";
             return lb;
@@ -13027,12 +13536,16 @@ const namesBtn = isAdmin() && dates.length > 0
         //   ・チーム内格差 … 両チームのばらつきの差が σ の半分以上
         //   いる・いない、人数のような 1 つずつの値は、差があれば数える
         function whyThresh(lb, r, P) {
-            const key = lb === "チーム内格差あり" ? "avg" : lb === "機動力の平均" ? "mob" : ((ROLE_PARAM_DEFS.find(d => d.label + "の平均" === lb) || {}).key);
+            const key = lb === "チーム内格差あり" ? "avg" : lb === "機動力の平均" ? "mob" : lb === "最弱ローテが強い" ? "rot" : ((ROLE_PARAM_DEFS.find(d => d.label + "の平均" === lb) || {}).key);
             if (!key) return null;
-            const val = n => { const x = P(n); return x ? (key === "avg" ? x.avg : key === "mob" ? x.mob : x[key]) : null; };
+            // 最弱ローテ: ローテの強さと同じ「スパイクとレシーブの平均」のばらつきから、平均と同じ決め方で
+            const val = n => { const x = P(n); return x ? (key === "avg" ? x.avg : key === "mob" ? x.mob : key === "rot" ? ((x.set ?? 3) * ROT_W.set + (x.spike ?? 3) * ROT_W.atk + (x.receive ?? 3) * ROT_W.rcv) / (ROT_W.set + ROT_W.atk + ROT_W.rcv) : x[key]) : null; };
             const v = (r.ctx || r.teams[0].concat(r.teams[1])).map(val).filter(x => x != null); if (v.length < 4) return null;
             const m = v.reduce((a, b) => a + b, 0) / v.length, sg = Math.sqrt(v.reduce((a, b) => a + (b - m) * (b - m), 0) / v.length);
             if (key === "avg" && lb === "チーム内格差あり") return 0.5 * sg;
+            // 最弱ローテ: ローテの強さは だいたい5人の平均なので、その日のメンバーのばらつき σ ÷ √5(5人の平均がたまたまぶれる大きさ)以上の差だけ数える。
+            //   チームの人数で割る平均の基準(2σ ÷ 人数)だと、ローテ1つの入れかわりでも超えてしまい甘すぎる
+            if (key === "rot") return sg / Math.sqrt(5);
             const n = (r.teams[0].length + r.teams[1].length) / 2;
             return 2 * sg / n;
         }
@@ -13054,10 +13567,12 @@ const namesBtn = isAdmin() && dates.length > 0
             if (/上位3人の人数$/.test(lb) && k) return whyTop3(ctx, P, k) || new Set();
             if (lb === "セット1位とスパイク1位が同じチーム") { const a = whyChamp(ctx, "set", P), b = whyChamp(ctx, "spike", P); return new Set([a, b].filter(x => x != null)); }
             if (lb === "セッターの人数") return new Set(ctx.filter(n => { const p = P(n); return p && p.setter; }));
+            if (lb === "セッターの左右にスパイク上位") return whyTop3(ctx, P, "spike") || new Set();
+            if (lb === "前衛にスパイカーがいないローテがある") return whyTopThird(ctx, P, "spike") || new Set();
             return null;
         }
         function whyListHtml(x) {
-            const bin = /がいる$|が同じチーム$/.test(x.lb), cnt = !bin && x.T == null, fv = v => bin ? (v ? "あり" : "なし") : cnt ? `${Math.round(v)}${/人数/.test(x.lb) ? "人" : ""}` : v.toFixed(2);
+            const bin = /がいる$|が同じチーム$|^セッターの左右に|ローテがある$/.test(x.lb), cnt = !bin && x.T == null, fv = v => bin ? (v ? "あり" : "なし") : cnt ? `${Math.round(v)}${/人数/.test(x.lb) ? "人" : ""}` : v.toFixed(2);
             const md = d => { const p = (d || "").split("-"); return p.length === 3 ? `${+p[1]}/${+p[2]}` : d || ""; };
             const items = (x.ds || []).slice().sort((p, q) => (p.r.d || "").localeCompare(q.r.d || "") || (p.r.no || 0) - (q.r.no || 0));
             if (!items.length) return "";
@@ -13078,7 +13593,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const { P: P0 } = whyFactors(); const rows = F.filter(([lb]) => lb !== "総合").map(([lb, f, min]) => { const s0 = whySimple(recs, f, min, lb, P0), mr = m.rows.find(x => x.lb === lb); return { lb, ...s0, mr, P: P0 }; });
             const srt = { rate: (a, b) => b.rate - a.rate || b.n - a.n, gap: (a, b) => (b.n >= 8) - (a.n >= 8) || Math.abs(b.rate - 0.5) - Math.abs(a.rate - 0.5), n: (a, b) => b.n - a.n || b.rate - a.rate }[whySort] || ((a, b) => b.rate - a.rate);
             const ok = rows.filter(x => x.n >= 3).sort(srt);
-            const ng = rows.filter(x => x.n < 3).map(x => ({ ...x, why: /1位がいる|最下位がいる|1位とスパイク1位/.test(x.lb) && !/同じチーム/.test(x.lb) ? "同率の日ばかりで比べられない" : x.lb === "セット1位とスパイク1位が同じチーム" ? "同率の日ばかりか、いつも別のチームで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
+            const ng = rows.filter(x => x.n < 3 && !ROT_FACTORS.has(x.lb)).map(x => ({ ...x, why: /1位がいる|最下位がいる|1位とスパイク1位/.test(x.lb) && !/同じチーム/.test(x.lb) ? "同率の日ばかりで比べられない" : x.lb === "セット1位とスパイク1位が同じチーム" ? "同率の日ばかりか、いつも別のチームで比べられない" : /同じチーム/.test(x.lb) ? "いつも分かれていて比べられない" : (x.lb === "セッターの人数" && !sp.some(y => y.setter)) ? "当てはまる人なし" : x.lb === "チーム内格差あり" ? "どちらのチームにも同じくらいの格差があって、はっきりした差がつかない" : "どのチームも同じくらいで、はっきりした差がつかない" }));
             const note = x => { const r = x.mr; if (!r || !r.ok || Math.abs(r.z) < 1 || x.rate === 0.5) return ""; return (r.b > 0) === (x.rate > 0.5) ? "✓ ほかをそろえても同じ向き" : "△ ほかの条件の影響かも"; };
             return `<details class="note-details chem"${whyOpen ? " open" : ""} ontoggle="whyOpen=this.open"><summary>勝ち負けの要因</summary>
                 <div class="why-cap">差がついた試合での勝率・50% = 関係なし</div>
@@ -13115,7 +13630,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     games: g.g, wins: g.w, strengthBase: n in cd.prior ? r3(lvl(cd.prior[n])) : null, strength: n in cd.base ? r3(lvl(cd.base[n])) : null };
             });
             const Fx = F.filter(([lb]) => lb !== "総合");
-            const matches = recs.map(r => ({ date: r.d, teams: r.teams.map(t => t.map(ID)), win: r.win, diff: r.diff, y: r3(r.y), dayMembers: r.ctx.map(ID),
+            const rotX = sd => ({ court: sd.c.map(n => n == null ? null : ID(n)), bench: sd.b.map(ID), side: sd.side, setter: sd.s ? ID(sd.s) : null, fixed: (sd.fx || []).map(ID) });   // ローテの名前も記号に
+            const matches = recs.map(r => ({ date: r.d, teams: r.teams.map(t => t.map(ID)), win: r.win, diff: r.diff, y: r3(r.y), dayMembers: r.ctx.map(ID), ...(r.rot ? { rotation: r.rot.map(rotX) } : {}), ...(r.score ? { score: r.score.slice() } : {}),
                 features: Object.fromEntries(Fx.map(([lb, f]) => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); return [lb, [r3(a), r3(b)]]; })) }));
             const data = {
                 v: 1, kind: "volley-team-analysis", exportedAt: new Date().toISOString(),
@@ -13126,7 +13642,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     "強さ(members.strength)": "一人ひとりの強さ s。チーム0が勝つ確率 = sigmoid(Σチーム0の s − Σチーム1の s)。y に合うように決める(ロジスティック回帰・勾配法 200回)。名簿のパラメータ(effective の4項目の平均)から決めた strengthBase に引っぱる(強さ = 3 + s / " + CHEM_PARAM_W + "、引っぱりの強さ = 試合" + CHEM_PULL + "回ぶん)。パラメータと同じものさし",
                     "相性(chemistry)": "2人の組ごとに、その2人が一緒にいない試合だけで2人の強さを出し直し、一緒にいた試合の (実際の y − 予想) の平均(回数が少ないと0寄り: 合計 ÷ (回数 + 3))。mates = 同じチーム、rivals = 相手チーム(a のいたチームから見て)。3回以上の組だけ",
                     "勝ち負けの要因(factors)": "matches.features の各項目の (チーム0 − チーム1) を説明変数、y を目的変数にした、切片なしのロジスティック回帰(L2 正則化 λ = 0.25、ニュートン法)。差がついた試合が5試合未満の項目は使わない。b = 係数、se = 標準誤差(ヘッセ行列の逆行列の対角)、z = b / se、effect = sigmoid(b × 単位) − 0.5(単位 = 1、格差だけ 0.5)。アプリは |z| ≥ 1 をはっきりしている、としている",
-                    "特徴(features)の定義": "〇〇の平均 = チームの effective の平均 / 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / スパイク上位3人・レシーブ上位3人の人数 = その項目の effective が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / セット1位とスパイク1位が同じチーム = 単独のセット1位とスパイク1位が2人とも同じチームにいれば 1 / 総合上位3人の人数 = その日のメンバーで effective の4項目の平均が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数"
+                    "ローテ(matches.rotation)": "ローテを記録したゲームだけにある。チームごとに court = 位置1〜6(1 = 後衛右・サーブ、6 = 後衛中央、5 = 後衛左、4 = 前衛左、3 = 前衛中央、2 = 前衛右)の人、bench = 控え(待ち順)、side = 控えの側(L = 左前: 5→4 に進む人が控えへ、控えの先頭が 4 に入る / R = 右前: 2→1 に進む人が控えへ、控えの先頭が 1 に入る)、setter = セッター、fixed = 控えに下がらない人(その人が下がる番なら、その回は入れ替えなし)。時計回り 2→1→6→5→4→3→2 に回し、同じ並びに戻るまでのローテを数える。ローテの強さ = (セット + 攻撃 + レシーブ) ÷ 3(effective)。セット = セッターのセット(控えならコートのいちばん高いセット)、攻撃 = 前衛(2・3・4)のセッター以外のスパイク平均、レシーブ = セッター以外のコート5人の 0.8 × 平均 + 0.2 × 最小 − となりの減点(低い2人が縦か横にとなり合う組ごとに、チームのレシーブの標準偏差 × 0.5)。score = 点数(あれば diff はこの差)",
+                    "特徴(features)の定義": "〇〇の平均 = チームの effective の平均 / 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / スパイク上位3人・レシーブ上位3人の人数 = その項目の effective が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / セット1位とスパイク1位が同じチーム = 単独のセット1位とスパイク1位が2人とも同じチームにいれば 1 / 総合上位3人の人数 = その日のメンバーで effective の4項目の平均が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数 / 最弱ローテが強い = そのチームのいちばん弱いローテの強さ(ローテを記録したゲームだけ。基準 = その日のメンバーの (セット + スパイク + レシーブ) ÷ 3 の標準偏差 ÷ √5)/ セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなり(ローテの輪で左右)にその日のスパイク上位3人のだれかがいれば 1 / レシーブ下位2人がとなりのローテがある = どれか1つのローテで、レシーブの低い2人(コートのセッター以外5人の下位2人、またはチームの平均 − 0.5σ 未満)が縦か横にとなり合っていれば 1 / 前衛にスパイカーがいないローテがある = どれか1つのローテで、前衛のセッター以外にその日のスパイク上位3分の1(人数 ÷ 3 の切り上げ。最後と同じ値の人も含む)がだれもいなければ 1"
                 },
                 settings: { period: rstatPeriod ? `${rstatPeriod}か月` : "全部", from, unit: matchRateUnit, mobilityWeights: { ...mobilityWeights }, keyParams: [...paramRoles.key], avgParams: [...paramRoles.avg], CHEM_PULL, CHEM_PARAM_W, factorLambda: 0.25, balanceMax: WHY_BAL },
                 members, matches,
@@ -13157,6 +13674,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${strengthHtml(rosterStatsFrom())}
                 ${chemHtml(rosterStatsFrom())}
                 ${whyHtml(rosterStatsFrom())}
+                ${rotAnaHtml(rosterStatsFrom())}
                 <details class="note-details chem"${rtblOpen ? " open" : ""} ontoggle="rtblOpen=this.open"><summary>参加率・回答率・勝率<span class="rs-days">バレー${days}回分</span></summary>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
@@ -15223,6 +15741,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const a = document.activeElement;
             if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "button") return true;
             if (typeof planPanelIsOpen === "function" && planPanelIsOpen()) return true;
+            if (typeof rotDraft !== "undefined" && rotDraft) return true;   // ローテを入れている間
             if (typeof currentView !== "undefined" && currentView === "teams" && lastTeamSplitResult) return true;
             return false;
         }
@@ -15260,7 +15779,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 12:10";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 19:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16114,7 +16633,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (!calPageLocked() || e.touches.length !== 1 || !e.cancelable) return;
                 const dy = e.touches[0].clientY - sy, dx = e.touches[0].clientX - sx;
                 if (Math.abs(dx) > Math.abs(dy)) return;   // 横の動き(月めくり・横スクロール)はそのまま
-                if (el && el.closest && el.closest("input, textarea, select, #surveyOv, #guideOv, .dv-ov, #pairOv, #guestPickOv")) return;   // 別の画面はそれぞれに任せる
+                if (el && el.closest && el.closest("input, textarea, select, #surveyOv, #guideOv, .dv-ov, #pairOv, #rotOv, #guestPickOv")) return;   // 別の画面はそれぞれに任せる
                 // 指の下にある、スクロールできる入れ物を探す
                 let n = el && el.nodeType === 1 ? el : el && el.parentElement;
                 while (n && n !== document.body) {
