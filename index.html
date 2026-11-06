@@ -1724,7 +1724,12 @@
         .court-fxb.on { color: var(--accent); box-shadow: var(--sink); }
         .court-pin { display: inline-flex; margin-left: 3px; vertical-align: 0; color: var(--ink-3); font-style: normal; }
         .court-cell.fx-mode { outline: 1px dashed var(--line-2); outline-offset: -3px; }
-        @media (max-width: 389px) { .court-wrap { grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 4px; } }
+        @media (max-width: 389px) {
+            .court-wrap { grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 3px; }
+            #teamResults .court-wrap .court-params { font-size: 9px; }   /* 375px: 2行のパラメータがマスに入るように */
+            #teamResults .court-wrap .court-params .cpl { gap: 0 .2em; }
+            #teamResults .court-wrap .court-pos { padding: 0 4px; font-size: 9px; }
+        }
 
         /* ---- 区切り線は最小限 ---- */
         .acc, .team-member-row, .vc-links, .vc-linkrow, .confirm-group-title { border-color: var(--line); }
@@ -4222,6 +4227,31 @@
         .bn-slot.is-me { color: var(--accent); }
         .bn-slot .court-params { grid-template-columns: repeat(2, 1fr); font-size: 8.5px; }
         .court-wrap .bn-edge { --bn-top: 24px; --bn-h: 66px; --bn-r: 12px; --bn-fs: 11.5px; }
+        .court-wrap .bn-slot { height: auto; min-height: var(--bn-h); padding: 4px 2px; }   /* パラメータを出すと高くなる */
+        /* ===== 名前とパラメータを、マスの中に収める(11/07 01:00) ===== */
+        /*   コートの3列は、中身が広くても広がらない(右の控えの列に重ならない) */
+        #teamResults .court-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        #teamResults .court-cell { min-width: 0; }
+        #teamResults .court-name { font-size: 12px; letter-spacing: -.02em; }
+        #teamResults .court-name.nm-l { font-size: 10.5px; }
+        /*   パラメータ: 2行「サ6.0 レ6.7 セ7.7」/「ス6.8 機6.0」、9.5px */
+        #teamResults .court-params { display: flex; flex-direction: column; align-items: center; gap: 0; max-width: 100%; margin: 2px auto 0; font-size: 9.5px; line-height: 1.3; letter-spacing: -.03em; }
+        #teamResults .court-params .cpl { display: flex; justify-content: center; gap: 0 .28em; max-width: 100%; white-space: nowrap; }
+        #teamResults .bn-slot .court-params .cpl { flex-wrap: wrap; }   /* 控えの細いマスでは、入らなければ折り返す */
+        #teamResults .bn-slot .court-params { font-size: 9px; }
+        .bn-nm { letter-spacing: -.02em; }
+        .bn-nm.nm-l { font-size: 10px; }
+        /*   ローテのマスの名前: 12px、4文字以上は 10.5px。省略しない(5文字まで)*/
+        :is(#rotOv, .mt-ed) .rot-t > span.rot-nm, .bn-slot > span.rot-nm { font-size: 12px; letter-spacing: -.02em; }
+        :is(#rotOv, .mt-ed) .rot-t > span.rot-nm.nm-l, .bn-slot > span.rot-nm.nm-l { font-size: 10.5px; }
+        /*   ローテの一覧の前衛の3人: 字を少し小さく(入らなければ2行) */
+        :is(#rotOv, #settingsPanel, .mt-ed) .rot-row .rot-fr { font-size: 10.5px; letter-spacing: -.02em; white-space: normal; overflow: visible; line-height: 1.35; }
+        /*   直す画面: 強さの一覧はふだん閉じて、1行だけ */
+        .rot-fold { display: flex; align-items: center; gap: 8px; width: 100%; height: 30px; margin-top: 8px; padding: 0 12px; border: none; border-radius: 15px; background: transparent; box-shadow: var(--sn-insetS); color: var(--sn-ink3); font: 600 11px var(--sn-en); cursor: pointer; }
+        .rot-fold b { margin-left: auto; font-weight: 700; color: var(--sn-ink2); }
+        .rot-fold b.weak { color: color-mix(in srgb, var(--sn-neg) 80%, var(--sn-ink3)); }
+        .rot-fold i { font-style: normal; font-size: 14px; line-height: 1; transition: transform .2s ease; }
+        .rot-fold.on i { transform: rotate(90deg); }
         .rot-court .bn-edge { --bn-top: 12px; --bn-h: 52px; }
         /* 名簿から足す「+」(試合を直す画面だけ): 控えの側の下 */
         .bn-add { position: relative; align-self: center; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: var(--sn-insetS, var(--sink)); color: var(--sn-ink3, var(--ink-3)); font: 600 16px/1 system-ui, sans-serif; cursor: pointer; overflow: hidden; }
@@ -4230,11 +4260,14 @@
         :is(#rotOv, .mt-ed) .rot-t.empty.tgt { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sn-acc) 55%, transparent); }
         .rot-rm { position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--sn-dome, var(--bg)); box-shadow: var(--sn-raiseXS, var(--raise-xs)); color: var(--sn-ink2, var(--ink-2)); font: 600 12px/1 system-ui, sans-serif; font-style: normal; cursor: pointer; z-index: 1; }
         /* 試合を直す画面の中のコート: パネルの幅に合わせて小さめ */
-        :is(#matchHistory, #matchBox) .mt-ed .rot-card { margin: 0; padding: 10px 8px 8px; border-radius: 18px; box-shadow: var(--sn-raiseS); }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-card { margin: 0; border-radius: 18px; box-shadow: var(--sn-raiseS); }
         :is(#matchHistory, #matchBox) .mt-ed .rot-th { margin: 0 2px 8px; }
-        :is(#matchHistory, #matchBox) .mt-ed .rot-court { grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 5px; }
-        :is(#matchHistory, #matchBox) .mt-ed .rot-grid { gap: 5px; padding: 10px 5px 5px; border-radius: 14px; }
-        :is(#matchHistory, #matchBox) .mt-ed .rot-t { height: 44px; padding: 11px 2px 3px; border-radius: 11px; font-size: 11px; overflow: visible; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-court { grid-template-columns: 38px minmax(0, 1fr) 38px; gap: 4px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-grid { gap: 4px; padding: 10px 4px 4px; border-radius: 14px; }
+        /* 直す画面は、組のカードの余白を少し使って、コートのマスを広く(5文字の名前が省略されずに入る) */
+        :is(#matchHistory, #matchBox) .mt-grp .mt-ed { margin-left: -8px; margin-right: -8px; padding: 10px 6px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-card { padding: 10px 5px 6px; }
+        :is(#matchHistory, #matchBox) .mt-ed .rot-t { height: 44px; padding: 11px 1px 3px; border-radius: 11px; font-size: 11px; overflow: visible; }
         :is(#matchHistory, #matchBox) .mt-ed .rot-t > small { left: 5px; top: 3px; font-size: 8px; }
         :is(#matchHistory, #matchBox) .mt-ed .rot-court .bn-edge { --bn-top: 10px; --bn-h: 44px; --bn-r: 11px; --bn-fs: 10px; gap: 5px; }
         :is(#matchHistory, #matchBox) .mt-ed .rot-list { margin-top: 8px; padding: 4px 8px; }
@@ -9468,11 +9501,13 @@ await main();
         }
 
         // 開発モード: 機動力補正後の値(機動力のみ元の値)。平均から除外している項目は取り消し線
+        //   2行に分ける: 「サ レ セ」/「ス 機」(コートのマスの幅に収まるように)
         function courtParamsHtml(p) {
-            return `<div class="court-params">${PARAM_DEFS.map(d => {
+            const cp = d => {
                 const ex = !d.multiplier && isAvgParam(d.key) && isExcludedFromAvg(p, d.key);
                 return `<span class="cp${ex ? " param-excluded" : ""}">${d.label.charAt(0)}${(Math.round((p.params[d.key] || 0) * 10) / 10).toFixed(1)}</span>`;
-            }).join("")}</div>`;
+            };
+            return `<div class="court-params"><span class="cpl">${PARAM_DEFS.slice(0, 3).map(cp).join("")}</span><span class="cpl">${PARAM_DEFS.slice(3).map(cp).join("")}</span></div>`;
         }
 
         // チーム分けのコート: 左右の前の端が控えの場所(押すと、そちらに控え。ローテの記録と同じく、チームの番号ごとにこの端末で覚える)
@@ -9531,7 +9566,7 @@ await main();
                     const genderDot = `<span class="gender-dot gender-${p.gender || "unspecified"}"></span>`;
                     const posTag = (p.guest || p.position) ? `<div class="court-pos">${escapeHtml(p.guest ? GUEST_POS : p.position)}</div>` : "";
                     const params = paramsVisible() ? courtParamsHtml(p) : "";
-                    inner = `<div class="court-name">${genderDot}${escapeHtml(p.name)}${memberKeyBadgesHtml(p)}</div>${posTag}${params}`;
+                    inner = `<div class="court-name${nameFitCls(p.name)}">${genderDot}${escapeHtml(p.name)}${memberKeyBadgesHtml(p)}</div>${posTag}${params}`;
                     pk = pickOf(p);
                 }
                 return `<div class="court-cell ${c.row}${pk.cls}${p && fx.includes(p.name) ? " pinned" : ""}${fxMode && p ? " fx-mode" : ""}${p && p.name === teamMeName() ? " is-me" : ""}"${pk.attr}><span class="court-slot-no">${c.no}${p && fx.includes(p.name) ? pin : ""}</span>${inner}</div>`;
@@ -9544,7 +9579,7 @@ await main();
                 const lab = `${s === "L" ? "左前" : "右前"}の控えの空き`;
                 if (!p) return { cls: canT ? " swappable swap-target" : "", attr: canT ? ` onclick="event.stopPropagation();swapPickBench(${teamIdx}, '${s}', ${j})"${key} aria-label="${lab}"` : ` aria-label="${lab}"` };
                 const pk = pickOf(p, true);
-                return { cls: pk.cls + (p.name === teamMeName() ? " is-me" : ""), attr: pk.attr + ` aria-label="${escapeHtml(p.name)}(控え${j + 1}番目)"`, inner: `<span>${escapeHtml(p.name)}</span>${paramsVisible() ? courtParamsHtml(p) : ""}` };
+                return { cls: pk.cls + (p.name === teamMeName() ? " is-me" : ""), attr: pk.attr + ` aria-label="${escapeHtml(p.name)}(控え${j + 1}番目)"`, inner: `<span class="bn-nm${nameFitCls(p.name)}">${escapeHtml(p.name)}</span>${paramsVisible() ? courtParamsHtml(p) : ""}` };
             };
             const edge = s => benchEdgeHtml(s, side, bench, slot, "");
             const tools = isAdmin() ? `<div class="court-tools"><button type="button" class="court-fxb${fxMode ? " on" : ""}" onclick="teamFxToggleMode(${teamIdx})" aria-pressed="${fxMode}">固定</button></div>` : "";
@@ -10896,6 +10931,8 @@ await main();
             const slots = Array.from({ length: n }, (_, j) => { const p = on ? bench[j] || null : null, o = slot(s, j, p) || {}; return `<div class="bn-slot${p ? "" : " empty"}${o.cls || ""}"${o.attr || ""}>${o.inner || ""}</div>`; }).join("");
             return `<div class="bn-edge ${s}${on ? " on" : ""}">${slots}${on ? tail || "" : ""}</div>`;
         }
+        // 名前の札の字: ふつう 12px、4文字以上は小さく(省略しないで収める)
+        function nameFitCls(n) { return Array.from(String(n || "")).length >= 4 ? " nm-l" : ""; }
         const BN_KEY = ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" role="button" tabindex="0"`;
         // ローテのコート(d = 下書き、ui = 選んでいる札、ns = "ov" ローテの画面 / "ed" 試合を直す画面、cands = 名簿から足せる人(直す画面だけ))
         function rotCourtHtml(d, ui, k, ns, cands) {
@@ -10905,17 +10942,25 @@ await main();
             const tile = (w, i) => {
                 const n = rotLocGet(d, { k, w, i }), on = sel && sel.w === w && +sel.i === i;
                 const pin = n && sd.fx.includes(n) ? `<i class="rot-pin" aria-label="固定"><svg viewBox="0 0 12 12" width="9" height="9" fill="currentColor"><rect x="2.5" y="5.2" width="7" height="5.3" rx="1.3"/><path d="M4 5.4V4a2 2 0 0 1 4 0v1.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></i>` : "";
-                return `<button type="button" class="rot-t${n ? "" : " empty"}${on ? " sel" : ""}${!n && tgt ? " tgt" : ""}" data-rt="${k}:${w}:${i}"><small>${i + 1}</small>${pin}<span>${n ? escapeHtml(n) : ""}</span>${on && n ? rm(w, i) : ""}</button>`;
+                return `<button type="button" class="rot-t${n ? "" : " empty"}${on ? " sel" : ""}${!n && tgt ? " tgt" : ""}" data-rt="${k}:${w}:${i}"><small>${i + 1}</small>${pin}<span class="rot-nm${nameFitCls(n)}">${n ? escapeHtml(n) : ""}</span>${on && n ? rm(w, i) : ""}</button>`;
             };
             const slot = (s, j, n) => {
                 const on = sel && (n ? sel.w === "b" && +sel.i === j : sel.w === "x" && sel.i === s + j);
                 const lab = n ? `${escapeHtml(n)}(控え${j + 1}番目)` : `${s === "L" ? "左前" : "右前"}の控えの空き`;
-                return { cls: `${on ? " sel" : ""}${!n && tgt ? " tgt" : ""}`, attr: ` data-rt="${k}:${n ? "b:" + j : "x:" + s + j}"${BN_KEY} aria-label="${lab}"`, inner: n ? `<span>${escapeHtml(n)}</span>${on ? rm("b", j) : ""}` : "" };
+                return { cls: `${on ? " sel" : ""}${!n && tgt ? " tgt" : ""}`, attr: ` data-rt="${k}:${n ? "b:" + j : "x:" + s + j}"${BN_KEY} aria-label="${lab}"`, inner: n ? `<span class="rot-nm${nameFitCls(n)}">${escapeHtml(n)}</span>${on ? rm("b", j) : ""}` : "" };
             };
             const add = ed && cands && cands.length ? `<label class="bn-add" title="名簿から足す" aria-label="${escapeHtml(d.labels[k])}の控えに名簿から足す">+<select onchange="matchEditAdd(${k}, this)"><option value="">${escapeHtml(d.labels[k])}の控えに足す</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select></label>` : "";
             const grid = ROT_FRONT.concat(ROT_BACK).map(p => tile("c", p - 1)).join("");
             return `<div class="rot-court">${benchEdgeHtml("L", sd.side, sd.b, slot, add)}<div class="rot-grid"><div class="rot-net"></div>${grid}</div>${benchEdgeHtml("R", sd.side, sd.b, slot, add)}</div>`;
         }
+        // 直す画面のローテの一覧: ふだんは閉じて、静かな1行「強さ 最弱 5.6 ›」だけ(弱いときは、くすんだ赤)。押すと開く(直す画面を開いているあいだ覚える)
+        function rotFoldHtml(d, ui, k, pv) {
+            const ctx = d.names ? d.names.flat() : null, sm = rotSummary(d.sides[k], pv, ctx); if (!sm) return "";
+            const open = !!(ui.listOpen && ui.listOpen[k]), weak = sm.min != null && sm.avg != null && sm.rows.length > 1 && sm.avg - sm.min >= 0.5;
+            const row = `<button type="button" class="rot-fold${open ? " on" : ""}" onclick="rotFoldToggle(${k})" aria-expanded="${open}" aria-label="ローテの強さ(最弱 ${sm.min == null ? "—" : sm.min.toFixed(1)})"><span>強さ</span><b class="${weak ? "weak" : ""}">最弱 ${sm.min == null ? "—" : sm.min.toFixed(1)}</b><i aria-hidden="true">›</i></button>`;
+            return row + (open ? rotListHtml(d.sides[k], pv, "e" + k, ctx) : "");
+        }
+        function rotFoldToggle(k) { const e = matchEdit; if (!e) return; const o = e.rui.listOpen || (e.rui.listOpen = {}); o[k] = !o[k]; mtEdRender(); }
         // 1チームのカード(固定・おすすめ・コート・ローテの一覧)。ローテの画面と試合を直す画面で同じもの
         function rotCardHtml(d, ui, k, ns, pv, cands) {
             const mode = ui.mk === k ? ui.mode : "";
@@ -10925,7 +10970,7 @@ await main();
                         <button type="button" class="rot-tb best" onclick="rotRecommend(${k},'${ns}')">${ns === "ed" ? "おすすめ" : "おすすめの並び"}</button></span></div>
                     ${rotCourtHtml(d, ui, k, ns, cands)}
                     ${ui.note[k] ? `<div class="rot-note">${escapeHtml(ui.note[k])}</div>` : ""}
-                    ${rotListHtml(d.sides[k], pv, (ns === "ed" ? "e" : "d") + k, d.names ? d.names.flat() : null)}
+                    ${ns === "ed" ? rotFoldHtml(d, ui, k, pv) : rotListHtml(d.sides[k], pv, "d" + k, d.names ? d.names.flat() : null)}
                 </section>`;
         }
         function rotRender() {
@@ -16167,7 +16212,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/07 00:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/07 01:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
