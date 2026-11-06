@@ -3762,7 +3762,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3776,7 +3776,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #rotOv, body.dark #matchBox .mt-ed {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -4357,6 +4357,25 @@
             :is(#rotOv, .mt-ed) .rot-court { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
             :is(#rotOv, .mt-ed) .rot-tb { padding: 0 8px; }
         }
+
+        /* 予定の詳細(下から出るシート): 設定と同じやわらかい凹凸 */
+        #prDetail .prd-sheet { background: var(--sn-bg); border-radius: 28px; padding: 6px 4px; box-shadow: 0 -6px 28px rgba(0,0,0,.14); }
+        #prDetail .nv-detail { background: transparent !important; border: none !important; box-shadow: none !important; padding: 18px 18px 14px !important; }
+        #prDetail .pd-ttl { font-size: 17px; color: var(--sn-ink); letter-spacing: .01em; }
+        #prDetail .pd-bar { width: 4px; height: 20px; }
+        #prDetail .pd-when { margin: 6px 0 0 14px; font-family: 'Montserrat', 'Noto Sans JP', sans-serif; font-size: 12.5px; font-weight: 600; color: var(--sn-ink2); }
+        #prDetail .pd-memo { margin: 12px 0 0; padding: 10px 14px; border-radius: 16px; font-size: 12.5px; color: var(--sn-ink2); box-shadow: inset 3px 3px 7px var(--sn-dk), inset -3px -3px 7px var(--sn-lt); }
+        #prDetail .pd-ntf, #prDetail [class*="ntf"] { font-size: 11px !important; color: var(--sn-ink3) !important; }
+        #prDetail .pd-mem { margin-top: 12px; }
+        #prDetail .pd-names span { padding: 3px 10px; border-radius: 12px; background: var(--sn-bg); box-shadow: 2px 2px 5px var(--sn-dk), -2px -2px 5px var(--sn-lt); font-size: 11.5px; color: var(--sn-ink2); }
+        #prDetail .pd-names { gap: 8px; }
+        #prDetail .pd-k { color: var(--sn-ink3); }
+        #prDetail .pd-acts { margin-top: 18px; gap: 12px; }
+        #prDetail .pd-acts button { height: 42px !important; min-height: 42px !important; padding: 0 22px !important; border: none !important; border-radius: 21px !important; background: var(--sn-bg) !important; color: var(--sn-ink2) !important; font-size: 13px !important; font-weight: 700 !important; box-shadow: 4px 4px 9px var(--sn-dk), -4px -4px 9px var(--sn-lt) !important; }
+        #prDetail .pd-acts .op-add { color: var(--sn-acc) !important; }
+        #prDetail .pd-acts .op-delbtn { box-shadow: none !important; padding: 0 6px !important; color: var(--sn-neg) !important; font-weight: 600 !important; }
+        #prDetail .pd-ans .sv-btn { border: none; border-radius: 16px; background: var(--sn-bg); box-shadow: 3px 3px 7px var(--sn-dk), -3px -3px 7px var(--sn-lt); }
+        #prDetail .pd-ans .sv-btn.sel { box-shadow: inset 3px 3px 6px var(--sn-dk), inset -3px -3px 6px var(--sn-lt); }
 </style>
 </head>
 <body>
@@ -16212,7 +16231,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/07 02:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/07 02:15";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -17647,11 +17666,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // 入力を下に出しているとき(キーボードの上)は、入れる日の週だけ出す(6行を押しこむと文字が重なるため)。何日も続くときは終わりの週まで(2週まで)
             let rowLo = 0, rowHi = NR - 1;
             // 入力中(上でも下でも)は、入れる日の週から3週間だけ出す(6行を押しこむと文字がつぶれるため)
-            if (pin) {
-                const idx = k0 => Math.round((new Date(k0 + "T00:00:00") - new Date(y, m - 1, 1 - off)) / 864e5);
-                const a = idx(pin.sd);
-                if (a >= 0 && a < NR * 7) { rowLo = Math.min(Math.floor(a / 7), NR - 3); rowHi = rowLo + 2; }
-            }
+            //   → 3週間だけにすると余白が多いので、いつもの6行のまま縮める(下の「入力中は題名を出さず点だけ」で、文字が重ならないようにする)
             const compact = rowLo !== 0 || rowHi !== NR - 1;
             for (let i = rowLo * 7; i < (rowHi + 1) * 7; i++) {
                 const d = new Date(y, m - 1, 1 - off + i), k = formatDateKey(d), inM = d.getMonth() === m - 1;
@@ -17688,7 +17703,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const wx = protoWxDay(k);
                 if (wx) volMark = `<i class="pr-wx" style="color:${P.ink3}">${protoWxIco(wx.kind, 9)}</i>`;   // 天気: 日付の右上に、小さな線の絵だけ(色はつけない)
                 let tags = lineHtml + (dotHtml || ghDot ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}${ghDot}</span>` : "");
-                if (protoCalPlans) {
+                if (protoCalPlans && !pin) {   // 入力中は行が低くなるので、題名は出さず点だけ
                     // 「点」の細い線の上に、題名を重ねる(線は文字のところだけ切れる)。連続予定は日をつなぐ線で、題名は始まりの日と週のはじめだけ
                     // 1日の予定は短い線。"en" は英語に置きかえ(辞書にない言葉はそのまま)
                     const word = t => protoPlanStyle === "en" ? planEnglish(t) : t;
