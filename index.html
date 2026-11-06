@@ -4183,6 +4183,8 @@
         @keyframes rotShake { 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
         #rotOv .rot-acts button.off { opacity: .45; box-shadow: var(--sn-raiseXS); cursor: default; }
         #settingsPanel .rot-last { margin-top: 16px; }
+        .rot-mk { display: inline-flex; vertical-align: -1px; margin-left: 4px; color: var(--sn-ink3, var(--ink-3)); font-style: normal; }
+        .why-it .rot-mk { margin: 0 2px 0 4px; color: var(--sn-acc, var(--accent)); }
         #settingsPanel .rot-lh { margin: 0 2px 8px; font: 700 11px var(--sn-en); color: var(--sn-ink3); }
         #settingsPanel .rot-lt { display: flex; align-items: center; gap: 6px; margin: 12px 2px 0; font: 700 12px var(--sn-en); color: var(--sn-ink2); }
         #settingsPanel .rot-lt .rot-sc { margin-left: auto; font: 700 13px var(--sn-en); color: var(--sn-ink); }
@@ -10171,7 +10173,7 @@ await main();
                     const items = j ? matchDiffItems(g, m) : [];
                     if (items.length) anyDiff = true;
                     const editing = matchEdit && matchEdit.id === m.id && matchEdit.date === date;
-                    return `<div class="mt-top"><span class="mt-no">${j + 1}</span><span class="mt-team win">🏆 ${teamChip(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? "+" + m.diff : ""}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="勝ち・点差・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
+                    return `<div class="mt-top"><span class="mt-no">${j + 1}</span><span class="mt-team win">🏆 ${teamChip(m.labels[m.win])}</span><span class="mt-vs">${m.diff ? "+" + m.diff : ""}${m.rot ? ROT_MARK : ""}</span>${canDel ? `<select class="mt-gsel" onchange="setMatchGroup('${date}', ${m.id}, this.value)" aria-label="組を変える" title="組を変える">${opts(m)}</select><button type="button" class="mt-edb" onclick="matchEditOpen('${date}', ${m.id})" aria-label="直す" title="勝ち・点差・メンバーを直す">✎</button><button type="button" class="mt-del${realAdmin() && !isAdmin() ? " adm" : ""}" onclick="deleteMatch('${date}', ${m.id})" aria-label="消す" title="${realAdmin() && !isAdmin() ? "管理者アカウントだけに見えています" : "消す"}">✕</button>` : ""}</div>`
                         + (items.length ? `<div class="mt-diffrow">${items.join("　")}</div>` : "")
                         + (editing ? matchEditHtml(m) : "");
                 }).join("");
@@ -10228,7 +10230,9 @@ await main();
         const ROT_FRONT = [4, 3, 2], ROT_BACK = [5, 6, 1];
         const ROT_SIDE_KEY = "rot_side_v1";   // 控えの側(チームの番号ごと)。この体育館は待つ場所が得点板の側なので、ふつうは2チームで逆になる。この端末だけ
         const ROT_MAX = 12;   // ローテを数える上限 = 人数 × 12(固定の人がいると、同じ並びに戻るまで長くなる。8人+固定で42、12人で66)
-        const ROT_FACTORS = new Set(["最弱ローテが強い", "セッターの左右にスパイク上位", "レシーブ下位2人がとなりのローテがある", "前衛にスパイカーがいないローテがある"]);
+        const ROT_FACTORS = new Set(["最弱ローテが強い", "セッターの左右にスパイク上位", "レシーブ下位2人がとなりのローテがある", "Sの左右にスパイカーがいないローテがある"]);
+        // ローテを記録したゲームの印(小さな回る矢印。文字は出さない)
+        const ROT_MARK = `<i class="rot-mk" title="ローテあり" aria-label="ローテあり"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6.5A5.2 5.2 0 0 0 3.6 4.4"/><path d="M3.3 1.9v2.8h2.8"/><path d="M3 9.5a5.2 5.2 0 0 0 9.4 2.1"/><path d="M12.7 14.1v-2.8H9.9"/></svg></i>`;
         function rotValid(sd) { return !!sd && Array.isArray(sd.c) && sd.c.length === 6 && Array.isArray(sd.b) && (sd.side === "L" || sd.side === "R"); }
         // 1つ回す
         function rotStep(st) {
@@ -10252,10 +10256,10 @@ await main();
             for (let i = 0; i < cap; i++) { st = rotStep(st); const k = key(st); if (seen.has(k)) break; seen.add(k); out.push(st); }
             return out;
         }
-        // 1つのローテの強さ(11/06 19:00 の決め方。重みは ROT_W):
-        //   セット = セッターのセット(セッターが控えなら、コートの人のいちばん高いセット)
-        //   攻撃 = 前衛(2・3・4)のセッター以外のスパイクの平均(S が後衛なら3人、前衛なら2人)
-        //   レシーブ = セッター以外のコートの5人(W の形)のレシーブ: 0.8 × 平均 + 0.2 × いちばん低い人 − となりの減点
+        // 1つのローテの強さ(11/06 18:30 の決め方。重みは ROT_W):
+        //   S = セッター(控えか未設定なら、コートでセットがいちばん高い人)
+        //   セット = S のセット / 攻撃 = S の左右(ローテの輪 1-6-5-4-3-2 で、S の位置の前と後ろ)にいる2人のスパイクの平均
+        //   レシーブ = S 以外のコートの5人(W の形)のレシーブ: 0.8 × 平均 + 0.2 × いちばん低い人 − となりの減点
         //     となりの減点: レシーブの低い2人(その5人の下位2人、またはチームの平均 − 0.5σ 未満)が、コートで縦か横にとなり合っている組ごとに引く
         //   強さ = (セット × w + 攻撃 × w + レシーブ × w) ÷ 重みの合計(パラメータと同じものさし)。pv(名前) → { spike, receive, set, … }(分からない人は数えない)
         const ROT_W = { set: 1, atk: 1, rcv: 1 };
@@ -10272,26 +10276,29 @@ await main();
         function rotOne(st, pv, tm) {
             const at = p => st.c[p - 1], sPos = st.s ? st.c.indexOf(st.s) + 1 : 0, val = (n, k) => { const x = pv(n); return x ? x[k] ?? 3 : null; };
             const front = ROT_FRONT.map(at).filter(Boolean), frontNS = front.filter(n => n !== st.s), court = st.c.filter(Boolean);
-            let nb = [];
-            if (sPos) { const i = ROT_RING.indexOf(sPos); nb = [ROT_RING[(i + 5) % 6], ROT_RING[(i + 1) % 6]].map(at).filter(Boolean); }
             const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
-            // セット
-            const sv = sPos ? val(st.s, "set") : null, cs = court.map(n => val(n, "set")).filter(v => v != null);
-            const set = sv != null ? sv : cs.length ? Math.max(...cs) : null;
-            // 攻撃
-            const atk = mean(frontNS.map(n => val(n, "spike")).filter(v => v != null));
-            // レシーブ(W の5人)
-            const rcvs = court.filter(n => n !== st.s).map(n => [n, val(n, "receive")]).filter(x => x[1] != null);
+            // トスを上げる人(S): セッターがコートにいればその人、控え(または未設定)なら コートでセットがいちばん高い人
+            let S = sPos ? st.s : null;
+            if (!S) { let bv = -Infinity; court.forEach(n => { const v = val(n, "set"); if (v != null && v > bv) { bv = v; S = n; } }); }
+            const SPos = S ? st.c.indexOf(S) + 1 : 0;
+            // S の左右 = ローテの輪(1-6-5-4-3-2)で、S の位置の前と後ろの位置にいるコートの人
+            let nb = [];
+            if (SPos) { const i = ROT_RING.indexOf(SPos); nb = [ROT_RING[(i + 5) % 6], ROT_RING[(i + 1) % 6]].map(at).filter(Boolean); }
+            // セット = S のセット / 攻撃 = S の左右2人のスパイクの平均
+            const set = S ? val(S, "set") : null;
+            const atk = mean(nb.map(n => val(n, "spike")).filter(v => v != null));
+            // レシーブ(S 以外のコートの5人 = W の形)
+            const rcvs = court.filter(n => n !== S).map(n => [n, val(n, "receive")]).filter(x => x[1] != null);
             tm = tm || rotTeamInfo(court.concat(st.b), pv);
             // 低い人: 5人の下位2人(ただし5人の平均より低い人だけ。同じ値の人ばかりのときに全員を数えない)、またはチームの平均 − 0.5σ 未満
             const rAvg = rcvs.length ? rcvs.reduce((a, x) => a + x[1], 0) / rcvs.length : 0, sorted = rcvs.slice().sort((a, b) => a[1] - b[1]);
             const low = new Set(sorted.slice(0, 2).filter(x => x[1] < rAvg - 1e-9).map(x => x[0]).concat(rcvs.filter(([, v]) => v < tm.rm - 0.5 * tm.rs).map(x => x[0])));
-            const adjPairs = ROT_ADJ.filter(([p, q]) => low.has(at(p)) && low.has(at(q)) && at(p) !== st.s && at(q) !== st.s).map(([p, q]) => [at(p), at(q)]);
+            const adjPairs = ROT_ADJ.filter(([p, q]) => low.has(at(p)) && low.has(at(q)) && at(p) !== S && at(q) !== S).map(([p, q]) => [at(p), at(q)]);
             const pen = adjPairs.length * ROT_ADJ_PEN * Math.max(tm.rs, 0.3);
             const rm = mean(rcvs.map(x => x[1])), rcv = rm == null ? null : ROT_RCV_MEAN * rm + ROT_RCV_MIN * Math.min(...rcvs.map(x => x[1])) - pen;
             const parts = [[set, ROT_W.set], [atk, ROT_W.atk], [rcv, ROT_W.rcv]].filter(x => x[0] != null), ws = parts.reduce((a, x) => a + x[1], 0);
             const v = ws ? parts.reduce((a, x) => a + x[0] * x[1], 0) / ws : null;
-            return { set, atk, rcv, v, pen, adjPairs, sPos, front, frontNS, nb, sBench: !!st.s && !sPos && st.b.includes(st.s) };
+            return { set, atk, rcv, v, pen, adjPairs, sPos, S, front, frontNS, nb, sBench: !!st.s && !sPos && st.b.includes(st.s) };
         }
         function rotSummary(sd, pv) {
             const sts = rotCycle(sd); if (!sts.length) return null;
@@ -10308,15 +10315,14 @@ await main();
             const cut = vs[n - 1][1]; return new Set(vs.filter(x => low ? x[1] <= cut + 1e-9 : x[1] >= cut - 1e-9).map(x => x[0]));
         }
         // いちばん弱いローテの短い理由: 当てはまる原因を、強さを下げている大きさの順に2つまで(「・」でつなぐ)
-        //   レシーブ下位2人がとなり / 前衛にスパイカーなし(前衛のセッター以外に、チームのスパイク上位3人の基準以上の人がいない) / Sが控え / 前衛が2人だけ(S が前衛)
+        //   レシーブ下位2人がとなり / Sの左右にスパイカーなし(S の左右2人に、チームのスパイク上位3人の基準以上の人がいない) / Sが控え
         function rotReason(row, sm, pv) {
             const c = [], ws = ROT_W.set + ROT_W.atk + ROT_W.rcv, dAtk = sm.mAtk != null && row.atk != null ? Math.max(0, sm.mAtk - row.atk) * ROT_W.atk / ws : 0;
             if (row.adjPairs.length) c.push(["レシーブ下位2人がとなり", row.pen * ROT_W.rcv / ws + 1e-6]);
             const sp = n => { const x = pv(n); return x ? x.spike ?? 3 : -Infinity; };
-            if (!row.frontNS.some(n => sp(n) >= sm.tm.spTop - 1e-9)) c.push(["前衛にスパイカーなし", dAtk + 1e-6]);
+            if (!row.nb.some(n => sp(n) >= sm.tm.spTop - 1e-9)) c.push(["Sの左右にスパイカーなし", dAtk + 1e-6]);
             if (row.sBench) c.push(["Sが控え", (sm.mSet != null && row.set != null ? Math.max(0, sm.mSet - row.set) * ROT_W.set / ws : 0) + 2e-6]);
-            if (row.sPos && ROT_FRONT.includes(row.sPos)) c.push(["前衛が2人だけ", dAtk * 0.5]);
-            if (!c.length) return row.atk != null && sm.mAtk != null && row.atk < sm.mAtk ? "前衛のスパイクが低め" : "レシーブが低め";
+            if (!c.length) return row.atk != null && sm.mAtk != null && row.atk < sm.mAtk ? "Sの左右のスパイクが低め" : "レシーブが低め";
             return c.sort((a, b) => b[1] - a[1]).slice(0, 2).map(x => x[0]).join("・");
         }
         // ローテの一覧(記録の画面と分析で同じ): R番号・前衛(4・3・2。セッターは青)・控え・強さ。いちばん弱い行は赤い数字と理由
@@ -10463,7 +10469,7 @@ await main();
                 ov.addEventListener("contextmenu", e => { if (e.target.closest("[data-rt]")) e.preventDefault(); });
                 document.body.appendChild(ov);
             }
-            rotRender();
+            ov.innerHTML = ""; rotRender();   // 開き直したときは上から
             ov.style.display = "flex";
         }
         function rotClose() { const ov = document.getElementById("rotOv"); if (ov) ov.style.display = "none"; rotDraft = null; }
@@ -10571,13 +10577,14 @@ await main();
                     ${rotListHtml(sd, pv, "d" + k)}
                 </section>`;
             }).join("");
-            const sc = d.score;
+            const sc = d.score, old = ov.querySelector(".rot-box"), top = old ? old.scrollTop : 0;   // 描き直してもスクロールの位置を保つ(チーム2を触っても上に戻らない)
             ov.innerHTML = `<div class="rot-box" role="dialog" aria-label="ローテ">
                 <div class="rot-head"><b>ROTATION</b><button type="button" class="rot-x" onclick="rotClose()" aria-label="閉じる">✕</button></div>
                 <div class="rot-score"><span class="rot-sl">${lb(0)}</span><input type="number" inputmode="numeric" min="0" max="99" class="rot-num" id="rotSc0" placeholder="–" value="${escapeHtml(sc[0])}" oninput="rotScore(0,this.value)" aria-label="${escapeHtml(d.labels[0])}の点"><i>–</i><input type="number" inputmode="numeric" min="0" max="99" class="rot-num" id="rotSc1" placeholder="–" value="${escapeHtml(sc[1])}" oninput="rotScore(1,this.value)" aria-label="${escapeHtml(d.labels[1])}の点"><span class="rot-sl">${lb(1)}</span></div>
                 ${cards}
                 <div class="rot-acts"><button type="button" class="rot-skip" onclick="rotDone(false)">点数だけ</button><button type="button" class="rot-ok" onclick="rotDone(true)">OK</button></div>
             </div>`;
+            if (top) ov.querySelector(".rot-box").scrollTop = top;
             rotScoreUi();
         }
         // 分析: ローテ(ローテを記録したゲームだけで数える)
@@ -10596,7 +10603,7 @@ await main();
             return `<details class="note-details chem rot-ana"${rotAnaOpen ? " open" : ""} ontoggle="rotAnaOpen=this.open"><summary>ローテ<span class="rs-days">${n}ゲーム</span></summary>
                 <div class="rs-tbl" style="margin-top:6px">${rows.map(rowHtml).join("")}</div>
                 <div class="rot-last"><div class="rot-lh">${md(last.d)} の最後のゲーム</div>${lastHtml}</div>
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ローテを記録したゲームだけで数えます。強さ = (セット + 攻撃 + レシーブ) ÷ 3。セット = セッターのセット(控えならコートのいちばん高い人)、攻撃 = 前衛のセッター以外のスパイク平均、レシーブ = セッター以外の5人の 0.8 × 平均 + 0.2 × いちばん低い人 − レシーブの低い2人がとなり合う減点。最弱ローテが強い = いちばん弱いローテの強さが、相手より基準(その日のばらつき ÷ √5)以上に高いチーム。セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなりにその日のスパイク上位3人のだれかがいる。となり・スパイカーなしのローテがある = そのゲームのローテのどれか1つでも当てはまるチーム(両チームとも同じなら数えない)。スパイカー = その日のスパイク上位3分の1。</div></details></details>`;
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ローテを記録したゲームだけで数えます。強さ = (セット + 攻撃 + レシーブ) ÷ 3。セット = S(セッター。控えならコートでセットがいちばん高い人)のセット、攻撃 = S の左右2人のスパイク平均、レシーブ = S 以外の5人の 0.8 × 平均 + 0.2 × いちばん低い人 − レシーブの低い2人がとなり合う減点。最弱ローテが強い = いちばん弱いローテの強さが、相手より基準(その日のばらつき ÷ √5)以上に高いチーム。セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなりにその日のスパイク上位3人のだれかがいる。となり・スパイカーなしのローテがある = そのゲームのローテのどれか1つでも当てはまるチーム(両チームとも同じなら数えない)。スパイカー = その日のスパイク上位3分の1。</div></details></details>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
         // 勝率の数え方: "game" = 1ゲームごと / "match" = 1試合(組)ごと。決着していない試合は数えない
@@ -13380,12 +13387,21 @@ const namesBtn = isAdmin() && dates.length > 0
             whyChampMemo.set(mk, v); return v;
         }
         // その日のメンバー(ctx)の中で、項目 k が高い順の上位3分の1(切り上げ。最後と同じ値の人も含む。総合上位3人と同じ数え方)
-        //   ローテの「前衛にスパイカーがいない」に使う(上位3人だと、どのチームもほぼ毎ゲーム当てはまって比べられないため)
+        //   ローテの「Sの左右にスパイカーがいない」に使う(上位3人だと、どのチームもほぼ毎ゲーム当てはまって比べられないため)
         function whyTopThird(ctx, P, k) {
             const mk = "t13|" + k + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
             const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.eff[k] ?? 3]).sort((a, b) => b[1] - a[1]), c = Math.ceil(vs.length / 3);
             const v = vs.length >= 4 ? new Set(vs.filter(x => x[1] >= vs[c - 1][1] - 1e-9).map(x => x[0])) : null;
             whyChampMemo.set(mk, v); return v;
+        }
+        // チームのセッター: ローテを記録したゲームならそのローテの S、なければ 名簿の希望ポジションがセッターの人(何人かいればセットの高い人)、それもいなければセットがいちばん高い人
+        //   チームのスパイクの平均から除くのに使う(チーム分けの見込みでも同じ決め方)
+        function whyTeamSetter(t, P) {
+            const e = ROT_OF.get(t); if (e && e.sd && e.sd.s && t.includes(e.sd.s)) return e.sd.s;
+            const ps = t.map(n => [n, P(n)]).filter(x => x[1]); if (ps.length < 2) return null;
+            const st = ps.filter(x => x[1].setter), pool = st.length ? st : ps;
+            let best = null; pool.forEach(x => { if (!best || (x[1].set ?? 3) > (best[1].set ?? 3)) best = x; });
+            return best ? best[0] : null;
         }
         function whyFactors() {
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
@@ -13394,7 +13410,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const sd = (t) => { const xs = t.map(P).filter(Boolean).map(x => x.avg); if (xs.length < 2) return null; const m = xs.reduce((a, b) => a + b, 0) / xs.length; return Math.sqrt(xs.reduce((a, b) => a + (b - m) * (b - m), 0) / xs.length); };
             const F = [
                 ["総合", t => mean(t, x => x.avg), 0.05],
-                ...ROLE_PARAM_DEFS.map(d => [d.label + "の平均", t => mean(t, x => x[d.key]), 0.05]),
+                // スパイクの平均は、セッターを除いた人で(セッターはトスを上げるので、打たない)
+                ...ROLE_PARAM_DEFS.map(d => [d.label + "の平均", d.key === "spike" ? t => { const s = whyTeamSetter(t, P); return mean(s == null ? t : t.filter(n => n !== s), x => x.spike); } : t => mean(t, x => x[d.key]), 0.05]),
                 ["機動力の平均", t => mean(t, x => x.mob), 0.05],
                 // その日のメンバーの中のスパイク1位・セット1位(同率は除く。キーパラメータの設定とは関係なし)が、そのチームにいるか
                 ["スパイク1位がいる", (t, ctx) => { const c = whyChamp(ctx || t, "spike", P); return c == null ? null : (t.includes(c) ? 1 : 0); }, 1],
@@ -13413,11 +13430,11 @@ const namesBtn = isAdmin() && dates.length > 0
                 ["セッターの人数", t => cnt(t, x => x.setter), 1],
                 ["人数", t => t.length, 1],
                 // ローテ(ローテを記録したゲームだけ): いちばん弱いローテの強さ / セッターの左右にその日のスパイク上位3人(半分以上のローテで)
-                //   / レシーブ下位2人がとなりのローテがある / 前衛(セッター以外)にその日のスパイク上位3分の1がだれもいないローテがある(どちらも、そのゲームのローテ全部の中で1つでも)
+                //   / レシーブ下位2人がとなりのローテがある / S の左右にその日のスパイク上位3分の1がだれもいないローテがある(どちらも、そのゲームのローテ全部の中で1つでも)
                 ["最弱ローテが強い", t => { const o = rotOfTeam(t, P); return o ? o.min : null; }, 0.05],
                 ["セッターの左右にスパイク上位", (t, ctx) => { const o = rotOfTeam(t, P), top = o && whyTop3(ctx || t, P, "spike"); if (!o || !top) return null; const rs = o.rows.filter(r => r.sPos); if (!rs.length) return null; return rs.filter(r => r.nb.some(n => top.has(n))).length * 2 >= rs.length ? 1 : 0; }, 1],
                 ["レシーブ下位2人がとなりのローテがある", t => { const o = rotOfTeam(t, P); return o ? (o.rows.some(r => r.adjPairs.length) ? 1 : 0) : null; }, 1],
-                ["前衛にスパイカーがいないローテがある", (t, ctx) => { const o = rotOfTeam(t, P), top = o && whyTopThird(ctx || t, P, "spike"); if (!o || !top) return null; return o.rows.some(r => !r.frontNS.some(n => top.has(n))) ? 1 : 0; }, 1]
+                ["Sの左右にスパイカーがいないローテがある", (t, ctx) => { const o = rotOfTeam(t, P), top = o && whyTopThird(ctx || t, P, "spike"); if (!o || !top) return null; return o.rows.some(r => !r.nb.some(n => top.has(n))) ? 1 : 0; }, 1]
             ];
             return { F, prof, P };
         }
@@ -13496,7 +13513,7 @@ const namesBtn = isAdmin() && dates.length > 0
             <p>勝敗は、ゲームごと(または試合ごと。期間の横の切り替え)に数えます。点差は使いません。</p>
             <h6>それぞれの特徴</h6>
             <ul>
-                <li><b>〇〇の平均</b> … チームの平均(機動力の補正を入れた値)。平均が1高いと何%か。</li>
+                <li><b>〇〇の平均</b> … チームの平均(機動力の補正を入れた値)。平均が1高いと何%か。スパイクの平均は、セッター(ローテを記録したゲームならその S、なければ希望ポジションがセッターの人、いなければセットがいちばん高い人)を除きます。</li>
                 <li><b>スパイク1位がいる</b> … その日来たメンバーの中で、スパイクが単独1位の人がいるか。同率1位の日は数えない。</li>
                 <li><b>セット1位とスパイク1位がそろったチーム</b> … その日のセット1位とスパイク1位(どちらも単独1位)が、2人とも同じチームにいるか。セット1位ひとりの有無は、その人の個人の成績に近いので見ません。</li>
                 <li><b>レシーブ最下位がいる</b> … その日のメンバーで、レシーブが単独で一番低い人がいるか。</li>
@@ -13568,7 +13585,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (lb === "セット1位とスパイク1位が同じチーム") { const a = whyChamp(ctx, "set", P), b = whyChamp(ctx, "spike", P); return new Set([a, b].filter(x => x != null)); }
             if (lb === "セッターの人数") return new Set(ctx.filter(n => { const p = P(n); return p && p.setter; }));
             if (lb === "セッターの左右にスパイク上位") return whyTop3(ctx, P, "spike") || new Set();
-            if (lb === "前衛にスパイカーがいないローテがある") return whyTopThird(ctx, P, "spike") || new Set();
+            if (lb === "Sの左右にスパイカーがいないローテがある") return whyTopThird(ctx, P, "spike") || new Set();
             return null;
         }
         function whyListHtml(x) {
@@ -13582,7 +13599,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const tgHead = byDay.length ? `<div class="why-tgh">${byDay.map(b => `<div><b>${md(b.d)} の対象</b>${b.t.size ? [...b.t].map(n => `<span class="why-tg">${escapeHtml(n)}</span>`).join("・") : "なし(同じ値の人がいて決まらない)"}</div>`).join("")}</div>` : "";
             return `<div class="why-list">${tgHead}${items.map(it => { const r = it.r, hi = it.d > 0 ? 0 : 1, lb = r.lbs && r.lbs.length === 2 ? r.lbs : ["チーム1", "チーム2"];
                 const tg = tgOf(r), mem = k => (r.teams[k] || []).map(n => tg && tg.has(n) ? `<b class="why-tg">${escapeHtml(n)}</b>` : escapeHtml(n)).join("・");
-                return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b><span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${it.T != null ? `(差 ${Math.abs(it.d).toFixed(2)} / 基準 ${it.T.toFixed(2)})` : ""}</span><em class="${it.used ? (it.ok ? "w" : "l") : ""}">${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
+                return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b>${r.rot ? ROT_MARK : ""}<span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${it.T != null ? `(差 ${Math.abs(it.d).toFixed(2)} / 基準 ${it.T.toFixed(2)})` : ""}</span><em class="${it.used ? (it.ok ? "w" : "l") : ""}">${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
                     <small>${escapeHtml(lb[0])}${r.win === 0 ? "(勝ち)" : ""}: ${mem(0)}<br>${escapeHtml(lb[1])}${r.win === 1 ? "(勝ち)" : ""}: ${mem(1)}</small></div>`; }).join("")}
                 <div class="why-lnote">${byDay.length ? "青字 = 対象の人・" : ""}◯ 勝ち・× 負け・薄い = 差が基準未満</div></div>`;
         }
@@ -13642,8 +13659,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     "強さ(members.strength)": "一人ひとりの強さ s。チーム0が勝つ確率 = sigmoid(Σチーム0の s − Σチーム1の s)。y に合うように決める(ロジスティック回帰・勾配法 200回)。名簿のパラメータ(effective の4項目の平均)から決めた strengthBase に引っぱる(強さ = 3 + s / " + CHEM_PARAM_W + "、引っぱりの強さ = 試合" + CHEM_PULL + "回ぶん)。パラメータと同じものさし",
                     "相性(chemistry)": "2人の組ごとに、その2人が一緒にいない試合だけで2人の強さを出し直し、一緒にいた試合の (実際の y − 予想) の平均(回数が少ないと0寄り: 合計 ÷ (回数 + 3))。mates = 同じチーム、rivals = 相手チーム(a のいたチームから見て)。3回以上の組だけ",
                     "勝ち負けの要因(factors)": "matches.features の各項目の (チーム0 − チーム1) を説明変数、y を目的変数にした、切片なしのロジスティック回帰(L2 正則化 λ = 0.25、ニュートン法)。差がついた試合が5試合未満の項目は使わない。b = 係数、se = 標準誤差(ヘッセ行列の逆行列の対角)、z = b / se、effect = sigmoid(b × 単位) − 0.5(単位 = 1、格差だけ 0.5)。アプリは |z| ≥ 1 をはっきりしている、としている",
-                    "ローテ(matches.rotation)": "ローテを記録したゲームだけにある。チームごとに court = 位置1〜6(1 = 後衛右・サーブ、6 = 後衛中央、5 = 後衛左、4 = 前衛左、3 = 前衛中央、2 = 前衛右)の人、bench = 控え(待ち順)、side = 控えの側(L = 左前: 5→4 に進む人が控えへ、控えの先頭が 4 に入る / R = 右前: 2→1 に進む人が控えへ、控えの先頭が 1 に入る)、setter = セッター、fixed = 控えに下がらない人(その人が下がる番なら、その回は入れ替えなし)。時計回り 2→1→6→5→4→3→2 に回し、同じ並びに戻るまでのローテを数える。ローテの強さ = (セット + 攻撃 + レシーブ) ÷ 3(effective)。セット = セッターのセット(控えならコートのいちばん高いセット)、攻撃 = 前衛(2・3・4)のセッター以外のスパイク平均、レシーブ = セッター以外のコート5人の 0.8 × 平均 + 0.2 × 最小 − となりの減点(低い2人が縦か横にとなり合う組ごとに、チームのレシーブの標準偏差 × 0.5)。score = 点数(あれば diff はこの差)",
-                    "特徴(features)の定義": "〇〇の平均 = チームの effective の平均 / 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / スパイク上位3人・レシーブ上位3人の人数 = その項目の effective が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / セット1位とスパイク1位が同じチーム = 単独のセット1位とスパイク1位が2人とも同じチームにいれば 1 / 総合上位3人の人数 = その日のメンバーで effective の4項目の平均が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数 / 最弱ローテが強い = そのチームのいちばん弱いローテの強さ(ローテを記録したゲームだけ。基準 = その日のメンバーの (セット + スパイク + レシーブ) ÷ 3 の標準偏差 ÷ √5)/ セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなり(ローテの輪で左右)にその日のスパイク上位3人のだれかがいれば 1 / レシーブ下位2人がとなりのローテがある = どれか1つのローテで、レシーブの低い2人(コートのセッター以外5人の下位2人、またはチームの平均 − 0.5σ 未満)が縦か横にとなり合っていれば 1 / 前衛にスパイカーがいないローテがある = どれか1つのローテで、前衛のセッター以外にその日のスパイク上位3分の1(人数 ÷ 3 の切り上げ。最後と同じ値の人も含む)がだれもいなければ 1"
+                    "ローテ(matches.rotation)": "ローテを記録したゲームだけにある。チームごとに court = 位置1〜6(1 = 後衛右・サーブ、6 = 後衛中央、5 = 後衛左、4 = 前衛左、3 = 前衛中央、2 = 前衛右)の人、bench = 控え(待ち順)、side = 控えの側(L = 左前: 5→4 に進む人が控えへ、控えの先頭が 4 に入る / R = 右前: 2→1 に進む人が控えへ、控えの先頭が 1 に入る)、setter = セッター、fixed = 控えに下がらない人(その人が下がる番なら、その回は入れ替えなし)。時計回り 2→1→6→5→4→3→2 に回し、同じ並びに戻るまでのローテを数える。ローテの強さ = (セット + 攻撃 + レシーブ) ÷ 3(effective)。セット = S(セッター。控えならコートでセットがいちばん高い人)のセット、攻撃 = S の左右(ローテの輪 1-6-5-4-3-2 で前後の位置)の2人のスパイク平均、レシーブ = セッター以外のコート5人の 0.8 × 平均 + 0.2 × 最小 − となりの減点(低い2人が縦か横にとなり合う組ごとに、チームのレシーブの標準偏差 × 0.5)。score = 点数(あれば diff はこの差)",
+                    "特徴(features)の定義": "〇〇の平均 = チームの effective の平均(スパイクの平均だけはセッターを除く。セッター = ローテを記録したゲームならその setter、なければ希望ポジションがセッターの人(複数ならセットが高い人)、いなければセットがいちばん高い人)/ 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / スパイク上位3人・レシーブ上位3人の人数 = その項目の effective が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / セット1位とスパイク1位が同じチーム = 単独のセット1位とスパイク1位が2人とも同じチームにいれば 1 / 総合上位3人の人数 = その日のメンバーで effective の4項目の平均が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数 / 最弱ローテが強い = そのチームのいちばん弱いローテの強さ(ローテを記録したゲームだけ。基準 = その日のメンバーの (セット + スパイク + レシーブ) ÷ 3 の標準偏差 ÷ √5)/ セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなり(ローテの輪で左右)にその日のスパイク上位3人のだれかがいれば 1 / レシーブ下位2人がとなりのローテがある = どれか1つのローテで、レシーブの低い2人(コートのセッター以外5人の下位2人、またはチームの平均 − 0.5σ 未満)が縦か横にとなり合っていれば 1 / Sの左右にスパイカーがいないローテがある = どれか1つのローテで、S(セッター。控えならコートでセットがいちばん高い人)の左右2人にその日のスパイク上位3分の1(人数 ÷ 3 の切り上げ。最後と同じ値の人も含む)がだれもいなければ 1"
                 },
                 settings: { period: rstatPeriod ? `${rstatPeriod}か月` : "全部", from, unit: matchRateUnit, mobilityWeights: { ...mobilityWeights }, keyParams: [...paramRoles.key], avgParams: [...paramRoles.avg], CHEM_PULL, CHEM_PARAM_W, factorLambda: 0.25, balanceMax: WHY_BAL },
                 members, matches,
@@ -15783,7 +15800,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 17:05";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 18:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -15930,7 +15947,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const TH = 70;
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
             // 上に重なる画面(ローテ・フォーム分析・ペアなど)が開いているあいだは、引っぱって更新しない(編集の途中で読み直さない)
-            const ptrOverlayOpen = () => ["rotOv", "fxOv", "pairOv", "surveyOv", "daySheet"].some(id => { const el = document.getElementById(id); return !!el && getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden"; });
+            const ptrOverlayOpen = () => editOverlayOpen();   // daySheet などは閉じていても display が残るので入れない(押した場所で別に止めている)
             const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #prFind, #prCal .pr-mhead, #rotOv, #fxOv, #pairOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
                 || document.body.style.overflow === "hidden";
             const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
