@@ -4165,7 +4165,14 @@
         /* ローテの一覧(記録の画面と分析で同じ): R番号・前衛・控え・強さ。いちばん弱い行は赤い数字と、短い理由 */
         :is(#rotOv, #settingsPanel) .rot-list { margin: 12px 0 0; padding: 6px 12px; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetS); }
         :is(#rotOv, #settingsPanel) .rot-row { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, .55fr) 2.4em; gap: 8px; align-items: center; min-height: 28px; font-size: 11.5px; color: var(--sn-ink2); border-top: 1px solid var(--sn-line); }
-        :is(#rotOv, #settingsPanel) .rot-row:first-child { border-top: none; }
+        :is(#rotOv, #settingsPanel) .rot-row:first-child, :is(#rotOv, #settingsPanel) .rot-hd + .rot-row { border-top: none; }
+        :is(#rotOv, #settingsPanel) .rot-row { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        /* 一覧の見出し(前衛・控え・強さ)と、行を押したときの内訳。どちらも小さく薄く */
+        :is(#rotOv, #settingsPanel) .rot-hd { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, .55fr) 2.4em; gap: 8px; padding: 4px 0 1px; font-size: 9.5px; color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel) .rot-hd > span:last-child { text-align: right; }
+        :is(#rotOv, #settingsPanel) .rot-bd { display: none; margin: -4px 0 4px 2.6em; font: 500 10px var(--sn-en); color: var(--sn-ink3); }
+        :is(#rotOv, #settingsPanel) .rot-list .rot-bd.on { display: block; }
+        :is(#rotOv, #settingsPanel) .rot-list:not(.open) .rot-bd.rot-more, :is(#rotOv, #settingsPanel) .rot-list.open .rot-bd.rot-pin1 { display: none !important; }
         :is(#rotOv, #settingsPanel) .rot-no { font: 700 10.5px var(--sn-en); color: var(--sn-ink3); }
         :is(#rotOv, #settingsPanel) .rot-fr, :is(#rotOv, #settingsPanel) .rot-bn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         :is(#rotOv, #settingsPanel) .rot-bn { font-size: 10.5px; color: var(--sn-ink3); }
@@ -10125,8 +10132,15 @@ await main();
             rotSanitize(m);
             if (e.all) { const gk = matchKeyOf(m); list.forEach(x => { if (x !== m && matchKeyOf(x) === gk) { x.teams = x.labels.map((lb, k) => { const i = m.labels.indexOf(lb); return i >= 0 ? teams[i].slice() : x.teams[k]; }); } }); }
             matchEdit = null;
-            saveMatches(); matchRerender(e.date);
-            if (typeof renderRosterStats === "function") renderRosterStats();
+            matchHistKeep(e.id, () => { saveMatches(); matchRerender(e.date); if (typeof renderRosterStats === "function") renderRosterStats(); });
+        }
+        // 試合の履歴で直したとき: 直したゲームの行が、画面の同じ場所に見えるようにする(分析のパネルをスクロールで合わせる)
+        function matchHistKeep(id, fn) {
+            const sp = document.getElementById("settingsPanel"), row = () => document.querySelector(`#matchHistory .mt-edb[onclick$=", ${id})"]`);
+            const r0 = row(), y0 = r0 ? r0.getBoundingClientRect().top : null;
+            fn();
+            const r1 = y0 != null && row();
+            if (sp && r1) sp.scrollTop += r1.getBoundingClientRect().top - y0;
         }
         function matchRerender(date) {
             if (date === selectedDate) renderMatchBox();
@@ -10328,17 +10342,21 @@ await main();
         // ローテの一覧(記録の画面と分析で同じ): R番号・前衛(4・3・2。セッターは青)・控え・強さ。いちばん弱い行は赤い数字と理由
         //   長いときは、人数ぶん(6以上)だけ出して、残りは「+M」で その場に開く(key = 開いたことを覚える名前)。
         //   いちばん弱い行は全部のローテから選び、隠れる位置なら最後に R番号つきで添える
-        var rotListOpen = new Set();
+        var rotListOpen = new Set(), rotRowOpen = new Set();
+        function rotRowToggle(el, k) { if (rotRowOpen.has(k)) rotRowOpen.delete(k); else rotRowOpen.add(k); const on = rotRowOpen.has(k), l = el.closest(".rot-list"); if (!l) return; l.querySelectorAll(".rot-row").forEach(r => { if (r.getAttribute("onclick") === el.getAttribute("onclick")) { r.classList.toggle("on", on); const b = r.nextElementSibling; if (b && b.classList.contains("rot-bd")) b.classList.toggle("on", on); } }); }
         function rotListMore(key, el) { rotListOpen.add(key); const l = el.closest(".rot-list"); if (l) l.classList.add("open"); }
         function rotListHtml(sd, pv, key) {
             const sm = rotSummary(sd, pv); if (!sm) return "";
             const names = sd.c.filter(Boolean).concat(sd.b), N = Math.max(6, names.length), more = sm.rows.length - N;
             const nm = n => n === sd.s ? `<em class="rot-s">${escapeHtml(n)}</em>` : escapeHtml(n);
-            const row = (r, i, cls) => { const weak = i === sm.wi && sm.rows.length > 1;
-                return `<div class="rot-row${weak ? " weak" : ""}${cls}"><b class="rot-no">R${i + 1}</b><span class="rot-fr">${ROT_FRONT.map(p => r.st.c[p - 1]).map(n => n ? nm(n) : "—").join("・")}</span><span class="rot-bn">${r.st.b.map(nm).join("・")}</span><span class="rot-v">${r.v == null ? "—" : r.v.toFixed(1)}</span></div>${weak ? `<div class="rot-why${cls}">${escapeHtml(rotReason(r, sm, pv))}</div>` : ""}`; };
+            const f1 = v => v == null ? "—" : v.toFixed(1), ok = (key || "") + ":";
+            const row = (r, i, cls) => { const weak = i === sm.wi && sm.rows.length > 1, on = rotRowOpen.has(ok + i);
+                // 行を押すと、強さの内訳(セット・S の左右のスパイク・レシーブ)を1行で出す
+                const bd = `<div class="rot-bd${cls}${on ? " on" : ""}">セット ${f1(r.set)} · 左右スパイク ${f1(r.atk)} · レシーブ ${f1(r.rcv)}</div>`;
+                return `<div class="rot-row${weak ? " weak" : ""}${cls}${on ? " on" : ""}" role="button" tabindex="0" onclick="rotRowToggle(this, '${ok + i}')"><b class="rot-no">R${i + 1}</b><span class="rot-fr">${ROT_FRONT.map(p => r.st.c[p - 1]).map(n => n ? nm(n) : "—").join("・")}</span><span class="rot-bn">${r.st.b.map(nm).join("・")}</span><span class="rot-v">${r.v == null ? "—" : r.v.toFixed(1)}</span></div>${bd}${weak ? `<div class="rot-why${cls}">${escapeHtml(rotReason(r, sm, pv))}</div>` : ""}`; };
             const open = more > 0 && key && rotListOpen.has(key);
             const pin = more > 0 && sm.wi >= N ? row(sm.rows[sm.wi], sm.wi, " rot-pin1") : "";
-            return `<div class="rot-list${open ? " open" : ""}">${sm.rows.map((r, i) => row(r, i, i >= N ? " rot-more" : "")).join("")}${pin}${more > 0 ? `<button type="button" class="rot-plus" onclick="rotListMore('${key || ""}', this)" aria-label="残りの${more}ローテを見る">+${more}</button>` : ""}</div>`;
+            return `<div class="rot-list${open ? " open" : ""}"><div class="rot-hd"><span></span><span>前衛</span><span>控え</span><span>強さ</span></div>${sm.rows.map((r, i) => row(r, i, i >= N ? " rot-more" : "")).join("")}${pin}${more > 0 ? `<button type="button" class="rot-plus" onclick="rotListMore('${key || ""}', this)" aria-label="残りの${more}ローテを見る">+${more}</button>` : ""}</div>`;
         }
         // おすすめの並び: セッターは選んだ人のまま(位置1から)、ほかの人をコートと控えの順に並べかえて、いちばん弱いローテが強くなる並びを探す(同じなら平均)
         //   7人以下は全部の並べ方(セッターあり 6! = 720)。8人以上は、1つずつ良い人を置いていく並び(貪欲)と今の並びから、2人ずつ入れかえて良くする(約100ms まで)
@@ -10530,8 +10548,7 @@ await main();
             if (rot) m.rot = rot; else delete m.rot;
             if (sc) { m.score = sc; m.win = sc[0] > sc[1] ? 0 : 1; m.diff = Math.abs(sc[0] - sc[1]); if (matchEdit && matchEdit.id === m.id) { matchEdit.win = m.win; matchEdit.diff = m.diff; } }
             else delete m.score;
-            saveMatches(); rotClose(); matchRerender(d.date);
-            if (typeof renderRosterStats === "function") renderRosterStats();
+            matchHistKeep(d.id, () => { saveMatches(); rotClose(); matchRerender(d.date); if (typeof renderRosterStats === "function") renderRosterStats(); });
         }
         // 記録するゲームに、下書きのローテと点数を付ける(点数の勝ちが、選んだ勝ちとちがうときは点数を付けない)
         function rotAttach(rec) {
@@ -10603,7 +10620,7 @@ await main();
             return `<details class="note-details chem rot-ana"${rotAnaOpen ? " open" : ""} ontoggle="rotAnaOpen=this.open"><summary>ローテ<span class="rs-days">${n}ゲーム</span></summary>
                 <div class="rs-tbl" style="margin-top:6px">${rows.map(rowHtml).join("")}</div>
                 <div class="rot-last"><div class="rot-lh">${md(last.d)} の最後のゲーム</div>${lastHtml}</div>
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ローテを記録したゲームだけで数えます。強さ = (セット + 攻撃 + レシーブ) ÷ 3。セット = S(セッター。控えならコートでセットがいちばん高い人)のセット、攻撃 = S の左右2人のスパイク平均、レシーブ = S 以外の5人の 0.8 × 平均 + 0.2 × いちばん低い人 − レシーブの低い2人がとなり合う減点。最弱ローテが強い = いちばん弱いローテの強さが、相手より基準(その日のばらつき ÷ √5)以上に高いチーム。セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなりにその日のスパイク上位3人のだれかがいる。となり・スパイカーなしのローテがある = そのゲームのローテのどれか1つでも当てはまるチーム(両チームとも同じなら数えない)。スパイカー = その日のスパイク上位3分の1。</div></details></details>`;
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ローテを記録したゲームだけで数えます。強さ = (セット + 攻撃 + レシーブ) ÷ 3。セット = S(セッター。控えならコートでセットがいちばん高い人)のセット、攻撃 = S の左右2人のスパイク平均、レシーブ = S 以外の5人の 0.8 × 平均 + 0.2 × いちばん低い人 − レシーブの低い2人がとなり合う減点。弱いローテ同士で比べて上だったチーム = 各チームでいちばん低いローテの強さを比べる。相手より基準(その日のばらつき ÷ √5)以上に高いチーム。セッターの左右にスパイク上位 = 半分以上のローテで、セッターのとなりにその日のスパイク上位3人のだれかがいる。となり・スパイカーなしのローテがある = そのゲームのローテのどれか1つでも当てはまるチーム(両チームとも同じなら数えない)。スパイカー = その日のスパイク上位3分の1。</div></details></details>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
         // 勝率の数え方: "game" = 1ゲームごと / "match" = 1試合(組)ごと。決着していない試合は数えない
@@ -13540,7 +13557,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (/が同じチーム$/.test(lb)) return lb.replace(/が同じチーム$/, "がそろったチーム");
             if (/上位3人の人数$/.test(lb)) return lb.replace(/の人数$/, "") + "が多いチーム(2-1 の 2 のほう)";
             if (lb === "チーム内格差あり") return "チーム内の格差がはっきり大きいチーム";
-            if (lb === "最弱ローテが強い") return "いちばん弱いローテが強いチーム";
+            if (lb === "最弱ローテが強い") return "弱いローテ同士で比べて上だったチーム";
             if (lb === "セッターの左右にスパイク上位") return "セッターの左右にスパイク上位がいるチーム";
             if (/ローテがある$/.test(lb)) return lb + "チーム";
             if (/の人数$/.test(lb)) return lb.replace(/の人数$/, "が多いチーム");
@@ -13673,9 +13690,12 @@ const namesBtn = isAdmin() && dates.length > 0
             await shareJsonFile(`team-analysis-${Date.now()}.json`, data);
         }
         function setRstat(k, v) { if (k === "p") rstatPeriod = v; else rstatSort = v; renderRosterStats(); }
-        var rtblOpen = false;
+        var rtblOpen = false, matchHistOpen = false;   // 試合の履歴の開け閉め(直す・消すで描き直しても閉じない)
         function renderRosterStats() {
             const el = document.getElementById("rosterStats"); if (!el) return;
+            // 描き直しても、パネルのスクロールの位置を保つ(試合を直して ✓ を押しても、見ていた場所のまま)
+            //   履歴が開いていれば、履歴の位置を目印にする(上のカードの高さが変わっても、直した行が同じ場所に見える)
+            const sp = el.closest("#settingsPanel"), spTop = sp ? sp.scrollTop : 0, a0 = matchHistOpen && document.getElementById("matchHistory"), ay = a0 ? a0.getBoundingClientRect().top : null;
             const { days, rows } = rosterStatsData();
             if (rstatSort === "lead") rstatSort = "come";
             const key = { come: "cr", ans: "ar", win: "wr" }[rstatSort];
@@ -13696,8 +13716,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div></details></details>
-                <details class="note-details chem" ontoggle="if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
+                <details class="note-details chem"${matchHistOpen ? " open" : ""} ontoggle="matchHistOpen=this.open; if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
                 <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データを書き出す<small>名前は記号に</small></button></div><div class="rs-build">BUILD ${APP_BUILD}</div>`;
+            if (matchHistOpen) renderMatchHistory();
+            if (sp && spTop) sp.scrollTop = spTop;
+            const a1 = ay != null && document.getElementById("matchHistory");
+            if (sp && a1) sp.scrollTop += a1.getBoundingClientRect().top - ay;
         }
         let rosterSort = "registered";
         let rosterSortParam = "";   // パラメータ順で使う項目(PARAM_DEFSのkey)。未設定ならキーパラメータの先頭
@@ -15800,7 +15824,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 18:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 19:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
