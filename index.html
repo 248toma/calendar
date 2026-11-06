@@ -15260,7 +15260,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/06 12:00";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/06 12:10";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16488,6 +16488,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 const mk = maskOf(th);
                 return `${ringBox(size)}background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}`;
             };
+            // a〜b-1 番目のマスだけ塗る(△の人を、○のマスの続きに淡く出す)
+            const segsRange = (size, th, a0, b0, col, gap) => {
+                const st = []; for (let i = 0; i < 12; i++) { const a = i * 30, on = i >= a0 && i < b0; st.push(`${on ? col : "transparent"} ${a + gap / 2}deg ${a + 30 - gap / 2}deg`, `transparent ${a + 30 - gap / 2}deg ${a + 30 + gap / 2}deg`); }
+                const mk = maskOf(th);
+                return `${ringBox(size)}background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}`;
+            };
             const deepen = (col) => `color-mix(in srgb, ${col} 60%, ${dark ? "#000" : "#2a2e35"})`;
             const hmv = (m) => m / 60;   // 分 → 時
             // その日の予定の時間帯(時: 0〜24)。終日は null
@@ -16507,8 +16513,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 const rs = reservations[k] || [];
                 const prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean);
                 const s0 = prs.length ? Math.min(...prs.map(x => x.s)) : null, e0 = prs.length ? Math.max(...prs.map(x => x.e)) : null;
-                const n = countComing(k);
-                return { n, cap: thresholds.cyanMax, col: LV[getStatusLevel(n)], s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
+                const n = countComing(k), tri = (attendanceByDate[k] || []).filter(m => m.status === "未定").length;
+                return { n, tri, cap: thresholds.cyanMax, col: LV[getStatusLevel(n)], s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
             };
             const flatPeople = (n, size, th, col) => { const out = [segs(size, th, Math.min(n, 12), col, offC, 9)]; if (n > 12) out.push(segs(size, th, n - 12, deepen(col), "transparent", 9)); return out; };
             const flatDial = (k, size) => {
@@ -16583,6 +16589,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 fills.push(segs(DSZ, DTH, Math.min(bn, 12), colA, "transparent", 4));
                 if (bn > 12) fills.push(segs(DSZ, TH2, bn - 12, colB, "transparent", 4));
                 if (hAn) hAn.cells.forEach(i => fills.push(protoCellLayer(ringBox, maskOf, DSZ, i < 12 ? DTH : TH2, i, i < 12 ? colA : colB, 4, hAn)));   // 増えた/減ったマスだけ動かす
+                // △(未定)の人: ○のマスの続きに、さらに淡い色で(12人を超えるぶんは2周目に、1周目と2周目の間の色で)
+                const tri = Math.min(vv.tri || 0, Math.max(0, 24 - vv.n));   // 位置は動きの途中でも、最後の人数(vv.n)の続き
+                if (tri > 0) {
+                    const colT = `color-mix(in srgb, ${vv.col} 28%, ${P.bg})`, colT2 = `color-mix(in srgb, ${vv.col} 85%, ${P.bg})`;
+                    const a1 = vv.n, b1 = vv.n + tri;
+                    if (a1 < 12) fills.push(segsRange(DSZ, DTH, a1, Math.min(b1, 12), colT, 4));
+                    if (b1 > 12) fills.push(segsRange(DSZ, DTH, Math.max(a1, 12) - 12, b1 - 12, colT2, 4));
+                }
             }
             const pplLayers = fills.length;   // ここまでが人数(この上に目盛りの区切り、さらにその上に予定)
             // 選んだ日が変わったとき(開いた直後も): 予定の弧が時計回りに伸びる
