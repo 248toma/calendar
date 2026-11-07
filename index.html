@@ -2774,6 +2774,8 @@
         .rc-name { position: relative; }
         .rc-guest { position: absolute; left: 12px; top: -9px; padding: 0 4px; border-radius: 6px; font-size: 8.5px; line-height: 13px; font-weight: 700; letter-spacing: .02em; color: var(--ink-3); background: rgba(128,128,128,.16); white-space: nowrap; cursor: pointer; }
         .rc-guest b { margin-left: 2px; color: #c4575c; font-weight: 700; }
+        /* 選んだ日にバレーがなく、次のバレーを出しているとき: リングの色を抜いて薄く(この日のバレーに見えないように) */
+        #protoUI .pr-dial-next > * { filter: saturate(0); opacity: .55; }
         body.hide-tparams .tpred { display: none !important; }   /* 数値を隠しているときは、強さの予想も出さない */
         .tpred { margin: 6px 2px 4px; display: flex; flex-direction: column; gap: 5px; }
         .tpred-row { display: grid; grid-template-columns: 3.2em 1fr 5.6em; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
@@ -16267,7 +16269,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/07 20:40";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 00:10";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -17818,7 +17820,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const headHtml = `
               <div class="pr-head" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${raise}">
                 <div class="pr-headrow" style="display:flex;align-items:center;gap:20px;height:${up ? 164 : 158}px">
-                  <div class="pr-dial" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
+                  <div class="pr-dial${vv && nextKey !== sel ? " pr-dial-next" : ""}" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${upRing}${hand}${vv ? protoRippleHtml(hAn, vv.col) : ""}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
                       <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
@@ -17829,7 +17831,7 @@ const namesBtn = isAdmin() && dates.length > 0
                   <div id="prDayInfo" class="${Date.now() < protoFlashUntil ? "pr-flash" : ""}" style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;--fl:${P.acc};${Date.now() < protoFlashUntil ? `animation-delay:-${Date.now() - (protoFlashUntil - PROTO_FLASH_MS)}ms` : ""}">
                     <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${wxSel ? `<span aria-label="天気" style="display:inline-flex;align-items:center;gap:3px;flex:none;font-family:${en};font-size:10.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${protoWxIco(wxSel.kind, 11)}${esc(wxSel.txt)}</span>` : ""}${!vv ? sdueHtml : ""}${holP ? `<span role="button" tabindex="0" onclick="protoRow(${holP.p.id})" style="font-size:10.5px;color:${P.red};white-space:nowrap;cursor:pointer">休日</span>` : ""}${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
                     ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;cursor:pointer">
-                      <span style="display:flex;align-items:center;min-width:0;font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap"><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${nextKey === sel ? "VOLLEY" : `NEXT ${+nextKey.slice(5, 7)}/${+nextKey.slice(8)}`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>${sdueHtml}</span>
+                      <span style="display:flex;align-items:center;min-width:0;font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap"><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${nextKey === sel ? "VOLLEY" : `<span style="color:${P.ink3};font-weight:600">NEXT ${+nextKey.slice(5, 7)}/${+nextKey.slice(8)}</span> <span style="font-size:9.5px;color:${P.ink3};opacity:.8">${WEN[new Date(nextKey + "T00:00:00").getDay()].slice(0, 3).toUpperCase()}</span>`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>${sdueHtml}</span>
                       ${segHtml}</div>` : ""}
                     ${up ? `<div role="button" tabindex="0" aria-label="次のバレーの日へ" onclick="protoPick('${upKey}')" style="display:flex;align-items:center;gap:6px;min-width:0;font-family:${en};font-size:11px;color:${P.ink3};cursor:pointer;white-space:nowrap;overflow:hidden">
                       <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
