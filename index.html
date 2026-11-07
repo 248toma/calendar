@@ -2769,6 +2769,11 @@
         .prop-info { margin-top: 8px; font-size: 11px; color: var(--ink-2); }
         #teamProposeNote b { color: var(--ink); }
         .tpred:empty { display: none; }
+
+        /* 名簿: ゲストでログインしている人(2台以上なら台数) */
+        .rc-name { position: relative; }
+        .rc-guest { position: absolute; left: 12px; top: -9px; padding: 0 4px; border-radius: 6px; font-size: 8.5px; line-height: 13px; font-weight: 700; letter-spacing: .02em; color: var(--ink-3); background: rgba(128,128,128,.16); white-space: nowrap; pointer-events: none; }
+        .rc-guest b { margin-left: 2px; color: #c4575c; font-weight: 700; }
         body.hide-tparams .tpred { display: none !important; }   /* 数値を隠しているときは、強さの予想も出さない */
         .tpred { margin: 6px 2px 4px; display: flex; flex-direction: column; gap: 5px; }
         .tpred-row { display: grid; grid-template-columns: 3.2em 1fr 5.6em; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
@@ -6823,7 +6828,7 @@ await main();
                     <div class="roster-card gender-${g}${open ? " open" : ""}" data-id="${m.id}">
                         <div class="rc-head" role="button" tabindex="0" onclick="toggleRosterCard(${m.id})"
                             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRosterCard(${m.id});}">
-                            <span class="rc-name"><span class="gender-dot gender-${g}${m.emailHash ? " linked" : ""}"${m.emailHash ? ' title="アカウント紐付け済み"' : ""}></span><span class="txt">${escapeHtml(m.name)}</span></span>
+                            <span class="rc-name"><span class="gender-dot gender-${g}${m.emailHash ? " linked" : ""}"${m.emailHash ? ' title="アカウント紐付け済み"' : ""}></span><span class="txt">${escapeHtml(m.name)}</span>${(n => n ? `<span class="rc-guest" title="ゲストでログイン中の端末 ${n}台">ゲスト${n > 1 ? `<b>${n}台</b>` : ""}</span>` : "")(guestDevsOf(m.name))}</span>
                             <span class="rc-pos">${escapeHtml(m.position || "—")}</span>
                             <span class="rc-params dev-only" id="rcParams_${m.id}">${rosterParamsSummaryHtml(m, tops)}</span>
                             <span class="rc-chev">›</span>
@@ -11713,6 +11718,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
         // 自動でアンケート画面へ移る処理はやめた(30分ごと・起動/更新時)
         function applyRole() {
+            setTimeout(() => { try { guestDevPut(false); } catch (e) { /* ignore */ } }, 3000);   // ゲストの端末を名簿に出すための記録(1日1回)
             if (rosterIdFixedCount && realAdmin()) {
                 const n = rosterIdFixedCount; rosterIdFixedCount = 0;
                 setTimeout(() => alert(`名簿で番号が重なっている人が${n}人いたので、付け直しました。\n紐付けがおかしかった人は、一度「解除」してから紐付け直してください。`), 800);
@@ -15875,6 +15881,11 @@ const namesBtn = isAdmin() && dates.length > 0
                         (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.who === rp.who); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
                         return;
                     }
+                    if (date === GUEST_DEV) {   // ゲストの端末: 端末ごとに新しい方
+                        const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
+                        (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.dev === rp.dev); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
+                        return;
+                    }
                     if (date === LOCAL_NTF) {   // ローカル予定の通知用コピー: 持ち主ごとに新しい方
                         const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
                         (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.owner === rp.owner); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
@@ -16087,6 +16098,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 b.onclick = () => {
                     try { localStorage.setItem(GUEST_NAME_KEY, name); } catch (e) { console.warn(e); }
                     ov.remove();
+                    setTimeout(() => guestDevPut(true), 800);   // 名簿に「ゲスト」と出すための記録
                     setFirestoreSyncStatus(firestoreEditor ? "管理者" : "閲覧中");
                     applyRole();
                 };
@@ -16249,7 +16261,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/07 12:45";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/07 19:20";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16992,6 +17004,34 @@ const namesBtn = isAdmin() && dates.length > 0
             return planList.filter(p => p.local && p.startDate && (p.endDate || p.startDate) >= today && p.startDate <= lim)
                 .map(p => { const o = { id: p.id, title: p.title || "", startDate: p.startDate, color: +p.color || 0 }; ["start", "end", "endDate", "memo", "allDay"].forEach(k => { if (p[k]) o[k] = p[k]; }); return o; })
                 .sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
+        }
+        // ------- ゲストでログインしている端末の一覧(名簿で「ゲスト」「2台」と分かるように) -------
+        //   共有データの出欠の中に、端末ごと1件 {dev, name, ts} を置く(dev はログインの番号を短くしたもの)。90日使っていない端末は数えない
+        const GUEST_DEV = "guestdev";
+        function guestDevList() { const a = attendanceByDate[GUEST_DEV]; const lim = Date.now() - 90 * 864e5; return (Array.isArray(a) ? a : []).filter(x => x && x.name && (x.ts || 0) > lim); }
+        function guestDevsOf(name) { return guestDevList().filter(x => x.name === name).length; }
+        var guestDevSentAt = 0;
+        function guestDevPut(force) {
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authUid) return;
+            let isAnon = false; try { isAnon = !!(firebase.auth().currentUser && firebase.auth().currentUser.isAnonymous); } catch (e) { isAnon = false; }
+            if (!isAnon) return;
+            let name = ""; try { name = localStorage.getItem(GUEST_NAME_KEY) || ""; } catch (e) { name = ""; }
+            const dev = String(authUid).slice(0, 10);
+            const mine = guestDevList().find(x => x.dev === dev);
+            if (!force && mine && mine.name === name && Date.now() - (mine.ts || 0) < 864e5) return;   // 1日1回まで
+            if (Date.now() - guestDevSentAt < 5000) return; guestDevSentAt = Date.now();
+            firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                const store = (Array.isArray(data[GUEST_DEV]) ? data[GUEST_DEV] : []).filter(x => x && x.dev !== dev);
+                if (name) store.push({ dev, name, ts: Date.now() });
+                data[GUEST_DEV] = store;
+                tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                return store;
+            }).then(arr => { attendanceByDate[GUEST_DEV] = arr; setLocalQuiet(BYDATE_KEY, JSON.stringify(attendanceByDate)); })
+              .catch(err => console.warn("ゲストの端末を記録できませんでした。", err));
         }
         function wgtCanWrite() { return !!(firebaseAvailable && firestoreRef && firestoreSyncActive && authUid && myRosterId() != null); }
         // 自分の分だけを、共有データの最新に入れ替えて保存する(全体は上書きしない)
@@ -19550,8 +19590,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const dots = TUT_STEPS.map((_, k) => `<i class="${k === tutIdx ? "on" : ""}"></i>`).join("");
             tip.innerHTML = `<i class="tut-arrow" id="tutArrow"></i><div class="tut-dots">${dots}</div><div class="tut-ttl">${c.ttl}</div><div class="tut-msg">${c.msg}</div>`
                 + (st.id === "login"
-                    ? `<div class="tut-login"><button type="button" class="tut-b pri" id="tutGoogle">Googleでサインイン</button><small>Googleアカウントでログインします</small>
-                        <button type="button" class="tut-b sec" id="tutGuest">ゲストでログイン</button><small>Googleなしで、名簿から自分の名前を選んで使えます</small>
+                    ? `<div class="tut-login"><button type="button" class="tut-b pri" id="tutGuest">ゲストでログイン(おすすめ)</button><small>名簿から自分の名前を選ぶだけで、すぐ使えます</small>
+                        <button type="button" class="tut-b sec" id="tutGoogle">Googleでサインイン</button><small>使う前に、管理者(ゆうご・にしば)へ自分のGoogleアカウント(Gmail)を教えて、名簿に登録してもらう必要があります</small>
                         <button type="button" class="tut-later" id="tutLater">あとで</button></div>`
                     : c.btn ? `<div class="tut-acts"><button type="button" class="tut-next" id="tutNext">${c.btn}</button></div>` : "");
             if (q("tutNext")) q("tutNext").onclick = () => tutShow(tutIdx + 1);
