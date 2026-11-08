@@ -2774,6 +2774,8 @@
         .rc-name { position: relative; }
         .rc-guest { position: absolute; left: 12px; top: -9px; padding: 0 4px; border-radius: 6px; font-size: 8.5px; line-height: 13px; font-weight: 700; letter-spacing: .02em; color: var(--ink-3); background: rgba(128,128,128,.16); white-space: nowrap; cursor: pointer; }
         .rc-guest b { margin-left: 2px; color: #c4575c; font-weight: 700; }
+        .sv-vb { margin-left: 3px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .sv-vb.minus { color: #c4575c; }
         body.hide-tparams .tpred { display: none !important; }   /* 数値を隠しているときは、強さの予想も出さない */
         .tpred { margin: 6px 2px 4px; display: flex; flex-direction: column; gap: 5px; }
         .tpred-row { display: grid; grid-template-columns: 3.2em 1fr 5.6em; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
@@ -7312,8 +7314,22 @@ await main();
         // 年の横の小さな合計(今年。押すと一覧)
         function savingTotalHtml(y) {
             if (!isAdmin()) return "";
-            const t = savingYearTotal(y); if (!t) return "";
-            return `<span class="sv-total" role="button" tabindex="0" onclick="event.stopPropagation();openSaving('list')" title="${y}年の節約の合計">${svYen(t)}</span>`;
+            const t = savingYearTotal(y), vb = volleyBalance();
+            // バレー全体の収支(精算の記録がある日の 回収 − コート代)を ( ) で横に
+            const vbh = vb.days ? `<span class="sv-vb${vb.v < 0 ? " minus" : ""}" title="バレー全体の収支(回収済み − コート代)">(${vb.v > 0 ? "+" : vb.v < 0 ? "−" : "±"}${Math.abs(vb.v).toLocaleString()})</span>` : "";
+            if (!t && !vbh) return "";
+            return `${t ? `<span class="sv-total" role="button" tabindex="0" onclick="event.stopPropagation();openSaving('list')" title="${y}年の節約の合計">${svYen(t)}</span>` : ""}${vbh}`;
+        }
+        function volleyBalance() {
+            let v = 0, days = 0;
+            try {
+                Object.keys(settlements).forEach(k => {
+                    const st = settlements[k] || {};
+                    if (!(Number.isFinite(st.amount) || Object.keys(st.paid || {}).length > 0)) return;
+                    const t = settleDayStats(k); v += t.collected - t.cost; days++;
+                });
+            } catch (e) { /* ignore */ }
+            return { v, days };
         }
         function renderSavingTotal() {
             const el = document.getElementById("savingTotal"); if (!el) return;
@@ -16267,7 +16283,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 00:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 11:25";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
