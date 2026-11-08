@@ -15882,7 +15882,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoUpdPending = false;
         function markRemoteUpdate() {
             protoUpdPending = true;   // 年の横の赤い点(タップで反映)
-            try { if (protoAwayNow() || pinOpen || userBusy()) protoUpdToast(); } catch (e) { /* ignore */ }   // カレンダー以外・入力中は、上に小さく知らせる
+            try { if (protoAwayNow()) protoUpdToast(); } catch (e) { /* ignore */ }   // カレンダー以外の画面のときだけ、上に小さく知らせる
             try { renderProto(); } catch (e) { /* ignore */ }
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }   // 届いたひとことを緑の数字に出す
         }
@@ -16302,7 +16302,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 15:20";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 16:35";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16495,10 +16495,19 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         const REOPEN_KEY = "pr_reopen_v1";
         // 更新があれば、最新にしてから kind の画面を開く(読み直したあとに開き直す)。更新がなければ false
-        function pendingReopen(kind) {
-            if (!firestorePendingValues || appOutdated || !firebaseAvailable) return false;
+        var pendingReopenBusy = false;
+        function pendingReopen(kind, openNow) {
+            if (pendingReopenBusy) return true;   // 読み直しの途中(何度も押しても1回だけ)
+            if (!firestorePendingValues || appOutdated || !firebaseAvailable || !kind) return false;
+            if (typeof rotDraft !== "undefined" && rotDraft) return false;   // ローテを入れている途中は、読み直さずにそのまま開く
             try { sessionStorage.setItem(REOPEN_KEY, JSON.stringify({ kind, d: selectedDate, at: Date.now() })); } catch (e) { return false; }
-            autoApplyRemote(true);
+            pendingReopenBusy = true;
+            try { showPtrSpin(); } catch (e) { /* ignore */ }
+            // 管理者は、この端末の変更を先に保存してから最新を読み込む(読み直すと、開き直す)
+            const go = () => { if (firestorePendingValues && !appOutdated) flushPendingRemote(); else fail(); };
+            const fail = () => { pendingReopenBusy = false; try { sessionStorage.removeItem(REOPEN_KEY); hidePtrSpin(); } catch (e) { /* ignore */ } if (openNow) openNow(); };
+            const t = setTimeout(fail, 5000);   // うまくいかないときは、今のまま開く
+            (firestoreEditor ? saveToFirestore() : Promise.resolve()).catch(() => { }).then(() => { clearTimeout(t); go(); });
             return true;
         }
         function protoUpdToast() {
@@ -16506,12 +16515,13 @@ const namesBtn = isAdmin() && dates.length > 0
             const b = document.createElement("button"); b.type = "button"; b.id = "prUpdToast"; b.className = "pr-upd-toast";
             b.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>更新があります`;
             b.onclick = () => { b.remove(); if (!pendingReopen(protoCurKind())) refreshApp(); };
+            b.style.pointerEvents = "auto";
             document.body.appendChild(b);
             setTimeout(() => b.classList.add("out"), 3700); setTimeout(() => b.remove(), 4000);
         }
         // 書く画面(アンケート・バレー・名簿・分析・設定)を開くとき: 更新が届いていれば、最新にしてから開く
         (() => {
-            const wrap = (name, kind) => { const f = window[name]; if (typeof f !== "function") return; window[name] = function (...a) { if (pendingReopen(typeof kind === "function" ? kind(...a) : kind)) return; return f.apply(this, a); }; };
+            const wrap = (name, kind) => { const f = window[name]; if (typeof f !== "function") return; window[name] = function (...a) { const self = this; if (pendingReopen(typeof kind === "function" ? kind(...a) : kind, () => f.apply(self, a))) return; return f.apply(this, a); }; };
             setTimeout(() => {
                 wrap("openSurvey", "survey");
                 wrap("openVolleyFull", "volley");
