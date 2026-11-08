@@ -2776,6 +2776,9 @@
         .rc-guest b { margin-left: 2px; color: #c4575c; font-weight: 700; }
         .sv-vb { margin-left: 3px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
         .sv-vb.minus { color: #c4575c; }
+        .pr-upd-toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: translateX(-50%); z-index: 10050; height: 30px; padding: 0 13px; border: none; border-radius: 15px; display: flex; align-items: center; gap: 6px; background: rgba(31,33,36,.86); color: #fff; font: 700 11.5px 'Noto Sans JP', system-ui, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.18); animation: prUpdIn .22s ease-out both; transition: opacity .3s, transform .3s; }
+        .pr-upd-toast.out { opacity: 0; transform: translate(-50%, -8px); }
+        @keyframes prUpdIn { from { opacity: 0; transform: translate(-50%, -8px); } }
         body.hide-tparams .tpred { display: none !important; }   /* 数値を隠しているときは、強さの予想も出さない */
         .tpred { margin: 6px 2px 4px; display: flex; flex-direction: column; gap: 5px; }
         .tpred-row { display: grid; grid-template-columns: 3.2em 1fr 5.6em; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
@@ -15879,6 +15882,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoUpdPending = false;
         function markRemoteUpdate() {
             protoUpdPending = true;   // 年の横の赤い点(タップで反映)
+            try { if (protoAwayNow() || pinOpen || userBusy()) protoUpdToast(); } catch (e) { /* ignore */ }   // カレンダー以外・入力中は、上に小さく知らせる
             try { renderProto(); } catch (e) { /* ignore */ }
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }   // 届いたひとことを緑の数字に出す
         }
@@ -16298,7 +16302,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 15:05";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 15:20";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16478,6 +16482,54 @@ const namesBtn = isAdmin() && dates.length > 0
             document.addEventListener("touchcancel", end, { passive: true });
         })();
         // 更新ボタン: 見ていた日付・タブ・位置を保ったまま、最新の共有データで再読み込みする
+        // ------- 更新の知らせ・書く画面を開くときの更新 -------
+        const shownEl = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
+        function protoAwayNow() { return ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "savingOv", "rotOv", "fxOv"].some(shownEl) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full"); }
+        // 今いる画面(読み直したあとに同じ画面を開き直すため)
+        function protoCurKind() {
+            if (shownEl("protoSv") || shownEl("surveyOv")) return "survey";
+            const sp = document.getElementById("settingsPanel");
+            if (sp && sp.classList.contains("open")) return sp.dataset.solo === "roster" ? "roster" : sp.dataset.solo === "ana" ? "ana" : "settings";
+            if (document.body.classList.contains("nv-full")) return "volley";
+            return "";
+        }
+        const REOPEN_KEY = "pr_reopen_v1";
+        // 更新があれば、最新にしてから kind の画面を開く(読み直したあとに開き直す)。更新がなければ false
+        function pendingReopen(kind) {
+            if (!firestorePendingValues || appOutdated || !firebaseAvailable) return false;
+            try { sessionStorage.setItem(REOPEN_KEY, JSON.stringify({ kind, d: selectedDate, at: Date.now() })); } catch (e) { return false; }
+            autoApplyRemote(true);
+            return true;
+        }
+        function protoUpdToast() {
+            if (document.getElementById("prUpdToast")) return;
+            const b = document.createElement("button"); b.type = "button"; b.id = "prUpdToast"; b.className = "pr-upd-toast";
+            b.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>更新があります`;
+            b.onclick = () => { b.remove(); if (!pendingReopen(protoCurKind())) refreshApp(); };
+            document.body.appendChild(b);
+            setTimeout(() => b.classList.add("out"), 3700); setTimeout(() => b.remove(), 4000);
+        }
+        // 書く画面(アンケート・バレー・名簿・分析・設定)を開くとき: 更新が届いていれば、最新にしてから開く
+        (() => {
+            const wrap = (name, kind) => { const f = window[name]; if (typeof f !== "function") return; window[name] = function (...a) { if (pendingReopen(typeof kind === "function" ? kind(...a) : kind)) return; return f.apply(this, a); }; };
+            setTimeout(() => {
+                wrap("openSurvey", "survey");
+                wrap("openVolleyFull", "volley");
+                wrap("protoSolo", k => k === "roster" ? "roster" : k === "ana" ? "ana" : "settings");
+            }, 0);
+            // 読み直したあと: 開こうとしていた画面を開く
+            let r = null; try { r = JSON.parse(sessionStorage.getItem(REOPEN_KEY) || "null"); sessionStorage.removeItem(REOPEN_KEY); } catch (e) { r = null; }
+            if (r && Date.now() - (r.at || 0) < 30000) setTimeout(() => {
+                try {
+                    if (r.d && typeof selectDate === "function" && r.d !== selectedDate) { const [y, m] = r.d.split("-").map(Number); protoYM = [y, m]; selectDate(r.d); }
+                    if (r.kind === "survey") openSurvey();
+                    else if (r.kind === "volley") openVolleyFull();
+                    else if (r.kind === "roster") protoSolo("roster");
+                    else if (r.kind === "ana") protoSolo("ana");
+                    else if (r.kind === "settings") protoSolo("");
+                } catch (e) { console.warn(e); }
+            }, 900);
+        })();
         // ほかの画面からカレンダーに戻ったとき: 共有データの最新を確かめ、ちがえば読み直す(5秒に1回まで)
         var protoBackSyncAt = 0, protoBackSyncT = 0, protoBackWasAway = false;
         function protoBackSync() {
