@@ -16232,6 +16232,21 @@ const namesBtn = isAdmin() && dates.length > 0
                 L.forEach(o => { if (!rid.has(o.id) && !bm.has(o.id)) out.push(o); });
                 return out;
             }
+            // 名前で並ぶ一覧(その日の出欠など): 1人ずつ合わせる。この端末で変えた人だけこの端末の内容、ほかの人は最新を残す
+            const nameList = x => Array.isArray(x) && x.length > 0 && x.every(o => o && typeof o === "object" && typeof o.name === "string");
+            if (Array.isArray(L) && Array.isArray(R) && (nameList(L) || !L.length) && (nameList(R) || !R.length) && (nameList(L) || nameList(R))) {
+                const bm = new Map((Array.isArray(B) ? B : []).filter(o => o && typeof o.name === "string").map(o => [o.name, o])), lm = new Map(L.map(o => [o.name, o]));
+                const out = [];
+                R.forEach(o => {
+                    const lb = bm.get(o.name), ll = lm.get(o.name);
+                    if (ll) out.push(lb && j(ll) === j(lb) ? o : ll);   // この端末で変えていなければ最新
+                    else if (lb && j(lb) === j(o)) return;              // この端末で外した(相手は変えていない)
+                    else out.push(o);
+                });
+                const rn = new Set(R.map(o => o.name));
+                L.forEach(o => { if (!rn.has(o.name) && !(bm.has(o.name) && j(bm.get(o.name)) === j(o))) out.push(o); });   // この端末で足した人
+                return out;
+            }
             return L;   // それ以外で両方が変えたときは、この端末の内容
         }
         // バックアップ(GASが保存したJSON)から戻す
@@ -16320,7 +16335,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 16:55";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 17:05";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
