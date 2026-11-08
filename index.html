@@ -15886,9 +15886,9 @@ const namesBtn = isAdmin() && dates.length > 0
             if (firestorePendingValues && remoteUpdateSafeToApply()) setTimeout(flushPendingRemote, 0);
         }
         var protoUpdPending = false;
-        function markRemoteUpdate() {
+        function markRemoteUpdate(quiet) {
             protoUpdPending = true;   // 年の横の赤い点(タップで反映)
-            try { if (protoAwayNow()) protoUpdToast(); } catch (e) { /* ignore */ }   // カレンダー以外の画面のときだけ、上に小さく知らせる
+            try { if (!quiet && protoAwayNow()) protoUpdToast(); } catch (e) { /* ignore */ }   // カレンダー以外の画面のときだけ、上に小さく知らせる
             try { renderProto(); } catch (e) { /* ignore */ }
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }   // 届いたひとことを緑の数字に出す
         }
@@ -16320,7 +16320,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 16:45";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 16:55";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16339,7 +16339,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function saveToFirestore() {
             if (!firestoreSyncActive || !firestoreEditor || firestoreApplyingRemote || !firestoreRef) return Promise.resolve();
             if (appOutdated) { showOutdated(); return Promise.resolve(); }
-            if (saveBusy) { saveAgain = true; return Promise.resolve(); }
+            if (saveBusy) { saveAgain = true; return new Promise(res => saveWaiters.push(res)); }   // 保存の途中: 次の保存が終わるまで待つ(待たずに読み直すと、この端末の変更が消えるため)
             saveBusy = true;
             setFirestoreSyncStatus("同期中…");
             const mine = getShareableLocalValues();
@@ -16371,16 +16371,18 @@ const namesBtn = isAdmin() && dates.length > 0
                 firestoreBase = mine;
                 if (written && firestorePendingValues) firestorePendingValues = { ...firestorePendingValues, ...written };
                 const behind = written && !remoteCoveredByLocal(written, getShareableLocalValues());
-                if (behind) { if (!firestorePendingValues) firestorePendingValues = written; markRemoteUpdate(); }
+                if (behind) { if (!firestorePendingValues) firestorePendingValues = written; markRemoteUpdate(true); }   // 自分の保存のあと: 知らせは出さない(赤い点だけ)
                 else setFirestoreSyncStatus("共有中");
             }).catch(error => {
                 if (error && error.message === "outdated") { showOutdated(); return; }
                 console.error("Firestoreへの保存に失敗しました。", error); setFirestoreSyncStatus("同期エラー", true);
             }).finally(() => {
                 saveBusy = false;
-                if (saveAgain) { saveAgain = false; saveToFirestore(); }
+                if (saveAgain) { saveAgain = false; saveToFirestore(); return; }
+                const w = saveWaiters.splice(0); w.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
             });
         }
+        var saveWaiters = [];
 
         // 閲覧者が自分の出欠を共有データへ反映する。共有データの最新を読み直し、自分の1件(日付+名前)だけ書き換えて保存する
         // (他の人の出欠や、管理者が同時に行った変更を上書きしないため)。Firestoreのルール側で閲覧者の更新を許可しておく必要がある
@@ -16701,6 +16703,14 @@ const namesBtn = isAdmin() && dates.length > 0
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     if (firestoreEditor && !firestoreApplyingRemote) { clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 400); }
                     return;
+                }
+                // この端末の書き込みが返ってきただけのとき・管理者の端末にまだ保存していない変更があるときは、ほかの人の更新として扱わない
+                //   (保留して読み直すと、この端末の変更が消えるため。管理者は保存のときに、共有データの最新と合わせて保存する)
+                if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
+                if (firestoreEditor && !firestoreApplyingRemote) {
+                    const base = firestoreBase || {};
+                    const dirty = Object.keys(localValues).some(k => isSharedKey(k) && k !== APPVER_KEY && localValues[k] !== base[k]);
+                    if (dirty) { clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 300); return; }
                 }
                 // チーム分けの「共有」だけは、読み直さずにすぐ取り込む(チーム分けの画面を開いたままでも「受け取る」の帯が出るように)
                 if (remoteValues[TEAM_SHARE_KEY] != null && remoteValues[TEAM_SHARE_KEY] !== localValues[TEAM_SHARE_KEY]) {
