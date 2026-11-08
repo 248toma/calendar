@@ -15889,7 +15889,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 Object.keys(rem).forEach(date => {
                     if (date === PAIR_PLANS) {   // ペア予定: idごとに新しい方
                         const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
-                        (rem[date] || []).forEach(rp => { const i = L.findIndex(x => x.id === rp.id); if (i < 0) L.push(rp); else if (stampNum(rp.updated) > stampNum(L[i].updated)) L[i] = rp; });
+                        (rem[date] || []).forEach(rp => { const i = L.findIndex(x => x.id === rp.id); if (i < 0) L.push(rp); else if (stampNum(rp.updated) >= stampNum(L[i].updated)) L[i] = rp; });
                         return;
                     }
                     if (date === WIDGET_ST) {   // ウィジェット用: 人ごとに新しい方
@@ -15909,14 +15909,14 @@ const namesBtn = isAdmin() && dates.length > 0
                     }
                     if (/^plan:/.test(date)) {   // 共有予定の出欠: 新しい回答は足す
                         if (!loc[date]) loc[date] = [];
-                        (rem[date] || []).forEach(rm => { const lm = loc[date].find(m => m.name === rm.name); if (!lm) loc[date].push(rm); else if (stampNum(rm.updated) > stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; } });
+                        (rem[date] || []).forEach(rm => { const lm = loc[date].find(m => m.name === rm.name); if (!lm) loc[date].push(rm); else if (stampNum(rm.updated) >= stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; } });
                         return;
                     }
                     if (!loc[date]) return;   // 管理者側で消した日は戻さない
                     (rem[date] || []).forEach(rm => {
                         const lm = loc[date].find(m => m.name === rm.name);
-                        if (lm && stampNum(rm.updated) > stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; }
-                        if (lm && stampNum(rm.noteAt) > stampNum(lm.noteAt)) { if (rm.note) lm.note = rm.note; else delete lm.note; lm.noteAt = rm.noteAt; }   // ひとこと
+                        if (lm && stampNum(rm.updated) >= stampNum(lm.updated)) { lm.status = rm.status; lm.updated = rm.updated; }
+                        if (lm && stampNum(rm.noteAt) >= stampNum(lm.noteAt)) { if (rm.note) lm.note = rm.note; else delete lm.note; lm.noteAt = rm.noteAt; }   // ひとこと
                     });
                 });
                 values[BYDATE_KEY] = JSON.stringify(loc);
@@ -16290,7 +16290,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 12:50";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 13:05";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16470,6 +16470,28 @@ const namesBtn = isAdmin() && dates.length > 0
             document.addEventListener("touchcancel", end, { passive: true });
         })();
         // 更新ボタン: 見ていた日付・タブ・位置を保ったまま、最新の共有データで再読み込みする
+        // ほかの画面からカレンダーに戻ったとき: 共有データの最新を確かめ、ちがえば読み直す(30秒に1回まで)
+        var protoBackSyncAt = 0, protoBackSyncT = 0;
+        function protoBackSync() {
+            clearTimeout(protoBackSyncT);
+            protoBackSyncT = setTimeout(() => {
+                if (!firebaseAvailable || !firestoreRef || !firestoreSyncActive || appOutdated || pinOpen) return;
+                if (!document.body.classList.contains("proto-on") || document.body.classList.contains("proto-panel")) return;
+                const shown = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
+                const busy = ["settingsPanel", "surveyOv", "rotOv", "fxOv", "pairOv", "prDetail", "bulkAddOv"].some(shown);
+                if (busy || (typeof userBusy === "function" && userBusy()) || Date.now() - protoBackSyncAt < 30000) return;
+                protoBackSyncAt = Date.now();
+                firestoreRef.get({ source: "server" }).then(snap => {
+                    if (!snap || !snap.exists) return;
+                    const rv = snap.data().values || {};
+                    if (remoteCoveredByLocal(rv, getShareableLocalValues())) return;
+                    firestorePendingValues = rv; autoApplyRemote(true);
+                }).catch(() => { });
+            }, 400);
+        }
+        { const mo = new MutationObserver(() => protoBackSync()); mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+          const watch = () => ["settingsPanel", "surveyOv", "bulkAddOv"].forEach(id => { const el = document.getElementById(id); if (el && !el.__bsw) { el.__bsw = 1; mo.observe(el, { attributes: true, attributeFilter: ["class", "style"] }); } });
+          watch(); setTimeout(watch, 3000); }
         function refreshApp() {
             protoUpdPending = false;
             const b = document.getElementById("refreshBtn");
