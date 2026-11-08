@@ -2777,6 +2777,12 @@
         .sv-vb { margin-left: 3px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
         .sv-vb.minus { color: #c4575c; }
         .pr-upd-toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: translateX(-50%); z-index: 10050; height: 30px; padding: 0 13px; border: none; border-radius: 15px; display: flex; align-items: center; gap: 6px; background: rgba(31,33,36,.86); color: #fff; font: 700 11.5px 'Noto Sans JP', system-ui, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.18); animation: prUpdIn .22s ease-out both; transition: opacity .3s, transform .3s; }
+        #prUpdBusy { position: fixed; inset: 0; z-index: 10040; background: rgba(20,24,32,.06); transition: opacity .25s; }
+        #prUpdBusy.out { opacity: 0; }
+        body:has(#prUpdBusy) #ptr { opacity: 0 !important; }   /* 丸いグルグルは重ねて出さない */
+        #prUpdBusy .pr-upd-toast { pointer-events: none; }
+        .pub-spin { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: pubSpin .7s linear infinite; }
+        @keyframes pubSpin { to { transform: rotate(360deg); } }
         .pr-upd-toast.out { opacity: 0; transform: translate(-50%, -8px); }
         @keyframes prUpdIn { from { opacity: 0; transform: translate(-50%, -8px); } }
         body.hide-tparams .tpred { display: none !important; }   /* 数値を隠しているときは、強さの予想も出さない */
@@ -15940,9 +15946,21 @@ const namesBtn = isAdmin() && dates.length > 0
             const el = document.getElementById("ptr");
             if (!el) return;
             el.style.transition = "transform .15s, opacity .15s"; el.style.transform = "translateY(14px)"; el.style.opacity = "1"; el.classList.add("spin");
+            updBusyShow();
         }
+        // 更新中の知らせ: 上に「最新にしています」+ 画面全体を薄く覆って、終わるまで押せないようにする
+        function updBusyShow() {
+            if (document.getElementById("prUpdBusy")) return;
+            const o = document.createElement("div"); o.id = "prUpdBusy";
+            o.innerHTML = `<div class="pr-upd-toast busy"><i class="pub-spin"></i>最新にしています…</div>`;
+            o.addEventListener("touchmove", e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+            document.body.appendChild(o);
+            clearTimeout(updBusyShow.t); updBusyShow.t = setTimeout(updBusyHide, 8000);   // 念のため、長くても8秒で消す
+        }
+        function updBusyHide() { const o = document.getElementById("prUpdBusy"); if (!o) return; o.classList.add("out"); setTimeout(() => o.remove(), 250); }
         function hidePtrSpin() {
             const el = document.getElementById("ptr");
+            updBusyHide();
             if (!el || !el.classList.contains("spin")) return;
             el.style.transition = "transform .25s, opacity .25s"; el.style.opacity = "0"; el.style.transform = "translateY(-48px)";
             setTimeout(() => el.classList.remove("spin"), 260);
@@ -16302,7 +16320,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 16:35";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 16:45";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16443,6 +16461,7 @@ const namesBtn = isAdmin() && dates.length > 0
             let after = false; try { after = sessionStorage.getItem(PTR_SPIN_KEY) === "1"; sessionStorage.removeItem(PTR_SPIN_KEY); } catch (e) { /* ignore */ }
             if (after) {   // 更新で読み直した直後: 最新を受け取るまで回す(短すぎると見えないので少しは回す。つながらなくても4秒で消す)
                 el.style.transition = "none"; el.style.transform = "translateY(14px)"; el.style.opacity = "1"; el.classList.add("spin");
+                updBusyShow();
                 ptrAfterReloadUntil = Date.now() + 600;
                 setTimeout(() => { ptrAfterReloadUntil = 0; hidePtrSpin(); }, 4000);
             }
