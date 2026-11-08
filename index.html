@@ -2412,14 +2412,14 @@
         #teamLegend .predict-result { font-size: 12px; white-space: nowrap; }
         #teamLegend .predict-result .ic { width: 14px; height: 14px; vertical-align: -2px; color: var(--ink-3); }
         .team-toolbar .team-eye-btn { flex: none; width: 42px; padding: 0; border-radius: 12px; }
-        .team-eye-btn .ic-eyeoff, body.hide-tparams .team-eye-btn .ic-eye { display: none; }
-        body.hide-tparams .team-eye-btn .ic-eyeoff { display: inline-block; }
+        .team-eye-btn .ic-eyeoff, body.hide-tparams #hideParamsBtn .ic-eye, body.hide-rparams #rosterEyeBtn .ic-eye { display: none; }
+        body.hide-tparams #hideParamsBtn .ic-eyeoff, body.hide-rparams #rosterEyeBtn .ic-eyeoff { display: inline-block; }
         .team-toolbar .team-eye-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
         body.hide-tparams #teamResults .court-params, body.hide-tparams #teamResults .team-avg-line, body.hide-tparams #teamResults .team-avg-table { display: none !important; }
         /* 名簿でも、目のボタンでパラメータ(一覧の数値・棒、開いたときの入力と補正後の値)を隠す */
-        body.hide-tparams #rosterList :is(.rl-params, .rc-params, .roster-params-grid, .roster-eff) { display: none !important; }
-        body.hide-tparams #rosterSortParamRow { display: none !important; }
-        body.hide-tparams #rosterSortSeg button[onclick*="'param'"] { display: none !important; }   /* パラメータ順の並びでも値が分かるので隠す */
+        body.hide-rparams #rosterList :is(.rl-params, .rc-params, .roster-params-grid, .roster-eff) { display: none !important; }
+        body.hide-rparams #rosterSortParamRow { display: none !important; }
+        body.hide-rparams #rosterSortSeg button[onclick*="'param'"] { display: none !important; }   /* パラメータ順の並びでも値が分かるので隠す */
         .roster-eye-btn { flex: none; width: 38px; min-height: 38px; padding: 0; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center; }
         .roster-eye-btn .ic { width: 17px; height: 17px; }
         .roster-eye-btn[aria-pressed="true"] { color: var(--accent); box-shadow: var(--sink); }
@@ -5052,7 +5052,7 @@ await main();
             <div class="roster-search-row">
                 <input type="text" id="rosterSearchInput" placeholder="名前・ポジションで検索" autocomplete="off" inputmode="search" enterkeyhint="search" oninput="onRosterSearchInput(this.value)">
                 <button type="button" class="roster-search-clear" id="rosterSearchClear" onclick="clearRosterSearch()" aria-label="検索をクリア" style="display:none;">✕</button>
-                <button type="button" class="roster-eye-btn team-eye-btn admin-only" id="rosterEyeBtn" onclick="toggleHideTeamParams()" title="パラメータを隠す" aria-label="パラメータを隠す" aria-pressed="false"><i class="ic ic-eye"></i><i class="ic ic-eyeoff"></i></button>
+                <button type="button" class="roster-eye-btn team-eye-btn admin-only" id="rosterEyeBtn" onclick="toggleHideRosterParams()" title="パラメータを隠す" aria-label="パラメータを隠す" aria-pressed="false"><i class="ic ic-eye"></i><i class="ic ic-eyeoff"></i></button>
             </div>
             <div class="roster-sort-row">
                 <span class="rs-label">並び順</span>
@@ -10000,12 +10000,20 @@ await main();
             applyProposalTeams(pr);
         }
         // 次回の「チームを分ける」から反映される(表示中の結果は変わらない)
-        // パラメータを隠す(目のボタン)。チーム分けと名簿で同じ状態(HIDE_TP_KEY。この端末だけ)
+        // パラメータを隠す(目のボタン)。チーム分け(HIDE_TP_KEY)と名簿(HIDE_RP_KEY)は別々。どちらもこの端末だけ
         function applyHideTeamParams() {
-            let on = false;
-            try { on = localStorage.getItem(HIDE_TP_KEY) === "1"; } catch (e) { /* ignore */ }
+            let on = false, ron = false;
+            try { on = localStorage.getItem(HIDE_TP_KEY) === "1"; ron = localStorage.getItem(HIDE_RP_KEY) === "1"; } catch (e) { /* ignore */ }
             document.body.classList.toggle("hide-tparams", on);
-            ["hideParamsBtn", "rosterEyeBtn"].forEach(id => { const b = document.getElementById(id); if (b) b.setAttribute("aria-pressed", String(on)); });
+            document.body.classList.toggle("hide-rparams", ron);
+            { const b = document.getElementById("hideParamsBtn"); if (b) b.setAttribute("aria-pressed", String(on)); }
+            { const b = document.getElementById("rosterEyeBtn"); if (b) b.setAttribute("aria-pressed", String(ron)); }
+        }
+        function toggleHideRosterParams() {
+            const on = !document.body.classList.contains("hide-rparams");
+            const set = v => { try { localStorage.setItem(HIDE_RP_KEY, v ? "1" : "0"); } catch (e) { /* ignore */ } applyHideTeamParams(); };
+            if (on) { set(true); return; }
+            askDevModeIfVolleyDay(() => set(false), () => {});   // 表示に戻すとき: バレー当日は確認
         }
         function toggleHideTeamParams() {
             const on = !document.body.classList.contains("hide-tparams");
@@ -15846,8 +15854,8 @@ const namesBtn = isAdmin() && dates.length > 0
             } catch (x) { return false; }
         }
         // 端末ごとの設定は共有しない(開発モード・テーマ・この端末だけの他予定・週の始まり(日/月)・未回答を上に表示・時間表示・時間軸・名簿の並び順)
-        const HIDE_TP_KEY = "attendance_hide_tparams_v1";
-        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", "attendance_pair_v1", HIDE_TP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, "attendance_theme_view_v1", LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
+        const HIDE_TP_KEY = "attendance_hide_tparams_v1", HIDE_RP_KEY = "attendance_hide_rparams_v1";
+        const LOCAL_ONLY_KEYS = new Set(["attendance_gcal_added_v1", "attendance_sheet_ratio_v1", "attendance_sheet_level_v2", "attendance_sheet_hs_v1", "attendance_pair_v1", HIDE_TP_KEY, HIDE_RP_KEY, DEV_MODE_KEY, VIEW_PREVIEW_KEY, THEME_KEY, "attendance_theme_view_v1", LOCAL_PLANS_KEY, GUEST_NAME_KEY, WEEK_START_KEY,
             SURVEY_SORT_KEY, ROSTER_SORT_KEY, ROSTER_SORT_PARAM_KEY, SURVEY_NAMES_KEY]);
         let firestoreSyncActive = false;
         let firestoreApplyingRemote = false;
@@ -16290,7 +16298,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 3;
-        var APP_BUILD = "11/08 13:25";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD = "11/08 13:30";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
