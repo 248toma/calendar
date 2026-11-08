@@ -1083,6 +1083,10 @@
         /* 紐付け済みの人: 性別の丸を少し大きくして ✓ を入れる(名前の幅は変えない) */
         .rc-name .gender-dot.linked { width: 14px !important; height: 14px !important; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1.5px var(--accent); }
         .rc-name .gender-dot.linked::after { content: "✓"; color: #fff; font-size: 9px; font-weight: 900; line-height: 1; }
+        .rc-verw { margin-left: 5px; }
+        .rc-ver { font-size: 9.5px; font-weight: 700; padding: 0 5px; border-radius: 7px; white-space: nowrap; color: var(--ink-3); background: color-mix(in srgb, var(--ink-3) 10%, transparent); }
+        .rc-ver.old { color: #b4532a; background: color-mix(in srgb, #b4532a 14%, transparent); }
+        .rc-ver.none { opacity: .7; }
         .rc-pos { font-size: 10.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .rc-params { font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
         .rc-params span { position: relative; }
@@ -3805,6 +3809,9 @@
         /* 見出し: 小さく字間をあけた SETTINGS と、出っぱった四角い × */
         #settingsPanel > .panel-sticky { margin: 0 calc(-1 * max(18px, env(safe-area-inset-right))) 8px calc(-1 * max(18px, env(safe-area-inset-left))); padding: calc(env(safe-area-inset-top, 0px) + 18px) max(18px, env(safe-area-inset-right)) 14px max(18px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--sn-bg) 86%, transparent); }
         #settingsPanel > .panel-sticky .panel-head { align-items: center; }
+        #settingsPanel .set-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+        #settingsPanel .set-build { font: 600 10px var(--sn-en); letter-spacing: .06em; color: var(--sn-ink3); white-space: nowrap; }
+        #settingsPanel[data-solo] .set-build { display: none; }   /* 名簿・分析のときは出さない(分析は下に BUILD がある) */
         #settingsPanel > .panel-sticky h3 { font: 700 15px/1 var(--sn-en); letter-spacing: .1em; color: var(--sn-ink2); padding-left: 4px; }
         #settingsPanel .panel-actions { gap: 10px; align-items: center; }
         #settingsPanel .set-saved { font: 700 10.5px var(--sn-en); color: var(--sn-ink3); }
@@ -4996,7 +5003,7 @@ await main();
     <div class="settings-panel" id="settingsPanel">
         <div class="panel-sticky">
             <div class="panel-head">
-                <h3>SETTINGS</h3>
+                <div class="set-title"><h3>SETTINGS</h3><span class="set-build" id="setBuild"></span></div>
                 <div class="panel-actions">
                     <span class="panel-auto set-saved" id="setSaved"></span>
                     <button type="button" class="panel-x" onclick="toggleSettings()" aria-label="閉じる"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
@@ -6842,7 +6849,7 @@ await main();
                         <div class="rc-head" role="button" tabindex="0" onclick="toggleRosterCard(${m.id})"
                             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRosterCard(${m.id});}">
                             <span class="rc-name"><span class="gender-dot gender-${g}${m.emailHash ? " linked" : ""}"${m.emailHash ? ' title="アカウント紐付け済み"' : ""}></span><span class="txt">${escapeHtml(m.name)}</span>${(n => n ? `<span class="rc-guest" role="button" title="ゲストでログイン中の端末 ${n}台(押すと記録を消す)" onclick="event.stopPropagation();clearGuestDevs(${JSON.stringify(m.name).replace(/"/g, "&quot;")})">ゲスト${n > 1 ? `<b>${n}台</b>` : ""}</span>` : "")(guestDevsOf(m.name))}</span>
-                            <span class="rc-pos">${escapeHtml(m.position || "—")}</span>
+                            <span class="rc-pos">${escapeHtml(m.position || "—")}<span class="rc-verw" data-id="${m.id}">${appSeenInner(m)}</span></span>
                             <span class="rc-params dev-only" id="rcParams_${m.id}">${rosterParamsSummaryHtml(m, tops)}</span>
                             <span class="rc-chev">›</span>
                         </div>
@@ -11754,6 +11761,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 自動でアンケート画面へ移る処理はやめた(30分ごと・起動/更新時)
         function applyRole() {
             setTimeout(() => { try { guestDevPut(false); } catch (e) { /* ignore */ } }, 3000);   // ゲストの端末を名簿に出すための記録(1日1回)
+            setTimeout(() => { try { appSeenPut(false); } catch (e) { /* ignore */ } }, 3300);   // この端末の版を記録(開いたとき・版が変わったとき)
             if (rosterIdFixedCount && realAdmin()) {
                 const n = rosterIdFixedCount; rosterIdFixedCount = 0;
                 setTimeout(() => alert(`名簿で番号が重なっている人が${n}人いたので、付け直しました。\n紐付けがおかしかった人は、一度「解除」してから紐付け直してください。`), 800);
@@ -15890,13 +15898,77 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!firestoreEditor) return false;
             if (saveBusy) return true;
             const base = firestoreBase || {}, local = getShareableLocalValues();
-            return Object.keys(local).some(k => isSharedKey(k) && k !== APPVER_KEY && local[k] !== base[k]);
+            return Object.keys(local).some(k => isSharedKey(k) && k !== APPVER_KEY && !sameShared(k, local[k], base[k]));
         }
         let firestoreRef = null;
         let firestoreHasDocument = false;
 
         // チーム分けタブの設定(パラメータ無視・メンバー一覧の開閉)は、閲覧者はこの端末だけで扱う(共有データで上書き・再読み込みされない)
         const VIEWER_LOCAL_KEYS = new Set([IGNORE_PARAMS_KEY, TEAM_MEMBER_OPEN_KEY]);
+        // みんなの版の記録: 出欠データの中の "appseen"(端末ごとに {id, name, who, b=版の番号, ts})。閲覧者が開いたときに自分の1件だけ書く。
+        // これが変わっただけでは「他の人の更新」とみなさない(みんなが開くたびに全員の画面が読み直されないように)。管理者は共有データから直接読む
+        var APP_SEEN = "appseen", appSeenCache = [], appSeenSentAt = 0;
+        function bdNoSeen(v) { if (typeof v !== "string" || v.indexOf('"appseen"') < 0) return v; try { const o = JSON.parse(v); delete o[APP_SEEN]; return JSON.stringify(o); } catch (e) { return v; } }
+        function sameShared(k, a, b) { return a === b || (k === BYDATE_KEY && bdNoSeen(a) === bdNoSeen(b)); }
+        function appSeenFromRemote(rv) {
+            let arr = [];
+            try { const t = rv && rv[BYDATE_KEY]; if (typeof t === "string" && t.indexOf('"appseen"') >= 0) { const o = JSON.parse(t); if (Array.isArray(o[APP_SEEN])) arr = o[APP_SEEN].filter(x => x && x.id && x.b); } } catch (e) { arr = []; }
+            appSeenCache = arr;
+            try { appSeenPaint(); } catch (e) { /* ignore */ }
+        }
+        function appDevId() {
+            let v = ""; try { v = localStorage.getItem("vb_dev_id_v1") || ""; } catch (e) { v = ""; }
+            if (!v) { v = "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); try { localStorage.setItem("vb_dev_id_v1", v); } catch (e) { /* ignore */ } }
+            return v;
+        }
+        // 開いたとき(版が変わったとき・6時間たったとき)、この端末の版を共有データへ書く(閲覧者・ゲストのみ。管理者は自分の端末なので不要)
+        function appSeenPut(force, remove) {
+            if (!firebaseAvailable || firestoreEditor || !firestoreRef || !firestoreSyncActive || !authUid) return Promise.resolve();
+            const dev = appDevId();
+            let name = "", who = null;
+            const mine = appSeenCache.find(x => x && x.id === dev);
+            if (remove) { if (!mine) return Promise.resolve(); }
+            else {
+                try { name = myMemberName(); who = myRosterId(); } catch (e) { name = ""; }
+                if (!name) return Promise.resolve();   // 誰か分からない端末は記録しない
+                if (!force && mine && mine.b === APP_BUILD_ID && mine.name === name && Date.now() - (mine.ts || 0) < 6 * 36e5) return Promise.resolve();
+                if (Date.now() - appSeenSentAt < 5000) return Promise.resolve(); appSeenSentAt = Date.now();
+            }
+            return firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                const lim = Date.now() - 120 * 864e5;
+                const store = (Array.isArray(data[APP_SEEN]) ? data[APP_SEEN] : []).filter(x => x && x.id !== dev && (x.ts || 0) > lim);
+                if (!remove) store.push({ id: dev, name, who, b: APP_BUILD_ID, ts: Date.now() });
+                data[APP_SEEN] = store;
+                tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                return store;
+            }).then(arr => { appSeenCache = arr; try { appSeenPaint(); } catch (e) { /* ignore */ } })
+              .catch(err => console.warn("この端末の版を記録できませんでした。", err));
+        }
+        // 管理者の名簿: その人の端末の版
+        function appSeenFmtTs(ts) { const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate() + " " + d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); }
+        function appSeenOf(m) {
+            const lim = Date.now() - 120 * 864e5;
+            let arr = appSeenCache.filter(x => x && x.b && (x.ts || 0) > lim && ((x.who != null && x.who === m.id) || x.name === m.name));
+            if (firestoreEditor && m.emailHash && m.emailHash === myEmailHash) arr = arr.concat([{ id: "me", b: APP_BUILD_ID, ts: Date.now(), me: true }]);   // 管理者本人の端末
+            return arr;
+        }
+        function appSeenLatest() { return Math.max(APP_BUILD_ID, ...appSeenCache.map(x => +x.b || 0)); }
+        function appSeenInner(m) {
+            const arr = appSeenOf(m);
+            if (!arr.length) return (m.emailHash || guestDevsOf(m.name)) ? `<span class="rc-ver none" title="この人の端末の版はまだ記録されていません(古い版か、開いていない)">版 未確認</span>` : "";
+            const oldest = Math.min(...arr.map(x => +x.b)), latest = appSeenLatest(), old = oldest < latest;
+            const tip = arr.map(x => `${buildLabel(x.b)}版${x.me ? "(この端末)" : "・最後に開いた " + appSeenFmtTs(x.ts)}`).join("\n");
+            const nOld = arr.filter(x => +x.b < latest).length;
+            const cnt = arr.length > 1 ? (old ? ` ${nOld}/${arr.length}台` : ` ${arr.length}台`) : "";
+            return `<span class="rc-ver ${old ? "old" : "ok"}" title="${escapeHtml(tip)}">${old ? "⚠ " : ""}${buildLabel(oldest)}${cnt}</span>`;
+        }
+        function appSeenPaint() {
+            document.querySelectorAll(".rc-verw").forEach(el => { const m = roster.find(r => String(r.id) === el.dataset.id); if (m) el.innerHTML = appSeenInner(m); });
+        }
         let firestorePendingValues = null;   // チーム分けの結果を表示中に届いた共有データの更新(あとで反映する)
         function isSharedKey(key) {
             if (!key || !String(key).startsWith("attendance_") || LOCAL_ONLY_KEYS.has(key)) return false;
@@ -15946,6 +16018,7 @@ const namesBtn = isAdmin() && dates.length > 0
                         (rem[date] || []).forEach(rp => { const i = L.findIndex(x => x.id === rp.id); if (i < 0) L.push(rp); else if (stampNum(rp.updated) >= stampNum(L[i].updated)) L[i] = rp; });
                         return;
                     }
+                    if (date === APP_SEEN) { loc[date] = Array.isArray(rem[date]) ? rem[date] : []; return; }   // みんなの版の記録: 書くのは閲覧者だけなので、共有データ側をそのまま使う
                     if (date === WIDGET_ST) {   // ウィジェット用: 人ごとに新しい方
                         const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
                         (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.who === rp.who); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
@@ -15973,6 +16046,7 @@ const namesBtn = isAdmin() && dates.length > 0
                         if (lm && stampNum(rm.noteAt) >= stampNum(lm.noteAt)) { if (rm.note) lm.note = rm.note; else delete lm.note; lm.noteAt = rm.noteAt; }   // ひとこと
                     });
                 });
+                if (!(APP_SEEN in rem)) delete loc[APP_SEEN];
                 values[BYDATE_KEY] = JSON.stringify(loc);
             } catch (e) { /* 取り込めなければ従来どおり */ }
         }
@@ -16095,6 +16169,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const sig = (a) => JSON.stringify(a);
             for (const d of new Set([...Object.keys(R), ...Object.keys(L)])) {
                 const r = R[d], l = L[d];
+                if (d === APP_SEEN) continue;   // みんなの版の記録は更新とみなさない
                 if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { if (sig(r) !== sig(l)) return false; continue; }   // 予定の出欠・ペア予定は完全一致のみ
                 const rl = Array.isArray(r) ? r : [], ll = Array.isArray(l) ? l : [];
                 const lm = new Map(ll.map(m => [m.name, m]));
@@ -16105,7 +16180,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return true;
         }
         function remoteCoveredByLocal(remote, local) {
-            return Object.keys(remote || {}).filter(isSharedKey).every(k => k === APPVER_KEY || (k === CHANGELOG_KEY ? clRemoteCovered(remote[k], local[k]) : local[k] === remote[k]));
+            return Object.keys(remote || {}).filter(isSharedKey).every(k => k === APPVER_KEY || (k === CHANGELOG_KEY ? clRemoteCovered(remote[k], local[k]) : sameShared(k, local[k], remote[k])));
         }
 
         // メールはそのまま保存せず、ハッシュにして名簿と照合する
@@ -16175,8 +16250,9 @@ const namesBtn = isAdmin() && dates.length > 0
         function signOutFromFirestore() {
             let anon = false; try { anon = !!(firebase.auth().currentUser && firebase.auth().currentUser.isAnonymous); } catch (e) { anon = false; }
             const done = () => firebase.auth().signOut();
-            if (!anon) { done(); return; }
-            Promise.race([guestDevPut(true, true), new Promise(r => setTimeout(r, 3000))]).catch(() => { }).then(done);
+            const rm = () => Promise.resolve(appSeenPut(true, true)).catch(() => { });   // この端末の版の記録も消す
+            if (!anon) { Promise.race([rm(), new Promise(r => setTimeout(r, 2500))]).then(done); return; }
+            Promise.race([Promise.all([guestDevPut(true, true), rm()]), new Promise(r => setTimeout(r, 3000))]).catch(() => { }).then(done);
         }
 
         // ゲスト(匿名)ログイン: Googleアカウントなしで、名簿から自分の名前を選んで出欠・精算を共有する(閲覧モードと同じ制限)
@@ -16214,6 +16290,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     try { localStorage.setItem(GUEST_NAME_KEY, name); } catch (e) { console.warn(e); }
                     ov.remove();
                     setTimeout(() => guestDevPut(true), 800);   // 名簿に「ゲスト」と出すための記録
+                    setTimeout(() => appSeenPut(true), 1300);
                     setFirestoreSyncStatus(firestoreEditor ? "管理者" : "閲覧中");
                     applyRole();
                 };
@@ -16246,8 +16323,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!rv || !base) return;
             Object.keys(rv).forEach(k => {
                 if (!isSharedKey(k) || k === CHANGELOG_KEY || k === NOTIFY_KEY) return;
-                if (vals[k] == null || vals[k] === base[k]) { vals[k] = rv[k]; return; }   // この端末では変えていない → 最新のまま
-                if (vals[k] === rv[k]) return;
+                if (vals[k] == null || sameShared(k, vals[k], base[k])) { vals[k] = rv[k]; return; }   // この端末では変えていない → 最新のまま
+                if (sameShared(k, vals[k], rv[k])) return;
                 vals[k] = merge3Json(base[k], vals[k], rv[k]);   // 両方で変わった → 中身を1件ずつ合わせる
             });
         }
@@ -16387,11 +16464,15 @@ const namesBtn = isAdmin() && dates.length > 0
         let resumeAt = 0;
         const onResume = () => { if (document.hidden || Date.now() - resumeAt < 1500) return; resumeAt = Date.now(); setTimeout(syncOnResume, 300); };
         document.addEventListener("visibilitychange", onResume);
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => { try { appSeenPut(false); } catch (e) { /* ignore */ } }, 2500); });
         window.addEventListener("pageshow", e => { if (e.persisted) onResume(); });
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD = "11/08 同期修正";   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        var APP_BUILD_ID = 202611081750;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
+        var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
+        try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
         const APPVER_KEY = "attendance_appver_v1";
         let appOutdated = false;
         function remoteAppVer(rv) { return parseInt((rv || {})[APPVER_KEY] || "0", 10) || 0; }
@@ -16433,7 +16514,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 vals[APPVER_KEY] = String(Math.max(APP_VERSION, remoteAppVer(remote)));
                 if (!snap.exists) { tx.set(firestoreRef, { values: vals, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); written = vals; return; }
                 const upd = {}; let n = 0;
-                Object.keys(vals).forEach(k => { if (isSharedKey(k) && vals[k] !== remote[k]) { upd["values." + k] = vals[k]; n++; } });
+                Object.keys(vals).forEach(k => { if (isSharedKey(k) && !sameShared(k, vals[k], remote[k])) { upd["values." + k] = vals[k]; n++; } });
                 written = { ...remote, ...vals };
                 if (!n) return;
                 upd.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -16760,6 +16841,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     return;
                 }
                 const remoteValues = snapshot.data().values || {};
+                appSeenFromRemote(remoteValues);
                 const localValues = getShareableLocalValues();
                 firestoreSyncActive = true;
                 if (remoteAppVer(remoteValues) > APP_VERSION) { showOutdated(); reloadForNewVersion(); return; }   // 新しい版が出ている
@@ -16792,7 +16874,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
                 if (firestoreEditor && !firestoreApplyingRemote) {
                     const base = firestoreBase || {};
-                    const dirty = Object.keys(localValues).some(k => isSharedKey(k) && k !== APPVER_KEY && localValues[k] !== base[k]);
+                    const dirty = Object.keys(localValues).some(k => isSharedKey(k) && k !== APPVER_KEY && !sameShared(k, localValues[k], base[k]));
                     if (dirty) { clearTimeout(firestoreSaveTimer); firestoreSaveTimer = setTimeout(saveToFirestore, 300); return; }
                 }
                 // チーム分けの「共有」だけは、読み直さずにすぐ取り込む(チーム分けの画面を開いたままでも「受け取る」の帯が出るように)
