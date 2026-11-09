@@ -1084,7 +1084,13 @@
         .rc-name .gender-dot.linked { width: 14px !important; height: 14px !important; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1.5px var(--accent); }
         .rc-name .gender-dot.linked::after { content: "✓"; color: #fff; font-size: 9px; font-weight: 900; line-height: 1; }
         .rc-verw { margin-left: 5px; }
-        .rc-ver { font-size: 9.5px; font-weight: 700; padding: 0 5px; border-radius: 7px; white-space: nowrap; color: var(--ink-3); background: color-mix(in srgb, var(--ink-3) 10%, transparent); }
+        .rc-ver { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: top; font-size: 9.5px; font-weight: 700; padding: 0 5px; border-radius: 7px; white-space: nowrap; color: var(--ink-3); background: color-mix(in srgb, var(--ink-3) 10%, transparent); }
+        /* パラメータ表示中は希望の列が細い(62px)ので、役職の下の段に小さく出す */
+        body.dev-on .rc-pos { white-space: normal; line-height: 1.2; }
+        body.dev-on .rc-verw { display: block; margin: 1px 0 0; }
+        body.dev-on .rc-ver { font-size: 8.5px; padding: 0 3px; letter-spacing: -.01em; }
+        body.dev-on .rc-cnt { display: none; }   /* 台数は細い列では出さない(タップで端末ごとに見られる) */
+        .rc-cnt { font-style: normal; }
         .rc-ver.old { color: #b4532a; background: color-mix(in srgb, #b4532a 14%, transparent); }
         .rc-ver.none { opacity: .7; }
         .rc-pos { font-size: 10.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2776,6 +2782,9 @@
 
         /* 名簿: ゲストでログインしている人(2台以上なら台数) */
         .rc-name { position: relative; }
+        .rc-tags { position: absolute; left: 12px; top: -9px; display: flex; gap: 3px; z-index: 1; }
+        .rc-tags .rc-guest { position: static; }
+        .rc-linktag { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); cursor: default; }
         .rc-guest { position: absolute; left: 12px; top: -9px; padding: 0 4px; border-radius: 6px; font-size: 8.5px; line-height: 13px; font-weight: 700; letter-spacing: .02em; color: var(--ink-3); background: rgba(128,128,128,.16); white-space: nowrap; cursor: pointer; }
         .rc-guest b { margin-left: 2px; color: #c4575c; font-weight: 700; }
         .sv-vb { margin-left: 3px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -6848,7 +6857,7 @@ await main();
                     <div class="roster-card gender-${g}${open ? " open" : ""}" data-id="${m.id}">
                         <div class="rc-head" role="button" tabindex="0" onclick="toggleRosterCard(${m.id})"
                             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRosterCard(${m.id});}">
-                            <span class="rc-name"><span class="gender-dot gender-${g}${m.emailHash ? " linked" : ""}"${m.emailHash ? ' title="アカウント紐付け済み"' : ""}></span><span class="txt">${escapeHtml(m.name)}</span>${(n => n ? `<span class="rc-guest" role="button" title="ゲストでログイン中の端末 ${n}台(押すと記録を消す)" onclick="event.stopPropagation();clearGuestDevs(${JSON.stringify(m.name).replace(/"/g, "&quot;")})">ゲスト${n > 1 ? `<b>${n}台</b>` : ""}</span>` : "")(guestDevsOf(m.name))}</span>
+                            <span class="rc-name"><span class="gender-dot gender-${g}"></span><span class="txt">${escapeHtml(m.name)}</span>${(n => (m.emailHash || n) ? `<span class="rc-tags">${m.emailHash ? '<span class="rc-guest rc-linktag" title="アカウント紐付け済み">紐付け</span>' : ""}${n ? `<span class="rc-guest" role="button" title="ゲストでログイン中の端末 ${n}台(押すと記録を消す)" onclick="event.stopPropagation();clearGuestDevs(${JSON.stringify(m.name).replace(/"/g, "&quot;")})">ゲスト${n > 1 ? `<b>${n}台</b>` : ""}</span>` : ""}</span>` : "")(guestDevsOf(m.name))}</span>
                             <span class="rc-pos">${escapeHtml(m.position || "—")}<span class="rc-verw" data-id="${m.id}">${appSeenInner(m)}</span></span>
                             <span class="rc-params dev-only" id="rcParams_${m.id}">${rosterParamsSummaryHtml(m, tops)}</span>
                             <span class="rc-chev">›</span>
@@ -11980,7 +11989,7 @@ const namesBtn = isAdmin() && dates.length > 0
         //     (勝率が高い人と低い人を同じチームにしても、勝てば高い人がもっと高くなるだけで、5割には近づかない)
         //   ・やり方: 一人ひとりの「この1試合のあとの勝率の見込み」= (これまでの勝ち数 + チームの勝つ見込み) ÷ (これまでの試合数 + 1) が、
         //     5割からできるだけ離れない組み合わせを選ぶ(全員のずれの2乗の平均が小さいもの)
-        //   ・チームの勝つ見込みは、勝ち負けの要因から出す(要因のデータがまだ無いときだけ、強さから)。
+        //   ・チームの勝つ見込みは、強さ(勝率には見えない強さ)と勝ち負けの要因を合わせて出す。勝率が高くても、強さが高い人ばかりのチームは「予想が高い」になる。
         //     片方に偏りすぎる分け方(PROP_MAXP より偏る)は避ける。ペア設定・チームの人数・男女の人数も守る。一緒に出た回数が少ない2人は、ほんの少し優先
         const PROP_MAXP = 0.7;   // 予想がこれ(70:30)より偏る分け方は避ける
         function proposeSplit(names, teamCount) {
@@ -11993,13 +12002,13 @@ const namesBtn = isAdmin() && dates.length > 0
             // 一人ひとりの勝ち数・試合数(勝率の数え方は、分析の勝率と同じ記録から)
             const rec = {}; recs.forEach(r => r.teams.forEach((t, k) => t.forEach(n => { const o = rec[n] || (rec[n] = { g: 0, w: 0 }); o.g++; if (k === r.win) o.w++; })));
             const gw = n => rec[n] || { g: 0, w: 0 };
-            // チームAがチームBに勝つ見込み(要因から。要因のデータが無いときは強さから)
+            // チームAがチームBに勝つ見込み: 強さ(試合結果から出した、勝率には見えない強さ)の差 + 勝ち負けの要因
             let usedWhy = false;
             const pOf = (A, B) => {
                 let zw = 0, used = 0;
                 known.forEach(r => { const u = r.f(A, names), v = r.f(B, names); if (u == null || v == null || u === v) return; zw += r.b * (u - v); used++; });
                 if (used) usedWhy = true;
-                const z = used ? zw : A.reduce((t, n) => t + st(n), 0) - B.reduce((t, n) => t + st(n), 0);
+                const z = A.reduce((t, n) => t + st(n), 0) - B.reduce((t, n) => t + st(n), 0) + zw;   // 強さの差 + 要因(要因には総合の差が入っていないので、足してよい)
                 return Math.max(0.03, Math.min(0.97, sig(z)));
             };
             const units = buildUnits(names.map(teamParticipant)).map(u => u.members.map(m => m.name));
@@ -12037,7 +12046,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const dev1 = withG.length ? withG.reduce((t, x) => t + Math.abs(x.after - 0.5), 0) / withG.length * 100 : null;
             let fresh = 0; best.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) if (!gOf(t[i], t[j])) fresh++; });
             const keys = rates.filter(x => x.g >= 3 && Math.abs(x.r - 0.5) >= 0.1).map(x => ({ n: x.n, tags: [Math.round(x.r * 100) + "%"], team: x.team }));
-            return { teams: best, info: { win: teamCount === 2 ? bestE.q[0] : null, q: bestE.q, whyUsed: usedWhy ? "要因" : "強さ", rates, dev0, dev1, fresh, gOk: !genGap(best), keys } };
+            return { teams: best, info: { win: teamCount === 2 ? bestE.q[0] : null, q: bestE.q, whyUsed: usedWhy ? "強さ+要因" : "強さ", rates, dev0, dev1, fresh, gOk: !genGap(best), keys } };
         }
         // 要因の短い呼び名(キーになる人の印に使う)
         function whyTag(lb) {
@@ -13787,7 +13796,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     <h6>決め方</h6>
                     <ul>
                         <li><b>この試合のあとの勝率の見込み</b> … 一人ひとり、(これまでの勝ち数 + チームの勝つ見込み) ÷ (これまでの試合数 + 1) を計算します。全員の見込みが、5割からいちばん離れない組み合わせを選びます。試合数が少ない人ほど、1試合で大きく動くので、強く効きます。</li>
-                        <li><b>チームの勝つ見込み</b> … 「勝ち負けの要因」から出します(要因のデータがまだ無いときだけ、強さから)。</li>
+                        <li><b>チームの勝つ見込み</b> … 「強さ」と「勝ち負けの要因」を合わせて出します。強さは、試合結果から出した「勝率には見えない強さ」です(強い人たちと当たって勝率が低い人は強く、弱い相手に勝って勝率が高い人は低く見ます)。勝率が高くても強さが高い人ばかりのチームは、予想が高くなります。</li>
                         <li><b>偏りすぎない</b> … 予想が ${Math.round(PROP_MAXP * 100)}:${100 - Math.round(PROP_MAXP * 100)} より偏る分け方は避けます(一方的な試合にならないように)。</li>
                         <li>一緒に出た回数が少ない2人も、ほんの少しだけ同じチームにしやすくします。</li>
                         <li><b>最低限のルール</b> … ペア設定とチームの人数は守り、男女はどのチームも人数の差が1人までになるように分けます。</li>
@@ -15932,12 +15941,12 @@ const namesBtn = isAdmin() && dates.length > 0
         function appSeenLatest() { return Math.max(APP_BUILD_ID, ...appSeenCache.map(x => +x.b || 0)); }
         function appSeenInner(m) {
             const arr = appSeenOf(m);
-            if (!arr.length) return (m.emailHash || guestDevsOf(m.name)) ? `<span class="rc-ver none" title="この人の端末の版はまだ記録されていません(古い版か、開いていない)">版 未確認</span>` : "";
+            if (!arr.length) return (m.emailHash || guestDevsOf(m.name)) ? `<span class="rc-ver none" title="この人の端末の版はまだ記録されていません(古い版か、開いていない)" onclick="event.stopPropagation();alert(this.title)">版 未確認</span>` : "";
             const oldest = Math.min(...arr.map(x => +x.b)), latest = appSeenLatest(), old = oldest < latest;
             const tip = arr.map(x => `${buildLabel(x.b)}版${x.me ? "(この端末)" : "・最後に開いた " + appSeenFmtTs(x.ts)}`).join("\n");
             const nOld = arr.filter(x => +x.b < latest).length;
-            const cnt = arr.length > 1 ? (old ? ` ${nOld}/${arr.length}台` : ` ${arr.length}台`) : "";
-            return `<span class="rc-ver ${old ? "old" : "ok"}" title="${escapeHtml(tip)}">${old ? "⚠ " : ""}${buildLabel(oldest)}${cnt}</span>`;
+            const cnt = arr.length > 1 ? `<i class="rc-cnt">${old ? ` ${nOld}/${arr.length}台` : ` ${arr.length}台`}</i>` : "";
+            return `<span class="rc-ver ${old ? "old" : "ok"}" title="${escapeHtml(tip)}" onclick="event.stopPropagation();alert(this.title)">${old ? "⚠\u2009" : ""}${buildLabel(oldest)}${cnt}</span>`;
         }
         function appSeenPaint() {
             document.querySelectorAll(".rc-verw").forEach(el => { const m = roster.find(r => String(r.id) === el.dataset.id); if (m) el.innerHTML = appSeenInner(m); });
@@ -16442,7 +16451,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611090954;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611091110;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
