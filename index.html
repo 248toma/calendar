@@ -3742,6 +3742,8 @@
         #protoUI .pr-menubar button svg { width: 21px; height: 21px; }
         #protoUI .pr-menubar button span { display: none; }
         #protoUI .pr-menubar button.main { color: #2f6fe0; }
+        #protoUI .pr-menubar button.g-ok { color: #8b6fc9; }
+        #protoUI .pr-menubar button.g-ex::after { content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
         #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 7px rgba(0,0,0,.12), inset -3px -3px 7px rgba(255,255,255,.7); }
         #protoUI .pr-menubar .svdot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #e5484d; }
         @media (prefers-color-scheme: dark) { #protoUI .pr-menubar { box-shadow: 4px 4px 10px rgba(0,0,0,.45), -3px -3px 8px rgba(255,255,255,.04); } }
@@ -8306,12 +8308,15 @@ await main();
         }
         function gcalIsAdmin() { try { return !!(firebaseAvailable && firestoreEditor); } catch (e) { return false; } }
         function gcalSetState(st) { gcalState = st; gcalSyncTile(); }
+        function gcalBarMode() { try { const ui = document.getElementById("protoUI"); return !!ui && getComputedStyle(ui).display !== "none" && prMenuMode() === "bar"; } catch (e) { return false; } }   // 下のメニュー(バー)に、Googleのボタンを出している間は、設定のタイルは隠す
+        function gcalBarCls() { return gcalState === "ok" || gcalState === "loading" ? "g-ok" : gcalState === "expired" || gcalState === "error" ? "g-ex" : ""; }
         function gcalSyncTile() {
+            const lab = { off: "Google", loading: "取得中…", ok: "Google", expired: "再接続", error: "再試行" }[gcalState] || "Google";
+            document.querySelectorAll("[data-gcal-btn]").forEach(b => { b.classList.toggle("g-ok", gcalState === "ok" || gcalState === "loading"); b.classList.toggle("g-ex", gcalState === "expired" || gcalState === "error"); b.setAttribute("aria-label", lab); b.title = lab; });
             const t = document.getElementById("gcalTile"), l = document.getElementById("gcalTl");
             if (!t || !l) return;
-            const show = gcalIsAdmin();
+            const show = gcalIsAdmin() && !gcalBarMode();
             t.style.display = show ? "" : "none";
-            const lab = { off: "Google", loading: "取得中…", ok: "Google", expired: "再接続", error: "再試行" }[gcalState] || "Google";
             l.textContent = lab;
             t.classList.toggle("on", gcalState === "ok" || gcalState === "loading");
             try { gcalPrefRender(); } catch (e) { /* ignore */ }
@@ -15693,6 +15698,24 @@ const namesBtn = isAdmin() && dates.length > 0
                     n++;
                 });
             });
+            const dk = x => x.getFullYear() + z(x.getMonth() + 1) + z(x.getDate());
+            sharedPlanFuture().forEach(p => {   // 共有された予定
+                const [y, mo, d] = p.startDate.split("-").map(Number);
+                const ed = p.endDate && p.endDate > p.startDate ? p.endDate : p.startDate, [ey, em, edd] = ed.split("-").map(Number);
+                let dts, dte;
+                if (planTimed(p)) {
+                    const s0 = parseHM(p.start) ?? parseHM(p.end) ?? 0;
+                    let e0 = parseHM(p.end);
+                    if (e0 == null || (ed === p.startDate && e0 <= s0)) e0 = s0 + 60;
+                    const a = new Date(y, mo - 1, d, 0, s0), b = new Date(ey, em - 1, edd, 0, e0), dt = x => dk(x) + "T" + z(x.getHours()) + z(x.getMinutes()) + "00";
+                    dts = `DTSTART;TZID=Asia/Tokyo:${dt(a)}`; dte = `DTEND;TZID=Asia/Tokyo:${dt(b)}`;
+                } else {
+                    dts = `DTSTART;VALUE=DATE:${dk(new Date(y, mo - 1, d))}`; dte = `DTEND;VALUE=DATE:${dk(new Date(ey, em - 1, edd + 1))}`;   // 終日は、終わりの日の翌日まで
+                }
+                L.push("BEGIN:VEVENT", `UID:plan-${p.id}@volley-schedule`, "DTSTAMP:" + stamp, "LAST-MODIFIED:" + stamp, "SEQUENCE:" + seq, dts, dte,
+                    "SUMMARY:" + icsEsc(p.title || "予定"), "DESCRIPTION:" + icsEsc(p.memo || ""), "END:VEVENT");
+                n++;
+            });
             L.push("END:VCALENDAR");
             return { text: L.map(icsFold).join("\r\n") + "\r\n", count: n };
         }
@@ -15717,8 +15740,8 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         async function exportReservationsIcs() {
             const { text, count } = buildReservationsIcs();
-            if (!count) { alert("追加できる予約日がありません(今日以降で、時間が入っている予約)"); return; }
-            { const map = gcalAddedMap(), dup = gcalFutureList().filter(x => gcalIsAdded(x.d, x.r, map)).length;
+            if (!count) { alert("追加できる予定がありません(今日以降の、時間が入っている予約と、共有された予定)"); return; }
+            { const map = gcalAddedMap(), dup = calItems(map).filter(x => x.done).length;
               if (dup) showAddNotice(`${dup}件はすでに追加済みでした。カレンダーに同じ予定が2つ入っていたら、片方を消してください。`); }
             const blob = new Blob([text], { type: "text/calendar;charset=utf-8" });
             const url = URL.createObjectURL(blob);
@@ -15754,6 +15777,47 @@ const namesBtn = isAdmin() && dates.length > 0
             Object.keys(reservations).filter(d => d >= today && events[d]).sort().forEach(d => (reservations[d] || []).forEach(r => { if (parseTimeRangeMin(r.time)) out.push({ d, r }); }));
             return out;
         }
+        // ------- 人から共有された予定(共有予定・ペア予定のうち、自分が作ったものではない、今日以降のもの)も、バレーの予約と同じく一括追加できるようにする -------
+        function planIsMine(p) {
+            const me = planAuthorKey();
+            if (p.owner && p.owner === me) return true;
+            if (p.by && p.by === me) return true;
+            const rid = (typeof myRosterId === "function") ? myRosterId() : null;
+            return p.byId != null && rid != null && p.byId === rid;
+        }
+        function sharedPlanFuture() {
+            const today = formatDateKey(new Date());
+            return planList.filter(p => p && !p.local && !p.gcal && !p.holiday && !p.deleted && p.startDate && planHas(p) && planVisible(p) && (p.endDate || p.startDate) >= today && !planIsMine(p))
+                .sort((x, y) => (x.startDate < y.startDate ? -1 : x.startDate > y.startDate ? 1 : (parseHM(x.start) ?? 0) - (parseHM(y.start) ?? 0) || String(x.id).localeCompare(String(y.id))));
+        }
+        function planSig(p) { return [p.startDate, p.endDate || "", p.start || "", p.end || "", p.title || ""].join("|"); }
+        function gcalPlanIsAdded(p, map) { if (gcalInWin(p.startDate)) return !!gcalPlanMap[p.id]; return (map || gcalAddedMap())["p#" + p.id] === planSig(p); }
+        function gcalMarkAddedPlan(p) {
+            const m = gcalAddedMap(); m["p#" + p.id] = planSig(p);
+            try { localStorage.setItem(GCAL_ADDED_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ }
+        }
+        // 一括追加の一覧: バレーの予約と共有された予定を、日付順にまとめる
+        function calItems(map) {
+            map = map || gcalAddedMap();
+            const out = gcalFutureList().map(x => ({ kind: "v", d: x.d, r: x.r, s: (parseTimeRangeMin(x.r.time) || {}).s || 0, done: gcalIsAdded(x.d, x.r, map) }));
+            sharedPlanFuture().forEach(p => out.push({ kind: "p", d: p.startDate, p, s: planTimed(p) ? (parseHM(p.start) ?? parseHM(p.end) ?? 0) : -1, done: gcalPlanIsAdded(p, map) }));
+            return out.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.s - b.s));
+        }
+        function planCalTime(p) {
+            let t = planTimed(p) ? (p.start || "") + (p.end ? (p.start ? "–" : "〜") + p.end : "") : "終日";
+            if (p.endDate && p.endDate > p.startDate) { const [, m, d] = p.endDate.split("-").map(Number); t += " 〜" + m + "/" + d; }
+            return t;
+        }
+        function bulkAddPlan(id) {
+            const p = planList.find(x => x.id === id);
+            if (!p || !p.startDate) return;
+            const was = gcalPlanIsAdded(p);
+            gcalMarkAddedPlan(p);
+            gcalPending = { ids: [p.id], tries: 0 };
+            gcalOpenTemplate(gcalPlanQuery(p));
+            if (was) { const [, m, dd] = p.startDate.split("-").map(Number); showAddNotice(`${m}/${dd} ${p.title || "予定"} はすでに追加済みでした。カレンダーに2つ入っていたら、片方を消してください。`); }
+            renderBulkAdd();
+        }
         function openBulkAdd() {
             protoOpenCal();
         }
@@ -15780,8 +15844,9 @@ const namesBtn = isAdmin() && dates.length > 0
             renderBulkAdd();
         }
         function bulkAddNext() {
-            const map = gcalAddedMap(), next = gcalFutureList().find(x => !gcalIsAdded(x.d, x.r, map));
-            if (next) bulkAddOne(next.d, next.r.id);
+            const next = calItems().find(x => !x.done);
+            if (!next) return;
+            if (next.kind === "p") bulkAddPlan(next.p.id); else bulkAddOne(next.d, next.r.id);
         }
         document.addEventListener("visibilitychange", () => { if (!document.hidden) renderBulkAdd(); });
         // バックグラウンドから戻ったとき: 日付が変わっていてもアンケートの強調・来月分のお知らせを出し直す
@@ -16796,7 +16861,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611102000;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611102100;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18890,24 +18955,27 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "survey", label: "アンケート", run: () => openSurvey() },
             { k: "roster", label: "名簿", adm: true, run: () => protoSolo("roster") },
             { k: "ana", label: "分析", adm: true, run: () => protoSolo("ana") },
+            { k: "google", label: "Google", gcal: true, run: () => gcalTap() },   // 下のメニュー(バー)だけに出す。接続・再接続・最新に更新・オフ
             { k: "settings", label: "設定", run: () => protoSolo("") },
             { k: "today", label: "今日", run: () => protoToday() }
         ];
-        function prRadItems() { return PR_RAD_ITEMS.filter(it => !it.adm || isAdmin()); }
+        function prRadItems() { return PR_RAD_ITEMS.filter(it => (!it.adm || isAdmin()) && !it.gcal); }   // 長押しの扇メニュー(Googleは入れない)
+        function prBarItems() { return PR_RAD_ITEMS.filter(it => (!it.adm || isAdmin()) && (!it.gcal || gcalIsAdmin())); }   // 下のメニュー(バー)
         // メニューの出し方: "hold" = 長押しで扇のメニュー / "bar" = カレンダーの下に常に並べる(設定で切り替え。この端末に覚える)
         const PR_MENU_KEY = "pr_menu_mode_v1";
         function prMenuMode() { try { return localStorage.getItem(PR_MENU_KEY) === "hold" ? "hold" : "bar"; } catch (e) { return "bar"; } }   // 最初は「下に常に出す」
         function setMenuMode(v) {
             try { localStorage.setItem(PR_MENU_KEY, v === "bar" ? "bar" : "hold"); } catch (e) { /* ignore */ }
             applyMenuSeg(); try { renderProto(); } catch (e) { console.warn(e); }
+            try { gcalSyncTile(); } catch (e) { /* ignore */ }
         }
         function applyMenuSeg() { const m = prMenuMode(); document.querySelectorAll("#menuSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); }
         function prMenuBarHtml() {
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
-            return `<div class="pr-menubar">${prRadItems().map((it, i) => `<button type="button" class="${it.k === "add" ? "main" : ""}" onclick="prMenuRun(${i}, this)" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="svdot"></i>` : ""}</button>`).join("")}</div>`;
+            return `<div class="pr-menubar">${prBarItems().map((it, i) => `<button type="button" class="${it.k === "add" ? "main" : it.k === "google" ? gcalBarCls() : ""}"${it.k === "google" ? " data-gcal-btn" : ""} onclick="prMenuRun(${i}, this)" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="svdot"></i>` : ""}</button>`).join("")}</div>`;
         }
         function prMenuRun(i, btn) {
-            const it = prRadItems()[i]; if (!it) return;
+            const it = prBarItems()[i]; if (!it) return;
             protoHaptic && protoHaptic();
             if (it.k === "add" && isAdmin()) { const r = btn.getBoundingClientRect(); prRadLast = [r.left + r.width / 2, r.top]; prRadSub(); return; }   // 追加は、その場で「Volley / 予定 / 節約」を出す
             it.run();
@@ -18934,6 +19002,7 @@ const namesBtn = isAdmin() && dates.length > 0
         ];
         PR_RAD_ICONS.volley = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5c-1.5 4 .5 8 5.5 9.5M5 7.5c3.5 2.5 8 2 10.5-2.5M5.5 16.5c2-3.5 6.5-5 10-3.5"></path></svg>`;
         PR_RAD_ICONS.plan = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path></svg>`;
+        PR_RAD_ICONS.google = `<b style="font-size:18px;font-weight:800;line-height:1;font-family:'Montserrat',system-ui,sans-serif">G</b>`;
         PR_RAD_ICONS.saving = `<b style="font-size:17px;font-weight:800;line-height:1">¥</b>`;
         const PR_RAD_HOLD = 300;
         var prRad = null;   // { x, y, sx, sy, timer, open, sel, tap }
@@ -20079,7 +20148,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 試作UIのカレンダー登録(中身は今の「カレンダーに一括追加」と同じ: .ics でまとめて / 1つずつ Googleカレンダー) -------
         function protoOpenCal() {
             let el = document.getElementById("protoCal");
-            if (!el) { el = document.createElement("div"); el.id = "protoCal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "予約をカレンダーに追加"); document.body.appendChild(el); }
+            if (!el) { el = document.createElement("div"); el.id = "protoCal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "予約・共有された予定をカレンダーに追加"); document.body.appendChild(el); }
             el.classList.add("open"); el.scrollTop = 0;
             protoRenderCal();
         }
@@ -20091,24 +20160,25 @@ const namesBtn = isAdmin() && dates.length > 0
             const { raise, raiseS, insetS } = protoNeu(P, dark);   // 凹凸はまとめて protoNeu で決める
             const ico = (d, sz, sw) => `<svg width="${sz || 16}" height="${sz || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
             const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-            const list = gcalFutureList(), map = gcalAddedMap(), todo = list.filter(x => !gcalIsAdded(x.d, x.r, map));
+            const map = gcalAddedMap(), list = calItems(map), todo = list.filter(x => !x.done);
             const head = `<div style="display:flex;align-items:center;gap:12px">
                 <button type="button" aria-label="戻る" onclick="protoCloseCal()" style="width:40px;height:40px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${ico('<path d="M15 5l-7 7 7 7"></path>')}</button>
                 <span style="flex:1;font-family:${en};font-size:11px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">CALENDAR</span></div>`;
             // まとめて(.ics: iPhone・Googleカレンダーに一度に入る。同じ予約は上書き) / 1つずつ(まだ入れていない予約を順に Googleカレンダーで開く)
             const num = n => `<b style="min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;font-family:${en};font-size:11px;line-height:20px;text-align:center;${insetS}">${n}</b>`;
             const acts = list.length ? `<div style="display:flex;gap:12px">
-                <button type="button" onclick="exportReservationsIcs()" aria-label="すべてカレンダーに追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.acc};${raise}">${ico('<rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path>', 17)}<span style="font-family:${en};letter-spacing:.08em">ALL</span>${num(list.length)}</button>
-                <button type="button" ${todo.length ? "" : "disabled"} onclick="bulkAddNext()" aria-label="まだの予約を1つずつ追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.ink2};${raiseS}"><span style="font-family:${en};letter-spacing:.08em">ONE BY ONE</span>${num(todo.length)}</button>
+                <button type="button" onclick="exportReservationsIcs()" aria-label="予約と共有された予定をすべてカレンダーに追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.acc};${raise}">${ico('<rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path>', 17)}<span style="font-family:${en};letter-spacing:.08em">ALL</span>${num(list.length)}</button>
+                <button type="button" ${todo.length ? "" : "disabled"} onclick="bulkAddNext()" aria-label="まだの予定を1つずつ追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.ink2};${raiseS}"><span style="font-family:${en};letter-spacing:.08em">ONE BY ONE</span>${num(todo.length)}</button>
               </div>` : "";
-            const rows = list.map(({ d, r }) => {
-                const [, m, dd] = d.split("-").map(Number), w = new Date(d + "T00:00:00").getDay(), done = gcalIsAdded(d, r, map);
+            const tag = `<em style="font-style:normal;font-size:9.5px;font-weight:700;padding:1px 6px;margin-right:6px;border-radius:8px;color:${P.ink3};${insetS}">共有</em>`;
+            const rows = list.map(({ d, r, p, done }) => {
+                const [, m, dd] = d.split("-").map(Number), w = new Date(d + "T00:00:00").getDay();
                 return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px 12px 16px;border-radius:20px;${raiseS};${done ? "opacity:.75" : ""}">
                     <div style="width:54px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:${en};font-size:17px;font-weight:700">${m}/${dd}</span><span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span></div>
-                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-family:${en};font-size:13px;font-weight:700">${esc(r.time)}</span><span style="font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((r.place || "") + (r.court ? " " + r.court : ""))}</span></div>
-                    <button type="button" onclick="bulkAddOne('${d}', ${r.id})" aria-label="${done ? "追加済み(もう一度追加)" : "Googleカレンダーに追加"}" style="width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${done ? P.today : P.acc};${done ? insetS : raiseS}">${done ? ico('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 15, 2.4) : ico('<path d="M12 5v14M5 12h14"></path>', 15, 2.2)}</button>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-family:${en};font-size:13px;font-weight:700">${esc(p ? planCalTime(p) : r.time)}</span><span style="font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p ? tag + esc(p.title || "予定") : esc((r.place || "") + (r.court ? " " + r.court : ""))}</span></div>
+                    <button type="button" onclick="${p ? "bulkAddPlan(" + p.id + ")" : "bulkAddOne('" + d + "', " + r.id + ")"}" aria-label="${done ? "追加済み(もう一度追加)" : "Googleカレンダーに追加"}" style="width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${done ? P.today : P.acc};${done ? insetS : raiseS}">${done ? ico('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 15, 2.4) : ico('<path d="M12 5v14M5 12h14"></path>', 15, 2.2)}</button>
                   </div>`;
-            }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">追加できる予約日はありません</div>`;
+            }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">追加できる予定はありません</div>`;
             el.style.background = P.bg; el.style.color = P.ink;
             el.innerHTML = `<div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px);display:flex;flex-direction:column;gap:18px;font-family:'Noto Sans JP',system-ui,sans-serif">${head}${acts}<div style="display:flex;flex-direction:column;gap:12px">${rows}</div></div>`;
         }
