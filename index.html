@@ -16451,7 +16451,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611091110;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611100952;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18043,21 +18043,18 @@ const namesBtn = isAdmin() && dates.length > 0
             const laneOf = new Map(), MAXL = 2;
             {
                 const busy = new Map();   // 日付 → その日に使っている段
-                for (let i = 0; i < 42; i++) {
+                // 休日にした予定は優先度をいちばん下げる: 先にほかの予定の段を決め(pass 0)、休日の予定は空いている段へ(pass 1)。段が足りなければ出さない
+                for (let pass = 0; pass < 2; pass++) for (let i = 0; i < 42; i++) {
                     const k = formatDateKey(new Date(y, m - 1, 1 - off + i));
-                    const used = busy.get(k) || new Set();
-                    const ms = plansOn(k).filter(({ p }) => !!p.endDate && p.endDate !== p.startDate && !(pin && p.id === planEditId)).map(({ p }) => p);
-                    if (pin && !pin.empty && pin.ed && k >= pin.sd && k <= pin.ed) ms.unshift({ id: "__pin", startDate: pin.sd, endDate: pin.ed });
+                    const ms = plansOn(k).filter(({ p }) => !!p.endDate && p.endDate !== p.startDate && !(pin && p.id === planEditId) && (pass === 1) === !!p.holiday).map(({ p }) => p);
+                    if (pass === 0 && pin && !pin.empty && pin.ed && k >= pin.sd && k <= pin.ed) ms.unshift({ id: "__pin", startDate: pin.sd, endDate: pin.ed });
                     ms.forEach(p => {
-                        if (!laneOf.has(p.id)) {
-                            let ln = 0; while (used.has(ln)) ln++;
-                            laneOf.set(p.id, ln);
-                            // この予定が続く日(表示範囲の中)は、この段を使う
-                            for (let j = i; j < 42; j++) { const kk = formatDateKey(new Date(y, m - 1, 1 - off + j)); if (kk > p.endDate) break; if (!busy.has(kk)) busy.set(kk, new Set()); busy.get(kk).add(ln); }
-                        }
-                        used.add(laneOf.get(p.id));
+                        if (laneOf.has(p.id)) return;
+                        const days = []; for (let j = i; j < 42; j++) { const kk = formatDateKey(new Date(y, m - 1, 1 - off + j)); if (kk > p.endDate) break; days.push(kk); }
+                        let ln = 0; while (days.some(kk => busy.has(kk) && busy.get(kk).has(ln))) ln++;   // 続く日のどこかで使われている段は避ける
+                        laneOf.set(p.id, ln);
+                        days.forEach(kk => { if (!busy.has(kk)) busy.set(kk, new Set()); busy.get(kk).add(ln); });
                     });
-                    busy.set(k, used);
                 }
             }
             const popEl = Date.now() - protoPressAt, popAn = popEl < 480 ? popEl : null;
@@ -18080,7 +18077,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (pin && p.id === planEditId) return;
                     const col = C[+p.color || 0] || C[0];
                     const multi = !!p.endDate && p.endDate !== p.startDate;
-                    items.push({ pid: p.id, t: p.title || "予定", s: p.allDay ? null : parseHM(p.start), col, multi, lane: multi ? laneOf.get(p.id) : null, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6, span: multi ? Math.min(6 - col7, Math.round((new Date(p.endDate + "T00:00:00") - new Date(k + "T00:00:00")) / 864e5)) + 1 : 1 });
+                    items.push({ pid: p.id, t: p.title || "予定", s: p.allDay ? null : parseHM(p.start), hol: !!p.holiday, col, multi, lane: multi ? laneOf.get(p.id) : null, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6, span: multi ? Math.min(6 - col7, Math.round((new Date(p.endDate + "T00:00:00") - new Date(k + "T00:00:00")) / 864e5)) + 1 : 1 });
                 });
                 if (pin && !pin.empty && k >= pin.sd && k <= (pin.ed || pin.sd)) {
                     const pc = C[planColor] || C[0];
@@ -18110,7 +18107,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     const row = (col, l, r, label, span, pid) => `<span class="pr-lt"${pid != null ? ` data-pid="${esc(String(pid))}"` : ""}><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}${span > 1 ? `;max-width:calc(${span * 100}% - 8px)` : ""}">${esc(word(label))}</b>` : ""}</span>`;
                     const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : "", x.span || 1, x.pid).replace('class="pr-lt"', 'class="pr-lt pr-lt-lane"'));
                     // 1日の予定(バレーも)は線なしで題名だけ / 3行まで(残りは右上に +N) / 過ぎた日は薄く
-                    const dotsT = dots.slice().sort((a, b) => (a.s == null ? -1 : a.s) - (b.s == null ? -1 : b.s));   // 1日の予定は時刻順(終日 → 朝 → 夜)
+                    let dotsT = dots.slice().sort((a, b) => (a.hol ? 1 : 0) - (b.hol ? 1 : 0) || (a.s == null ? -1 : a.s) - (b.s == null ? -1 : b.s));
+                    if (lines.length + dotsT.length > 3) dotsT = dotsT.filter(x => !x.hol);   // ほかの予定が隠れる日は、休日にした予定は出さない   // 1日の予定は時刻順(終日 → 朝 → 夜)
                     const sg = dotsT.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"${pidA(x)}><b style="color:${x.col};--c:${x.col}">${esc(word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
                     const room = 3;
                     // 連続予定が階段状になると、上の段が空いた日は透明の線が1行ぶん場所をとって、3つしか予定がないのに下の1つがはみ出す。
