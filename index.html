@@ -2624,13 +2624,14 @@
         .st-sel { height: 34px; padding: 0 12px; border: none; border-radius: 17px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); }
         #setAccount { margin: 0; font-size: 12px; }
         /* 追加済みのお知らせ */
-        #addNotice { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
-        #addNotice.show { opacity: 1; pointer-events: auto; }
-        #addNotice .an-box { width: min(86vw, 340px); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 20px 18px; border-radius: 20px; background: var(--bg); color: var(--ink); text-align: center; box-shadow: var(--raise), 0 12px 32px rgba(0,0,0,.25); transform: scale(.96); transition: transform .2s ease; }
-        #addNotice.show .an-box { transform: scale(1); }
+        #addNotice, #gcalAsk { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+        #addNotice.show, #gcalAsk.show { opacity: 1; pointer-events: auto; }
+        #addNotice .an-box, #gcalAsk .an-box { width: min(86vw, 340px); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 20px 18px; border-radius: 20px; background: var(--bg); color: var(--ink); text-align: center; box-shadow: var(--raise), 0 12px 32px rgba(0,0,0,.25); transform: scale(.96); transition: transform .2s ease; }
+        #gcalAsk .ga-no { min-width: 120px; height: 34px; border: none; background: transparent; color: var(--ink-3); font-size: 13px; font-weight: 700; }
+        #addNotice.show .an-box, #gcalAsk.show .an-box { transform: scale(1); }
         #addNotice .ic { width: 28px; height: 28px; color: var(--amber, #d4a017); }
-        #addNotice .an-msg { font-size: 14px; font-weight: 600; line-height: 1.6; }
-        #addNotice .op-add { min-width: 120px; height: 40px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; }
+        #addNotice .an-msg, #gcalAsk .an-msg { font-size: 14px; font-weight: 600; line-height: 1.6; }
+        #addNotice .op-add, #gcalAsk .op-add { min-width: 120px; height: 40px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; }
         /* 右下の＋ */
         #calCard .day-toggles { display: none !important; }   /* 追加は右下の＋から */
         /* 他のボタンと同じ凹凸(浮いた丸)。押すと凹む。＋は緑 */
@@ -8336,6 +8337,7 @@ await main();
                 else { console.warn("Googleカレンダーの取得に失敗しました。", e); gcalSetState("error"); }
             }
             try { renderCalendar(); } catch (e) { /* ignore */ }
+            gcalPending.ids = gcalPending.ids.filter(id => !gcalPlanMap[id]);   // Google側に見つかった予定は、もう待たない
         }
 
         // ------- Googleの予定とアプリの予定の重複を見つける(重複はGoogle側を隠し、アプリ側に「G✓」を付ける) -------
@@ -8369,7 +8371,7 @@ await main();
                 if (!hide && events[d] && VB.test(ttl) && (!rg || !anyTimed || hitVol)) hide = true;   // 「バレー」の予定がある日の、バレーの予定
                 (byDate[d] || []).forEach(p => {
                     if (gcalNorm(p.title) !== ttl) return;
-                    const ps = planTimed(p) ? parseHM(p.start) : null;
+                    const ps = planTimed(p) ? (parseHM(p.start) ?? parseHM(p.end)) : null;
                     if (rg ? ps === rg.s : ps == null) { gcalPlanMap[p.id] = true; hide = true; }
                 });
                 if (!hide) vis.push(g);
@@ -8388,6 +8390,51 @@ await main();
             const n = rs.filter(r => gcalResState(d, r) === "g").length;
             return n === rs.length ? gcalMark() : n ? gcalMark("G " + n + "/" + rs.length) : "";
         }
+        // ------- アプリで入れた予定を、Googleカレンダーにも追加するか聞く(Googleに接続して予定を取得できているときだけ) -------
+        var gcalPending = { ids: [], tries: 0 };   // 追加を開いた予定。戻ってきたときに取得し直して、重複を隠す
+        function gcalOpenTemplate(q) {
+            const web = "https://calendar.google.com/calendar/render?" + q;
+            if (/Android/i.test(navigator.userAgent)) { location.href = `intent://calendar.google.com/calendar/render?${q}#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url=${encodeURIComponent(web)};end`; return; }
+            const w = window.open(web, "_blank");
+            if (!w) location.href = web;
+        }
+        function gcalPlanQuery(p) {
+            const z = n => String(n).padStart(2, "0");
+            const [y, m, d] = p.startDate.split("-").map(Number);
+            const ed = p.endDate && p.endDate > p.startDate ? p.endDate : p.startDate;
+            const [ey, em, edd] = ed.split("-").map(Number);
+            const dk = x => x.getFullYear() + z(x.getMonth() + 1) + z(x.getDate());
+            const dt = x => dk(x) + "T" + z(x.getHours()) + z(x.getMinutes()) + "00";
+            let dates;
+            if (planTimed(p)) {
+                const s0 = parseHM(p.start) ?? parseHM(p.end) ?? 0;
+                let e0 = parseHM(p.end);
+                if (e0 == null || (ed === p.startDate && e0 <= s0)) e0 = s0 + 60;
+                dates = dt(new Date(y, m - 1, d, 0, s0)) + "/" + dt(new Date(ey, em - 1, edd, 0, e0));
+            } else {
+                dates = dk(new Date(y, m - 1, d)) + "/" + dk(new Date(ey, em - 1, edd + 1));   // 終日は、終わりの日の翌日まで
+            }
+            return new URLSearchParams({ action: "TEMPLATE", text: p.title || "予定", dates, ctz: "Asia/Tokyo", details: p.memo || "" }).toString();
+        }
+        function gcalAskAdd(p) {
+            if (!p || p.gcal || p.holiday || !p.startDate || !gcalHave()) return;
+            let el = document.getElementById("gcalAsk");
+            if (!el) {
+                el = document.createElement("div"); el.id = "gcalAsk";
+                el.addEventListener("click", (e) => { if (e.target === el) el.classList.remove("show"); });
+                document.body.appendChild(el);
+            }
+            const [, m, d] = p.startDate.split("-").map(Number);
+            const when = m + "/" + d + (p.start ? " " + p.start : "");
+            el.innerHTML = `<div class="an-box" role="alertdialog" aria-modal="true"><div class="an-msg">Googleカレンダーにも追加しますか?<br><b>${escapeHtml(when + " " + (p.title || "予定"))}</b></div><button type="button" class="op-add" id="gcalAskYes">追加する</button><button type="button" class="ga-no" id="gcalAskNo">しない</button></div>`;
+            el.classList.add("show");
+            document.getElementById("gcalAskNo").onclick = () => el.classList.remove("show");
+            document.getElementById("gcalAskYes").onclick = () => {
+                el.classList.remove("show");
+                gcalPending = { ids: [p.id], tries: 0 };
+                gcalOpenTemplate(gcalPlanQuery(p));
+            };
+        }
         function gcalInit() {
             gcalSyncTile();
             if (!gcalOn || !gcalIsAdmin()) { if (gcalOn && !gcalIsAdmin()) setTimeout(gcalInit, 2500); return; }
@@ -8396,6 +8443,7 @@ await main();
         window.addEventListener("load", () => setTimeout(gcalInit, 2000));
         document.addEventListener("visibilitychange", () => {
             if (document.hidden || !gcalOn || !gcalIsAdmin()) return;
+            if (gcalPending.ids.length && gcalPending.tries < 3 && gcalToken()) { gcalPending.tries++; setTimeout(gcalFetch, 1500); return; }   // 予定を追加して戻ってきた
             if (!gcalToken()) { if (gcalState === "ok") gcalSetState("expired"); return; }
             if (gcalState !== "loading" && Date.now() - gcalLastFetch > 5 * 60 * 1000) gcalFetch();
         });
@@ -8901,6 +8949,7 @@ await main();
                 if (nr.length) p.noRsvp = nr;   // 共有はするけど出欠は聞かない人
             }
             if (!toLocal && ((pairActive() && !keepNormal) || (prev && prev.pair))) p.pair = true;   // ペアモードで入れた予定(変更ログに出さない)
+            const isNewPlan = planEditId == null;   // 新しく入れた予定か(直した予定ではない)
             const i = planEditId != null ? planList.findIndex(x => x.id === planEditId) : -1;
             if (i >= 0 && !!planList[i].local === toLocal) { p.id = planEditId; planList[i] = p; }
             else {
@@ -8916,6 +8965,7 @@ await main();
             renderCalendar();
             renderOtherPlanBox();
             jumpToPlanDate(sd);
+            if (isNewPlan) setTimeout(() => { try { gcalAskAdd(p); } catch (e) { console.warn(e); } }, 350);   // Googleに接続中なら、Googleカレンダーにも追加するか聞く
         }
         function deleteOtherPlan(id, quiet) {   // quiet = 確かめずに消す(すぐ「戻す」を出すとき)
             const target = planList.find(x => x.id === id);
@@ -16624,7 +16674,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611101242;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611101245;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
