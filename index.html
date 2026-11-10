@@ -1348,6 +1348,8 @@
         .rv-item .rv-info { flex: 1; min-width: 0; }
         .rv-item .rv-main { font-weight: 700; font-size: 14.5px; }
         .rv-item .rv-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+        .gc-mark { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 7px; font-size: 9.5px; font-weight: 800; line-height: 1.6; letter-spacing: .02em; vertical-align: 1px; white-space: nowrap; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+        .rv-gcal.gc-ok { color: var(--accent); }
         .rv-gcal { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; min-height: 36px; padding: 0 10px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
         .rv-del { border: none; background: transparent; color: var(--ink-3); font-size: 18px; width: 30px; min-height: 36px; }
         .rv-ed-place { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-top: 10px; background: var(--surface); }
@@ -8133,7 +8135,7 @@ await main();
             }
             const btns = canAnswer ? `<div class="pd-ans">${["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${myst === s ? " sel" : ""}" onclick="planRsvpSet(${p.id},'${s}')" aria-label="${s}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("")}</div>` : "";
             return `<div class="nv-detail${pcCls(p)}" id="planDetail" data-pid="${p.id}">
-                <div class="pd-head"><span class="pd-bar"></span><div class="pd-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</div>${rsvp ? `<span class="pd-cnt">○ ${planComing(p)}</span>` : ""}</div>
+                <div class="pd-head"><span class="pd-bar"></span><div class="pd-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}${gcalPlanMap[p.id] ? gcalMark() : ""}</div>${rsvp ? `<span class="pd-cnt">○ ${planComing(p)}</span>` : ""}</div>
                 <div class="pd-when">${escapeHtml(planWhenText(p))}</div>
                 ${p.memo ? `<div class="pd-memo">${escapeHtml(p.memo)}</div>` : ""}
                 ${p.gcal ? "" : planNtfLine(p)}${btns}${mem}
@@ -8165,7 +8167,7 @@ await main();
                 const prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean);
                 const pr = prs.length ? { s: Math.min(...prs.map(x => x.s)), e: Math.max(...prs.map(x => x.e)) } : null;
                 const places = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
-                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${IC("ball")}Volley · ${countComing(selectedDate)}</span></div>${places ? `<div class="nv-sub">${escapeHtml(places)}</div>` : ""}</div></div>` });
+                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${IC("ball")}Volley · ${countComing(selectedDate)}</span>${gcalDayMark(selectedDate)}</div>${places ? `<div class="nv-sub">${escapeHtml(places)}</div>` : ""}</div></div>` });
             }
             { const jp = jpDay(selectedDate);
               [[jp.hol, "祝日", "var(--notcome)"], [jp.ev, "行事", "var(--ink-3)"]].forEach(([n, lb, c]) => { if (n) rows.push({ ad: -1, s: lb === "祝日" ? 0 : 1, html: `<div class="nv-row nv-jprow"><div class="nv-time"><span>${lb}</span><span></span></div><div class="nv-bar" style="background:${c}"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${escapeHtml(n)}</span></div></div></div>` }); }); }
@@ -8180,7 +8182,7 @@ await main();
                 const editing = planPanelIsOpen() && planEditId === p.id;
                 if (planDetailId === p.id) { rows.push({ ad: !(first && last) ? 0 : planTimed(p) ? 3 : 2, s: s == null ? -2 : s, html: planDetailHtml(p) }); return; }
                 const tappable = editable || !p.local;   // 共有予定は閲覧者も押せる(詳細を見る)
-                rows.push({ ad: !(first && last) ? 0 : planTimed(p) ? 3 : 2, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${tappable ? ` data-pid="${p.id}" onclick="nvTap(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</span>${planRsvpOn(p) ? `<span class="nv-cnt">○${planComing(p)}</span>` : ""}${shareAvatars(p)}</div>${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
+                rows.push({ ad: !(first && last) ? 0 : planTimed(p) ? 3 : 2, s: s == null ? -2 : s, html: `<div class="nv-row${pcCls(p)}${editing ? " editing has-form" : ""}"${tappable ? ` data-pid="${p.id}" onclick="nvTap(${p.id})"` : ""}><div class="nv-time"><span>${escapeHtml(t1)}</span><span>${escapeHtml(t2)}</span></div><div class="nv-bar"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</span>${gcalPlanMap[p.id] ? gcalMark() : ""}${planRsvpOn(p) ? `<span class="nv-cnt">○${planComing(p)}</span>` : ""}${shareAvatars(p)}</div>${p.memo ? `<div class="nv-memo">${escapeHtml(p.memo)}</div>` : ""}</div></div>` });
             });
             rows.sort((a, b) => a.ad - b.ad || a.s - b.s);   // 連続した予定 → バレー → 終日 → その他
             const box = document.getElementById("otherPlanBox");
@@ -8233,7 +8235,7 @@ await main();
         // ------- Googleカレンダー(管理者だけ・読み取りのみ)。予定はこの画面(メモリ)にだけ置き、サーバーにも端末の保存にも書かない -------
         var gcalPlans = [], gcalOn = false, gcalState = "off";   // off / loading / ok / expired / error
         const GCAL_ON_KEY = "gcal_on_v1", GCAL_TOKEN_KEY = "gcal_token_v1";   // ON印は端末だけ(共有しない)。トークンはこのタブだけ(sessionStorage)
-        let gcalLastFetch = 0;
+        var gcalLastFetch = 0, gcalVisible = [], gcalResMap = {}, gcalPlanMap = {}, gcalWin = null;   // gcalVisible=画面に出す予定(重複を除いたもの)
         try { gcalOn = localStorage.getItem(GCAL_ON_KEY) === "1"; } catch (e) { gcalOn = false; }
         function planById(id) { return planList.find(x => x.id === id) || (gcalPlans || []).find(x => x.id === id); }
         function gcalToken() {
@@ -8258,7 +8260,7 @@ await main();
             gcalConnect();
         }
         function gcalOff() {
-            gcalPlans = []; gcalOn = false;
+            gcalPlans = []; gcalVisible = []; gcalResMap = {}; gcalPlanMap = {}; gcalLastFetch = 0; gcalOn = false;
             try { localStorage.removeItem(GCAL_ON_KEY); sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e) { /* ignore */ }
             gcalSetState("off");
             try { renderCalendar(); } catch (e) { /* ignore */ }
@@ -8328,12 +8330,63 @@ await main();
                         (j.items || []).forEach(ev => { if (ev.status === "cancelled") return; const p = gcalToPlan(ev, c, id); if (p) { out.push(p); id--; } });
                     } while (pageToken && out.length < 3000);
                 }
-                gcalPlans = out; gcalLastFetch = Date.now(); gcalSetState("ok");
+                gcalPlans = out; gcalLastFetch = Date.now(); gcalWin = { from: gcalDateKey(from), to: gcalDateKey(to) }; gcalSetState("ok");
             } catch (e) {
                 if (e === 401) { try { sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e2) { /* ignore */ } gcalSetState("expired"); }
                 else { console.warn("Googleカレンダーの取得に失敗しました。", e); gcalSetState("error"); }
             }
             try { renderCalendar(); } catch (e) { /* ignore */ }
+        }
+
+        // ------- Googleの予定とアプリの予定の重複を見つける(重複はGoogle側を隠し、アプリ側に「G✓」を付ける) -------
+        function gcalHave() { return !!(gcalOn && gcalLastFetch > 0 && gcalWin); }
+        function gcalInWin(d) { return gcalHave() && d >= gcalWin.from && d < gcalWin.to; }
+        function gcalNorm(t) { return String(t || "").normalize("NFKC").toLowerCase().replace(/\s+/g, ""); }
+        function gcalRange(g) {   // Googleの予定の時間(分)。終日・時間なしは null
+            if (g.allDay || !g.start) return null;
+            const s0 = parseHM(g.start); if (s0 == null) return null;
+            const e0 = g.endDate ? 1440 : (g.end ? parseHM(g.end) : null);
+            return { s: s0, e: e0 != null && e0 > s0 ? e0 : s0 + 1 };
+        }
+        function gcalRecompute() {
+            gcalResMap = {}; gcalPlanMap = {};
+            if (!gcalOn || !gcalPlans || !gcalPlans.length) { gcalVisible = gcalPlans || []; return; }
+            const byDate = {};
+            planList.forEach(p => { if (p && !p.gcal && !p.deleted && p.startDate) (byDate[p.startDate] = byDate[p.startDate] || []).push(p); });
+            const vis = [], VB = /バレー|ばれー|volley/;
+            gcalPlans.forEach(g => {
+                const d = g.startDate, rg = gcalRange(g), ttl = gcalNorm(g.title), tn = ttl + " " + gcalNorm(g.memo);
+                const rs = reservations[d] || [];
+                let hide = false, anyTimed = false, hitVol = false;
+                rs.forEach(r => {
+                    const t = parseTimeRangeMin(r.time); if (!t) return;
+                    anyTimed = true;
+                    if (!rg) return;
+                    const same = rg.s === t.s && rg.e === t.e, overlap = rg.s < t.e && rg.e > t.s;
+                    const text = (r.place && tn.includes(gcalNorm(r.place))) || VB.test(tn);
+                    if (same || (overlap && text)) { gcalResMap[d + "#" + r.id] = true; hitVol = true; if (events[d]) hide = true; }
+                });
+                if (!hide && events[d] && VB.test(ttl) && (!rg || !anyTimed || hitVol)) hide = true;   // 「バレー」の予定がある日の、バレーの予定
+                (byDate[d] || []).forEach(p => {
+                    if (gcalNorm(p.title) !== ttl) return;
+                    const ps = planTimed(p) ? parseHM(p.start) : null;
+                    if (rg ? ps === rg.s : ps == null) { gcalPlanMap[p.id] = true; hide = true; }
+                });
+                if (!hide) vis.push(g);
+            });
+            gcalVisible = vis;
+        }
+        // 予約がGoogleカレンダーに入っているか: "g"=Googleで確認できた / "l"=追加した記録だけ(Googleに繋いでいない) / ""=まだ
+        function gcalResState(d, r) {
+            if (gcalInWin(d)) return gcalResMap[d + "#" + r.id] ? "g" : "";
+            return (gcalAddedMap()[d + "#" + r.id] === gcalSig(r)) ? "l" : "";
+        }
+        function gcalMark(txt) { return `<span class="gc-mark" title="Googleカレンダーにもあります">${txt || "G✓"}</span>`; }
+        function gcalDayMark(d) {   // その日の予約のうち、Googleにあるもの
+            const rs = (reservations[d] || []).filter(r => parseTimeRangeMin(r.time));
+            if (!rs.length || !gcalInWin(d)) return "";
+            const n = rs.filter(r => gcalResState(d, r) === "g").length;
+            return n === rs.length ? gcalMark() : n ? gcalMark("G " + n + "/" + rs.length) : "";
         }
         function gcalInit() {
             gcalSyncTile();
@@ -8347,7 +8400,7 @@ await main();
             if (gcalState !== "loading" && Date.now() - gcalLastFetch > 5 * 60 * 1000) gcalFetch();
         });
         function plansOn(key) {
-            return planList.concat(gcalOn && gcalPlans ? gcalPlans : [])
+            return planList.concat(gcalOn && gcalVisible ? gcalVisible : [])
                 .filter(p => planHas(p) && planVisible(p) && p.startDate <= key && (p.endDate ? p.endDate >= key : p.startDate === key))
                 .sort((x, y) => (x.startDate < y.startDate ? -1 : x.startDate > y.startDate ? 1 : planStartKey(x) - planStartKey(y) || x.id - y.id))
                 .map(p => ({ p, origin: p.startDate, first: p.startDate === key, last: !p.endDate || p.endDate === key }));
@@ -8416,6 +8469,7 @@ await main();
 
         // 旧UIのカレンダーは廃止。予定・バレーが変わったときの描き直しの入口として残す(新しい画面と予定の一覧を描き直す)
         function renderCalendar() {
+            try { gcalRecompute(); } catch (e) { console.warn(e); }
             videoDateSet = buildVideoDateSet();
             try { renderSavingTotal(); } catch (e) { /* ignore */ }
             renderNvPanel();
@@ -15077,7 +15131,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     <div class="rv-sub">${sub}</div>${dev}
                 </div>
                 <button type="button" class="rv-gcal" onclick="copyReservationForLine(${r.id})">LINE</button>
-                <button type="button" class="rv-gcal" onclick="addReservationToGoogleCalendar(${r.id})"><i class="ic ic-cal"></i> Add</button>
+                <button type="button" class="rv-gcal${gcalResState(selectedDate, r) === "g" ? " gc-ok" : ""}" onclick="addReservationToGoogleCalendar(${r.id})">${{ g: "✓ Google", l: "Add ✓" }[gcalResState(selectedDate, r)] || '<i class="ic ic-cal"></i> Add'}</button>
                 <button type="button" class="rv-del" aria-label="削除" onclick="deleteReservation(${r.id})">×</button>
             </div>`;
         }
@@ -15408,6 +15462,7 @@ const namesBtn = isAdmin() && dates.length > 0
             dateKey = dateKey || selectedDate;
             const r = (reservations[dateKey] || []).find(x => x.id === id);
             if (!r) return;
+            if (gcalResState(dateKey, r) === "g" && !confirm("Googleカレンダーにすでに入っています。もう一度追加しますか?")) return;
             gcalMarkAdded(dateKey, r);
             const ymd = dateKey.replace(/-/g, "");
             const [st, en] = r.time.split("-").map(t => {
@@ -15517,7 +15572,7 @@ const namesBtn = isAdmin() && dates.length > 0
         const GCAL_ADDED_KEY = "attendance_gcal_added_v1";
         function gcalAddedMap() { try { return JSON.parse(localStorage.getItem(GCAL_ADDED_KEY) || "{}") || {}; } catch (e) { return {}; } }
         function gcalSig(r) { return [r.time, r.place, r.court || ""].join("|"); }
-        function gcalIsAdded(d, r, map) { return (map || gcalAddedMap())[d + "#" + r.id] === gcalSig(r); }
+        function gcalIsAdded(d, r, map) { if (gcalInWin(d)) return !!gcalResMap[d + "#" + r.id]; return (map || gcalAddedMap())[d + "#" + r.id] === gcalSig(r); }
         function gcalMarkAdded(d, r) {
             const m = gcalAddedMap(); m[d + "#" + r.id] = gcalSig(r);
             try { localStorage.setItem(GCAL_ADDED_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ }
@@ -16569,7 +16624,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611101045;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611101242;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
