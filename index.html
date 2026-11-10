@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <meta name="theme-color" content="#eceff4">
+    <meta name="theme-color" content="#e7eaf0">
     <title>日程管理アプリ</title>
     <!-- ホーム画面に追加したときのアイコン(iPhone: apple-touch-icon / Android: manifest) -->
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -114,7 +114,6 @@
         .copy-btn:active, .team-rerun-btn:active, .follow-btn:active, .bulk-toggle-btn:active, .team-settings-link:active,
         .conflict-add-btn:active, .conflict-rule-actions button:active, .copy-close-btn:active,
         .settings-close-btn:active, .bulk-action-row button:active { background: var(--surface-2); }
-        .follow-btn:disabled { color: var(--ink-3); background: var(--surface-2); }
 
         .template-reset-btn, .history-reset {
             background: none; border: none; color: var(--ink-2); font-size: 13px; font-weight: 600;
@@ -122,12 +121,6 @@
         }
         .template-reset-btn:active { color: var(--ink); }
 
-        .line-btn {
-            background: var(--line-brand); color: #fff; border: none; border-radius: var(--r-sm);
-            font-weight: 700; font-size: 15px; width: 100%; min-height: 50px; margin-top: 4px;
-            box-shadow: 0 2px 8px rgba(6, 199, 85, .25);
-        }
-        .line-btn:active { background: #05b34c; }
 
         /* ---- switch (checkbox) ---- */
         .event-toggle input[type="checkbox"], .param-visibility-toggle input[type="checkbox"],
@@ -173,72 +166,35 @@
         .settings-panel.open, .roster-panel.open, .copy-panel.open { display: block; }
         .settings-panel h3, .roster-panel h3, .copy-panel h3 { font-size: 15px; font-weight: 700; margin: 0 0 10px; }
         .roster-panel h3:not(:first-child) { margin-top: 22px; }
-        .settings-subtitle { font-size: 15px; font-weight: 700; margin: 0 0 8px; }
-        .settings-divider { border: none; border-top: 1px solid var(--line); margin: 20px 0 16px; }
         .settings-note { font-size: 12.5px; color: var(--ink-3); margin: 4px 0 14px; line-height: 1.6; }
         .settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
         .settings-row label { flex: 1; font-size: 14px; margin: 0; line-height: 1.45; }
         .settings-row input[type="number"] { width: 68px; text-align: center; padding: 0 6px; }
-        .settings-actions { display: flex; gap: 8px; }
-        .settings-save-btn, .settings-close-btn, .copy-exec-btn, .copy-close-btn { flex: 1; }
         .follow-template-input { width: 100%; min-height: 168px; resize: vertical; font-size: 14.5px; }
 
         /* =========================================================
            Calendar
            ========================================================= */
-        .cal-card { padding: 14px 12px 12px; }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; }
-        .cal-header .month-label { font-size: 17px; font-weight: 700; letter-spacing: .02em; }
         .cal-nav-btn, .today-btn {
             background: var(--surface); border: 1px solid var(--line); color: var(--ink-2);
             height: 38px; font-size: 14px; font-weight: 600;
         }
-        .cal-nav-btn { width: 38px; padding: 0; border-radius: 50%; }
         .today-btn { padding: 0 14px; border-radius: 999px; }
         .cal-nav-btn:active, .today-btn:active { background: var(--surface-2); }
         .today-btn.on { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); }
         /* 予約日の一覧: カレンダーと同じ日付枠を、対象の日だけ並べる */
-        .cal-grid.list-mode { max-height: calc(38px * 4 + 2px * 3 + 30px); overflow-y: auto; align-content: start; -webkit-overflow-scrolling: touch; position: relative; }
         .st-done-row { display: flex; align-items: center; gap: 8px; margin: 10px 2px 0; font-size: 13px; color: var(--ink-2); cursor: pointer; }
         .st-done-row input { width: 18px; height: 18px; margin: 0; flex: none; }
         /* 時間表示: 週は縦軸=時間(1時間ごとに薄い線)、予約日モードは月単位で各日に時間軸 */
-        .cal-grid.tw-mode { display: block; }
-        .tw-head { display: grid; grid-template-columns: 22px repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
-        .tw-head .cal-day { aspect-ratio: auto; height: 30px; min-height: 30px; }
-        .tw-wrap + .tw-head { margin-top: 4px; }
-        .tw-month { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8.5px; line-height: 1.2; font-weight: 700; color: var(--ink-3); }
         .legend { flex-wrap: nowrap; gap: 6px; }
-        .legend .cal-wsrow { flex: none; margin-left: 6px; }
-        .cal-header { flex-wrap: nowrap; gap: 4px; }
-        .cal-header .cal-nav-btn { width: 28px; height: 30px; flex: none; }
-        .cal-header .month-label { flex: 1 1 auto; min-width: 0; text-align: center; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cal-hbtns { display: flex; gap: 4px; flex: none; }
         .legend .today-btn { height: 30px; padding: 0 10px; font-size: 12px; white-space: nowrap; }
         .legend { align-items: center; }
-        .cal-card { overflow-x: clip; position: relative; }
         #calGrid { touch-action: pan-y; will-change: transform; }
-        .tw-body { position: relative; display: grid; grid-template-columns: 22px repeat(7, 1fr); gap: 2px; height: calc(var(--hp) * var(--hrs)); background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px); background-size: 100% var(--hp); }
-        .tw-gutter { position: relative; }
-        .tw-gutter span { position: absolute; right: 3px; font-size: 8.5px; line-height: 1; color: var(--ink-3); }
-        .tw-col { position: relative; border-left: 1px solid var(--line); cursor: pointer; }
-        .tw-col.today { background: rgba(10, 143, 106, .06); }
-        .tw-col.selected { box-shadow: inset 0 0 0 1.5px var(--ink); }
-        .tw-blk { position: absolute; box-sizing: border-box; overflow: hidden; border-radius: 5px; border-left: 3px solid currentColor; padding: 1px 2px 1px 3px; font-size: 8.5px; line-height: 1.1; }
-        .tw-blk b, .tw-blk span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .tw-blk b { font-size: 8.5px; }
-        .tw-blk span { font-size: 8px; opacity: .85; }
-        .tw-now, .tw-now-all { position: absolute; left: 0; right: 0; height: 0; pointer-events: none; z-index: 5; display: none; }
-        .tw-now { border-top: 1.5px solid #e5484d; }
-        .tw-now::before { content: ""; position: absolute; left: -3px; top: -4px; width: 6px; height: 6px; border-radius: 50%; background: #e5484d; }
-        .tw-now-all { left: 22px; border-top: 1px solid rgba(229, 72, 77, .35); }
         /* バレー以外の予定: 灰色。バレーと同じ日は対角で2色 */
         :root { --plan-gray: #d6d9de; --plan-ink: #4a4f57; }
         body.dark { --plan-gray: #4b4f56; --plan-ink: #d5d8dd; }
         .cal-day.plan-only { background: var(--plan-gray); color: var(--plan-ink); }
-        .cal-day.has-plan.event-sufficient { background: linear-gradient(135deg, var(--come-soft) 50%, var(--plan-gray) 50%); }
-        .cal-day.has-plan.event-warning { background: linear-gradient(135deg, #fff3cc 50%, var(--plan-gray) 50%); }
-        .cal-day.has-plan.event-danger { background: linear-gradient(135deg, var(--notcome-soft) 50%, var(--plan-gray) 50%); }
-        body.dark .cal-day.has-plan.event-warning { background: linear-gradient(135deg, #78581f 50%, var(--plan-gray) 50%); }
         /* 他の予定の色(バレーの 緑/黄/赤 と被らない 青・紫・橙。0=灰色が従来どおり) */
         /* 予定の色(試作UIと同じ5色: 黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い色番号も、近い5色に寄せて出す */
         :root { --pcbg14: rgba(139, 111, 201, 0.26); --pcbg0: rgba(154, 160, 168, 0.34); --pcbg1: rgba(70, 119, 196, 0.28); --pcbg2: rgba(70, 119, 196, 0.28); --pcbg3: rgba(229, 151, 183, 0.4); --pcbg4: rgba(31, 33, 36, 0.2); --pcbg5: rgba(156, 61, 104, 0.28); --pcbg6: rgba(229, 151, 183, 0.4); --pcbg7: rgba(70, 119, 196, 0.28); --pcbg8: rgba(154, 160, 168, 0.34); --pcbg9: rgba(31, 33, 36, 0.2); --pcbg10: rgba(154, 160, 168, 0.34); --pcbg11: rgba(156, 61, 104, 0.28); --pcbg12: rgba(229, 151, 183, 0.4); --pcbg13: rgba(70, 119, 196, 0.28); }
@@ -346,45 +302,17 @@
         .op-add { flex: none; height: 36px; padding: 0 20px; border-radius: 8px; border: 1px solid var(--ink-fill); background: var(--ink-fill); color: #fff; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
         .cal-day .plan-ttl { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.1; }
         .cal-day .plan-n { position: absolute; bottom: 3px; left: 4px; font-size: 8px; font-weight: 800; line-height: 1; opacity: .8; pointer-events: none; }
-        .op-item { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 4px 4px 10px; margin-bottom: 5px; border-radius: 9px; background: var(--plan-gray); color: var(--plan-ink); font-size: 13px; cursor: pointer; }
-        .op-item.editing { box-shadow: inset 0 0 0 1.5px var(--ink); }
-        .op-ttl { flex: none; font-size: 14px; font-weight: 700; }
-        .op-rng { flex: none; opacity: .85; }
-        .op-mm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .7; }
-        .op-del { flex: none; width: 36px; height: 36px; margin-left: auto; border: none; background: none; color: inherit; font-size: 20px; line-height: 1; padding: 0; cursor: pointer; }
         /* 連続した予定: 隣の日とつなげて見せる */
-        .tw-notime { position: absolute; top: 1px; left: 1px; right: 1px; height: 14px; line-height: 14px; border-radius: 4px; font-size: 8.5px; text-align: center; overflow: hidden; white-space: nowrap; }
         .cal-day.tm { height: 160px; min-height: 160px; justify-content: flex-start; padding-top: 4px; }
-        .tm-axis { position: absolute; left: 3px; right: 3px; bottom: 4px; height: 120px; pointer-events: none; background-image: linear-gradient(to bottom, rgba(128, 128, 128, .3) 1px, transparent 1px); background-size: 100% var(--tmhp); }
-        .tm-lb { position: absolute; left: 0; font-size: 6.5px; line-height: 1; opacity: .75; }
-        .tm-bar { position: absolute; border-radius: 3px; background: currentColor; opacity: .38; min-height: 3px; }
-        .tm-none { position: absolute; left: 0; right: 0; top: 18px; text-align: center; font-size: 8px; opacity: .8; }
         .cal-day .wd { margin-left: 1px; font-size: 9px; font-weight: 600; opacity: .85; }
-        .cal-month-head { grid-column: 1 / -1; padding: 6px 2px 0; font-size: 13px; font-weight: 700; color: var(--ink-2); }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         /* ノーマル表示(タイムツリー風) */
-        .cal-grid.nv { gap: 0; }
-        .cal-grid.nv .cal-day { height: auto; min-height: 78px; touch-action: manipulation; aspect-ratio: auto; justify-content: flex-start; align-items: stretch; gap: 2px; padding: 3px 1px 2px; border-radius: 0; box-shadow: none; background: transparent; border-top: 1px solid var(--line); }
-        .cal-grid.nv .cal-day.selected { background: var(--surface-2); }
-        .nv-d { align-self: center; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 12px; font-weight: 600; border-radius: 50%; color: var(--ink); }
-        .cal-day.hol .nv-d { color: var(--notcome); }
-        .cal-grid > .cal-day.hol:not(.other-month):not([class*="event-"]), .tw-head .cal-day.hol:not([class*="event-"]), .cal-grid.list-mode > .cal-day.hol:not([class*="event-"]) { color: var(--notcome-ink); }
-        .nv-chip.nv-jp { background: transparent !important; color: var(--ink-3); box-shadow: none !important; font-weight: 500; }
-        .nv-chip.nv-jp.h { color: var(--notcome); }
         .nv-jprow .nv-tt { font-weight: 500; }
-        .cal-grid.nv .cal-day.today .nv-d { background: var(--ink-fill); color: #fff; }
-        .nv-chip { display: block; overflow: hidden; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.4; padding: 0 3px; border-radius: 3px; background: var(--plan-gray, var(--pcbg0)); color: var(--plan-ink, var(--ink-2)); }
         /* 終日の予定は塗りではなく枠だけ。日時の入っている予定は塗り */
-        .nv-chip.ring { background: transparent; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)); }
         :root { --pr0: #9aa0a8; --pr1: #4677c4; --pr2: #4677c4; --pr3: #e597b7; --pr4: #1f2124; --pr5: #9c3d68; --pr6: #e597b7; --pr7: #4677c4; --pr8: #9aa0a8; --pr9: #1f2124; --pr10: #9aa0a8; --pr11: #9c3d68; --pr12: #e597b7; --pr13: #4677c4; }
         body.dark { --pr0: #7f848c; --pr1: #86aef0; --pr2: #86aef0; --pr3: #f4c0d5; --pr4: #f1f2f4; --pr5: #d0789f; --pr6: #f4c0d5; --pr7: #86aef0; --pr8: #7f848c; --pr9: #f1f2f4; --pr10: #7f848c; --pr11: #d0789f; --pr12: #f4c0d5; --pr13: #86aef0; }
         .cal-day.p-ring::after { content: ""; position: absolute; inset: 0; box-sizing: border-box; border: 2px solid var(--ring, var(--plan-ink)); border-radius: inherit; pointer-events: none; }
         .cal-day.plan-ringonly { color: var(--plan-ink); }
-        .nv-more { font-size: 9px; color: var(--ink-3); padding-left: 3px; }
         /* 日またぎの予定: 週ごとに1本のバーでつなげる(タイムツリー風) */
-        .nv-lane { height: 12.6px; flex: none; }
-        .nv-seg { align-self: start; z-index: 2; pointer-events: none; height: 12.6px; box-sizing: border-box; text-overflow: ellipsis; }
-        .nv-top { display: flex; align-items: center; justify-content: center; gap: 2px; height: 22px; }
         .nv-ic { display: inline-flex; align-items: center; gap: 2px; }
         .cal-day .nv-ic .cal-warn { position: static; font-size: 10px; line-height: 1; }
         #nvBack { display: none; margin: 0 0 8px; }
@@ -416,8 +344,6 @@
         .nv-sub { font-size: 12px; color: var(--ink-3); }
         .nv-memo { margin-top: 3px; font-size: 13px; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; }
         .nv-empty { padding: 18px 0; text-align: center; font-size: 13px; color: var(--ink-3); }
-        .cal-weekday { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--ink-3); padding: 4px 0 6px; }
-        .cal-wsrow { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 0 auto; font-size: 11px; color: var(--ink-3); }
         .cal-day {
             position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: none; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: 500;
@@ -428,9 +354,6 @@
         .cal-day.selected { box-shadow: inset 0 0 0 2px var(--ink); }
         .cal-day.today.selected { box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px var(--ink); }
         .cal-day .cnt { font-size: 10px; font-weight: 700; margin-top: 1px; opacity: .8; }
-        .cal-day.event-sufficient { background: var(--come-soft); color: var(--come-ink); }
-        .cal-day.event-warning { background: #fff3cc; color: #7a5200; }
-        .cal-day.event-danger { background: var(--notcome-soft); color: var(--notcome-ink); }
 
         .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); margin: 12px 2px 0; }
         .legend span { display: inline-flex; align-items: center; gap: 5px; }
@@ -443,10 +366,6 @@
             background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-sm);
         }
         .event-toggle label { flex: 1; cursor: pointer; margin: 0; font-size: 14.5px; font-weight: 600; }
-        .no-event-msg {
-            color: var(--ink-3); font-size: 13.5px; margin: 0 0 14px; padding: 16px; text-align: center;
-            background: transparent; border: 1px dashed var(--line-2); border-radius: var(--r-md); line-height: 1.6;
-        }
 
         /* =========================================================
            Tabs (segmented control)
@@ -461,66 +380,25 @@
         /* =========================================================
            Input view
            ========================================================= */
-        .copy-btn { width: 100%; margin-bottom: 8px; text-align: left; display: flex; align-items: center; justify-content: space-between; }
-        .copy-btn::after { content: "＋"; color: var(--ink-3); font-weight: 400; }
-        .copy-select { width: 100%; }
-        .copy-empty { color: var(--ink-3); font-size: 13px; padding: 8px 2px; }
-        .copy-actions { display: flex; gap: 8px; margin-top: 12px; }
 
         .summary { font-size: 12.5px; font-weight: 600; color: var(--ink-3); letter-spacing: .02em; }
 
-        .bulk-toggle-row { margin: 0 0 10px; }
-        .bulk-toggle-btn { min-height: 38px; font-size: 13px; padding: 0 14px; border-radius: 999px; }
-        .bulk-toggle-btn.active { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); }
-        .bulk-action-bar { margin: 0 0 12px; padding: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
         .bulk-action-row { display: flex; gap: 8px; margin-bottom: 8px; }
         .bulk-action-row button { flex: 1; min-height: 38px; font-size: 13px; }
-        .bulk-status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .bulk-status-row button {
-            border-radius: var(--r-sm); font-size: 13px; font-weight: 600; min-height: 42px; border: 1px solid var(--line-2); background: var(--surface);
-        }
-        .bulk-status-row button.come { color: var(--come-ink); background: var(--come-soft); border-color: transparent; }
-        .bulk-status-row button.notcome { color: var(--notcome-ink); background: var(--notcome-soft); border-color: transparent; }
-        .bulk-status-row button.pending { color: var(--pending-ink); background: var(--pending-soft); border-color: transparent; }
-        .bulk-status-row button.unconfirmed { color: var(--unconf-ink); background: var(--unconf-soft); border-color: transparent; }
-        .member-select-checkbox { width: 20px; height: 20px; flex-shrink: 0; }
 
-        .member-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-        .member-empty { color: var(--ink-3); font-size: 13.5px; padding: 18px 8px; text-align: center; }
-        .member-card {
-            background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
-            padding: 10px 12px 11px; box-shadow: var(--shadow-sm);
-        }
-        .member-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         input[type="text"].name-input {
             flex: 1; min-width: 0; font-weight: 700; font-size: 16px; min-height: 38px; padding: 0 8px;
             background: transparent; border: 1px solid transparent; border-radius: 8px;
         }
         input[type="text"].name-input:hover { background: var(--surface-2); }
         input[type="text"].name-input:focus { background: var(--surface); border-color: var(--ink); }
-        .member-card input[type="text"].name-input { min-height: 36px; }
         .remove-btn {
             flex: none; width: 34px; height: 34px; min-width: 0; padding: 0; border-radius: 50%;
             background: transparent; border: none; color: var(--ink-3); font-size: 15px; line-height: 1;
         }
         .remove-btn:active { color: var(--notcome-ink); background: var(--notcome-soft); }
 
-        .status-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 3px; background: var(--surface-2); border-radius: 11px; }
-        .status-btn {
-            padding: 0 2px; border-radius: 8px; border: none; background: transparent;
-            font-size: 13px; font-weight: 600; min-height: 36px; color: var(--ink-3); white-space: nowrap;
-        }
-        .status-btn.active.come { background: var(--come-soft); color: var(--come-ink); box-shadow: inset 0 0 0 1.5px var(--come); font-weight: 700; }
-        .status-btn.active.notcome { background: var(--notcome-soft); color: var(--notcome-ink); box-shadow: inset 0 0 0 1.5px var(--notcome); font-weight: 700; }
-        .status-btn.active.pending { background: var(--pending-soft); color: var(--pending-ink); box-shadow: inset 0 0 0 1.5px var(--pending); font-weight: 700; }
-        .status-btn.active.unconfirmed { background: var(--unconf-soft); color: var(--unconf-ink); box-shadow: inset 0 0 0 1.5px var(--unconf); font-weight: 700; }
 
-        .member-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-        .link-status {
-            display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px;
-        }
-        .link-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 5px; }
-        .link-status.linked { background: var(--come-soft); color: var(--come-ink); }
 
         .add-row { display: flex; gap: 8px; margin-top: 16px; }
         .add-row input { flex: 1; min-width: 0; }
@@ -528,11 +406,6 @@
         /* =========================================================
            Confirm view
            ========================================================= */
-        .confirm-summary-box {
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-            margin: 0 0 12px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line);
-            border-radius: var(--r-lg); box-shadow: var(--shadow-sm);
-        }
         .confirm-count-grid { display: flex; gap: 20px; flex-wrap: wrap; }
         .confirm-count-item { text-align: left; }
         .confirm-count-item .num { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
@@ -546,11 +419,6 @@
         .status-badge.warning { background: #fff3cc; color: #7a5200; }
         .status-badge.danger { background: var(--notcome-soft); color: var(--notcome-ink); }
 
-        .attention-box {
-            margin: 0 0 22px; padding: 14px 16px; border-radius: var(--r-md);
-            background: var(--unconf-soft); border: 1px solid rgba(224, 138, 0, .25); border-left: 4px solid var(--unconf);
-        }
-        .follow-btn { width: 100%; margin-top: 10px; }
 
         .confirm-group { margin-bottom: 22px; }
         .confirm-group-title {
@@ -586,7 +454,6 @@
         .roster-head, .roster-card-top {
             display: grid; grid-template-columns: minmax(0, 1fr) 58px 96px 28px; align-items: center; gap: 6px;
         }
-        .roster-head { padding: 0 13px; margin: 0 0 4px; font-size: 10.5px; font-weight: 600; letter-spacing: .03em; color: var(--ink-3); }
         .roster-card-top { margin-bottom: 8px; }
         .roster-card-top input[type="text"].name-input { width: 100%; min-width: 0; background: var(--surface-2); }
         .roster-card-top select { width: 100%; min-width: 0; min-height: 38px; padding: 0 3px; font-size: 13.5px; }
@@ -613,7 +480,6 @@
         .roster-add-row { display: flex; gap: 8px; margin-top: 10px; }
         .roster-add-row input { flex: 1; min-width: 0; }
 
-        .param-role-section h4 { font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 0 0 8px; }
         .param-checkbox-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 4px; }
         .param-checkbox-item {
             display: flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); border-radius: var(--r-sm);
@@ -628,23 +494,13 @@
         .conflict-col label { font-size: 11px; font-weight: 700; color: var(--ink-3); }
         .conflict-rule-mid { text-align: center; font-size: 13px; color: var(--ink-3); margin: 4px 0; }
         .conflict-rule-summary { font-size: 12px; color: var(--ink-2); background: var(--surface); border-radius: 8px; padding: 7px 10px; margin-top: 8px; line-height: 1.55; }
-        .conflict-rule-actions { text-align: right; margin-top: 6px; }
-        .conflict-rule-actions button { min-height: 34px; padding: 0 12px; font-size: 13px; }
         .conflict-add-btn { width: 100%; margin-bottom: 4px; min-height: 40px; }
         .param-excluded { text-decoration: line-through; opacity: .5; }
 
-        .roster-select-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; margin-bottom: 4px; }
-        .roster-select-item {
-            display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: var(--r-sm);
-            padding: 10px 12px; font-size: 15px; font-weight: 600; background: var(--surface); cursor: pointer;
-        }
-        .roster-select-item:has(input:checked) { border-color: var(--ink); background: var(--surface-2); }
-        .roster-select-item input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; }
         .roster-select-item .pos-tag, .team-member-pos, .court-pos {
             font-size: 11px; font-weight: 600; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line);
             border-radius: 999px; padding: 1px 8px;
         }
-        .roster-select-empty { color: var(--ink-3); font-size: 13.5px; padding: 8px 2px; }
 
         .pair-add-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .pair-add-row select { flex: 1; min-width: 100px; width: auto; }
@@ -658,9 +514,6 @@
         /* =========================================================
            Team split view
            ========================================================= */
-        .team-source-note { font-size: 13px; color: var(--ink-3); margin: 0 2px 10px; line-height: 1.6; }
-        .team-settings-link { width: 100%; margin-bottom: 14px; min-height: 40px; font-size: 13px; color: var(--ink-2); display: flex; align-items: center; justify-content: space-between; }
-        .team-settings-link::after { content: "›"; font-size: 18px; color: var(--ink-3); line-height: 1; }
 
         .unregistered-box { margin-bottom: 14px; padding: 14px; background: var(--unconf-soft); border: 1px solid rgba(224, 138, 0, .25); border-radius: var(--r-md); }
         .unregistered-title { font-weight: 700; font-size: 13.5px; color: var(--unconf-ink); margin-bottom: 10px; }
@@ -668,16 +521,6 @@
         .unregistered-item-name { font-weight: 700; margin-bottom: 8px; }
         .quick-register-btn { width: 100%; margin-top: 8px; min-height: 42px; }
 
-        .team-controls {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 14px;
-            padding: 8px 8px 8px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-sm);
-        }
-        .team-controls label { font-size: 14.5px; font-weight: 600; }
-        .team-controls input[type="number"] { width: 72px; text-align: center; padding: 0 6px; font-weight: 700; }
-        .param-visibility-toggle {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 500;
-            padding: 8px 2px; margin: 0; cursor: pointer;
-        }
         .team-legend {
             display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2);
             margin: 10px 2px 16px; align-items: center;
@@ -693,16 +536,6 @@
         .team-result-title { font-weight: 800; font-size: 18px; letter-spacing: .01em; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: baseline; }
         .team-result-title > span:last-child { font-size: 13px; font-weight: 600; color: var(--ink-3); }
         .team-avg-line { font-size: 12.5px; color: var(--ink-3); margin-bottom: 10px; line-height: 1.55; }
-        .team-member-row {
-            display: flex; justify-content: space-between; align-items: center; gap: 8px;
-            padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14.5px;
-        }
-        .team-member-row:last-child { border-bottom: none; }
-        .team-member-row.killer-row { background: #fff7e6; border-radius: 10px; padding-left: 10px; padding-right: 10px; margin: 2px -10px; border-bottom-color: transparent; }
-        .team-member-name { font-weight: 700; }
-        .team-member-row > div:first-child { flex: none; white-space: nowrap; }
-        .team-member-pos { margin-left: 6px; }
-        .team-member-params { flex: 1; min-width: 0; font-size: 11.5px; color: var(--ink-3); text-align: right; line-height: 1.45; }
         .killer-badge { margin-left: 4px; font-size: 14px; font-weight: 800; line-height: 1; }
         .killer-badge.key-mark-0 { color: #e8590c; }
         .killer-badge.key-mark-1 { color: #1c7ed6; }
@@ -715,10 +548,6 @@
         .gender-dot.gender-other { background: #a78bfa; }
         .gender-dot.gender-unspecified { background: var(--line-2); }
 
-        .team-avg-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        .team-avg-table th, .team-avg-table td { padding: 8px 4px; text-align: center; border-bottom: 1px solid var(--line); }
-        .team-avg-table th { color: var(--ink-3); font-weight: 600; font-size: 12px; }
-        .team-avg-table td:first-child, .team-avg-table th:first-child { text-align: left; }
 
         /* ---- disclosure (details) ---- */
         .team-split-note { font-size: 12.5px; color: var(--ink-2); margin: 6px 0 14px; line-height: 1.7; }
@@ -736,18 +565,9 @@
         .team-split-note ol > li { margin-bottom: 8px; }
         .team-split-note ol > li > b { color: var(--ink); }
         .team-split-note ul { margin: 2px 0 0; padding-left: 1.2em; }
-        .role-slot-details > summary { color: var(--ink); }
 
         /* ---- court ---- */
         .court-box { margin: 10px 0 12px; padding: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
-        .court-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; color: var(--ink-2); }
-        .court-rot-btns { display: inline-flex; gap: 6px; }
-        .court-rot-btns button {
-            border: 1px solid var(--line-2); background: var(--surface); border-radius: 50%; width: 36px; height: 36px; padding: 0;
-            font-size: 12px; color: var(--ink);
-        }
-        .court-rot-btns button:active:not(:disabled) { background: var(--surface-2); }
-        .court-rot-btns button:disabled { opacity: .35; }
         .court-net { background: var(--ink-fill); color: #fff; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .6em; padding: 4px 0 4px .6em; border-radius: 8px 8px 0 0; }
         .court-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 6px;
@@ -761,25 +581,12 @@
         .court-cell.back { background: #fbf8f2; }
         .court-cell.fixed { box-shadow: inset 0 0 0 1.5px var(--accent); }
         .court-slot-no { position: absolute; top: 4px; left: 7px; font-size: 10px; font-weight: 800; color: #b09670; }
-        .court-fixed { position: absolute; top: 3px; right: 5px; font-size: 9.5px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); border-radius: 999px; padding: 0 6px; }
         .court-name { font-weight: 700; font-size: 13.5px; }
         .court-pos { position: absolute; top: 3px; right: 5px; max-width: calc(100% - 28px); font-size: 9.5px; line-height: 1.2; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .court-params { display: grid; grid-template-columns: repeat(3, 1fr); justify-items: center; gap: 1px 0; font-size: 9.5px; font-weight: 500; color: var(--ink-3); margin: 3px auto 0; max-width: 96px; line-height: 1.35; font-variant-numeric: tabular-nums; }
         .court-params .cp { white-space: nowrap; }
-        .bench-chip .court-params { margin-top: 1px; }
         .court-empty { color: var(--line-2); font-size: 12px; padding-top: 8px; }
-        .court-sums { font-size: 11.5px; color: var(--ink-3); margin-top: 8px; text-align: center; }
-        .court-bench { font-size: 12.5px; color: var(--ink-2); margin-top: 8px; line-height: 1.55; }
-        .court-warn { font-size: 12px; color: #8f5600; background: var(--unconf-soft); border-radius: 8px; padding: 6px 10px; margin-top: 8px; line-height: 1.55; }
 
-        .team-members-details { margin-top: 8px; border-top: 1px solid var(--line); }
-        .team-members-details > summary {
-            cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px;
-            padding: 10px 2px; min-height: 42px; font-size: 13.5px; font-weight: 700; color: var(--ink-2);
-        }
-        .team-members-details > summary::-webkit-details-marker { display: none; }
-        .team-members-details > summary::before { content: "›"; color: var(--ink-3); width: .8em; flex-shrink: 0; font-size: 1.2em; line-height: 1; transition: transform .15s; }
-        .team-members-details[open] > summary::before { transform: rotate(90deg); }
 
         /* ---- role slot settings ---- */
         .role-slot-row {
@@ -814,18 +621,6 @@
         .shot-preview { display: none; max-height: 110px; max-width: 100%; border-radius: 8px; border: 1px solid var(--line); margin-bottom: 8px; }
         .shot-progress { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
         .shot-progress:empty { display: none; }
-        .shot-head-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-weight: 700; font-size: 14px; }
-        .shot-head-row select { flex: 1; min-height: 42px; font-size: 15px; }
-        .shot-count { font-size: 12.5px; color: var(--ink-2); margin-bottom: 8px; }
-        .shot-warn { background: var(--unconf-soft); color: var(--unconf-ink); border-radius: var(--r-sm); padding: 8px 10px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-        .shot-row { border: 1px solid var(--line); border-left-width: 4px; border-radius: var(--r-sm); padding: 10px; margin-bottom: 8px; background: var(--surface); }
-        .shot-raw { font-size: 12.5px; color: var(--ink-2); margin-bottom: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .shot-raw b { color: var(--ink); font-size: 15px; }
-        .shot-badge { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; }
-        .shot-row select { width: 100%; min-height: 42px; font-size: 15px; font-weight: 600; }
-        .shot-remember { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
-        .shot-remember input { width: 18px; height: 18px; flex: none; }
-        .shot-apply { width: 100%; margin-top: 4px; }
         .roster-eff { margin-top: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: var(--surface-2); border-radius: 8px; padding: 6px 10px; }
 
         /* ---- 名簿検索 ---- */
@@ -846,24 +641,11 @@
             box-shadow: var(--shadow-md); font-size: 13.5px; line-height: 1.6;
         }
         .swap-bar:empty { display: none; }
-        .swap-bar .swap-title { font-weight: 700; color: var(--accent-ink); }
-        .swap-bar .swap-sel { font-weight: 700; }
-        .swap-bar .swap-ok { color: var(--accent-ink); margin-top: 4px; }
         .swap-bar .swap-warn { color: var(--unconf-ink); background: var(--unconf-soft); border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
-        .swap-bar-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .swap-bar-actions button {
-            background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-sm);
-            font-size: 13px; font-weight: 600; min-height: 36px; padding: 0 12px;
-        }
-        .swap-bar-actions button:active { background: var(--surface-2); }
         .court-cell.swappable, .bench-chip.swappable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .court-cell.swappable:active { background: var(--surface-2); }
         .court-cell.swap-selected { background: var(--accent-soft) !important; outline: 2px solid var(--accent); outline-offset: -2px; }
         .court-cell.swap-target:not(.fixed) { box-shadow: inset 0 0 0 1.5px var(--line-2); }
-        .bench-chip { display: inline-block; padding: 3px 9px; margin: 2px 0; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-2); font-weight: 600; }
-        .bench-chip.swap-selected { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
-        .bench-arrow { color: var(--ink-3); margin: 0 4px; }
-        .swap-hint { font-size: 12px; color: var(--ink-3); margin: 0 2px 8px; }
         .swap-modal-back { position: fixed; inset: 0; z-index: 2000; background: rgba(20, 22, 28, .45); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .swap-modal { width: 100%; max-width: 360px; background: var(--surface); border-radius: var(--r-md); box-shadow: 0 12px 40px rgba(0, 0, 0, .25); padding: 16px; }
         .swap-modal .sc-title { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
@@ -874,10 +656,6 @@
         .swap-modal .sc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
         .swap-modal .sc-actions button { min-height: 44px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--surface); font-size: 14px; font-weight: 700; }
         .swap-modal .sc-actions .sc-ok { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); }
-        .team-member-row.swappable { cursor: pointer; border-radius: 10px; padding-left: 8px; padding-right: 8px; margin-left: -8px; margin-right: -8px; }
-        .team-member-row.swappable:active { background: var(--surface-2); }
-        .team-member-row.swap-selected { background: var(--accent-soft) !important; outline: 2px solid var(--accent); outline-offset: -2px; }
-        .team-member-row.swap-target { box-shadow: inset 3px 0 0 var(--line-2); }
 
         /* =========================================================
            Compact layout (スクロール削減・フラット化)
@@ -901,7 +679,6 @@
             min-height: 40px; padding: 0 14px; font-size: 13.5px;
         }
         .template-reset-btn { min-height: 28px; padding: 4px 0; font-size: 12.5px; }
-        .line-btn { min-height: 44px; font-size: 14px; box-shadow: none; margin-top: 2px; }
         .link-btn { background: none; border: none; color: var(--ink-2); font-size: 12.5px; font-weight: 600; padding: 4px 0 4px 10px; min-height: 28px; }
         .link-btn:active { color: var(--ink); }
 
@@ -921,13 +698,10 @@
         .card, .settings-panel, .roster-panel, .copy-panel { padding: 12px; box-shadow: none; }
         .settings-panel, .roster-panel, .copy-panel { margin: 0 0 8px; }
         .settings-panel h3, .roster-panel h3, .copy-panel h3 { font-size: 14px; margin: 0 0 8px; }
-        .settings-subtitle { font-size: 14px; margin: 0 0 6px; }
-        .settings-divider { margin: 12px 0 10px; }
         .settings-note { font-size: 12px; margin: 2px 0 10px; line-height: 1.55; }
         .settings-row { margin-bottom: 8px; gap: 10px; }
         .settings-row label { font-size: 13.5px; }
         .follow-template-input { min-height: 104px; font-size: 14px; }
-        .copy-actions { margin-top: 8px; }
 
         .panel-sticky {
             position: sticky; top: 0; z-index: 6; background: var(--surface);
@@ -955,8 +729,6 @@
         .acc[open] > summary::after { transform: rotate(90deg); }
         .acc-body { padding: 10px 12px 12px; }
         .acc-body .note-details { margin: 4px 0 10px; }
-        .param-role-section h4 { font-size: 12.5px; margin: 10px 0 6px; }
-        .param-role-section h4:first-child { margin-top: 0; }
         .param-checkbox-grid { gap: 5px; }
         .param-checkbox-item { padding: 8px 6px; font-size: 13px; }
         .mob-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }
@@ -985,14 +757,8 @@
         .team-split-note { font-size: 12px; margin: 4px 0 8px; }
 
         /* ---- calendar ---- */
-        .cal-card { padding: 10px 8px 8px; margin-bottom: 8px; }
-        .cal-header { margin: 0 0 6px; padding: 0 2px; }
-        .cal-header .month-label { font-size: 15px; }
         .cal-nav-btn, .today-btn { height: 32px; font-size: 13px; }
-        .cal-nav-btn { width: 32px; }
         .today-btn { padding: 0 12px; }
-        .cal-grid { gap: 2px; }
-        .cal-weekday { padding: 2px 0 3px; font-size: 10.5px; }
         .cal-day { aspect-ratio: auto; height: 38px; min-height: 38px; font-size: 14px; border-radius: 9px; }
         .cal-day .cnt { font-size: 9.5px; margin-top: 0; line-height: 1; }
         .legend { margin: 8px 2px 0; gap: 4px 12px; font-size: 10.5px; }
@@ -1004,7 +770,6 @@
         .selected-date-label .sd-sub { font-size: 12px; white-space: nowrap; }
         .event-toggle { margin: 0; padding: 0; border: none; background: none; box-shadow: none; gap: 8px; flex: none; }
         .event-toggle label { flex: none; font-size: 13px; }
-        .no-event-msg { margin: 0 0 8px; padding: 12px; font-size: 13px; }
 
         /* ---- tabs: 追従 ---- */
         .view-tabs-wrap {
@@ -1013,48 +778,21 @@
         }
         .view-tabs { margin: 0; padding: 3px; border-radius: 11px; }
         .view-tab-btn { min-height: 34px; font-size: 13.5px; border-radius: 9px; }
-        .member-sub { margin: 0 0 8px; }
-        .member-sub button { min-height: 32px; font-size: 13px; }
 
         /* ---- 入力ビュー ---- */
         .add-row { margin: 0 0 8px; }
-        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 8px; }
-        .qa-btn {
-            min-height: 36px; padding: 0 4px; font-size: 12.5px; font-weight: 600; white-space: nowrap;
-            background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); border-radius: var(--r-sm);
-        }
-        .roster-select-list { max-height: 240px; }
-        .roster-select-item { padding: 8px 10px; font-size: 14px; }
 
         .input-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; padding: 0 2px; }
         .summary { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; font-weight: 600; color: var(--ink-2); letter-spacing: 0; }
-        .bulk-toggle-btn { flex: none; min-height: 30px; font-size: 12px; padding: 0 12px; }
-        .bulk-action-bar { margin: 0 0 8px; padding: 8px; }
         .bulk-action-row { margin-bottom: 6px; }
         .bulk-action-row button { min-height: 34px; }
-        .bulk-status-row button { min-height: 36px; font-size: 12.5px; }
 
-        .member-list { gap: 5px; margin-top: 0; }
-        .member-empty { padding: 14px 8px; font-size: 13px; }
-        .member-card { display: flex; align-items: center; gap: 6px; padding: 5px 6px 5px 8px; box-shadow: none; border-radius: var(--r-md); }
-        .member-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-        .member-card input[type="text"].name-input { min-height: 28px; height: 28px; padding: 0 6px; font-size: 15px; width: 100%; }
-        .member-sub { display: flex; align-items: center; gap: 5px; padding-left: 6px; line-height: 1.2; min-height: 14px; }
-        .link-status { font-size: 10px; padding: 0 6px; }
-        .link-status::before { width: 5px; height: 5px; margin-right: 4px; }
-        .status-buttons { flex: none; display: flex; gap: 2px; padding: 2px; border-radius: 9px; }
-        .status-btn { min-height: 32px; padding: 0 6px; font-size: 12px; border-radius: 7px; }
-        .status-btn.active.come, .status-btn.active.notcome, .status-btn.active.pending, .status-btn.active.unconfirmed { box-shadow: inset 0 0 0 1px currentColor; }
-        .member-card .remove-btn { width: 26px; height: 32px; border-radius: 8px; font-size: 13px; }
-        .member-select-checkbox { width: 18px; height: 18px; }
 
         /* ---- 確認ビュー ---- */
-        .confirm-summary-box { padding: 10px 14px; margin: 0 0 8px; box-shadow: none; border-radius: var(--r-md); gap: 8px; }
         .confirm-count-grid { gap: 16px; }
         .confirm-count-item .num { font-size: 24px; }
         .confirm-count-item .lbl { font-size: 10.5px; margin-top: 3px; }
         .status-badge { font-size: 11.5px; padding: 3px 10px; }
-        .follow-btn { margin-top: 8px; min-height: 38px; }
         .confirm-group { margin-bottom: 12px; }
         .confirm-group-title { margin: 0 2px 6px; font-size: 12.5px; }
         .confirm-name-list { gap: 5px; }
@@ -1115,28 +853,11 @@
 
         /* ---- チーム分けビュー ---- */
         .team-toolbar { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
-        .team-controls { flex: 1; margin: 0; padding: 3px 3px 3px 12px; box-shadow: none; border-radius: var(--r-sm); min-height: 40px; }
-        .team-controls label { font-size: 13.5px; }
-        .team-controls input[type="number"] { width: 56px; min-height: 32px; }
-        .team-settings-link { width: auto; flex: none; margin: 0; padding: 0 12px; }
-        .team-options { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
-        .param-visibility-toggle {
-            display: inline-flex; align-items: center; margin: 0; padding: 0 12px; min-height: 30px; cursor: pointer;
-            background: var(--surface); border: 1px solid var(--line-2); border-radius: 999px;
-            font-size: 12.5px; font-weight: 600; color: var(--ink-2);
-        }
-        .param-visibility-toggle input[type="checkbox"] { display: none; }
-        .param-visibility-toggle:has(input:checked) { background: var(--ink-fill); border-color: var(--ink-fill); color: #fff; }
         .team-split-btn { min-height: 44px; font-size: 14.5px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(18, 21, 28, .14); }
-        .team-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 0; }
-        .team-actions .team-rerun-btn { margin: 0 0 8px; min-height: 38px; padding: 0 4px; font-size: 12.5px; white-space: nowrap; }
-        .team-actions .team-reset-btn { grid-column: 1 / -1; color: var(--notcome-ink); border-color: rgba(229, 72, 77, .35); background: var(--surface); }
-        .team-actions .team-reset-btn:active { background: var(--notcome-soft); }
         .predict-box {
             display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; padding: 8px 12px;
             background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); font-size: 13px;
         }
-        .predict-box .pb-label { font-weight: 700; color: var(--ink-2); flex: none; }
         .predict-box .pb-body { text-align: right; color: var(--ink-2); min-width: 0; }
         .predict-box .predict-result { padding: 0; font-size: 13px; text-align: right; }
         .predict-box .predict-result b { font-size: 16px; }
@@ -1153,20 +874,10 @@
         .team-result-title { font-size: 16px; margin-bottom: 0; }
         .team-avg-line { font-size: 11.5px; margin-bottom: 6px; }
         .court-box { margin: 6px 0; padding: 8px; }
-        .court-head { margin-bottom: 6px; font-size: 12px; }
-        .court-rot-btns button { width: 30px; height: 30px; }
         .court-net { font-size: 9px; padding: 3px 0 3px .6em; }
         .court-grid { gap: 4px; padding: 5px; }
         .court-cell { min-height: 56px; padding: 21px 2px 5px; }
         .court-name { font-size: 13px; }
-        .court-sums { margin-top: 6px; }
-        .court-bench { margin-top: 6px; font-size: 12px; }
-        .team-members-details { margin-top: 4px; }
-        .team-members-details > summary { min-height: 34px; padding: 6px 2px; font-size: 12.5px; }
-        .team-member-row { padding: 6px 0; font-size: 14px; }
-        .team-avg-table { margin-top: 6px; font-size: 12px; }
-        .team-avg-table th, .team-avg-table td { padding: 5px 4px; }
-        .team-controls + .team-options { margin-top: 0; }
 
         /* ---- チェック項目はチップ表示(4項目が1行に収まる) ---- */
         .param-checkbox-grid { grid-template-columns: repeat(auto-fit, minmax(66px, 1fr)); }
@@ -1196,7 +907,6 @@
         body:not(.dev-on) .dev-only { display: none !important; }
         body:not(.dev-on) .roster-list-head,
         body:not(.dev-on) .rc-head { grid-template-columns: 76px minmax(0, 1fr) 12px; }
-        .settings-btn.dev-toggle.on { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); }
 
         /* ---- 名簿の並び替え ---- */
         .roster-sort-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; }
@@ -1209,10 +919,6 @@
         .rs-seg button.active { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-sm); }
         .roster-sort-note { font-size: 11px; color: var(--ink-3); margin: 4px 0 0; }
         .roster-sort-note:empty { display: none; }
-        .rc-status {
-            flex: none; margin-left: 6px; font-size: 10.5px; font-weight: 700; border-radius: 999px;
-            padding: 1px 7px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap;
-        }
 
         /* ---- バレー動画 ---- */
         .video-toolbar { display: flex; align-items: center; gap: 4px; margin: 0 0 10px; flex-wrap: nowrap; }
@@ -1224,9 +930,6 @@
         .video-toolbar .vt-none.on { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); }
         .video-toolbar select { flex: 1 1 0; min-width: 0; padding: 0 4px; }
         .video-form { margin: 0 0 10px; }
-        .video-form .vf-row { display: flex; gap: 8px; margin-bottom: 8px; }
-        .video-form .vf-row > * { flex: 1; min-width: 0; }
-        .video-form label.vf-label { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink-3); margin: 8px 0 4px; }
         .video-form input[type="url"], .video-form input[type="text"], .video-form input[type="date"], .video-form input[type="time"] { width: 100%; min-height: 40px; }
         .vf-member-tools { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
         .vf-member-tools button { min-height: 32px; font-size: 12px; padding: 0 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-2); font-weight: 600; color: var(--ink); }
@@ -1247,7 +950,6 @@
         .vf-url-count { font-size: 11.5px; color: var(--ink-3); margin-top: 4px; min-height: 14px; }
         .vc-actions { display: flex; gap: 6px; flex-wrap: wrap; }
         .vc-actions button, .vc-actions a { min-height: 34px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; }
-        .vc-actions .vc-copy { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); font-weight: 700; }
         .vc-actions .vc-del { color: #c92a2a; }
         .video-empty { text-align: center; color: var(--ink-3); font-size: 13px; padding: 22px 0; }
 
@@ -1263,13 +965,10 @@
         .header-btns { gap: 0; }
         .settings-btn { background: transparent; border: none; box-shadow: none; color: var(--ink-2); min-height: 30px; padding: 0 9px; font-size: 13px; font-weight: 600; border-radius: 8px; }
         .settings-btn:active { background: var(--line); }
-        .settings-btn.dev-toggle { color: var(--ink-3); font-weight: 500; }
-        .settings-btn.dev-toggle.on { background: var(--ink-fill); color: #fff; border-radius: 999px; }
 
         /* ---- 面はフラットに ---- */
         .card, .settings-panel, .roster-panel, .copy-panel, .team-result-card, .confirm-summary-box,
         .predict-box, .video-card, .unregistered-box { border-color: transparent; box-shadow: none; }
-        .cal-card { padding: 8px 6px 6px; }
         .legend { font-size: 10px; color: var(--ink-3); margin: 6px 2px 0; }
         .view-tabs { background: #e9ebef; }
 
@@ -1281,14 +980,6 @@
         .acc-body { padding: 4px 2px 12px; }
 
         /* ---- 入力: メンバーを1つのリストに(区切りは細い線のみ) ---- */
-        .member-list { gap: 0; background: var(--surface); border-radius: var(--r-md); overflow: hidden; }
-        .member-card { background: transparent; border: none; border-bottom: 1px solid var(--line); border-radius: 0; padding: 5px 4px 5px 12px; box-shadow: none; }
-        .member-card:last-child { border-bottom: none; }
-        .member-card input[type="text"].name-input { height: 32px; min-height: 32px; }
-        .member-card .member-sub { min-height: 0; margin: 0; }   /* 同名クラスの余白を打ち消す */
-        .status-buttons { background: transparent; padding: 0; gap: 2px; }
-        .status-btn { background: transparent; color: var(--ink-3); border-color: transparent; font-weight: 500; }
-        .member-card .remove-btn { color: var(--ink-3); opacity: .7; }
 
         /* ---- 名簿: 同じくリスト表示。開いたときだけ薄い面 ---- */
         #rosterList .roster-card { background: transparent; border: none; border-bottom: 1px solid var(--line); border-radius: 0; margin: 0; box-shadow: none; }
@@ -1299,35 +990,18 @@
 
         /* ---- チーム分け ---- */
         .team-toolbar { gap: 6px; }
-        .team-controls { background: var(--surface); border: none; min-width: 0; padding: 3px 3px 3px 10px; }
-        .team-controls label { font-size: 13px; white-space: nowrap; }
-        .team-controls input[type="number"] { width: 44px; text-align: center; border-color: transparent; background: var(--surface-2); }
-        .team-toolbar .param-visibility-toggle { min-height: 40px; border: none; border-radius: var(--r-sm); padding: 0 12px; background: var(--surface); }
-        .team-toolbar .param-visibility-toggle:has(input:checked) { background: var(--ink-fill); color: #fff; }
-        .team-settings-link { background: var(--surface); border: none; padding: 0 12px; color: var(--ink-2); }
-        .team-settings-link::after { content: none; }
         .team-split-btn { box-shadow: none; }
-        .team-actions .team-rerun-btn { border: none; background: var(--surface); color: var(--ink); }
-        .team-actions .team-reset-btn { grid-column: auto; color: var(--ink-3); background: var(--surface); border: none; }
-        .team-actions .team-reset-btn:active { background: var(--notcome-soft); color: var(--notcome-ink); }
         .predict-box { border: none; }
-        .swap-hint { font-size: 11px; margin: 0 2px 6px; }
         .team-legend { font-size: 10.5px; color: var(--ink-3); margin: 0 2px 6px; }
 
         .team-result-card { padding: 12px 12px 6px; }
         .court-box { background: transparent; border: none; padding: 0; margin: 6px 0 2px; }
-        .court-bench { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
-        .bench-label { font-size: 11px; font-weight: 600; color: var(--ink-3); }
-        .bench-chip { margin: 0; border-color: var(--line-2); }
-        .bench-chip.swap-target { border-color: var(--ink-3); }
         .court-cell.swap-target { box-shadow: inset 0 0 0 1.5px var(--line-2); }
         .court-cell.swap-target:not(.swap-selected):active { background: var(--surface-2); }
         .court-cell .court-empty { opacity: .7; }
         .panel-group-label { font-size: 12px; font-weight: 800; color: var(--ink-3); letter-spacing: .04em; margin: 14px 2px 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
         .panel-group-label:first-of-type { margin-top: 4px; }
         .selected-date-label { cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
-        .selected-date-label .sd-caret { margin-left: auto; font-size: 12px; color: var(--ink-3); transition: transform .15s; }
-        .selected-date-label.cal-open .sd-caret { transform: rotate(180deg); }
         /* ---- ヘッダー(名簿・設定などのバー)を上部に固定 ---- */
         :root { --hdr-h: 52px; }
         .app-header {
@@ -1343,7 +1017,6 @@
         .rv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
         .rv-chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 0 14px; min-height: 38px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
         .rv-chip.on { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); }
-        .rv-price { margin: 10px 2px 0; font-size: 14px; font-weight: 700; color: var(--ink-2); min-height: 20px; }
         .rv-add { width: 100%; margin-top: 10px; min-height: 44px; border: none; border-radius: 12px; background: var(--ink-fill); color: #fff; font-size: 15px; font-weight: 700; }
         .rv-add:disabled { opacity: .35; }
         .rv-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
@@ -1395,29 +1068,22 @@
         .rvs-top input[type="checkbox"] { width: 20px; height: 20px; }
         .rvs-date { min-height: 36px !important; font-size: 14px !important; padding: 0 6px !important; }
         .rvs-wd, .rvs-time { font-weight: 700; font-size: 14px; }
-        .rvs-main { font-weight: 700; font-size: 14.5px; }
-        .rvs-price { font-weight: 500; font-size: 12.5px; color: var(--ink-2); }
         .rvs-tag { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-top: 4px; }
         .rvs-tag.ok { background: var(--come-soft); color: var(--come-ink); }
         .rvs-tag.dup { background: var(--pending-soft); color: var(--pending-ink); }
         .rvs-tag.miss { background: var(--unconf-soft); color: var(--unconf-ink); }
-        .rvs-note { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
         .rvs-time-in { width: 118px; min-height: 36px !important; font-size: 14px !important; font-weight: 700; padding: 0 6px !important; }
         .rvs-sel { display: flex; gap: 4px; align-items: center; margin: 6px 0 2px; }
         .rvs-sel select { flex: 1 1 0; min-width: 0; min-height: 38px; font-size: 13px; padding: 0 4px; }
         .rvs-yen { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; font-size: 13px; color: var(--ink-2); }
         .rvs-yen input { width: 66px; min-height: 38px; font-size: 13px; padding: 0 4px; }
-        .rvs-raw { font-size: 11.5px; color: var(--ink-3); margin-top: 4px; word-break: break-all; }
-        .rvs-addpreset { display: block; margin-top: 8px; min-height: 40px; padding: 0 14px; border: none; border-radius: var(--r-sm); background: var(--ink-fill); color: #fff; font-size: 13.5px; font-weight: 700; }
 
         /* ===== 精算 ===== */
         .selected-date-label .sd-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-        .selected-date-label .sd-warn { font-size: 14px; line-height: 1; align-self: center; }
         .view-tab-btn.done { background: #dde4f2; color: #3b4d7a; }
         .view-tab-btn.active.done { background: #b3c3e6; color: #1b2a57; box-shadow: inset 0 0 0 1.5px #4a62a0, var(--shadow-sm); }
         .view-tab-btn { font-size: 12.5px; padding: 0 2px; white-space: nowrap; }
         .total-balance { display: inline-flex; flex-direction: column; align-items: flex-end; vertical-align: middle; gap: 0; padding: 2px 8px; border-radius: 8px; font-size: 11px; line-height: 1.2; }
-        .total-balance .tb-pred { font-weight: 500; font-size: 10px; opacity: .5; }
         .rv-pred { opacity: .55; }
         .rv-chip:has(.rv-chip-price) { padding: 4px 14px; border-radius: 14px; }
         .rv-chip-price { display: block; font-size: 11px; font-weight: 500; opacity: .7; line-height: 1.2; font-variant-numeric: tabular-nums; }
@@ -1443,7 +1109,6 @@
         .st-total { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; padding: 10px 12px; background: var(--surface-2); border-radius: 10px; font-size: 13px; font-variant-numeric: tabular-nums; }
         .st-remain { font-weight: 700; color: var(--ink); }
         .st-remain.done { color: var(--accent-ink); }
-        .st-bal { margin: 8px 2px 0; }
 
         /* =========================================================
            v15: ステップ表示 / 予約リスト / ヘッダーボタン
@@ -1521,7 +1186,6 @@
         #opNoRsvpChips { display: none; flex-wrap: wrap; gap: 4px; max-height: 120px; overflow-y: auto; flex: 1 1 100%; min-width: 0; }
         .op-share.open #opNoRsvpChips { display: flex; }
         #opNoRsvpChips .op-sc.off { text-decoration: line-through; opacity: .55; }
-        .nv-share { margin-top: 2px; font-size: 11px; color: var(--ink-3); }
         .rc-acct { display: flex; gap: 6px; align-items: center; }
         .rc-acctnow { font-size: 12px; color: var(--ink-2); margin: 2px 0 6px; word-break: break-all; }
         .rc-acctnow b { color: var(--ink); }
@@ -1552,8 +1216,8 @@
         }
         body.dark { background: var(--bg); }
         body.dark .cal-day.event-warning, body.dark .status-badge.warning { background: #78581f; color: #ffd27d; }
-        body.dark .rs-seg { background: #485066; }
-        body.dark .view-tabs-wrap { background: rgba(49, 55, 70, .92); }
+        body.dark .rs-seg { background: var(--surface-2); }
+        body.dark .view-tabs-wrap { background: color-mix(in srgb, var(--bg) 92%, transparent); }
         body.dark .view-tabs-wrap .view-tabs { background: transparent; }
         body.dark .view-tabs .view-tab-btn:not(.past):not(.active) { --lc: #66708a; }
         body.dark .view-tab-btn.active .vt-no { box-shadow: 0 0 0 3px rgba(255, 255, 255, .10); }
@@ -1562,10 +1226,9 @@
         body.dark .roster-card.gender-male input[type="text"].name-input { background: #3b5a8c; }
         body.dark .roster-card.gender-female input[type="text"].name-input { background: #7d4262; }
         body.dark .roster-card.gender-other input[type="text"].name-input { background: #5b4b96; }
-        body.dark .team-member-row.killer-row { background: #675727; }
         body.dark .court-grid, body.dark .role-slot-grid { background: linear-gradient(180deg, #4a4337, #40392e); }
-        body.dark .court-cell.front { background: #3b4252; }
-        body.dark .court-cell.back { background: #323847; }
+        body.dark .court-cell.front { background: #3b3f47; }
+        body.dark .court-cell.back { background: #32353c; }
         body.dark .court-slot-no { color: #c9ad7d; }
         body.dark .total-balance.plus { background: #266a45; color: #7fe6b4; }
         body.dark .total-balance.minus { background: #7a3d48; color: #ffb0b4; }
@@ -1579,14 +1242,6 @@
         .dv-box button { display: block; width: 100%; min-height: 44px; margin: 0 0 8px; border-radius: 12px; font-size: 14px; font-weight: 700; border: 1px solid #d5d9e0; background: #f4f5f8; color: #1b1f2a; }
         .dv-box button.primary { background: #1b1f2a; color: #fff; border-color: #1b1f2a; }
         .dv-box button.cancel { background: transparent; border: none; color: #6b7384; font-weight: 600; min-height: 36px; margin: 0; }
-        .lib-box { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 8px 10px 10px; margin: 0 0 10px; }
-        .lib-box label.vf-label { margin: 0 0 4px; }
-        .lib-row { display: flex; gap: 6px; }
-        .lib-row input { flex: 1 1 auto; min-width: 0; min-height: 38px; font-size: 13px; }
-        .lib-row button { flex: 0 0 auto; min-height: 38px; padding: 0 14px; border-radius: var(--r-sm); border: none; background: var(--ink-fill); color: #fff; font-size: 12.5px; font-weight: 700; }
-        .lib-row button.lib-open { background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); text-decoration: none; display: inline-flex; align-items: center; }
-        .vf-libchk { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; margin: 4px 0 6px; }
-        .vf-libchk input { width: 20px; height: 20px; }
         .video-card.lib-card .vc-when { font-size: 14px; }
         .video-form .vf-top { display: flex; gap: 8px; align-items: center; margin: 4px 0 8px; }
         .video-form .vf-top input[type="date"] { flex: 1 1 0; min-width: 0; }
@@ -1600,9 +1255,6 @@
         .vf-det[open] { padding-bottom: 10px; }
         .vf-det[open] > summary { margin-bottom: 6px; }
         .vf-cancel { min-height: 36px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--surface); color: #c92a2a; font-size: 12.5px; font-weight: 600; }
-        .share-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
-        .share-btns button { flex: 1 1 30%; min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 13px; font-weight: 700; }
-        .share-btns button.primary { background: var(--ink-fill); color: #fff; border-color: var(--ink-fill); }
 
         /* =========================================================
            v18: Soft relief skin
@@ -1650,7 +1302,6 @@
         .confirm-group.pending .confirm-name-chip, .confirm-group.unconfirmed .confirm-name-chip { box-shadow: none; }
         .confirm-name-chip.chip-unlinked { box-shadow: var(--raise-sm), inset 0 0 0 1px var(--unconf); }
         .st-chip.paid { box-shadow: none; }
-        .team-actions .team-reset-btn { box-shadow: var(--raise-sm); }
 
         /* 主ボタン(塗り) */
         .add-btn, .copy-exec-btn, .settings-save-btn, .roles-edit-row button, .pair-add-row button,
@@ -1673,8 +1324,6 @@
         .rv-chip.on, .vm-chip.on, .param-checkbox-item:has(input:checked), .param-visibility-toggle:has(input:checked),
         .bulk-toggle-btn.active, .today-btn.on, .video-toolbar .vt-none.on, .vf-seg button.on,
         .slot-chip.on, .settings-btn.dev-toggle.on { box-shadow: var(--press); }
-        .roster-select-item:has(input:checked) { box-shadow: var(--sink); background: var(--bg); }
-        .team-rerun-btn.swap-on { box-shadow: var(--sink); }
 
         /* ---- 凹: 入力 ---- */
         input[type="text"]:not(.name-input), input[type="number"], input[type="date"], input[type="time"], input[type="url"],
@@ -1685,7 +1334,6 @@
         input[type="time"]:focus, input[type="url"]:focus, select:focus, textarea:focus {
             border: none; box-shadow: var(--sink), 0 0 0 1.5px var(--ink-3);
         }
-        .team-controls input[type="number"] { background: var(--bg); }
         .roster-card-top input[type="text"].name-input { box-shadow: var(--sink); }
         .rvs-panel, .note-details, .rc-body, .vf-det, .roster-eff { border: none; box-shadow: var(--sink); background: var(--bg); }
         .rc-body { margin: 2px 0 10px; }
@@ -1712,11 +1360,6 @@
         .header-btns .settings-btn.panel-on { background: transparent; box-shadow: var(--sink); }
 
         /* ---- カレンダー ---- */
-        .cal-card { padding: 12px 10px 10px; margin-bottom: 12px; }
-        .cal-header { margin: 0 0 10px; padding: 0 2px; }
-        .cal-nav-btn { width: 34px; height: 34px; }
-        .cal-weekday { padding: 4px 0 6px; }
-        .cal-grid { gap: 4px 3px; }
         .cal-day { border-radius: 10px; transition: box-shadow .15s, background-color .15s; }
         .cal-day:active { filter: none; }
         .cal-day[class*="event-"] { box-shadow: var(--raise-sm); }
@@ -1724,7 +1367,6 @@
         .cal-day.selected { box-shadow: var(--sink); font-weight: 800; }
         .cal-day.selected:not([class*="event-"]) { background-color: var(--bg); }
         .cal-day.today.selected { box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
-        .cal-grid.list-mode { padding: 4px 3px 6px; margin: -4px -3px -6px; }
 
         /* ---- コート ---- */
         .court-cell { border: none; box-shadow: var(--raise-sm); }
@@ -1753,12 +1395,6 @@
         /* =========================================================
            v19: メンバー画面(入力+確認を統合)
            ========================================================= */
-        .mv-summary {
-            display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center;
-            margin: 0 0 8px; padding: 10px 12px; background: var(--surface); border-radius: var(--r-md); box-shadow: var(--raise);
-        }
-        .mv-summary .confirm-count-grid { gap: 12px; flex-wrap: nowrap; min-width: 0; }
-        .mv-side { display: flex; flex-direction: column; gap: 5px; }
         .mv-act {
             min-height: 28px; padding: 0 12px; font-size: 12px; font-weight: 700; border-radius: 999px; border: none;
             white-space: nowrap; background: var(--surface); color: var(--ink); box-shadow: var(--raise-sm);
@@ -1770,24 +1406,12 @@
         .mv-state.ok .mv-state-text { color: var(--come-ink); }
         .mv-state.todo .mv-state-text { color: var(--unconf-ink); }
         .mv-state .status-badge { margin-left: auto; }
-        .mv-hint { font-size: 12px; font-weight: 600; color: var(--ink-3); }
 
         .confirm-group .mv-chip { min-height: 34px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
         .confirm-group .mv-chip.open, .confirm-group .mv-chip.sel { box-shadow: var(--press); }
         .confirm-group .mv-chip.sel { box-shadow: inset 0 0 0 2px var(--ink); }
         .confirm-group .mv-chip.sel::before { content: "\2713"; margin-right: 4px; font-weight: 800; }
 
-        .mv-menu { margin-top: 8px; padding: 8px 10px; background: var(--surface); border-radius: var(--r-md); box-shadow: var(--raise-sm); }
-        .mv-menu-head { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
-        .mv-menu-name { font-weight: 700; font-size: 14px; }
-        .mv-moves { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-        .mv-moves .status-btn { min-height: 36px; font-size: 13px; }
-        .mv-menu-tools { display: flex; gap: 6px; margin-top: 6px; }
-        .mv-menu-tools button {
-            flex: 1; min-height: 32px; font-size: 12.5px; font-weight: 600; border: none; border-radius: var(--r-sm);
-            background: var(--surface); box-shadow: var(--raise-sm); color: var(--ink-2);
-        }
-        .mv-menu-tools button:active { box-shadow: var(--sink); }
 
         /* =========================================================
            v20: メンバー画面をさらにコンパクトに
@@ -1800,11 +1424,6 @@
         #memberView .add-row { display: flex; align-items: center; flex-wrap: nowrap; margin: 0 0 8px; }
         #memberView .add-row input { flex: 0 1 96px; width: 96px; min-width: 0; }
         #memberView .add-row .add-btn { flex: none; padding: 0 12px; }
-        #memberView .add-row .qa-btn {
-            flex: 1 1 0; min-width: 0; min-height: 32px; height: 32px; padding: 0 4px; font-size: 12px; font-weight: 600;
-            white-space: nowrap; border-radius: 8px; background: var(--surface); color: var(--ink-2); border: none;
-            box-shadow: var(--raise-sm);
-        }
 
         /* 一括選択のチェックは、名前の幅を変えないよう角に重ねて表示(選択しても位置がズレない) */
         .confirm-group .mv-chip { position: relative; }
@@ -1816,24 +1435,14 @@
         }
 
         /* 人数欄 */
-        .mv-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 6px 10px; gap: 4px 8px; margin: 0 0 6px; }
         .mv-state { flex: 1 1 100%; }
-        .mv-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
-        .mv-summary .confirm-count-grid { gap: 12px; }
-        .mv-summary .confirm-count-item .num { font-size: 18px; }
-        .mv-summary .confirm-count-item .lbl { font-size: 9.5px; margin-top: 1px; }
-        .mv-summary .status-badge { font-size: 10.5px; padding: 2px 8px; white-space: nowrap; }
-        .mv-side { flex-direction: row; gap: 4px; }
         .mv-act { min-height: 26px; padding: 0 10px; font-size: 11.5px; }
         .mv-state { font-size: 12px; }
         .input-toolbar { justify-content: flex-end; margin: 0 0 6px; }
 
         /* 一括選択 */
-        .bulk-action-bar { padding: 6px; margin: 0 0 8px; border-radius: var(--r-sm); }
         .bulk-action-row { margin-bottom: 4px; gap: 4px; }
         .bulk-action-row button { min-height: 28px; font-size: 12px; padding: 0 8px; border-radius: 8px; }
-        .bulk-status-row { grid-template-columns: repeat(4, 1fr); gap: 4px; }
-        .bulk-status-row button { min-height: 30px; font-size: 12px; padding: 0 2px; border-radius: 8px; }
     
         /* =========================================================
            v21: 開発モードOFFの名簿は3列で並べる(開いたカードだけ横いっぱいで編集)
@@ -1858,17 +1467,11 @@
            v22: メンバーは常に一括選択 / 見出しを押して移動 / 人数の右にボタン
            ========================================================= */
         /* 人数欄: 左=人数+判定、右=フォロー文・LINE用コピーを縦に小さく並べて高さを抑える */
-        #memberView .mv-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 5px 8px; margin: 0 0 4px; }
-        #memberView .mv-main { grid-column: 1; grid-row: 1; flex-wrap: nowrap; gap: 8px; }
-        #memberView .mv-summary .confirm-count-grid { gap: 10px; }
-        #memberView .mv-side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 3px; }
         #memberView .mv-act { min-height: 22px; padding: 0 9px; font-size: 11px; }
         #memberView .mv-state { grid-column: 1 / -1; flex: none; min-height: 0; font-size: 11.5px; }
 
         /* 全選択・全解除 */
         #memberView .input-toolbar { justify-content: space-between; margin: 0 0 4px; }
-        #memberView .mv-hint { font-size: 11.5px; min-width: 0; }
-        #memberView .mv-hint.warn { color: var(--notcome-ink); }
         #memberView .input-toolbar .bulk-action-row { margin: 0; gap: 4px; flex: none; }
         #memberView .input-toolbar .bulk-action-row button { flex: none; min-height: 26px; padding: 0 12px; font-size: 12px; border-radius: 8px; }
 
@@ -1897,10 +1500,6 @@
         #memberView button.confirm-group-title.armed { box-shadow: inset 0 0 0 2.5px rgba(255, 255, 255, .75); }
         #memberView button.confirm-group-title:active { filter: brightness(.92); }
         /* 人数欄: 記号と数字を横に並べる(○7 ✖2 △1 ?3) */
-        #memberView .mv-summary .confirm-count-grid { gap: 12px; align-items: center; }
-        #memberView .mv-summary .confirm-count-item { display: inline-flex; align-items: baseline; gap: 3px; text-align: left; }
-        #memberView .mv-summary .confirm-count-item .lbl { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: 0; line-height: 1; }
-        #memberView .mv-summary .confirm-count-item .num { font-size: 20px; font-weight: 800; line-height: 1; }
         #memberView .confirm-count-item.come .lbl { color: var(--come); }
         #memberView .confirm-count-item.notcome .lbl { color: var(--notcome); }
         #memberView .confirm-count-item.pending .lbl { color: var(--pending); }
@@ -1937,9 +1536,6 @@
         }
 
         /* ---- カレンダー: 同じ配色(十分=青緑 / やや不足=サンド / 不足・過多=ローズ) ---- */
-        .cal-day.event-sufficient { background: var(--m-come-cal); color: var(--m-come-t); }
-        .cal-day.event-warning, body.dark .cal-day.event-warning { background: var(--m-pend-cal); color: var(--m-pend-t); }
-        .cal-day.event-danger { background: var(--m-no-cal); color: var(--m-no-t); }
 
         /* 状態の帯 */
         #memberView .confirm-group { border-radius: 14px; background: var(--m-unc-bg); box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .12); }
@@ -1982,7 +1578,6 @@
         #memberView .mv-act.line { background: var(--ink-fill); color: #fff; }
 
         /* ---- ☀️🌙 テーマ切替ボタン ---- */
-        .settings-btn.theme-toggle { font-size: 15px; line-height: 1; padding: 0 8px; }
         html.theme-anim body, html.theme-anim body * { transition: background-color .25s ease, color .25s ease, border-color .25s ease; }
 
         /* ---- v28: 合計収支バッジ(「+2000」だけ・1行)。ヘッダーの幅/高さを動かさないよう枠外に置く ---- */
@@ -2030,15 +1625,10 @@
         .rv-det[open] > summary::before { transform: rotate(90deg); }
         /* チーム分け: チーム数は小さく、チーム分け/リセットはランダムの横(1行) */
         .team-toolbar { flex-wrap: wrap; gap: 6px; }
-        .team-toolbar .team-controls { flex: none; min-height: 34px; padding: 2px 2px 2px 9px; gap: 6px; }
-        .team-toolbar .team-controls label { font-size: 12px; }
-        .team-toolbar .team-controls input[type="number"] { width: 36px; min-height: 28px; font-size: 13px; padding: 0 2px; }
-        .team-toolbar .param-visibility-toggle { min-height: 34px; padding: 0 10px; font-size: 12px; flex: none; }
         .team-toolbar .team-split-btn, .team-toolbar .team-rerun-btn {
             width: auto; flex: none; margin: 0; min-height: 34px; padding: 0 12px; font-size: 12.5px; white-space: nowrap; border-radius: 8px;
         }
         .team-toolbar .team-split-btn { box-shadow: var(--raise-sm); }
-        .team-toolbar .team-reset-btn { grid-column: auto; }
 
         /* ---- v35: 精算(開発モード)の「本来の一人当たり」 ---- */
         .st-row { flex-wrap: wrap; }
@@ -2063,15 +1653,6 @@
             --sh: rgba(12, 15, 24, .55);
         }
         /* 選択日: 深く凹ませる(予定ありの色付きの日でも凹みが見えるように、他の指定より強く) */
-        .cal-grid .cal-day.selected, .cal-grid .cal-day.selected:not([class*="event-"]) {
-            box-shadow: inset 3px 3px 7px rgba(100, 112, 140, .55), inset -3px -3px 7px #fff;
-            background-image: none; font-weight: 800;
-        }
-        .cal-grid .cal-day.today.selected {
-            box-shadow: inset 3px 3px 7px rgba(100, 112, 140, .55), inset -3px -3px 7px #fff, inset 0 0 0 1.5px var(--accent);
-        }
-        body.dark .cal-grid .cal-day.selected, body.dark .cal-grid .cal-day.selected:not([class*="event-"]) { box-shadow: var(--sink); }
-        body.dark .cal-grid .cal-day.today.selected { box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
 
         /* =========================================================
            v46: 回答画面(来る○ / 来ない✖ / 未定△ だけ答える)
@@ -2116,7 +1697,6 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: inherit; }
         .sv-btn:disabled { opacity: .4; cursor: default; }
         .sv-sym { font-size: 24px; font-weight: 800; line-height: 1.1; }
-        .sv-lb { font-size: 11px; font-weight: 700; }
         .sv-btn.sel { box-shadow: var(--sink); }
         .sv-btn.sel.come { background: var(--come-soft); color: var(--come-ink); }
         .sv-btn.sel.notcome { background: var(--notcome-soft); color: var(--notcome-ink); }
@@ -2206,19 +1786,9 @@
         .rc-top::after { content: ""; width: 13px; height: 13px; background: var(--amber); -webkit-mask: var(--i-crown) center/contain no-repeat; mask: var(--i-crown) center/contain no-repeat; font-size: 0; }
         .cal-day .cal-warn, .cal-day .nv-ic .cal-warn { color: var(--amber); font-size: 11px; }
         .vt-tx { font-size: 11px; font-weight: 600; letter-spacing: .02em; }
-        .nv-chip .ic { width: 9px; height: 9px; margin-right: 2px; vertical-align: -1px; }
         .nv-ttl .ic, .nv-share .ic { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
         .month-label { font-weight: 700; letter-spacing: .04em; }
-        .cal-weekday { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
         /* カレンダー: 予定は浮き、選んだ日は凹む(予定は凹みの上にさらに浮く) */
-        .cal-grid.nv .cal-day { border-top: none; border-radius: 14px; margin: 1px; min-height: 76px; transition: box-shadow .18s ease, background .18s ease; }
-        .cal-grid.nv .cal-day.selected, .cal-grid.nv .cal-day.selected:active { background: transparent; box-shadow: var(--sink); }
-        .cal-grid.nv .nv-chip:not(.nv-lane):not(.nv-more) { border-radius: 5px; box-shadow: var(--raise-xs); margin: 0 1px; }
-        .cal-grid.nv .cal-day.selected .nv-chip:not(.nv-lane):not(.nv-more) { box-shadow: -1px -1px 2px var(--hl), 2px 2.5px 4px var(--sh); }
-        .cal-grid.nv .nv-chip.ring { background: var(--bg); box-shadow: var(--raise-xs), inset 0 0 0 1px var(--plan-ink, var(--ink-3)); }
-        .cal-grid.nv .cal-day.today .nv-d { background: var(--bg); color: var(--ink); font-weight: 800; box-shadow: var(--raise-sm); }
-        .cal-grid.nv .cal-day.selected.today .nv-d { box-shadow: var(--raise-sm); }
-        .nv-d { font-weight: 600; font-variant-numeric: tabular-nums; }
         .nv-empty { color: var(--ink-3); letter-spacing: .06em; }
 
         /* ===== スイッチ: 溝は凹、つまみは凸。ONは溝に色が差し、つまみのマークが色づく ===== */
@@ -2250,7 +1820,6 @@
         .selected-date-label { flex-wrap: nowrap; white-space: nowrap; }
         .selected-date-label .sd-main { flex: none; white-space: nowrap; font-size: 20px; }
         .selected-date-label .sd-sub { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .selected-date-label .sd-caret { flex: none; margin-left: 0; }
         body.nv-full #nvBack, body.nv-full #nvBack .nv-step { display: flex !important; align-items: center; gap: 10px; }
         body.nv-full #nvBack { margin: 6px 2px 14px; }
         #nvBack .today-btn { min-height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; box-shadow: var(--raise-sm); }
@@ -2303,8 +1872,6 @@
         .sv-who { display: inline-flex; align-items: center; gap: 4px; margin: 0 2px 14px; padding: 6px 14px; border-radius: 999px; box-shadow: var(--sink); font-size: 15px; }
         .sv-who .ic { width: 15px; height: 15px; color: var(--ink-3); }
         .sv-tools { display: flex; gap: 10px; margin: 0 2px 14px; }
-        .sv-later { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin: 4px 0 12px; height: 40px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
-        .sv-later.on { color: var(--ink-3); justify-content: flex-start; padding: 0 14px; margin: 0 0 10px; }
         .sv-lhead { font-size: 15px; font-weight: 800; color: var(--ink); margin: 2px 4px 12px; }
         .sv-tools .sv-sort { flex: 1; margin: 0; min-width: 0; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
         .sv-tools .sv-sort .ic { width: 15px; height: 15px; }
@@ -2329,13 +1896,8 @@
         #memberView .confirm-group .mv-chip.sel::before, #memberView .confirm-group .mv-chip.sel::after { content: none; display: none; }
         /* チーム分けの操作: 1行・記号 */
         .team-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 10px; margin: 0 2px 12px; }
-        .team-toolbar .team-controls { flex: none; display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0 4px 0 12px; min-height: 42px; height: 42px; border: none; border-radius: 21px; background: var(--bg); box-shadow: var(--sink); }
-        .team-toolbar .team-controls label { display: inline-flex; color: var(--ink-3); }
-        .team-toolbar .team-controls .ic { width: 17px; height: 17px; }
-        .team-toolbar .team-controls input[type="number"] { width: 38px; height: 34px; min-height: 34px; padding: 0; border: none; background: transparent; box-shadow: none; font-size: 16px; font-weight: 800; }
         .team-toolbar .team-split-btn, .team-toolbar .team-rerun-btn { flex: 1 1 auto; width: auto; min-width: 0; height: 42px; min-height: 42px; margin: 0; padding: 0 12px; border: none; border-radius: 21px; background: var(--accent); color: #fff; box-shadow: var(--raise-sm); display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; }
         .team-toolbar .team-rerun-btn { background: var(--bg); color: var(--ink-2); }
-        .team-toolbar .team-rerun-btn.team-reset-btn { flex: none; width: 42px; padding: 0; border-radius: 50%; }
         .team-toolbar .team-split-btn[style*="none"], .team-toolbar .team-rerun-btn[style*="none"] { display: none !important; }
         .team-toolbar .team-split-btn .ic, .team-toolbar .team-rerun-btn .ic { width: 19px; height: 19px; }
         .team-toolbar button:active { box-shadow: var(--sink); }
@@ -2378,7 +1940,6 @@
         #nvBack .nv-step .today-btn { border-radius: 12px; }
         .nv-row { border-radius: 14px; }
         .team-toolbar .team-controls, .team-toolbar .team-split-btn, .team-toolbar .team-rerun-btn { border-radius: 12px; }
-        .team-toolbar .team-rerun-btn.team-reset-btn { border-radius: 12px; }
         .sv-card { border-radius: 14px; } .sv-btn { border-radius: 12px; }
 
         /* ===== v54: 他の予定の編集フォーム(凹凸) ===== */
@@ -2416,7 +1977,7 @@
         body.dark #memberView .confirm-group.pending { background: color-mix(in srgb, var(--pending) 14%, var(--bg)); }
         body.dark #memberView .confirm-group.unconfirmed { background: color-mix(in srgb, var(--unconf) 13%, var(--bg)); }
         body.dark #memberView .confirm-group .confirm-name-chip, body.dark #memberView .confirm-group.pending .confirm-name-chip, body.dark #memberView .confirm-group.unconfirmed .confirm-name-chip,
-        body.dark .st-chip, body.dark .bench-chip, body.dark .roster-select-item { background: #4a5266; color: #f4f6fb; border-color: transparent; box-shadow: -1px -1px 2px rgba(255,255,255,.05), 2px 3px 6px rgba(8,10,18,.45); }
+        body.dark .st-chip, body.dark .bench-chip, body.dark .roster-select-item { background: #454a53; color: #f4f6fb; border-color: transparent; box-shadow: -1px -1px 2px rgba(255,255,255,.05), 2px 3px 6px rgba(8,10,18,.45); }
         body.dark #memberView .confirm-group .confirm-name-chip.chip-unlinked { border: 1px dashed #b8bfd0; }
         body.dark #memberView .confirm-group .mv-chip.sel, body.dark #memberView .confirm-group .mv-chip.open { background: var(--accent); color: #fff; }
 
@@ -2452,14 +2013,10 @@
         .op-box input[type="time"]::-webkit-date-and-time-value { text-align: center; min-height: 1em; }
 
         /* ===== v58: 日またぎの予定を凹みの上で濃く / 選択中の名前は所属グループの色 ===== */
-        .cal-grid.nv .nv-chip:not(.ring):not([style*="background"]) { background: linear-gradient(var(--plan-gray, var(--pcbg0)), var(--plan-gray, var(--pcbg0))), linear-gradient(var(--bg), var(--bg)); }
-        .cal-grid.nv .nv-seg { z-index: 5; position: relative; }
         #memberView .confirm-group.come .mv-chip.sel, #memberView .confirm-group.come .mv-chip.open, body.dark #memberView .confirm-group.come .mv-chip.sel, body.dark #memberView .confirm-group.come .mv-chip.open { background: var(--come); color: #fff; }
         #memberView .confirm-group.notcome .mv-chip.sel, #memberView .confirm-group.notcome .mv-chip.open, body.dark #memberView .confirm-group.notcome .mv-chip.sel, body.dark #memberView .confirm-group.notcome .mv-chip.open { background: var(--notcome); color: #fff; }
         #memberView .confirm-group.pending .mv-chip.sel, #memberView .confirm-group.pending .mv-chip.open, body.dark #memberView .confirm-group.pending .mv-chip.sel, body.dark #memberView .confirm-group.pending .mv-chip.open { background: var(--pending); color: #fff; }
         #memberView .confirm-group.unconfirmed .mv-chip.sel, #memberView .confirm-group.unconfirmed .mv-chip.open, body.dark #memberView .confirm-group.unconfirmed .mv-chip.sel, body.dark #memberView .confirm-group.unconfirmed .mv-chip.open { background: var(--unconf); color: #fff; }
-        .cal-grid.nv .nv-chip.ring:not(.nv-lane):not(.nv-more) { box-shadow: var(--raise-xs), inset 0 0 0 1.2px var(--plan-ink, var(--ink-3)); }
-        .cal-grid.nv .cal-day.selected .nv-chip.ring:not(.nv-lane):not(.nv-more) { box-shadow: -1px -1px 2px var(--hl), 2px 2.5px 4px var(--sh), inset 0 0 0 1.2px var(--plan-ink, var(--ink-3)); }
 
         /* ===== v59: 予約の一括追加シート ===== */
         #bulkAddOv { position: fixed; inset: 0; z-index: 1500; display: none; align-items: flex-end; justify-content: center; background: rgba(20, 24, 34, .45); }
@@ -2488,10 +2045,6 @@
         #bulkAddOv .ba-empty { text-align: center; color: var(--ink-3); padding: 24px; }
         /* v60: 予定タイトルの長さで列幅が変わらないよう、7列を常に均等にする */
         .cal-grid, .dp-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
-        .tw-head, .tw-body { grid-template-columns: 22px repeat(7, minmax(0, 1fr)) !important; }
-        .cal-grid > .cal-day, .cal-grid > .cal-weekday, .tw-body > *, .tw-head > * { min-width: 0; }
-        .cal-grid.nv .cal-day { overflow-x: visible; overflow-y: clip; }
-        .cal-grid.nv .nv-chip { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         /* v61: カレンダー画面は全体スクロールなし。下の予定は引き上げ式のシートで、引き上げるとカレンダーが縮む */
         /* カレンダー画面はページ自体を動かさない(中の一覧だけスクロール)。iOSで画面全体が上下にずれるのを防ぐ */
         html:has(> body:not(.nv-full)) { height: 100%; overflow: hidden; overscroll-behavior: none; }
@@ -2500,11 +2053,6 @@
         body:not(.nv-full) > * { flex: none; }
         body:not(.nv-full) .day-bar { display: none; }
         body:not(.nv-full) #calCard { flex: 1 1 0; min-height: 150px; display: flex; flex-direction: column; margin-bottom: 0; }
-        body:not(.nv-full) #calCard > .cal-header, body:not(.nv-full) #calCard > .legend { flex: none; }
-        body:not(.nv-full) #calCard > .cal-grid { flex: 1 1 0; min-height: 0; max-height: none; }
-        body:not(.nv-full) .cal-grid:not(.list-mode):not(.tw-mode) { grid-template-rows: auto; grid-auto-rows: minmax(0, 1fr); overflow: hidden; }
-        body:not(.nv-full) .cal-grid.nv .cal-day { min-height: 0; }
-        body:not(.nv-full) .cal-grid.list-mode, body:not(.nv-full) .cal-grid.tw-mode { overflow-y: auto; }
         #calCard .cal-hbtns { width: 100%; align-items: center; }
         #calCard .day-toggles { margin-left: auto; gap: 10px; }
         #daySheet { flex: none; display: flex; flex-direction: column; height: var(--sheet-h, 120px); margin: 10px 0 0; background: var(--bg); border-radius: 24px; box-shadow: var(--raise-sm); overflow: hidden; }
@@ -2514,39 +2062,19 @@
         /* 上にも余白を取り、1番上の予定の影(左上の光)が切れて立体感がなくならないようにする */
         #sheetBody { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px 6px 8px; }
         /* つまみをタップしてカレンダーを縮めたときは、日付の横のマーク(動画・注意など)を隠す */
-        body.cal-compact #calGrid .nv-ic { display: none; }
         /* 予定の色は1行に収める(幅が足りないときは丸を少し小さくする) */
         .op-opts { flex-wrap: nowrap; }
         .op-opts .op-colors { flex-wrap: nowrap; justify-content: space-between; gap: 4px; padding: 4px 4px 4px 2px; }
         .op-opts .op-dot { flex: 0 1 24px; width: auto; height: auto; min-width: 0; aspect-ratio: 1; }
         /* 予定の帯: 高さは --nv-lh(枠の高さから計算)で全部そろえる。縮んでも1つだけ潰れない */
-        .cal-grid.nv .cal-day > .nv-chip, .cal-grid.nv .cal-day > .nv-lane, .cal-grid.nv .nv-seg { flex: none; height: var(--nv-lh, 12.6px); line-height: var(--nv-lh, 12.6px); font-size: clamp(7px, calc(var(--nv-lh, 12.6px) * .72), 9px); box-sizing: border-box; }
         /* 文字の行を超えた予定は、色の線だけで出す */
-        .cal-grid.nv .cal-day > .nv-lane.nv-line, .cal-grid.nv .nv-chip.nv-line { height: 4px; min-height: 4px; line-height: 0; font-size: 0; padding: 0; border-radius: 2px !important; box-shadow: none !important; }
-        .cal-grid.nv .nv-chip.nv-line:not(.nv-vb) { background: var(--plan-ink, var(--ink-3)) !important; opacity: .75; }
-        .cal-grid.nv .nv-chip.nv-line.ring:not(.nv-vb) { background: transparent !important; box-shadow: inset 0 0 0 1px var(--plan-ink, var(--ink-3)) !important; opacity: 1; }
         #daySheet { transition: height .2s ease; }
         /* 時間表示: 月表示と同じやわらかい見た目にそろえる。週の見出し(日付)は上に貼りつく */
-        .cal-grid.tw-mode .tw-head { position: sticky; top: 0; z-index: 7; background: var(--surface); gap: 2px; margin: 0; padding: 4px 0 6px; }
-        .cal-grid.tw-mode .tw-wrap + .tw-head { margin-top: 6px; }
-        .cal-grid.tw-mode .tw-month { font-size: 9px; font-weight: 600; }
-        .cal-grid.tw-mode .tw-body { gap: 2px; background-image: linear-gradient(to bottom, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px); }
-        .cal-grid.tw-mode .tw-gutter span { font-size: 8.5px; font-weight: 500; opacity: .8; }
-        .cal-grid.tw-mode .tw-col { border-left: none; border-radius: 10px; }
-        .cal-grid.tw-mode .tw-col.today { background: transparent; }
-        .cal-grid.tw-mode .tw-col.selected { box-shadow: none; background: color-mix(in srgb, var(--ink-3) 9%, transparent); }
         /* 時間軸の上の予定は浮き上がった(凸)ブロックで出す */
-        .cal-grid.tw-mode .tw-blk { border: none; border-radius: 7px; padding: 3px 4px; font-weight: 600; box-shadow: -1.5px -1.5px 3px var(--hl), 2px 2.5px 5px var(--sh); z-index: 2; }
-        .cal-grid.tw-mode .tw-notime { box-shadow: -1px -1px 2px var(--hl), 1.5px 2px 4px var(--sh); }
-        .cal-grid.tw-mode .tw-blk b { font-size: 9px; font-weight: 700; }
-        .cal-grid.tw-mode .tw-blk span { font-size: 8px; font-weight: 500; opacity: .75; }
-        .cal-grid.tw-mode .tw-notime { border-radius: 6px; font-weight: 600; }
         /* 時間表示・予約日ボタンがオンのときも、黒塗りではなく他のボタンと同じ押し込み表現 */
         /* カレンダーの大きさ(3段階)を上下ボタンで切り替える */
         /* バレーの日を押した直後、裏のバレー画面が一瞬表示されてカレンダーの高さが狂わないようにする */
         body:not(.nv-full) #eventContent { display: none !important; }
-        .cal-grid.nv .nv-chip .ic { width: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); height: clamp(7px, calc(var(--nv-lh, 12.6px) - 3px), 9px); vertical-align: middle; margin-top: -1px; }
-        .cal-grid.nv .nv-top .nv-more { flex: none; padding: 0; font-size: 9px; font-weight: 700; line-height: 1; color: var(--ink-3); }
         /* 予定を編集している間は、一覧の中のその予定の行は隠して入力欄だけにする */
         #nvDayPanel .nv-row.editing { display: none; }
         /* 設定: 各項目は「タイトル → 説明 → 操作 → 詳しく」の順にそろえる */
@@ -2575,26 +2103,13 @@
         body.nv-full .day-bar { justify-content: flex-start; gap: 12px; margin-top: 14px; }
         body.nv-full .selected-date-label { flex: 0 1 auto; }
         body.nv-full .selected-date-label .sd-main { font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: .02em; }
-        body.nv-full .selected-date-label .sd-caret { font-size: 10px; }
         .vb-del { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 12px; border: none; border-radius: 14px; background: var(--bg); color: var(--notcome-ink, #c0392b); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
         .vb-del .ic { width: 12px; height: 12px; }
         .vb-del:active { box-shadow: var(--sink); }
         body:not(.nv-full) .vb-del { display: none !important; }
         /* 日付枠の中の予定の影が、枠の角で切れないように */
-        body:not(.nv-full) .cal-grid.nv:not(.list-mode):not(.tw-mode) .cal-day { overflow: visible; }
         /* ヘッダーなし: カレンダーの上の段に まとめる */
         .app-header { display: none !important; }
-        .cal-header { display: grid !important; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
-        .ch-left, .ch-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
-        .ch-right { justify-content: flex-end; gap: 6px; }
-        #pairRow .pair-btn { position: static; transform: none; max-width: 60%; height: 32px; padding: 0 12px; }
-        .ch-left .total-balance { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-        .ch-mid { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; }
-        .cal-header .ch-mid .month-label { padding: 0 !important; flex: none; }
-        .ch-right .settings-btn { width: 34px; height: 34px; min-height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-xs); }
-        .ch-right .settings-btn .ic { width: 17px; height: 17px; }
-        .ch-right .settings-btn.panel-on, .ch-right .settings-btn:active { box-shadow: var(--sink); }
-        .ch-right .settings-btn.survey-btn.alert { background: var(--bg); box-shadow: var(--raise-xs), 0 0 0 2px #e5484d; }
         /* 設定: 画面いっぱいの重ね表示。いちばん上は誰でも使う設定 */
         /* 試作UI: 名簿・分析は設定から外して、それぞれ単独の画面で出す(設定パネルの一部だけを見せる) */
         body.proto-on #settingsPanel:not([data-solo]) #rosterAcc { display: none; }
@@ -2649,14 +2164,6 @@
         #addChooser.open { display: block; }
         @keyframes acIn { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
         /* ペアモード */
-        .cal-header { position: relative; }
-        .cal-header .month-label { padding: 0 var(--pairpad, 0px); box-sizing: border-box; }
-        .pair-btn { position: absolute; left: 50px; top: 50%; transform: translateY(-50%); z-index: 2; display: inline-flex; align-items: center; gap: 4px; min-width: 28px; height: 28px; padding: 0 7px; justify-content: center; border: none; border-radius: 13px; background: var(--bg); color: var(--ink-3); font-size: 11px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
-        .pair-btn .ic { width: 14px; height: 14px; flex: none; }
-        .pair-btn b { font-size: 11px; }
-        .pair-btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .pair-btn.on { background: var(--accent); color: #fff; box-shadow: var(--raise-xs); }
-        .pair-btn:active { box-shadow: var(--sink); }
         body.viewer-mode:not(.pair-on) .pair-or-admin { display: none !important; }
         .op-sc.locked { opacity: .75; cursor: default; }
         #pairOv { position: fixed; inset: 0; z-index: 9000; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.35); }
@@ -2696,7 +2203,6 @@
         .pd-acts .op-cancel, .pd-acts .op-add { height: 34px; min-height: 34px; padding: 0 16px; border: none; border-radius: 10px; font-size: 12.5px; font-weight: 700; }
         .pd-acts .op-delbtn { display: inline-block; font-size: 12px; }
         .op-sc.op-rsvp-tg { margin-left: auto; }
-        .cal-grid.nv .nv-chip .nv-n { font-weight: 800; margin-right: 3px; }
         #nvDayPanel .nv-cnt { flex: none; font-size: 11px; font-weight: 700; color: var(--come); letter-spacing: 0; }
         .sv-whorow { display: flex; align-items: center; gap: 12px; margin: 0 2px 14px; flex-wrap: wrap; }
         .sv-whorow .sv-who { margin: 0; }
@@ -2708,8 +2214,6 @@
         .sv-plan .sv-info { margin: 4px 0 12px; }
         .sv-pwhen { margin-left: 8px; color: var(--ink-3); font-size: 12px; }
         .sv-plan .sv-pbar { display: inline-block; width: 3px; height: 12px; margin-right: 8px; border-radius: 2px; vertical-align: -1px; background: var(--plan-ink, var(--ink-3)); }
-        .sv-pst { margin-left: auto; font-size: 16px; font-weight: 800; color: var(--ink-3); }
-        .sv-pst.come { color: var(--come); } .sv-pst.notcome { color: var(--notcome); } .sv-pst.pending { color: var(--pending); }
         .sv-go { color: var(--ink-3); font-weight: 400; }
         /* 予定リスト: 情報を絞ったシンプルな見た目 */
         #nvDayPanel .nv-row { align-items: center; gap: 12px; padding: 11px 16px 11px 14px; margin: 0 4px 10px; }
@@ -2728,13 +2232,6 @@
         #nvDayPanel .nv-go .nv-ttl::after { content: "›"; margin-left: auto; padding-left: 8px; font-weight: 400; color: var(--ink-3); }
         #nvDayPanel .nv-sub, #nvDayPanel .nv-memo { margin-top: 0; font-size: 11px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #sheetBody #nvDayPanel { margin: 0; }
-        .nv-top.has-dot::after { content: ""; position: absolute; right: 5px; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
-        body:not(.nv-full) .cal-grid.nv .cal-day { position: relative; }
-        .nv-pips { display: flex; justify-content: center; align-items: center; gap: 3px; height: 8px; margin-top: 1px; }
-        .nv-pip { display: block; width: 14px; height: 5px; border-radius: 3px; background: var(--plan-ink, var(--ink-3)); opacity: .85; }
-        .nv-pip.ring { background: transparent; box-shadow: inset 0 0 0 1.4px var(--plan-ink, var(--ink-3)); }
-        .nv-pips b { font-size: 8px; line-height: 5px; color: var(--ink-3); }
-        .nv-top.has-dot::after { right: 6px; top: 50%; margin-top: -2px; }
         /* ===== LINE通知 ===== */
         :root { --i-bell:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4'/%3E%3C/svg%3E"); --i-belloff:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4M4%204l16%2016'/%3E%3C/svg%3E"); }
         .ic-bell{-webkit-mask-image:var(--i-bell);mask-image:var(--i-bell);}.ic-belloff{-webkit-mask-image:var(--i-belloff);mask-image:var(--i-belloff);}
@@ -2843,7 +2340,6 @@
         .tshare-chip { flex: none; height: 24px; padding: 0 9px; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--sink); color: var(--accent); font-size: 10.5px; font-weight: 700; align-self: center; }
         /* チーム分けのあとに「来る」になった人 */
         .late-box { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg); box-shadow: var(--raise-sm); }
-        .late-h { font-size: 12.5px; font-weight: 800; color: var(--ink-2); margin-bottom: 6px; }
         .late-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
         .late-name { font-size: 13px; font-weight: 700; margin-right: 4px; }
         .late-row button { height: 30px; padding: 0 12px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--accent); font-size: 12px; font-weight: 700; }
@@ -2851,23 +2347,12 @@
         .mt-rule { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; font-size: 12px; color: var(--ink-3); font-weight: 700; }
         .mt-rule select { height: 30px; border-radius: 9px; border: none; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink); padding: 0 8px; font-size: 12.5px; font-weight: 700; }
         .mt-gno { font-size: 11px; font-weight: 800; color: var(--ink-3); margin-bottom: 3px; }
-        .mt-dnote { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: rgba(124, 58, 237, .12); color: #7c3aed; font-size: 10px; }
         .mt-gno { display: flex; align-items: center; }
         .mt-back { margin-left: auto; height: 24px; padding: 0 10px; border: none; border-radius: 8px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--accent); font-size: 11px; font-weight: 700; }
         .mt-edb { border: none; background: none; color: var(--ink-3); font-size: 13px; padding: 0 2px; margin-left: 4px; }
         .mt-ed { margin: 6px 0 8px; padding: 10px; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); display: flex; flex-direction: column; gap: 6px; }
         .mt-ed-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); font-weight: 700; }
-        .mt-ed-row .mt-wb { height: 32px; font-size: 12px; }
         .mt-ed-row input { width: 64px; height: 32px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); text-align: center; font-size: 14px; }
-        .mt-ed-h { font-size: 11.5px; font-weight: 800; color: var(--ink-3); margin-top: 2px; }
-        .mt-ed-mem { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-        .mt-ed-mem > span:first-child { flex: 1; min-width: 0; font-weight: 700; }
-        #matchBox .mt-ed-mem select, #matchHistory .mt-ed-mem select { height: 30px !important; min-height: 0 !important; width: auto !important; padding: 0 6px !important; font-size: 12px !important; }
-        .mt-ed-mem select { flex: 1; min-width: 0; height: 30px; border: none; border-radius: 8px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 12px; padding: 0 6px; }
-        .mt-ed-seg { display: inline-flex; gap: 4px; }
-        .mt-ed-seg button { height: 26px; padding: 0 8px; border: none; border-radius: 8px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 11px; font-weight: 700; }
-        .mt-ed-seg button.on { background: var(--accent); color: #fff; box-shadow: none; }
-        .mt-ed-all { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-2); }
         .mt-ed-cancel { margin-left: auto; height: 38px; padding: 0 14px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-weight: 700; }
         .mt-ed-row .mt-add { margin-left: 0; }
         .mt-diffrow { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 0 0 4px 3.2em; font-size: 11px; color: #7c3aed; font-weight: 700; }
@@ -2888,28 +2373,18 @@
         .mt-h span { font-size: 12px; font-weight: 600; color: var(--ink-3); }
         .mt-pick { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--ink-2); }
         .mt-pick select { flex: 1; height: 34px; border-radius: 10px; border: none; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink); padding: 0 8px; }
-        .mt-form { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .mt-wb { flex: 1; height: 40px; border: none; border-radius: 12px; background: var(--bg); color: var(--ink-2); font-size: 13px; font-weight: 700; box-shadow: var(--raise-xs); }
-        .mt-wb.on { background: var(--accent); color: #fff; }
-        .mt-form input { width: 70px; height: 38px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 15px; text-align: center; }
-        .mt-unit { font-size: 12px; color: var(--ink-3); }
         .mt-add { margin-left: auto; height: 38px; padding: 0 20px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 800; }
         .mt-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
-        .mt-row { padding: 8px 10px; border-radius: 10px; background: rgba(128, 128, 128, .08); }
         .mt-top { display: flex; align-items: center; gap: 8px; font-size: 13px; }
         .mt-no { color: var(--ink-3); font-size: 11px; font-weight: 700; }
         .mt-team { font-weight: 700; color: var(--ink-2); }
         .mt-team.win { color: var(--accent); }
         .mt-vs { font-size: 12px; color: var(--ink-3); }
         .mt-del { margin-left: auto; border: none; background: none; color: var(--ink-3); font-size: 14px; }
-        .mt-mem { margin-top: 3px; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
-        .mt-w, .mt-l { display: inline-block; width: 16px; height: 16px; margin-right: 4px; border-radius: 4px; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; color: #fff; background: var(--accent); }
-        .mt-l { background: var(--ink-3); }
         .mt-day { margin: 12px 2px 6px; font-size: 12px; font-weight: 800; color: var(--ink-2); }
         .adm-mark { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: #7c3aed; color: #fff; font-size: 9.5px; font-weight: 800; line-height: 1.6; vertical-align: 1px; letter-spacing: .02em; }
         .mt-admrow { margin: -4px 0 8px; } .mt-admrow .adm-mark { margin-left: 0; }
         .mt-del.adm { color: #7c3aed; }
-        .mt-empty { font-size: 12px; color: var(--ink-3); margin: 2px 2px 4px; }
         .mt-sub { margin-top: 12px; }
         .mt-sub > summary { font-size: 12.5px; font-weight: 700; color: var(--ink-2); cursor: pointer; }
         .mt-rt { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
@@ -2921,11 +2396,6 @@
         .mt-rc b { position: relative; font-size: 11.5px; color: var(--ink); }
         .mt-rc small { position: relative; font-size: 10px; color: var(--ink-3); }
         .mt-rc.none { color: var(--ink-3); }
-        .mt-rates { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .mt-rate { display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 9px; border-radius: 999px; background: rgba(128, 128, 128, .1); font-size: 12px; color: var(--ink-2); font-weight: 700; }
-        .mt-rate b { color: var(--ink); }
-        .mt-rate small { font-size: 10px; font-weight: 600; color: var(--ink-3); }
-        .rs-l { text-align: right; font-variant-numeric: tabular-nums; }
         .rs-note { margin-top: 8px; }
         .outdated-bar { position: fixed; left: 12px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 9997; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #e5484d; color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
         .outdated-bar button { flex: none; margin-left: auto; height: 34px; padding: 0 14px; border: none; border-radius: 10px; background: #fff; color: #e5484d; font-weight: 800; }
@@ -3004,7 +2474,6 @@
         #tutOv .tut-sample { position: absolute; z-index: 1; top: calc(env(safe-area-inset-top, 0px) + 2px); left: 50%; transform: translateX(-50%); font: 700 8.5px/12px 'Montserrat', system-ui, sans-serif; letter-spacing: .18em; color: var(--tut-ink3); opacity: .8; }
         @media (prefers-reduced-motion: reduce) { #tutOv .tut-ring, #tutOv .tut-finger { animation: none; } #tutOv .tut-spot { transition: none; } }
         /* ===== ホーム画面に追加・ウィジェットの説明 ===== */
-        .st-guide button { min-width: 0 !important; padding: 0 9px !important; }
         #guideOv { display: none; position: fixed; inset: 0; z-index: 905; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;
             padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px calc(env(safe-area-inset-bottom, 0px) + 28px); }
         #guideOv .gd-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 17px; background: var(--bg); box-shadow: var(--sink); margin-bottom: 14px; }
@@ -3034,9 +2503,6 @@
         #guideOv .gd-sw input:checked::after { transform: translateX(18px); }
         #guideOv .gd-sub { font-size: 12px; color: var(--ink-3); }
         /* 時間表示: 連続した予定は下、ほかの予定は上に重ねる(重なっている所は縁取りで分ける) */
-        .tw-blk.under { z-index: 1; }
-        .tm-bar.under { z-index: 1; opacity: .75; }
-        .tw-base { position: absolute; border-radius: 5px; background: var(--surface); pointer-events: none; }
         /* ひとこと入力(予定の入力欄のいちばん上) */
         .op-quick { margin: 0 0 8px; }
         .op-box .op-quick input { width: 100%; height: 40px; font-size: 16px; border-radius: 10px; padding: 0 10px; border: 1.5px solid var(--accent); }
@@ -3054,6 +2520,8 @@
         body.proto-on #protoUI { display: block; position: fixed; inset: 0; z-index: 40; overflow: hidden; }
         body.proto-on.nv-full #protoUI, body.proto-on.plan-editing #protoUI,
         body.proto-on.proto-panel #protoUI { display: none; }
+        /* 上の板の光(左上の白いぼかし)が画面の上端で切れて、ステータスバーとの境に線が見えるのをなくす: 上端だけ背景色へなだらかに戻す */
+        @media (orientation: portrait) { body.proto-on #protoUI::before { content: ""; position: absolute; z-index: 4; top: 0; left: 0; right: 0; height: calc(env(safe-area-inset-top, 0px) + 14px); background: linear-gradient(var(--pr-bg, #e7eaf0), transparent); pointer-events: none; } }
         @keyframes prSlideL { from { transform: translateX(34%); opacity: 0; } 35% { opacity: 1; } to { transform: none; opacity: 1; } }
         @keyframes prSlideR { from { transform: translateX(-34%); opacity: 0; } 35% { opacity: 1; } to { transform: none; opacity: 1; } }
         body.proto-on:not(.nv-full):not(.plan-editing) #addFab { display: none !important; }
@@ -3145,7 +2613,6 @@
         #teamsView .tb2 .team-split-btn { background: var(--accent); color: #fff; box-shadow: var(--raise-sm); }
         #teamsView .tb2 .team-rerun-btn { background: var(--bg); color: var(--ink); box-shadow: var(--raise-sm); }
         #teamsView .tb2 .team-split-btn[style*="none"], #teamsView .tb2 .team-rerun-btn[style*="none"] { display: none !important; }
-        #teamsView .team-subbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0 2px 10px; }
         #teamsView .tchip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; margin: 0; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 11.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
         #teamsView .tchip .ic { width: 14px; height: 14px; }
         #teamsView .tchip input { display: none; }
@@ -3171,13 +2638,6 @@
         .mt-h { align-items: center; }
         .mt-h .mt-rule { margin: 0; }
         .mt-rec { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-        .mt-dstep { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--ink-3); }
-        .mt-dstep button { width: 32px; height: 32px; border: none; border-radius: 16px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 16px; font-weight: 700; padding: 0; }
-        #matchBox .mt-dstep input { width: 56px !important; height: 34px !important; min-height: 0 !important; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); font-size: 16px !important; font-weight: 800; text-align: center; padding: 0 !important; }
-        .mt-rec .mt-form { margin: 0; }
-        .mt-rec .mt-wb { height: 48px; font-size: 13px; font-weight: 600; }
-        .mt-rec .mt-wb b { font-weight: 800; }
-        .mt-rec .mt-wb:active { background: var(--accent); color: #fff; box-shadow: none; }
 
         /* 文字を減らした版 */
         #teamsView .tc-num { align-items: center; gap: 4px; }
@@ -3194,13 +2654,9 @@
         .late-add[open] > summary { box-shadow: var(--sink); }
         .late-box.quiet { padding: 0 2px 8px; }
         .mt-rec { flex-direction: row; align-items: center; gap: 8px; }
-        .mt-rec .mt-wb { flex: 1; height: 44px; font-size: 15px; font-weight: 800; }
         .mt-gt b { min-width: 1em; }
         .mt-no { min-width: 1.2em; }
         .mt-back { font-size: 14px; width: 28px; padding: 0; }
-        .mt-ed-row .mt-wb { flex: 1; }
-        .mt-ed-all { margin-right: auto; }
-        .mt-ed-seg button { min-width: 30px; }
 
         /* 操作は1列に収める(チーム数・分ける・小さい丸ボタン) */
         #teamsView .tb2 { gap: 6px; margin: 0 0 10px; }
@@ -3211,7 +2667,6 @@
         #teamsView .tb2 .team-split-btn, #teamsView .tb2 .team-rerun-btn { flex: 1 1 0; min-width: 44px; height: 40px; min-height: 40px; padding: 0 8px; }
         #teamsView .tb2 .tchip { flex: none; width: 34px; height: 34px; }
         #teamsView .tb2 #dupMark:empty { display: none; }
-        .rs-unit { display: flex; align-items: center; justify-content: flex-end; font-size: 11.5px; font-weight: 700; color: var(--ink-3); margin: 0 0 6px; }
         .mt-unit-seg { display: inline-flex; gap: 2px; margin-left: 8px; padding: 2px; border-radius: 9px; background: var(--bg); box-shadow: var(--sink); vertical-align: middle; }
         .mt-unit-seg button { height: 22px; padding: 0 9px; border: none; border-radius: 7px; background: transparent; color: var(--ink-3); font-size: 11px; font-weight: 700; }
         .mt-unit-seg button.on { background: var(--bg); color: var(--accent); box-shadow: var(--raise-xs); }
@@ -3223,7 +2678,6 @@
         .me-badge { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 800; vertical-align: 2px; }
         .court-cell.is-me { box-shadow: inset 0 0 0 2px var(--accent) !important; }
         .court-cell.is-me .court-name { color: var(--accent); }
-        .bench-chip.is-me { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
         .mt-me { text-decoration: none; font-weight: 800; color: var(--accent); }
 
         /* 精算が終わっていない日(ヘッダー) */
@@ -3233,11 +2687,6 @@
         .settle-due b { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
         .settle-due .sd-more { position: absolute; top: -5px; right: -6px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: var(--notcome-ink, #b4232a); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
         /* 試作UI: 板の左上の角(リングの外の空き)に、2段の小さな札 */
-        #protoUI .pr-settle-due { position: absolute; top: 10px; left: 12px; z-index: 2; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 40px; height: 32px; padding: 0 6px; border: none; border-radius: 10px; line-height: 1.1; white-space: nowrap; }
-        #protoUI .pr-settle-due .sd-l { font-size: 8.5px; font-weight: 700; opacity: .8; }
-        #protoUI .pr-settle-due b { font-size: 11.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
-        #protoUI .pr-settle-due .sd-more { position: absolute; top: -5px; right: -6px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: currentColor; font-size: 9px; font-weight: 800; line-height: 15px; text-align: center; box-sizing: border-box; }
-        #protoUI .pr-settle-due .sd-more::after { content: attr(data-n); color: #fff; }
 
         /* ベンチ(一時的に抜ける人) */
         .late-bench { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 2px 0 6px; }
@@ -3291,7 +2740,6 @@
         .mt-tdet > summary::-webkit-details-marker { display: none; }
         .mt-tmem { padding: 6px 8px 2px; }
         .mt-tdet[open] > summary { background: rgba(128, 128, 128, .14); }
-        #matchBox .mt-ed-all input[type="checkbox"] { width: 16px !important; height: 16px !important; min-height: 0 !important; margin: 0; padding: 0 !important; box-shadow: none !important; -webkit-appearance: checkbox; appearance: auto; accent-color: var(--accent); }
 
         /* ===== 節約の記録 ===== */
         .sv-total-host:empty { display: none; }
@@ -3344,17 +2792,6 @@
         .sv-empty { text-align: center; font-size: 12.5px; color: var(--ink-3); margin: 10px 0; }
 
         /* 試作UI: カレンダーのマスに予定の題名 */
-        #protoUI .pr-lb { display: block; height: 13px; margin: 0 2px; padding: 0 3px; border-radius: 3px; font-style: normal; font-size: 9.5px; font-weight: 600; line-height: 13px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: clip; color: inherit; }
-        #protoUI .pr-bar { padding: 0 3px; }
-        #protoUI .pr-more { color: inherit; opacity: .55; text-align: center; }
-        #protoUI .pr-ini { display: flex; justify-content: center; gap: 3px; font-size: 11px; line-height: 14px; margin-top: 1px; }
-        #protoUI .pr-ini b { font-weight: 800; }
-        #protoUI .pr-ini-more { color: inherit; opacity: .4; }
-        #protoUI .pr-tiny { display: flex; flex-direction: column; align-items: stretch; width: 100%; min-width: 0; padding: 0 3px; margin-top: 1px; }
-        #protoUI .pr-tiny i { display: block; font-style: normal; font-size: 7.5px; font-weight: 600; line-height: 9.5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
-        #protoUI .pr-tiny.en i { font-family: 'Montserrat', system-ui, sans-serif; font-size: 7px; font-weight: 700; letter-spacing: .06em; }
-        #protoUI .pr-tiny-more { color: inherit !important; opacity: .45; }
-        #protoUI .pr-lanes { display: flex; flex-direction: column; gap: 3px; min-height: 3px; }   /* 線の段の高さをどの日も同じにして、文字の高さをそろえる */
         #protoUI .pr-lts { display: flex; flex-direction: column; gap: 0; width: 100%; margin-top: -2px; }   /* 3本目まで、マスの高さに収める */
         #protoUI .pr-lt { position: relative; display: flex; justify-content: center; align-items: center; height: 9px; min-width: 0; }
         #protoUI .pr-lt > i { position: absolute; top: 50%; height: 2px; margin-top: -1px; border-radius: 1px; }
@@ -3363,16 +2800,10 @@
         #protoUI .pr-lt-lane { justify-content: flex-start; padding-left: 4px; }   /* 何日も続く予定: 題名は線の始まりに寄せる */
         #protoUI .pr-lt-lane > b { z-index: 1; padding: 0 2px 0 1px; flex-shrink: 0; }   /* 続く日の上まで題名をのばせる(線の続く日数まで) */
         #protoUI .pr-cell:has(.pr-lt-lane > b) { overflow: visible; }
-        #protoUI .pr-lt-more { font-size: 7px; font-weight: 700; opacity: .45; }
         #protoUI .pr-fit-more { position: absolute; top: 3px; right: 4px; font-size: 8px; font-weight: 700; opacity: .5; pointer-events: none; font-family: 'Montserrat', system-ui, sans-serif; }
         #protoUI .pr-lt-solo > b { position: relative; max-width: calc(100% - 4px); padding: 0; background: none; font-size: 7px; font-weight: 700; line-height: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #protoUI .pr-lts.past { opacity: .45; }
-        #protoUI .pr-volmark { position: absolute; top: 1px; right: -3px; width: 6px; height: 6px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid; }
         /* 試し: 文字を1色に(色は小さな点だけ) */
-        #protoUI.pr-mono-dot .pr-lt-solo > b { color: var(--pr-ink2, #4a5262) !important; font-weight: 600; }
-        #protoUI.pr-mono-dot .pr-lt-solo > b::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 3px; vertical-align: 1px; }
-        #protoUI.pr-mono .pr-lt-solo > b { color: var(--pr-ink2, #4a5262) !important; font-weight: 600; }
-        #protoUI.pr-mono .pr-lt-lane > b, #protoUI.pr-mono-dot .pr-lt-lane > b { color: var(--pr-ink2, #4a5262) !important; }
         /* カレンダーの小さな題名のフォント: 英字は Montserrat、日本語は iPhone の標準(ヒラギノ角ゴ)の細め。小さくてもつぶれにくい */
         #protoUI .pr-lt > b, #protoUI .pr-lt-solo > b { font-family: 'Montserrat', -apple-system, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif !important; font-weight: 500 !important; font-size: 7.5px !important; letter-spacing: .03em !important; -webkit-font-smoothing: antialiased; font-feature-settings: "palt"; }
         #protoUI .pr-lts.en .pr-lt > b { font-weight: 600 !important; font-size: 7px !important; }
@@ -3504,7 +2935,6 @@
         #fxOv .fx-pickbtn { position: relative; display: flex; align-items: center; justify-content: center; height: 56px; border-radius: 16px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; overflow: hidden; }
         #fxOv .fx-pickbtn input { position: absolute; inset: 0; opacity: 0; }
         #fxOv .fx-tips, #fxOv .fx-grp { margin: 12px 0 0; padding: 12px 16px; border-radius: 16px; background: var(--surface); font-size: 13px; color: var(--ink-2); }
-        #fxOv .fx-tips ul { margin: 6px 0 0; padding-left: 1.2em; line-height: 1.7; }
         #fxOv .fx-grp h5 { margin: 0 0 6px; font-size: 12px; font-weight: 800; color: var(--ink); }
         #fxOv .fx-grp h5 small { display: block; margin-top: 2px; font-weight: 500; color: var(--ink-3); }
         #fxOv .fx-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 10px; padding: 7px 0; border-top: 1px solid var(--line); }
@@ -3571,9 +3001,6 @@
         #fxOv .fx-cmp > i { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
         #fxOv .fx-cmp .hot { color: var(--ink); font-weight: 800; }
         #fxOv .fx-cmp i.hot { color: var(--accent); }
-        #fxOv .fx-balltap { margin: 10px 0 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, #ff7a1a 12%, var(--surface)); font-size: 12px; color: var(--ink-2); line-height: 1.6; }
-        #fxOv .fx-balltap b { display: block; font-size: 14px; color: var(--ink); margin-bottom: 2px; }
-        #fxOv .fx-balltap div { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
         #fxOv .fx-refsel { display: flex; gap: 8px; margin: 6px 0 8px; }
         #fxOv .fx-refsel label { flex: 1; display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--ink-3); min-width: 0; }
         #fxOv .fx-refsel select { height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 12px; min-width: 0; }
@@ -3737,16 +3164,19 @@
         /* カレンダーの下に常に出すメニュー(設定で切り替え) */
         /* 下に常に出すメニュー: アイコンだけの小さめの丸い帯を、まん中に浮かせる(画面の角から離して、角の丸みとぶつからないようにする) */
         #protoUI .pr-wrap { --mb-d: calc(env(safe-area-inset-bottom, 0px) + 18px); }
-        #protoUI .pr-menubar { position: absolute; left: 50%; bottom: var(--mb-d); transform: translateX(-50%); z-index: 3; box-sizing: border-box; max-width: calc(100vw - 32px); display: flex; gap: 2px; padding: 5px; border-radius: 28px; background: var(--pr-bg, #e9ecf2); box-shadow: 4px 4px 10px rgba(0,0,0,.10), -4px -4px 10px rgba(255,255,255,.8); }
+        #protoUI .pr-menubar { position: absolute; left: 50%; bottom: var(--mb-d); transform: translateX(-50%); z-index: 3; box-sizing: border-box; max-width: calc(100vw - 32px); display: flex; gap: 2px; padding: 5px; border-radius: 28px; background: linear-gradient(145deg, color-mix(in srgb, var(--pr-bg, #e7eaf0) 68%, #fff), color-mix(in srgb, var(--pr-bg, #e7eaf0) 92%, #9aa6bb)); box-shadow: 6px 6px 14px rgba(160,172,194,.62), -6px -6px 14px rgba(255,255,255,.95), inset 1px 1px 0 rgba(255,255,255,.9), inset -1px -1px 0 rgba(120,132,155,.22); }   /* 上の板(protoNeu の凸)と同じ作り */
         #protoUI .pr-menubar button { position: relative; flex: 0 1 44px; min-width: 0; width: 44px; height: 46px; padding: 0; border: none; border-radius: 23px; background: none; color: var(--pr-ink2, #4a5262); display: flex; align-items: center; justify-content: center; }
         #protoUI .pr-menubar button svg { width: 21px; height: 21px; }
         #protoUI .pr-menubar button span { display: none; }
         #protoUI .pr-menubar button.main { color: #2f6fe0; }
         #protoUI .pr-menubar button.g-ok { color: #8b6fc9; }
         #protoUI .pr-menubar button.g-ex::after { content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
-        #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 7px rgba(0,0,0,.12), inset -3px -3px 7px rgba(255,255,255,.7); }
+        #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 6px rgba(160,172,194,.62), inset -3px -3px 6px rgba(255,255,255,.95); }
         #protoUI .pr-menubar .svdot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #e5484d; }
-        @media (prefers-color-scheme: dark) { #protoUI .pr-menubar { box-shadow: 4px 4px 10px rgba(0,0,0,.45), -3px -3px 8px rgba(255,255,255,.04); } }
+        /* ダークは端末の設定ではなく、アプリのテーマ(body.dark)に合わせる */
+        body.dark #protoUI .pr-menubar { background: linear-gradient(145deg, color-mix(in srgb, var(--pr-bg, #2b2e34) 92%, #fff), color-mix(in srgb, var(--pr-bg, #2b2e34) 88%, #000)); box-shadow: 6px 6px 14px rgba(0,0,0,.55), -6px -6px 14px rgba(255,255,255,.06), inset 1px 1px 0 rgba(255,255,255,.08), inset -1px -1px 0 rgba(0,0,0,.45); }
+        body.dark #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 6px rgba(0,0,0,.55), inset -3px -3px 6px rgba(255,255,255,.06); }
+        body.dark #protoUI .pr-menubar button.main { color: #7aa2ff; }   /* ＋: ダークでは選択色と同じ明るい青 */
         body.proto-on #protoUI .pr-wrap.has-bar > .pr-cal { padding-bottom: calc(var(--mb-d) + 64px) !important; }
         @media (orientation: landscape) and (max-height: 620px) {
             body.proto-on #protoUI .pr-wrap.has-bar > .pr-cal { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important; }
@@ -4196,10 +3626,8 @@
         #pairOv .op-sc.on { color: var(--sn-acc); font-weight: 700; box-shadow: inset 3px 3px 6px var(--sn-dk), inset -3px -3px 6px var(--sn-lt); }
         #pairOv .op-add { border: none; background: var(--sn-bg); color: var(--sn-acc); font-weight: 700; border-radius: 18px; padding: 0 26px; height: 42px; box-shadow: 4px 4px 9px var(--sn-dk), -4px -4px 9px var(--sn-lt); }
         /* ===== ローテ(11/06): 設定と同じ、やわらかい凹凸。名前 = 出っぱった板、点数・控えの場所 = へこみ、色は青ひとつ(弱いローテだけ赤) ===== */
-        .mt-rotrow { display: flex; justify-content: flex-end; margin: -2px 0 10px; }
         .mt-rotb { height: 30px; padding: 0 14px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 12px; font-weight: 700; font-family: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif; }
         .mt-rotb.on { color: var(--accent); box-shadow: var(--sink); }
-        .mt-rotrow { gap: 8px; }
         .mt-lub { height: 30px; padding: 0 12px 0 26px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 11.5px; font-weight: 700; position: relative; }
         .mt-lub::before { content: ""; position: absolute; left: 10px; top: 50%; width: 9px; height: 9px; margin-top: -5px; border-radius: 50%; box-shadow: var(--sink); }
         .mt-lub.on { color: var(--accent); }
@@ -4330,7 +3758,6 @@
         /* 点数: へこんだ2つの数字 */
         #rotOv .rot-score { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 18px; }
         #rotOv .rot-score i { font: 700 16px var(--sn-en); color: var(--sn-ink3); font-style: normal; }
-        #rotOv .rot-sl { font: 700 11px var(--sn-en); color: var(--sn-ink3); min-width: 1em; text-align: center; }
         #rotOv .rot-num { width: 72px; height: 48px; box-sizing: border-box; border: none; border-radius: 16px; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-ink); font: 700 24px var(--sn-en); text-align: center; padding: 0; -moz-appearance: textfield; appearance: textfield; }
         #rotOv .rot-num::-webkit-inner-spin-button, #rotOv .rot-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         #rotOv .rot-num::placeholder { color: var(--sn-ink3); opacity: .6; }
@@ -4425,6 +3852,34 @@
         #prDetail .pds-ttl { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #prDetail .pds-sub { flex: none; max-width: 38%; font-size: 11.5px; color: var(--sn-ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #prDetail .pds-go { flex: none; color: var(--sn-ink3); font-size: 16px; }
+        /* =========================================================
+           統一(11/11): アプリ全体の色と凹凸を、メイン画面(protoPal / protoNeu)と同じ値にそろえる
+           - 背景: ライト #e7eaf0 / ダーク #2b2e34(メイン画面・設定と同じ)
+           - 影: 青みのある影 + 白い光。出っぱりのふちに細い光と影の線(--sn-raise と同じ作り)
+           ここより前の --bg / --hl / --sh / --raise* / --sink は、すべてこの値で上書きされる
+           ========================================================= */
+        :root {
+            --bg: #e7eaf0; --surface: #f1f3f7; --surface-2: #e9ecf1; --line: #dfe3ea; --line-2: #cfd5de;
+            --hl: rgba(255, 255, 255, .95);
+            --sh: rgba(160, 172, 194, .62);
+            --edge-hi: rgba(255, 255, 255, .9); --edge-lo: rgba(120, 132, 155, .22);
+            --raise:    6px 6px 14px var(--sh), -6px -6px 14px var(--hl), inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo);
+            --raise-sm: 4px 4px 9px var(--sh), -4px -4px 9px var(--hl), inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo);
+            --raise-xs: 2px 2px 5px var(--sh), -2px -2px 5px var(--hl), inset 1px 1px 0 var(--edge-hi);
+            --sink:     inset 3px 3px 5px var(--sh), inset -3px -3px 5px var(--hl), inset -1px -1px 0 var(--edge-hi);
+        }
+        :root:has(body.dark) {
+            --bg: #2b2e34; --surface: #34383f; --surface-2: #3b3f47; --line: #42464e; --line-2: #555a64;
+            --hl: rgba(255, 255, 255, .06);
+            --sh: rgba(0, 0, 0, .55);
+            --edge-hi: rgba(255, 255, 255, .08); --edge-lo: rgba(0, 0, 0, .45);
+        }
+        /* 名簿の「追加」: 黒い塗りをやめて、ほかのボタンと同じ出っぱりに */
+        .roster-add-row .add-btn { border: none; background: var(--bg); color: var(--accent); box-shadow: var(--raise-sm); }
+        .roster-add-row .add-btn:active { box-shadow: var(--sink); }
+        /* ページの地の色も同じに(以前はライトだけ #f5f6f8 で、出っぱった部品と地の色がずれていた)。上に固定する帯も同じ色 */
+        body { background: var(--bg); }
+        .view-tabs-wrap { background: color-mix(in srgb, var(--bg) 92%, transparent); }
 </style>
 </head>
 <body>
@@ -5656,8 +5111,6 @@ await main();
         };
 
         const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-        const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const IC = (n) => `<i class="ic ic-${n}"></i>`;
         const WEEK_START_KEY = "attendance_week_start_v1";
         let weekStartDay = 0;   // 0=日曜始まり / 1=月曜始まり
@@ -6999,7 +6452,6 @@ await main();
         function updateRosterField(id, field, value) {
             const mem = roster.find(m => m.id === id);
             if (!mem) return;
-            const wasGuest = mem.position === GUEST_POS;
             mem[field] = value;
             saveRoster();
             if (field === "position" && value === GUEST_POS) syncGuestExclude();
@@ -7315,7 +6767,6 @@ await main();
             renderNvPanel();
             window.scrollTo(0, 0);
         }
-        var nvLastTap = { key: "", t: 0 };
         // 共有相手(管理者だけ): 名前の頭文字の小さな丸を重ねて出す。4人目からは「+N」
         function shareAvatars(p) {
             if (!p || p.local || !p.to || !p.to.length) return "";   // 閲覧者にも共有相手を見せる
@@ -7399,7 +6850,7 @@ await main();
             if (m) f.memo = m.value;
             if (d && d.value) f.date = d.value;
         }
-        function savingSet(k, v) { savingReadForm(); savingForm[k] = v; renderSaving(); }
+        function savingSet(k, v) { savingReadForm(); savingForm[k] = (k === "date" && !v) ? savingForm.date : v; renderSaving(); }   // 日付を空にしたときは、前の日付のまま(空の日付で保存すると記録が消える)
         function savingSubmit() {
             savingReadForm();
             const f = savingForm; if (!f) return;
@@ -7543,7 +6994,7 @@ await main();
                 const merged = mergeNotify(prev, cfg, notifyCfgFrom(remote));
                 tx.update(firestoreRef, { ["values." + NOTIFY_KEY]: JSON.stringify(merged), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                 return merged;
-            }).then(merged => { setLocalQuiet(NOTIFY_KEY, JSON.stringify(merged)); if (document.getElementById("settingsPanel").classList.contains("open")) renderNotifySettings(); })
+            }).then(merged => { setLocalQuiet(NOTIFY_KEY, JSON.stringify(merged)); if (document.getElementById("settingsPanel").classList.contains("open") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#ntfText"))) renderNotifySettings(); })   // 文章を入力している途中は作り直さない(入力中の文字が消える)
               .catch(err => { console.error("通知設定を共有データに保存できませんでした。", err); setSavedMsg("保存できませんでした", true); });
         }
         // prev(変える前)→ mine(変えた後)で変わったところだけを remote(共有データの最新)に重ねる
@@ -7659,7 +7110,7 @@ await main();
             x.days = ntfDaysOk(next);
             saveNotify(cfg); renderNotifySettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
         }
-        function sortedRosterForNtf() { return roster.slice().sort((a, b) => String(a.yomi || a.name).localeCompare(String(b.yomi || b.name), "ja")); }
+        function sortedRosterForNtf() { return roster.slice().sort((a, b) => String(a.reading || a.name).localeCompare(String(b.reading || b.name), "ja")); }
         function ntfSet(k, field, val) {
             const cfg = notifyCfg();
             cfg[k][field] = val;
@@ -7742,9 +7193,8 @@ await main();
         }
         function ntfTextReset(k) {
             if (!confirm(`${k === "volley" ? "バレー" : "その他の予定"}の通知の文章を初期のものに戻しますか？`)) return;
-            const cfg = notifyCfg(); delete cfg.text[k];   // 区分の設定も初期に戻る
-            try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ }
-            const c2 = notifyCfg(); saveNotify(c2); renderNotifyText(c2); setSavedMsg("保存しました ✓");
+            const cfg = notifyCfg(); cfg.text[k] = notifyCfgFrom({}).text[k];   // 区分の設定も初期に戻る(先に端末へ書くと「変えたところ」が無くなり、共有データに届かない)
+            saveNotify(cfg); const c2 = notifyCfg(); renderNotifyText(c2); setSavedMsg("保存しました ✓");
             if (k === "plan") syncLocalNtf();
         }
         // ボット(GAS)と同じ作り方で見本を作る
@@ -10591,9 +10041,9 @@ await main();
             const outs = teamOutGet(selectedDate).filter(n => coming.has(n));
             if (!late.length && !cands.length && !outs.length) return "";
             const teamBtns = (onclick) => res.teams.map((_, k) => `<button type="button" onclick="${onclick(k)}" aria-label="チーム${k + 1}へ">→ ${k + 1}</button>`).join("");
-            const lateHtml = late.length ? late.map(n => `<div class="late-row"><span class="late-new">NEW</span><span class="late-name">${escapeHtml(n)}</span>${isAdmin() ? teamBtns(k => `addLateMember(decodeURIComponent('${encodeURIComponent(n)}'), ${k})`) : ""}</div>`).join("") : "";
+            const lateHtml = late.length ? late.map(n => `<div class="late-row"><span class="late-new">NEW</span><span class="late-name">${escapeHtml(n)}</span>${isAdmin() ? teamBtns(k => `addLateMember(decodeURIComponent('${encodeURIComponent(n).replace(/'/g, "%27")}'), ${k})`) : ""}</div>`).join("") : "";
             const addHtml = cands.length ? `<details class="late-add"${teamAddOpen ? " open" : ""} ontoggle="teamAddOpen=this.open"${late.length ? ' style="margin-top:8px"' : ""}><summary aria-label="名簿から追加">＋</summary><div class="late-row"><select id="teamAddSel" class="late-sel"><option value="">名簿</option>${cands.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select>${teamBtns(k => `teamAddFromRoster(${k})`)}</div></details>` : "";
-            const outHtml = outs.length ? `<div class="late-bench"><span class="late-bl">ベンチ</span>${outs.map(n => `<span class="late-bc">${escapeHtml(n)}${isAdmin() ? res.teams.map((_, k) => `<button type="button" onclick="unbench(decodeURIComponent('${encodeURIComponent(n)}'), ${k})" aria-label="チーム${k + 1}に戻す">→ ${k + 1}</button>`).join("") : ""}</span>`).join("")}</div>` : "";
+            const outHtml = outs.length ? `<div class="late-bench"><span class="late-bl">ベンチ</span>${outs.map(n => `<span class="late-bc">${escapeHtml(n)}${isAdmin() ? res.teams.map((_, k) => `<button type="button" onclick="unbench(decodeURIComponent('${encodeURIComponent(n).replace(/'/g, "%27")}'), ${k})" aria-label="チーム${k + 1}に戻す">→ ${k + 1}</button>`).join("") : ""}</span>`).join("")}</div>` : "";
             return `<div class="late-box${late.length || outs.length ? "" : " quiet"}">${outHtml}${lateHtml}${addHtml}</div>`;
         }
         function renderTeamResults() {
@@ -10663,8 +10113,6 @@ await main();
             if (k !== "win") { matchForm.win = null; matchForm.rot = null; matchForm.luRot = null; }   // チームを変えたら、ローテの下書きも外す
             renderMatchBox();
         }
-        // チームの色(1=青 / 2=オレンジ / 3〜): 試合の記録・入力・チーム分けで同じ色
-        const TEAM_COLS = ["#4677c4", "#e0803a", "#5d9487", "#9c3d68", "#8a7a3d", "#6a5acd", "#7f848c", "#c0504d"];
         function teamChip(lb) { return `<b class="tm-chip">${escapeHtml(String(lb).replace("チーム", ""))}</b>`; }   // 色は付けない(番号だけ)
         // ------- 点数の入力(A – B)。チーム分けの試合の行・試合の直し・ローテの画面で同じもの -------
         //   左 = 先のチーム、右 = 後のチーム。勝ちと点差は、いつも点数から決める(記録には score と一緒に win・diff も書く。分析と古い版のため)
@@ -10714,9 +10162,8 @@ await main();
             list.push(rotAttach({ id: Date.now(), teams: [teams[a].map(p => p.name), teams[b].map(p => p.name)], labels: ["チーム" + (a + 1), "チーム" + (b + 1)], win: sc[0] > sc[1] ? 0 : 1, diff, score: sc, ...(rd ? { round: rd, pair: ["チーム" + (a + 1), "チーム" + (b + 1)] } : {}) }, a, b));   // ローテ・点数は入れたときだけ(「ローテも保存」ならコートの並びから)
             saveMatches();
             matchForm.win = null; matchForm.rot = null;
+            if (typeof renderRosterStats === "function") renderRosterStats();   // 開いている分析の数字も新しくする(試合の一覧は呼び出し側で描き直す)
             return true;
-            renderMatchBox();
-            if (typeof renderRosterStats === "function") renderRosterStats();
         }
         // 消したゲームは、新しい3つまで「ごみ箱」に残す(2週間で消える。共有データ)。ごみ箱から元に戻せる
         const MATCH_TRASH_KEY = "attendance_match_trash_v1";
@@ -10957,7 +10404,7 @@ await main();
                         + (editing ? matchEditHtml(m, gsel) : "");
                 }).join("");
                 const team = lb => `<div class="mt-gt">${teamChip(lb)}<span>${st.win === lb ? `<i class="mt-crown">🏆</i>` : ""}${(g.names[lb] || []).map(n => n === teamMeName() ? `<u class="mt-me">${escapeHtml(n)}</u>` : escapeHtml(n)).join("・")}</span></div>`;
-                const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key)}'))" aria-label="チーム分けに戻す" title="チーム分けに戻す">↩</button>` : "";
+                const back = canDel && isAdmin() && date === selectedDate ? `<button type="button" class="mt-back" onclick="matchToTeamSplit('${date}', decodeURIComponent('${encodeURIComponent(g.key).replace(/'/g, "%27")}'))" aria-label="チーム分けに戻す" title="チーム分けに戻す">↩</button>` : "";
                 // メンバーは2行だけ(はみ出たら薄く消す)。タップで全部を見る
                 const nk = date + "\u0003" + g.key, nOpen = matchNamesOpen.has(nk);
                 const names = `<div class="mt-gnames${nOpen ? " open" : ""}" data-k="${escapeHtml(nk)}" onclick="matchNamesToggle(this)" role="button" tabindex="0" aria-expanded="${nOpen}" aria-label="メンバー(タップで全部)">${g.labels.slice(0, 2).map(team).join("")}</div>`;
@@ -11101,12 +10548,6 @@ await main();
             const min = Math.min(...vs), wi = rows.findIndex(r => r.v === min), avg = k => { const xs = rows.map(r => r[k]).filter(v => v != null); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
             return { rows, min, avg: vs.reduce((a, b) => a + b, 0) / vs.length, wi, tm, mSet: avg("set"), mAtk: avg("atk") };
         }
-        // 項目 k が高い順の上位 n 人(n 番目と同じ値の人も含む) / 低い順
-        function rotRank(names, pv, k, n, low) {
-            const vs = names.map(x => [x, pv(x)]).filter(x => x[1]).map(([x, p]) => [x, p[k] ?? 3]).sort((a, b) => low ? a[1] - b[1] : b[1] - a[1]);
-            if (vs.length <= n) return new Set(vs.map(x => x[0]));
-            const cut = vs[n - 1][1]; return new Set(vs.filter(x => low ? x[1] <= cut + 1e-9 : x[1] >= cut - 1e-9).map(x => x[0]));
-        }
         // いちばん弱いローテの短い理由: 当てはまる原因を、強さを下げている大きさの順に2つまで(「・」でつなぐ)
         //   前衛の左右にスパイカーなし(位置2・4 のどちらも、その日のスパイク上位3分の1 ではない) / レシーブ下位2人がとなり / セッター位置のセットが低い
         function rotReason(row, sm, pv) {
@@ -11228,14 +10669,6 @@ await main();
             rotDraft.names = names; rotDraft.score = (matchForm.sc || ["", ""]).slice();   // 点数は試合の行と同じ
             rotShow();
         }
-        function rotOpenEdit(date, id) {
-            const m = (matchesByDate[date] || []).find(x => x.id === id); if (!m || !realAdmin()) return;
-            const labels = m.labels.slice(0, 2), ed = null;   // 直す画面は、コートを中に持つので、ここからは開かない
-            const teams = m.teams.map(t => t.slice()), cur = m.rot, curSc = m.score;
-            const fits = (sd, t) => rotValid(sd) && sd.c.filter(Boolean).concat(sd.b).length === t.length && t.every(n => sd.c.includes(n) || sd.b.includes(n));
-            rotDraft = { id, date, labels, edit: !!ed, names: teams, sides: teams.map((t, k) => cur && fits(cur[k], t) ? JSON.parse(JSON.stringify(cur[k])) : rotPrefill(t, labels[k], k, null)), score: curSc ? curSc.map(String) : ["", ""] };
-            rotShow();
-        }
         function rotShow() {
             rotUi = { sel: null, mode: "", mk: -1, note: {} }; ["d0", "d1"].forEach(k => rotListOpen.delete(k));
             let ov = document.getElementById("rotOv");
@@ -11300,7 +10733,6 @@ await main();
             cx.render();
         }
         // 点数は共通の部品(scoreInHtml)。同点・片方だけは保存できない(両方とも空ならローテだけ保存できる)
-        function rotScore(k, v) { scoreSet("rot", k, v); }
         function rotScoreUi(shake) { return scoreUi("rot", shake); }
         function rotScoreOk(sc) { const a = parseInt(sc && sc[0], 10), b = parseInt(sc && sc[1], 10); return isFinite(a) && isFinite(b) && a >= 0 && b >= 0 && a !== b ? [a, b] : null; }
         // 保存する形(名前の一覧は持たない)
@@ -11773,7 +11205,7 @@ await main();
             document.body.classList.toggle("dark", dark);
             document.documentElement.style.colorScheme = dark ? "dark" : "light";
             const meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) meta.setAttribute("content", dark ? "#313746" : "#eceff4");
+            if (meta) meta.setAttribute("content", dark ? "#2b2e34" : "#e7eaf0");
             setTimeout(() => { renderProto(); protoTopColor(); }, 0);   // 画面の色も切り替える
             const lb = document.getElementById("themeLbl");
             // 丸いボタンの名前は「ダーク」だけ。管理者アカウントは、どちらのモードの表示かを小さく添える(表示(Adminのとき)/(Viewのとき))
@@ -12244,7 +11676,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         var chemCache = null;
         function chemData(from) {
-            const ck = from + "|" + matchRateUnit + "|" + JSON.stringify(matchRule()) + "|" + JSON.stringify(matchesByDate).length + "|" + Object.keys(matchesByDate).length;
+            const ck = from + "|" + matchRateUnit + "|" + JSON.stringify(matchRule()) + "|" + JSON.stringify(matchesByDate) + "|" + whyRosterSig();   // 長さだけでは、点数の入れ替えや名簿の直しに気づけない
             if (chemCache && chemCache.k === ck) return chemCache.v;
             const v = chemDataCalc(from); chemCache = { k: ck, v }; return v;
         }
@@ -12255,7 +11687,6 @@ const namesBtn = isAdmin() && dates.length > 0
             const sig = x => 1 / (1 + Math.exp(-x)), K = 3, MIN = 3;
             // パラメータをベースに、試合結果で補正した強さ(パラメータは弱いけど、強いチームに入って勝っているだけの人は上がりすぎない)
             const base = chemFit(recs, st0, 200, null, prior);
-            const pr = (st, r) => sig(r.teams[0].reduce((a, n) => a + st[n], 0) - r.teams[1].reduce((a, n) => a + st[n], 0));
             // 2人の組ごとに: その2人が「一緒にいない」試合だけで強さを出し直し、それで予想した勝つ確率と実際の差(少ない回数は 0 寄り)
             const key = (a, b) => a < b ? a + "\u0000" + b : b + "\u0000" + a, mate = {}, vs = {};
             recs.forEach((r, ri) => {
@@ -12310,7 +11741,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 const cls = f ? (n === f ? "on" : linked.has(n) ? "" : "dim") : "";
                 const nm = n.length > 6 ? n.slice(0, 6) + "…" : n;
                 return `<g class="chem-nm" data-n="${encodeURIComponent(n)}" style="cursor:pointer"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="16" fill="transparent" style="cursor:pointer"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}" style="cursor:pointer">${escapeHtml(nm)}</text></g>`; }).join("");
-            const pct = v => (v > 0 ? "+" : "−") + Math.round(Math.abs(v) * 100) + "%";
             let list = "";
             if (f) {
                 const mine = pairs.filter(p => p.a === f || p.b === f).map(p => ({ n: p.a === f ? p.b : p.a, c: p.c, g: p.g, w: p.w }));
@@ -12395,19 +11825,6 @@ const namesBtn = isAdmin() && dates.length > 0
             let fresh = 0; best.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) if (!gOf(t[i], t[j])) fresh++; });
             const keys = rates.filter(x => x.g >= 3 && Math.abs(x.r - 0.5) >= 0.1).map(x => ({ n: x.n, tags: [Math.round(x.r * 100) + "%"], team: x.team }));
             return { teams: best, info: { win: teamCount === 2 ? bestE.q[0] : null, q: bestE.q, whyUsed: usedWhy ? "強さ+要因" : "強さ", rates, dev0, dev1, fresh, gOk: !genGap(best), keys } };
-        }
-        // 要因の短い呼び名(キーになる人の印に使う)
-        function whyTag(lb) {
-            return lb.replace(/がいる$|の人数$|が同じチーム$/, "").replace("チーム内格差あり", "チーム内格差");
-        }
-        function proposeNoteHtml(info) {
-            const bits = [];
-            if (info.splits && info.splits.length) bits.push("切り分け: " + info.splits.map(p => `「${whyCond(p.a).replace(/チーム$|チーム\(.*\)$/, "")}」と「${whyCond(p.b).replace(/チーム$|チーム\(.*\)$/, "")}」を${p.same ? "別のチーム" : "同じチーム"}に(これまで ${p.n}試合中 ${p.k}試合で${p.same ? "同じ" : "反対の"}チームだった)`).join("・"));
-            else if (info.overl === 0) bits.push("かぶっている要因の組はまだ見つかっていません");
-            if (info.tests && info.tests.length) bits.push("ためす: " + info.tests.map(t => `${t.lb.replace("チーム内格差あり", "チーム内格差")}(${t.side})`).join("・"));
-            if (info.win != null) bits.push(`予想 強さ ${Math.round(info.win * 100)}:${100 - Math.round(info.win * 100)}${info.whyWin != null ? `・要因 ${Math.round(info.whyWin * 100)}:${100 - Math.round(info.whyWin * 100)}` : ""}`);
-            if (info.fresh) bits.push(`初めて組む2人 ${info.fresh}組`);
-            return `<b>提案</b>　${bits.join("　/　")}`;
         }
         // ======================================================================
         // 動画でフォーム分析(スパイク)
@@ -12535,7 +11952,6 @@ const namesBtn = isAdmin() && dates.length > 0
             else if (fx.step === "ballTap") { fxSetBall(fx.t, p); }   // 指定中はそのまま(コマを動かして、続けてタップ)
             fxRender(); fxDraw();
         }
-        const fxMpp = () => { const f = fx.frames.find(x => x.pose); if (!f) return 0.005; const p = f.pose; return (FX_NOSE_HEEL * fx.height) / Math.max(1, Math.max(p[27][1], p[28][1]) - p[0][1]); };   // 1画素あたりの長さ(m)のおおよそ(ボールの飛び値の判定用)
         // ---- 読み取り(動画を少しずつ進めて、そのたびに骨格とボールを探す) ----
         async function fxRun() {
             const msg = (m) => { const el = document.getElementById("fxMsg"); if (el) el.textContent = m; };
@@ -12884,7 +12300,6 @@ const namesBtn = isAdmin() && dates.length > 0
         // 手で直した瞬間を、自動の判定の上に戻す(インパクトを手で直したら、ボールで決めた印は外す)
         function fxKeepMan() { const m = fx.evMan || {}; Object.keys(m).forEach(k => { fx.ev[k] = m[k]; if (k === "impact") delete fx.ev._byBall; }); }
         function fxBallClear() { fx.frames.forEach(f => { delete f.manual; }); fxBallRefit(); fxRender(); }
-        function fxBallDone() { fx.step = "result"; fx.edit = null; fxRender(); }
         function fxBallUndo() { const fs = fx.frames.filter(f => f.manual); if (!fs.length) return; const last = fs.reduce((a, b) => (a.manualAt || 0) > (b.manualAt || 0) ? a : b); delete last.manual; fxBallRefit(); fxRender(); }
         // ---- 長さの基準: スパイカー自身の体(どの向きから撮っても使える) ----
         //   立っているときの「鼻からかかとまで」は、身長のおよそ 0.87 倍。画面の上下の長さは、横からでも後ろからでもほぼ同じに写るので、
@@ -13283,8 +12698,6 @@ const namesBtn = isAdmin() && dates.length > 0
             const ground = ev.takeoff != null ? P.filter(f => f.t <= ev.takeoff && f.t >= ev.takeoff - 0.15) : P.slice(0, 10);
             const gref = ground.length ? ground : P.slice(0, 10);
             const floorY = Math.max(...gref.map(ankLow)), sc = ppm(gref[gref.length - 1]);
-            // 立って構えたときの腰の高さ = 床から 身長×0.53 くらい(踏み切り直前は沈み込むので、この値を基準にする)
-            const hipStand = floorY - 0.53 * heightM * sc;
             // 着地した直後の床・長さの基準。奥・手前へ跳ぶと写る大きさと床の位置が変わるので、空中の値は踏み切りと着地の間をつないで使う
             const lref = ev.land != null ? P.filter(f => f.t >= ev.land && f.t <= ev.land + 0.12 * slow) : [];
             const floorL = lref.length ? Math.max(...lref.map(ankLow)) : floorY, scL = lref.length ? Math.max(...lref.map(ppm)) : sc;
@@ -13621,7 +13034,6 @@ const namesBtn = isAdmin() && dates.length > 0
         function fxEditSet() { if (!fx || !fx.edit || fx.edit === "ball") return; fxSetEvent(fx.edit); }
         function fxEditDone() { if (!fx) return; fx.edit = null; if (fx.step === "ballTap") fx.step = "result"; fxRender(); }
         function fxGoEvent(k) { if (fx && fx.ev[k] != null) fxSeek(fx.ev[k]); }
-        function fxJump(k) { if (!fx || fx.ev[k] == null) return; fxPlayOff(); fxSeek(fx.ev[k]); const c = document.getElementById("fxCv"), r = c && c.getBoundingClientRect(); if (c && (r.bottom < 0 || r.top > innerHeight * 0.6)) c.scrollIntoView({ block: "start", behavior: "smooth" }); }
         // ---- 印(結果・感覚・コース)を付けて、違いを比べる ----
         const FX_TAGS = [
             ["out", "結果", [["good", "決まった"], ["mid", "つながった"], ["miss", "ミス"]]],
@@ -13676,10 +13088,6 @@ const namesBtn = isAdmin() && dates.length > 0
         var fxRefSel = { me: null, ref: null };
         const FX_J = { elbow: [[11, 13, 15], [12, 14, 16]], shoulder: [[23, 11, 13], [24, 12, 14]], knee: [[23, 25, 27], [24, 26, 28]], hip: [[11, 23, 25], [12, 24, 26]] };
         function fxArmSide(seq) { const f0 = seq.f.reduce((a, b) => Math.abs(b.t) < Math.abs(a.t) ? b : a); return f0.w[15][1] < f0.w[16][1] ? 0 : 1; }   // 打つ腕(インパクトで手首が高いほう。3Dでは y が上ほど小さい)
-        function fxSeqAngle(seq, name, t, side) {
-            const f = seq.f.reduce((a, b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a); if (Math.abs(f.t - t) > 0.06) return null;
-            const [a, b, c] = FX_J[name][side]; return fxAngle(f.w[a], f.w[b], f.w[c]);
-        }
         // 比べる項目: [名前, 値の出し方, 単位, 大きいとどうなるか(ヒントの言葉)]
         function fxRefItems(me, ref) {
             const sm = fxArmSide(me.seq), sr = fxArmSide(ref.seq);
@@ -14172,6 +13580,8 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // その日のメンバー(ctx)の中で、項目 k(補正後の値)が単独で1位の人。同率の1位なら null(その日は1位なし)
         const whyChampMemo = new Map();
+        var whyChampSig = "";
+        function whyRosterSig() { return JSON.stringify(roster.map(r => [r.name, r.position, r.params])) + "|" + JSON.stringify(mobilityWeights); }   // 名簿の値・機動力の重みが変わったら、計算をやり直す目印
         function whyChamp(ctx, k, P) {
             const mk = k + "|" + ctx.join(","); if (whyChampMemo.has(mk)) return whyChampMemo.get(mk);
             const vs = ctx.map(n => [n, P(n)]).filter(x => x[1]).map(([n, x]) => [n, x.eff[k] ?? 3]).sort((a, b) => b[1] - a[1]);
@@ -14227,6 +13637,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return best[0];
         }
         function whyFactors() {
+            { const sig = whyRosterSig(); if (sig !== whyChampSig) { whyChampSig = sig; whyChampMemo.clear(); } }   // 名簿の値が変わったら、覚えていた「1位・最下位」を捨てる
             const prof = {}; const P = n => (n in prof ? prof[n] : (prof[n] = whyProfile(n)));
             const mean = (t, f) => { const xs = t.map(P).filter(Boolean).map(f); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
             const cnt = (t, f) => t.map(P).filter(x => x && f(x)).length;
@@ -14260,20 +13671,16 @@ const namesBtn = isAdmin() && dates.length > 0
             ];
             return { F, prof, P };
         }
-        function whyCounts(recs, F) {
-            return F.map(([lb, f, min]) => { let n = 0; recs.forEach(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a != null && b != null && Math.abs(a - b) >= min - 1e-9) n++; }); return { lb, f, min, n }; });
-        }
         // 勝ち負けの要因(より正確に): 「ほかの特徴が同じだったとしても」その特徴の差で勝ちやすさが変わるかを、全部の特徴まとめて推定する
         //   勝つ確率の見込み = Σ 特徴ごとの効き目 × その特徴の差   … を、全試合(点差込み)にいちばん合うように決める
         //   特徴どうしの重なり(例: スパイクが高いチームはレシーブも高い)も、まとめて推定することで切り分ける。データが少ない特徴は効き目 0 寄り
         var whyCache = null;
         const WHY_UNIT = lb => /格差/.test(lb) ? 0.5 : 1;   // 「1高いと / 1人多いと / 格差が0.5大きいと」
         function whyModel(from) {
-            const ck = "why|" + from + "|" + matchRateUnit + "|" + JSON.stringify(matchesByDate).length + "|" + roster.length + "|" + paramRoles.key.join(",");
+            const ck = "why|" + from + "|" + matchRateUnit + "|" + JSON.stringify(matchRule()) + "|" + JSON.stringify(matchesByDate) + "|" + whyRosterSig() + "|" + paramRoles.key.join(",");
             if (whyCache && whyCache.k === ck) return whyCache.v;
             const recs = chemRecords(from), { F, prof, P } = whyFactors();
             const Fx = F.filter(([lb]) => lb !== "総合");
-            const st = n => chemPrior(n);
             const cols = Fx.map(([lb, f, min]) => {
                 let n = 0; const x = recs.map(r => { const a = f(r.teams[0], r.ctx), b = f(r.teams[1], r.ctx); if (a == null || b == null) return 0; if (Math.abs(a - b) >= min - 1e-9) n++; return a - b; });
                 return { lb, f, min, n, x };
@@ -15665,7 +15072,7 @@ const namesBtn = isAdmin() && dates.length > 0
 
 
         // ------- 予約日を .ics にして一括追加(Googleカレンダー・iPhone純正など)。同じ予約は同じUIDなので、もう一度読み込んでも重複せず上書きされる -------
-        function icsEsc(t) { return String(t == null ? "" : t).replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+        function icsEsc(t) { return String(t == null ? "" : t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
         function icsFold(line) {
             const enc = new TextEncoder(), out = [];
             let cur = "", bytes = 0;
@@ -16893,7 +16300,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611102210;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611110828;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -17105,7 +16512,7 @@ const namesBtn = isAdmin() && dates.length > 0
             pendingReopenBusy = true;
             try { showPtrSpin(); } catch (e) { /* ignore */ }
             // 管理者は、この端末の変更を先に保存してから最新を読み込む(読み直すと、開き直す)
-            const go = () => { if (firestorePendingValues && !appOutdated) flushPendingRemote(); else fail(); };
+            const go = () => { if (firestorePendingValues && !appOutdated) { flushPendingRemote(); setTimeout(() => { if (pendingReopenBusy && firestorePendingValues) fail(); }, 4000); } else fail(); };   // 読み直しが始まらなかったとき(保存の失敗など)だけ、止まったままにしない(読み直しが始まると firestorePendingValues は空になる)
             const fail = () => { pendingReopenBusy = false; try { sessionStorage.removeItem(REOPEN_KEY); hidePtrSpin(); } catch (e) { /* ignore */ } if (openNow) openNow(); };
             const t = setTimeout(fail, 5000);   // うまくいかないときは、今のまま開く
             (firestoreEditor ? saveToFirestore() : Promise.resolve()).catch(() => { }).then(() => { clearTimeout(t); go(); });
@@ -18120,7 +17527,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // ---- 時間帯 ----
                 take(/(ごぜん|午前|am)/g, () => { ampm = "am"; });
                 take(/(ごご|午後|pm)/g, () => { ampm = "pm"; });
-                take(/(?<=^|[\s0-9の])(あさ|朝|ひる|昼|ゆうがた|夕方|よる|夜|よなか|夜中|しんや|深夜)(から|まで)?(?=$|[\s0-9〜]|に|の|から|まで)/g, m => { period = toHira(m[1]).replace("朝", "あさ").replace("昼", "ひる").replace("夕方", "ゆうがた").replace("夜中", "よなか").replace("夜", "よる").replace("深夜", "しんや"); if (m[2]) period += ":" + m[2]; });
+                take(/(?<=^|[\s0-9の])(あさ|朝|ひる|昼|ゆうがた|夕方|よる|夜|よなか|夜中|しんや|深夜)(から|まで)?(?=$|[\s0-9〜]|に|の|から|まで)/g, m => { period = toHira(m[1]).replace("朝", "あさ").replace("昼", "ひる").replace("夕方", "ゆうがた").replace("深夜", "しんや").replace("夜中", "よなか").replace("夜", "よる"); if (m[2]) period += ":" + m[2]; });
                 // ---- 時刻 ----
                 const times = [];
                 take(/(\d{1,2}):(\d{2})(から|まで)?|(\d{1,2})\s*(?:時|じ|し(?=$|[\s0-9〜はか半ま]))\s*(?:(半|はん)|(\d{1,2})\s*(?:分|ふん|ぷん)?)?(から|まで)?|(?<![\d\/])(\d{3,4})(?![\d\/日にがヶか月])(から|まで)?/g, m => {
@@ -18224,7 +17631,6 @@ const namesBtn = isAdmin() && dates.length > 0
         // 下: シンプルなカレンダー(選んだ日だけ凹んだ文字盤。ほかは細い弧。バレーは人数のメモリ)
         // データは今のアプリと同じ(出欠・予定・予約)。入力や詳しい画面は、今の画面を使う
         // ======================================================================
-        const PROTO_KEY = "proto_ui_v1";
         var protoOn = false, protoYM = null, protoRowsTop = 0, protoTick = 0, protoSlide = 0, protoSx = null, protoSy = null;   // var: 先に描かれる今の画面から参照されても大丈夫なように
         protoOn = true;   // 旧UIは廃止: いつもこの画面
         function setProtoUI() {
@@ -18274,9 +17680,6 @@ const namesBtn = isAdmin() && dates.length > 0
             const { dark, P, C, LV } = protoPal();
             const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif";
             const { raise, raiseS, inset, insetS } = protoNeu(P, dark);   // 凹凸はまとめて protoNeu で決める
-            const offC = dark ? "rgba(255,255,255,.12)" : "rgba(40,50,70,.12)";
-            const tickC = dark ? "rgba(255,255,255,.45)" : "rgba(40,50,70,.4)";
-            const nightC = dark ? "rgba(255,255,255,.08)" : "rgba(40,50,70,.10)", dayC = dark ? "rgba(255,255,255,.03)" : "rgba(40,50,70,.04)";
             const shadeC = dark ? "rgba(0,0,0,.45)" : "rgba(60,70,90,.28)", glintC = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.7)";
             const esc = escapeHtml, todayKey = formatDateKey(new Date());
             const ringBox = (size) => `position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:50%;pointer-events:none;`;
@@ -18310,7 +17713,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 const mk = maskOf(th);
                 return `${ringBox(size)}background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}`;
             };
-            const deepen = (col) => `color-mix(in srgb, ${col} 60%, ${dark ? "#000" : "#2a2e35"})`;
             const hmv = (m) => m / 60;   // 分 → 時
             // その日の予定の時間帯(時: 0〜24)。終日は null
             const spansOf = (k) => plansOn(k).filter(({ p }) => !p.holiday).map(({ p, first, last }) => {
@@ -18332,32 +17734,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 const n = countComing(k), tri = (attendanceByDate[k] || []).filter(m => m.status === "未定").length;
                 return { n, tri, cap: thresholds.cyanMax, col: LV[getStatusLevel(n)], s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
             };
-            const flatPeople = (n, size, th, col) => { const out = [segs(size, th, Math.min(n, 12), col, offC, 9)]; if (n > 12) out.push(segs(size, th, n - 12, deepen(col), "transparent", 9)); return out; };
-            const flatDial = (k, size) => {
-                const out = [], allDay = [];
-                spansOf(k).forEach(x => {
-                    if (x.h1 == null) { allDay.push(x); return; }
-                    if (x.h1 === 0 && x.h2 === 24) { out.unshift(fillArc(size, 2.2, 0, 360, x.col)); return; }   // 1日じゅうは、ほかの弧と同じ太さの全周
-                    const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.5;
-                    out.push(fillArc(size, 2.2, x.h1 / 24 * 360, e / 24 * 360, x.col));
-                });
-                const v = volInfo(k);
-                if (v && v.s != null) out.push(fillArc(size, 3, hmv(v.s) / 24 * 360, hmv(v.e) / 24 * 360, P.ink2));
-                return { layers: out, allDay };
-            };
-            const tk = (deg) => `${tickC} ${deg - 1.5}deg ${deg + 1.5}deg`;
-            const dialBase = `conic-gradient(${tickC} 0deg 1.5deg, ${nightC} 1.5deg 88.5deg, ${tk(90)}, ${dayC} 91.5deg 178.5deg, ${tk(180)}, ${dayC} 181.5deg 268.5deg, ${tk(270)}, ${nightC} 271.5deg 358.5deg, ${tickC} 358.5deg 360deg), ${P.bot}`;
-            const grooveDial = (k, size, th, sh) => {
-                const fills = [], allDay = [];
-                spansOf(k).sort((a, b) => ((b.h1 === 0 && b.h2 === 24) ? 1 : 0) - ((a.h1 === 0 && a.h2 === 24) ? 1 : 0)).forEach(x => {
-                    if (x.h1 == null) { allDay.push(x); return; }
-                    const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.35;
-                    fills.push(fillArc(size, th, x.h1 / 24 * 360, e / 24 * 360, x.col));
-                });
-                const v = volInfo(k);
-                if (v && v.s != null) fills.push(fillArc(size, th, hmv(v.s) / 24 * 360, hmv(v.e) / 24 * 360, P.ink2));
-                return { layers: fills.length ? groove(size, th, sh, dialBase, fills) : [], allDay };
-            };
 
             // ---------- 選んだ日(入力中は、入れようとしている日) ----------
             const pin = pinOpen ? pinPreview() : null;
@@ -18366,8 +17742,6 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!protoYM) protoYM = [sy, sm];
             const [y, m] = protoYM;
             const WEN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-            const MSH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const MEN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             const jp = jpDay(sel), note = [jp.hol, jp.ev].filter(Boolean).join(" · ");
             const holP = plansOn(sel).find(({ p }) => p.holiday);   // 休日にした予定: 行事のように「休日」と出す(押すと編集)
             const sv = volInfo(sel);
@@ -18476,8 +17850,8 @@ const namesBtn = isAdmin() && dates.length > 0
             protoSoonSel.forEach((g, i) => rows.push({ soon: i, t: "", title: g.t + "?", col: P.ink3, min: 1e4 + i }));   // いちばん下に薄く1行(押すと、いつもの時間・色で入力)
             rows.sort((a, b) => a.min - b.min);
             const wxSel = pin ? null : protoWxDay(sel);   // 選んだ日の天気(オンのときだけ)
-            const moreN = Math.max(0, rows.filter(r => r.soon == null).length - 3 - protoRowsTop);   // そろそろの行は「+N」に数えない
-            const vlabel = !vv ? "VOLLEY" : nextKey === sel ? "VOLLEY · この日" : (() => { const [a, b, c] = nextKey.split("-").map(Number), dd = new Date(a, b - 1, c); return `NEXT VOLLEY · ${MSH[b - 1]} ${c} ${WEN[dd.getDay()].slice(0, 3)}`; })();
+            const visN = up ? 2 : 3;   // 見えている行の数(「NEXT」が出ているときは2行)
+            const moreN = Math.max(0, rows.filter(r => r.soon == null).length - visN - protoRowsTop);   // そろそろの行は「+N」に数えない
 
             // ---------- カレンダー ----------
             const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
@@ -18562,7 +17936,6 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (gh && all.length < room) all.push(`<span class="pr-lt pr-lt-solo pr-soon"><b>${esc(word(gh[0].t))}</b></span>`);   // そろそろ: 題名だけを、ごく薄く(空いているときだけ)
                     tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}">${all.slice(0, room).join("")}</span>${all.length > room && sg.length ? `<span class="pr-fit-more">+${all.length - room}</span>` : ""}`;
                 }
-                const moreTag = "";
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" data-k="${k}" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
@@ -18603,7 +17976,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     ${up ? `<div role="button" tabindex="0" aria-label="次のバレーの日へ" onclick="protoPick('${upKey}')" style="display:flex;align-items:center;gap:6px;min-width:0;font-family:${en};font-size:11px;color:${P.ink3};cursor:pointer;white-space:nowrap;overflow:hidden">
                       <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
                     <div style="position:relative">
-                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 2 * PROTO_ROW_H : 3 * PROTO_ROW_H}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > 3 ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
+                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 2 * PROTO_ROW_H : 3 * PROTO_ROW_H}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > visN ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
                         ${rows.length ? rows.map(r => `<div role="button" tabindex="0" ${r.soon != null ? `class="pr-soon" aria-label="${esc(r.title)} を入れる" ` : ""}onclick="${r.soon != null ? `protoSoonAdd(${r.soon})` : r.vol ? `protoVol('${sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer">${r.soon != null ? `<i style="width:8px;height:8px;margin:0 -1.5px;border-radius:50%;flex:none;box-sizing:border-box;border:1.2px dashed ${P.ink3}"></i>` : `<i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.col}"></i>`}<span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:${r.gc ? "0 1 auto" : "1"};min-width:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}${r.sub ? `<span style="margin-left:6px;font-size:11px;font-weight:500;color:${P.ink3}">${esc(r.sub)}</span>` : ""}</span>${r.gc ? `<span class="gc-mark" title="Googleカレンダーにもあります" style="flex:none;margin-left:0">${r.gc}</span><span style="flex:1"></span>` : ""}</div>`).join("") : ""}
                       </div>
                       <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
@@ -18635,7 +18008,6 @@ const namesBtn = isAdmin() && dates.length > 0
             if (pin) {
                 const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
                 const dd = (k, big) => { const [yy, mm, d0] = k.split("-").map(Number); const w = new Date(yy, mm - 1, d0).getDay(); return `<span style="font-family:${en};font-size:14px;font-weight:700">${mm}/${d0}</span><span style="font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span>`; };
-                const time = pin.empty ? "" : pin.allDay ? "ALL DAY" : `${pin.st || ""}${pin.et ? " – " + pin.et : "〜"}`;
                 const pc = C[planColor] || C[0];
                 const dots = PIN_COLS.map(([c, lb]) => { const on = planColor === c; return `<button type="button" role="radio" aria-checked="${on}" aria-label="${lb}" onclick="setPlanColor(${c});renderProto()" style="width:24px;height:24px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;${on ? insetS : raiseS}"><i style="width:${on ? 10 : 12}px;height:${on ? 10 : 12}px;border-radius:50%;background:${C[c]}"></i></button>`; }).join("");
                 // 文字盤はヘッダーの高さに収まるよう、ふだんの大きさ(138px)を少し縮めて見せる
@@ -18649,11 +18021,6 @@ const namesBtn = isAdmin() && dates.length > 0
                   </div></div>`;
                 // 何日も続く予定: 「11/3 TUE → 11/5 THU」(時間があれば「11/3 9:00 → 11/5 15:00」)
                 const md0 = k => { const [, mm, d0] = k.split("-").map(Number); return `${mm}/${d0}`; };
-                const tm = (t) => t ? `<span style="font-family:${en};font-size:11.5px;font-weight:600;color:${P.ink2}">${esc(t)}</span>` : "";
-                const arrow = `<span style="color:${P.ink3};font-size:11px">→</span>`;
-                const infoLine = !pin.ed ? `${dd(pin.sd)}${tm(time)}`
-                    : pin.allDay || (!pin.st && !pin.et) ? `${dd(pin.sd)}${arrow}${dd(pin.ed)}`
-                    : `<span style="font-family:${en};font-size:14px;font-weight:700">${md0(pin.sd)}</span>${tm(pin.st)}${arrow}<span style="font-family:${en};font-size:14px;font-weight:700">${md0(pin.ed)}</span>${tm(pin.et)}`;
                 // 日付: カレンダーで選ぶ(→ を押してから選ぶと終わりの日)
                 const xb = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>`;
                 const ddR = k => pin.ed ? `<span style="font-family:${en};font-size:14px;font-weight:700">${md0(k)}</span>` : dd(k);   // 何日も続くときは曜日を省く(入りきらないので)
@@ -18960,14 +18327,11 @@ const namesBtn = isAdmin() && dates.length > 0
             document.querySelectorAll("#prCal .pr-cell").forEach(c => {
                 const box = c.querySelector(".pr-lts"); if (!box) return;
                 const bottom = c.getBoundingClientRect().bottom - 1;
-                const more = box.querySelector(".pr-lt-more");
-                let extra = more ? parseInt(more.textContent.replace(/\D/g, ""), 10) || 0 : 0;
-                const rows = [...box.querySelectorAll(".pr-lt")].filter(x => x !== more);
-                if (more && more.getBoundingClientRect().bottom > bottom) { more.style.display = "none"; }
-                else if (!rows.length || rows[rows.length - 1].getBoundingClientRect().bottom <= bottom) return;
-                if (more) more.style.display = "none";
+                let extra = 0;
+                const rows = [...box.querySelectorAll(".pr-lt")];
+                if (!rows.length || rows[rows.length - 1].getBoundingClientRect().bottom <= bottom) return;
                 while (rows.length && rows[rows.length - 1].getBoundingClientRect().bottom > bottom) { const r = rows.pop(); r.style.display = "none"; if (r.querySelector("b") && !r.classList.contains("pr-soon")) extra++; }   // そろそろ(薄い題名)は数えない
-                if (extra > 0) { const t = document.createElement("span"); t.className = "pr-fit-more"; t.textContent = "+" + extra; c.appendChild(t); }
+                if (extra > 0) { const old = c.querySelector(".pr-fit-more"); if (old) old.textContent = "+" + ((parseInt(old.textContent.replace(/\D/g, ""), 10) || 0) + extra); else { const t = document.createElement("span"); t.className = "pr-fit-more"; t.textContent = "+" + extra; c.appendChild(t); } }   // もう「+N」が出ている日は、そこに足す(2つ重ねない)
             });
         }
         // ------- 長押しメニュー(試作UI): 画面のどこでも長押しすると、下のボタンが指のまわりに円く並ぶ -------
@@ -19388,7 +18752,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoRowsScroll(el) {
             protoRowsTop = Math.round(el.scrollTop / PROTO_ROW_H);
             const b = document.getElementById("prMore"); if (!b) return;
-            const total = el.children.length, n = Math.max(0, total - 3 - protoRowsTop);
+            const total = el.querySelectorAll(":scope > div:not(.pr-soon)").length, n = Math.max(0, total - Math.max(1, Math.round(el.clientHeight / PROTO_ROW_H)) - protoRowsTop);   // そろそろの行は数えない・見えている行数は高さから
             b.style.display = n > 0 ? "flex" : "none"; const num = b.querySelector("b"); if (num) num.textContent = String(n);
         }
 
@@ -19400,9 +18764,6 @@ const namesBtn = isAdmin() && dates.length > 0
         const PIN_COLS = [[9, "黒"], [10, "灰色"], [13, "青"], [11, "暗いピンク"], [12, "ピンク"]];
         var pinGhost = { d: "", h: "" }, pinSD = "", pinED = "", pinRange = false, pinColOpen = false, pinSetOpen = false;
         const pinVal = id => { const e = document.getElementById(id); return e ? e.value : ""; };
-        const pinMD = k => { const [, m, d] = k.split("-").map(Number); return `${m}/${d}`; };
-        const PIN_WD = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-        const pinWD = k => { const [y, m, d] = k.split("-").map(Number); return PIN_WD[new Date(y, m - 1, d).getDay()]; };
         // 3つの欄を、それぞれかんたん入力として読む(題名はそのまま。日付・時間は「x 」を頭に付けて読み取りだけ使う)
         function pinParse() {
             const T = pinVal("pinT").trim(), D = "", H = pinVal("pinH").trim();
@@ -20043,14 +19404,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 </div>`;
             };
             const dot = `<i style="width:7px;height:7px;border-radius:4px;flex:none;background:${P.red}"></i>`;
-            // 人数のリング(ヘッダーと同じ: 1人1マスの12マス。13人目からは内側に2周目)
-            const offC = dark ? "rgba(255,255,255,.10)" : "rgba(40,50,70,.10)";
-            const ringSegs = (size, th, cnt, col, off) => {
-                const gap = 7, st = [];
-                for (let i = 0; i < 12; i++) { const a = i * 30; st.push(`${i < cnt ? col : off} ${a + gap / 2}deg ${a + 30 - gap / 2}deg`, `transparent ${a + 30 - gap / 2}deg ${a + 30 + gap / 2}deg`); }
-                const mk = `radial-gradient(farthest-side, transparent calc(100% - ${th}px), #000 calc(100% - ${th - 0.6}px))`;
-                return `<i style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:50%;background:conic-gradient(transparent 0deg ${gap / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}"></i>`;
-            };
             // 人数のリング: 上の文字盤とまったく同じ作り(浮いた台 → 溝 → 12マス → 浮いた真ん中)を、縮めて出す
             const shadeC = dark ? "rgba(0,0,0,.45)" : "rgba(60,70,90,.28)", glintC = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.7)";
             const ringBox = (size) => `position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:50%;pointer-events:none;`;
@@ -20273,17 +19626,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${OPTS.map(([s0, svg]) => `<span style="position:relative;height:34px;display:flex;align-items:center;justify-content:center;color:${st === s0 ? AC[s0] : P.ink3};opacity:${st === s0 || idx < 0 ? 1 : 0.55}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></span>`).join("")}
             </div>`;
         }
-        // 長押しメニューの見本(本物と同じ並べ方・同じアイコン。指を置いた場所のまわりに扇形)
-        function tutFanHtml(P, dark) {
-            const hp = tutS && tutS.hold; if (!hp) return "";
-            const items = PR_RAD_ITEMS.filter(it => !it.adm), lay = prRadLayout(hp.x, hp.y, items.length), { raiseS } = protoNeu(P, dark);
-            return `<div style="position:absolute;inset:0;background:rgba(20,24,32,.12);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)"></div>`
-                + `<i style="position:absolute;left:${lay.cx}px;top:${lay.cy}px;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:${P.bg};box-shadow:inset 2px 2px 4px rgba(0,0,0,.18), inset -2px -2px 4px rgba(255,255,255,.7)"></i>`
-                + items.map((it, i) => {
-                    const [ix, iy] = lay.pts[i], sv = it.k === "survey";
-                    return `<div ${sv ? 'data-tut="menusv" data-tr="29"' : ""} style="position:absolute;left:${ix}px;top:${iy}px;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:${it.k === "add" ? "#2f6fe0" : P.ink2};${raiseS};animation:tutFade .2s ease ${i * 18}ms both">${PR_RAD_ICONS[it.k] || ""}<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;line-height:1">${it.label}</span>${sv ? `<i style="position:absolute;top:6px;right:8px;width:9px;height:9px;border-radius:50%;background:#e5484d;box-shadow:0 0 0 2px ${P.bg}"></i>` : ""}</div>`;
-                }).join("");
-        }
         // 下に常に出すメニューの見本(本物と同じアイコンだけの丸い帯)
         function tutBarHtml(P, dark) {
             const { raiseS } = protoNeu(P, dark), items = PR_RAD_ITEMS.filter(it => !it.adm);
@@ -20303,7 +19645,6 @@ const namesBtn = isAdmin() && dates.length > 0
         function tutMainHtml() {
             const { dark, P, LV } = protoPal(), { raise, raiseS, insetS } = protoNeu(P, dark), D = tutDays;
             let wsd = 0; try { wsd = weekStartDay === 1 ? 1 : 0; } catch (e) { wsd = 0; }
-            const MN = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
             const off = (new Date(D.y, D.m, 1).getDay() - wsd + 7) % 7;
             let cells = "";
             for (let i = 0; i < 42; i++) {
@@ -20322,7 +19663,6 @@ const namesBtn = isAdmin() && dates.length > 0
                    <span style="font-family:${TUT_EN};font-size:15px;font-weight:700">19:00〜21:00</span>
                    <span style="font-size:12px;color:${P.ink2}">稲沢総合 北</span>`
                 : `<span style="font-size:12px;color:${P.ink3}">この日のバレーはありません</span>`;
-            const ico = (d, sz, sw) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
             return `<div style="position:absolute;inset:0;background:${P.bg};color:${P.ink};font-family:'Noto Sans JP',system-ui,sans-serif">
               <div style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px 0;display:flex;flex-direction:column;gap:22px;position:relative">
                 <div data-tut="head" data-tr="28" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${raise}">
