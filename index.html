@@ -16451,7 +16451,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611101030;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611101045;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -17049,8 +17049,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const rosterNames = new Set();
             r1.forEach((r, id) => { const o = r0.get(id); if (!o) rosterNames.add(r.name); else if (o.name !== r.name) { rosterNames.add(o.name); rosterNames.add(r.name); } });
             r0.forEach((r, id) => { if (!r1.has(id)) rosterNames.add(r.name); });
-            Object.keys(adds).filter(n => !rosterNames.has(n)).forEach(n => out.push(`${n} を${adds[n].length}日の出欠に追加した`));
-            Object.keys(dels).filter(n => !rosterNames.has(n)).forEach(n => out.push(`${n} を${dels[n].length}日の出欠から外した`));
+            const dayList = ds => ds.length <= 4 ? ds.map(clMd).join("・") : ds.slice(0, 3).map(clMd).join("・") + ` ほか${ds.length - 3}日`;   // どの日か分かるように日付を出す
+            Object.keys(adds).filter(n => !rosterNames.has(n)).forEach(n => out.push(`${n} を出欠に追加した(${dayList(adds[n])})`));
+            Object.keys(dels).filter(n => !rosterNames.has(n)).forEach(n => out.push(`${n} を出欠から外した(${dayList(dels[n])})`));
             r1.forEach((r, id) => {
                 if (!r0.has(id)) out.push(`名簿に ${r.name} を追加した`);
                 else if (r0.get(id).name !== r.name) out.push(`名簿の名前を変更: ${r0.get(id).name}→${r.name}`);
