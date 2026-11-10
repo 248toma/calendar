@@ -1349,6 +1349,7 @@
         .rv-item .rv-main { font-weight: 700; font-size: 14.5px; }
         .rv-item .rv-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
         .gc-mark { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 7px; font-size: 9.5px; font-weight: 800; line-height: 1.6; letter-spacing: .02em; vertical-align: 1px; white-space: nowrap; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+        .selected-date-label .gc-mark.sd-gc { flex: none; margin-left: 0; align-self: center; color: var(--ink-3); background: color-mix(in srgb, var(--ink-3) 14%, transparent); }
         .rv-gcal.gc-ok { color: var(--accent); }
         .rv-gcal { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; min-height: 36px; padding: 0 10px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
         .rv-del { border: none; background: transparent; color: var(--ink-3); font-size: 18px; width: 30px; min-height: 36px; }
@@ -7453,7 +7454,9 @@ await main();
             if (!isAdmin() || !events[selectedDate]) return;
             const [, m, d] = selectedDate.split("-").map(Number);
             if (!confirm(`${m}/${d} のバレーを削除しますか？`)) return;
+            const gl = gcalRefsFor((reservations[selectedDate] || []).map(r => "r" + selectedDate + "#" + r.id));
             toggleEventDay(false);
+            if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl); } catch (e) { console.warn(e); } }, 50);
             { const cfg = notifyCfg(); if (cfg.vday[selectedDate]) { delete cfg.vday[selectedDate]; saveNotify(cfg); } }
             closeVolleyFull();
         }
@@ -8233,10 +8236,10 @@ await main();
             return isAdmin() && !!p.by && p.by === planAuthorKey();   // 管理者でも、共有相手か作った本人だけ
         }
         function planAuthorKey() { return (typeof myEmailHash !== "undefined" && myEmailHash) || ("n:" + (myMemberName() || "")); }
-        // ------- Googleカレンダー(管理者だけ・読み取りのみ)。予定はこの画面(メモリ)にだけ置き、サーバーにも端末の保存にも書かない -------
+        // ------- Googleカレンダー(管理者だけ・表示は読み取りのみ。書き込みは、アプリで消した予定をGoogle側でも消すときだけ)。予定はこの画面(メモリ)にだけ置き、サーバーにも端末の保存にも書かない -------
         var gcalPlans = [], gcalOn = false, gcalState = "off";   // off / loading / ok / expired / error
         const GCAL_ON_KEY = "gcal_on_v1", GCAL_TOKEN_KEY = "gcal_token_v1";   // ON印は端末だけ(共有しない)。トークンはこのタブだけ(sessionStorage)
-        var gcalLastFetch = 0, gcalVisible = [], gcalResMap = {}, gcalPlanMap = {}, gcalWin = null;   // gcalVisible=画面に出す予定(重複を除いたもの)
+        var gcalLastFetch = 0, gcalVisible = [], gcalResMap = {}, gcalPlanMap = {}, gcalWin = null, gcalRef = {};   // gcalRef=アプリ側の予約("r日付#id")/予定("p id")に対応するGoogle側の予定(削除の連動用)   // gcalVisible=画面に出す予定(重複を除いたもの)
         try { gcalOn = localStorage.getItem(GCAL_ON_KEY) === "1"; } catch (e) { gcalOn = false; }
         function planById(id) { return planList.find(x => x.id === id) || (gcalPlans || []).find(x => x.id === id); }
         function gcalToken() {
@@ -8261,7 +8264,7 @@ await main();
             gcalConnect();
         }
         function gcalOff() {
-            gcalPlans = []; gcalVisible = []; gcalResMap = {}; gcalPlanMap = {}; gcalLastFetch = 0; gcalOn = false;
+            gcalPlans = []; gcalVisible = []; gcalResMap = {}; gcalPlanMap = {}; gcalRef = {}; gcalLastFetch = 0; gcalOn = false;
             try { localStorage.removeItem(GCAL_ON_KEY); sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e) { /* ignore */ }
             gcalSetState("off");
             try { renderCalendar(); } catch (e) { /* ignore */ }
@@ -8270,6 +8273,7 @@ await main();
             if (!(window.firebase && firebase.auth) || !gcalIsAdmin()) { alert("管理者でGoogleログインしてから接続してください。"); return; }
             const pv = new firebase.auth.GoogleAuthProvider();
             pv.addScope("https://www.googleapis.com/auth/calendar.readonly");
+            pv.addScope("https://www.googleapis.com/auth/calendar.events");   // アプリで消したとき、Google側の同じ予定も消すため
             const u = firebase.auth().currentUser;
             gcalSetState("loading");
             const pr = (u && !u.isAnonymous) ? u.reauthenticateWithPopup(pv) : firebase.auth().signInWithPopup(pv);
@@ -8291,7 +8295,7 @@ await main();
             const z = n => String(n).padStart(2, "0"), hm = d => z(d.getHours()) + ":" + z(d.getMinutes());
             const s0 = ev.start || {}, e0 = ev.end || {};
             const memo = [cal && cal.summary ? "📅 " + cal.summary : "", ev.location || "", ev.description || ""].filter(Boolean).join("\n");
-            const p = { id, gcal: true, local: true, color: 0, title: ev.summary || "(無題)", memo };
+            const p = { id, gcal: true, local: true, color: 0, title: ev.summary || "(無題)", memo, gEvId: ev.id || "", gCalId: (cal && cal.id) || "" };
             if (s0.date) {
                 p.startDate = s0.date; p.allDay = true;
                 if (e0.date) { const d = new Date(e0.date + "T00:00:00"); d.setDate(d.getDate() - 1); const k = gcalDateKey(d); if (k > s0.date) p.endDate = k; }
@@ -8322,7 +8326,7 @@ await main();
                 for (const c of cals) {
                     let pageToken = "";
                     do {
-                        const q = new URLSearchParams({ timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "250", fields: "nextPageToken,items(summary,description,location,start,end,status)" });
+                        const q = new URLSearchParams({ timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "250", fields: "nextPageToken,items(id,summary,description,location,start,end,status)" });
                         if (pageToken) q.set("pageToken", pageToken);
                         const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(c.id) + "/events?" + q, { headers: H });
                         if (r.status === 401) throw 401;
@@ -8351,7 +8355,7 @@ await main();
             return { s: s0, e: e0 != null && e0 > s0 ? e0 : s0 + 1 };
         }
         function gcalRecompute() {
-            gcalResMap = {}; gcalPlanMap = {};
+            gcalResMap = {}; gcalPlanMap = {}; gcalRef = {};
             if (!gcalOn || !gcalPlans || !gcalPlans.length) { gcalVisible = gcalPlans || []; return; }
             const byDate = {};
             planList.forEach(p => { if (p && !p.gcal && !p.deleted && p.startDate) (byDate[p.startDate] = byDate[p.startDate] || []).push(p); });
@@ -8366,13 +8370,13 @@ await main();
                     if (!rg) return;
                     const same = rg.s === t.s && rg.e === t.e, overlap = rg.s < t.e && rg.e > t.s;
                     const text = (r.place && tn.includes(gcalNorm(r.place))) || VB.test(tn);
-                    if (same || (overlap && text)) { gcalResMap[d + "#" + r.id] = true; hitVol = true; if (events[d]) hide = true; }
+                    if (same || (overlap && text)) { gcalResMap[d + "#" + r.id] = true; (gcalRef["r" + d + "#" + r.id] = gcalRef["r" + d + "#" + r.id] || []).push(g); hitVol = true; if (events[d]) hide = true; }
                 });
                 if (!hide && events[d] && VB.test(ttl) && (!rg || !anyTimed || hitVol)) hide = true;   // 「バレー」の予定がある日の、バレーの予定
                 (byDate[d] || []).forEach(p => {
                     if (gcalNorm(p.title) !== ttl) return;
                     const ps = planTimed(p) ? (parseHM(p.start) ?? parseHM(p.end)) : null;
-                    if (rg ? ps === rg.s : ps == null) { gcalPlanMap[p.id] = true; hide = true; }
+                    if (rg ? ps === rg.s : ps == null) { gcalPlanMap[p.id] = true; (gcalRef["p" + p.id] = gcalRef["p" + p.id] || []).push(g); hide = true; }
                 });
                 if (!hide) vis.push(g);
             });
@@ -8382,6 +8386,33 @@ await main();
         function gcalResState(d, r) {
             if (gcalInWin(d)) return gcalResMap[d + "#" + r.id] ? "g" : "";
             return (gcalAddedMap()[d + "#" + r.id] === gcalSig(r)) ? "l" : "";
+        }
+        // ------- アプリで予約・予定を消したとき、Googleにある同じ予定も一緒に消すか聞く -------
+        function gcalRefsFor(keys) {
+            const out = [], seen = {};
+            (keys || []).forEach(k => (gcalRef[k] || []).forEach(g => { if (g && g.gEvId && g.gCalId && !seen[g.gCalId + "/" + g.gEvId]) { seen[g.gCalId + "/" + g.gEvId] = 1; out.push({ cal: g.gCalId, ev: g.gEvId, title: g.title || "予定" }); } }));
+            return out;
+        }
+        async function gcalDeleteLinked(list) {
+            if (!list || !list.length || !gcalIsAdmin()) return;
+            const names = list.map(x => "「" + x.title + "」").join("");
+            if (!confirm("Googleカレンダーにある " + names + " も一緒に削除しますか?")) return;
+            const t = gcalToken();
+            if (!t) { alert("Googleとの接続が切れています。右上のGoogleから接続し直すと、Google側も消せます。"); return; }
+            let denied = false, failed = 0;
+            for (const x of list) {
+                try {
+                    const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(x.cal) + "/events/" + encodeURIComponent(x.ev), { method: "DELETE", headers: { Authorization: "Bearer " + t } });
+                    if (r.status === 401 || r.status === 403) denied = true;
+                    else if (!r.ok && r.status !== 404 && r.status !== 410) failed++;
+                } catch (e) { failed++; }
+            }
+            if (denied) {
+                if (confirm("Google側を消す権限がありません(接続のとき「予定の編集」を許可していない可能性があります)。\nいま接続し直しますか?\n(接続し直したあと、Google側の予定はお手数ですが手動で消してください)")) { try { sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e) { /* ignore */ } gcalConnect(); }
+                return;
+            }
+            if (failed) alert("Google側の削除に失敗した予定が " + failed + " 件あります。Googleカレンダーで確認してください。");
+            gcalFetch();   // 取得し直して表示を更新
         }
         function gcalMark(txt) { return `<span class="gc-mark" title="Googleカレンダーにもあります">${txt || "G✓"}</span>`; }
         function gcalDayMark(d) {   // その日の予約のうち、Googleにあるもの
@@ -8970,12 +9001,13 @@ await main();
         function deleteOtherPlan(id, quiet) {   // quiet = 確かめずに消す(すぐ「戻す」を出すとき)
             const target = planList.find(x => x.id === id);
             if (!target || (!isAdmin() && !target.local && !pairPlanEditable(target))) return;
+            const gl = gcalRefsFor(["p" + id]);   // 消す前にGoogle側の対応を控える
             if (quiet) {   // 画面の上だけで消し、保存は「戻す」の札が消えてから(戻したときに、共有の変更ログへ 削除→追加 が残らないように)
                 const ak = planRsvpKey(id), snap = { p: JSON.parse(JSON.stringify(target)), att: attendanceByDate[ak] ? JSON.parse(JSON.stringify(attendanceByDate[ak])) : null, done: false };
                 planList = planList.filter(x => x.id !== id); delete attendanceByDate[ak];
                 if (planDetailId === id) planDetailId = null;
                 if (planEditId === id) { planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = ""; }
-                snap.commit = () => { if (snap.done) return; snap.done = true; if (target.pp) putPairPlan({ ...target, deleted: true }); saveData(); if (target.local) syncLocalNtf(); };
+                snap.commit = () => { if (snap.done) return; snap.done = true; if (target.pp) putPairPlan({ ...target, deleted: true }); saveData(); if (target.local) syncLocalNtf(); if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl); } catch (e) { console.warn(e); } }, 50); };
                 renderCalendar(); renderOtherPlanBox();
                 return snap;
             }
@@ -8989,6 +9021,7 @@ await main();
             if (planEditId === id) { planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = ""; }
             renderCalendar();
             renderOtherPlanBox();
+            if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl); } catch (e) { console.warn(e); } }, 50);
         }
         function toggleEventDay(checked) {
             if (checked) {
@@ -14832,7 +14865,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const sub = rs.length === 0
                 ? ""
                 : `${rs[0].time} ${rs[0].place}${rs[0].court || ""}${rs.length > 1 ? ` +${rs.length - 1}` : ""}`;
-            el.innerHTML = `<span class="sd-main">${m}月${d}日(${wd})</span><span class="sd-sub">${escapeHtml(sub)}</span>`;
+            let gm = ""; try { gm = gcalDayMark(selectedDate).replace('class="gc-mark"', 'class="gc-mark sd-gc"'); } catch (e) { gm = ""; }   // Googleにもある予定は題名の横に灰色で
+            el.innerHTML = `<span class="sd-main">${m}月${d}日(${wd})</span>${gm}<span class="sd-sub">${escapeHtml(sub)}</span>`;
         }
         // タブの完了表示(薄い紺色)。左から順に完了したものだけ色が付く
         // 指定日のタスク状態(タブの完了・⚠️とカレンダーの⚠️で共通)
@@ -15203,11 +15237,13 @@ const namesBtn = isAdmin() && dates.length > 0
         }
 
         function deleteReservation(id) {
+            const gl = gcalRefsFor(["r" + selectedDate + "#" + id]);   // 消す前にGoogle側の対応を控える
             const list = reservations[selectedDate] || [];
             reservations[selectedDate] = list.filter(r => r.id !== id);
             if (reservations[selectedDate].length === 0) delete reservations[selectedDate];
             saveReservations();
             renderReserveView();
+            if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl); } catch (e) { console.warn(e); } }, 50);
         }
 
         // ------- 予約スクショ取り込み(OCR → プリセット照合 → 予約へ反映) -------
@@ -16674,7 +16710,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611101245;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611101335;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
