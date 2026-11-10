@@ -8386,7 +8386,7 @@ await main();
                 if (cl.status === 401) throw 401;
                 if (!cl.ok) throw new Error("calendarList " + cl.status);
                 const cals = ((await cl.json()).items || []).filter(c => c.selected && !/#holiday@group\.v\.calendar\.google\.com$/.test(c.id));
-                const out = []; let id = -1000001;
+                const out = []; let id = -1000001, partial = false;   // partial=取得しきれなかったカレンダーがある
                 for (const c of cals) {
                     let pageToken = "";
                     do {
@@ -8394,12 +8394,14 @@ await main();
                         if (pageToken) q.set("pageToken", pageToken);
                         const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(c.id) + "/events?" + q, { headers: H });
                         if (r.status === 401) throw 401;
-                        if (!r.ok) break;
+                        if (!r.ok) { partial = true; break; }
                         const j = await r.json(); pageToken = j.nextPageToken || "";
                         (j.items || []).forEach(ev => { if (ev.status === "cancelled") return; const p = gcalToPlan(ev, c, id); if (p) { out.push(p); id--; } });
                     } while (pageToken && out.length < 3000);
+                    if (pageToken) partial = true;
                 }
                 gcalPlans = out; gcalLastFetch = Date.now(); gcalWin = { from: gcalDateKey(from), to: gcalDateKey(to) }; gcalSetState("ok");
+                if (!partial) { try { gcalRecompute(); gcalPruneAdded(); } catch (e) { console.warn(e); } }   // Google側で消された予定の「追加した記録」を片づける
             } catch (e) {
                 if (e === 401) { try { sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e2) { /* ignore */ } gcalSetState("expired"); }
                 else { console.warn("Googleカレンダーの取得に失敗しました。", e); gcalSetState("error"); }
@@ -15766,11 +15768,40 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- 予約日の一括追加(各予約の「Add」と同じGoogleカレンダーの作成画面を、未追加の予約ぶん順に開く) -------
         const GCAL_ADDED_KEY = "attendance_gcal_added_v1";
         function gcalAddedMap() { try { return JSON.parse(localStorage.getItem(GCAL_ADDED_KEY) || "{}") || {}; } catch (e) { return {}; } }
+        // 追加した記録(上のマップ)は端末だけの控え。Google側で予定を消しても残ってしまい、接続を切ると「G」が戻って見えるので、
+        // Googleに接続して取得できたとき、取得範囲の中でGoogle側に無い記録は消す。追加した直後(まだGoogleで保存していない間)は消さない
+        const GCAL_ADDED_AT_KEY = "attendance_gcal_added_at_v1", GCAL_ADDED_GRACE = 15 * 60 * 1000;
+        function gcalAddedAtMap() { try { return JSON.parse(localStorage.getItem(GCAL_ADDED_AT_KEY) || "{}") || {}; } catch (e) { return {}; } }
+        function gcalAddedStamp(key) {
+            const m = gcalAddedAtMap(); m[key] = Date.now();
+            try { localStorage.setItem(GCAL_ADDED_AT_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ }
+        }
+        function gcalPruneAdded() {
+            if (!gcalHave()) return;
+            const map = gcalAddedMap(), at = gcalAddedAtMap(), now = Date.now();
+            let changed = false;
+            Object.keys(map).forEach(k => {
+                if (at[k] && now - at[k] < GCAL_ADDED_GRACE) return;   // 追加した直後は待つ
+                let gone = false;
+                if (k.startsWith("p#")) {
+                    const p = planList.find(x => String(x.id) === k.slice(2));
+                    gone = !!p && !!p.startDate && gcalInWin(p.startDate) && !gcalPlanMap[p.id];
+                } else {
+                    const d = k.split("#")[0];
+                    gone = /^\d{4}-\d{2}-\d{2}$/.test(d) && gcalInWin(d) && !gcalResMap[k];
+                }
+                if (gone) { delete map[k]; delete at[k]; changed = true; }
+            });
+            if (!changed) return;
+            try { localStorage.setItem(GCAL_ADDED_KEY, JSON.stringify(map)); localStorage.setItem(GCAL_ADDED_AT_KEY, JSON.stringify(at)); } catch (e) { /* ignore */ }
+            try { renderCalendar(); } catch (e) { /* ignore */ }
+        }
         function gcalSig(r) { return [r.time, r.place, r.court || ""].join("|"); }
         function gcalIsAdded(d, r, map) { if (gcalInWin(d)) return !!gcalResMap[d + "#" + r.id]; return (map || gcalAddedMap())[d + "#" + r.id] === gcalSig(r); }
         function gcalMarkAdded(d, r) {
             const m = gcalAddedMap(); m[d + "#" + r.id] = gcalSig(r);
             try { localStorage.setItem(GCAL_ADDED_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ }
+            gcalAddedStamp(d + "#" + r.id);
         }
         function gcalFutureList() {
             const today = formatDateKey(new Date()), out = [];
@@ -15795,6 +15826,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function gcalMarkAddedPlan(p) {
             const m = gcalAddedMap(); m["p#" + p.id] = planSig(p);
             try { localStorage.setItem(GCAL_ADDED_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ }
+            gcalAddedStamp("p#" + p.id);
         }
         // 一括追加の一覧: バレーの予約と共有された予定を、日付順にまとめる
         function calItems(map) {
@@ -16861,7 +16893,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611102100;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611102210;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
