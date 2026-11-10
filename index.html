@@ -241,8 +241,8 @@
         body.dark .cal-day.has-plan.event-warning { background: linear-gradient(135deg, #78581f 50%, var(--plan-gray) 50%); }
         /* 他の予定の色(バレーの 緑/黄/赤 と被らない 青・紫・橙。0=灰色が従来どおり) */
         /* 予定の色(試作UIと同じ5色: 黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い色番号も、近い5色に寄せて出す */
-        :root { --pcbg0: rgba(154, 160, 168, 0.34); --pcbg1: rgba(70, 119, 196, 0.28); --pcbg2: rgba(70, 119, 196, 0.28); --pcbg3: rgba(229, 151, 183, 0.4); --pcbg4: rgba(31, 33, 36, 0.2); --pcbg5: rgba(156, 61, 104, 0.28); --pcbg6: rgba(229, 151, 183, 0.4); --pcbg7: rgba(70, 119, 196, 0.28); --pcbg8: rgba(154, 160, 168, 0.34); --pcbg9: rgba(31, 33, 36, 0.2); --pcbg10: rgba(154, 160, 168, 0.34); --pcbg11: rgba(156, 61, 104, 0.28); --pcbg12: rgba(229, 151, 183, 0.4); --pcbg13: rgba(70, 119, 196, 0.28); }
-        body.dark { --pcbg0: rgba(127, 132, 140, 0.4); --pcbg1: rgba(134, 174, 240, 0.4); --pcbg2: rgba(134, 174, 240, 0.4); --pcbg3: rgba(244, 192, 213, 0.4); --pcbg4: rgba(241, 242, 244, 0.3); --pcbg5: rgba(208, 120, 159, 0.42); --pcbg6: rgba(244, 192, 213, 0.4); --pcbg7: rgba(134, 174, 240, 0.4); --pcbg8: rgba(127, 132, 140, 0.4); --pcbg9: rgba(241, 242, 244, 0.3); --pcbg10: rgba(127, 132, 140, 0.4); --pcbg11: rgba(208, 120, 159, 0.42); --pcbg12: rgba(244, 192, 213, 0.4); --pcbg13: rgba(134, 174, 240, 0.4); }
+        :root { --pcbg14: rgba(139, 111, 201, 0.26); --pcbg0: rgba(154, 160, 168, 0.34); --pcbg1: rgba(70, 119, 196, 0.28); --pcbg2: rgba(70, 119, 196, 0.28); --pcbg3: rgba(229, 151, 183, 0.4); --pcbg4: rgba(31, 33, 36, 0.2); --pcbg5: rgba(156, 61, 104, 0.28); --pcbg6: rgba(229, 151, 183, 0.4); --pcbg7: rgba(70, 119, 196, 0.28); --pcbg8: rgba(154, 160, 168, 0.34); --pcbg9: rgba(31, 33, 36, 0.2); --pcbg10: rgba(154, 160, 168, 0.34); --pcbg11: rgba(156, 61, 104, 0.28); --pcbg12: rgba(229, 151, 183, 0.4); --pcbg13: rgba(70, 119, 196, 0.28); }
+        body.dark { --pcbg14: rgba(185, 164, 236, 0.36); --pcbg0: rgba(127, 132, 140, 0.4); --pcbg1: rgba(134, 174, 240, 0.4); --pcbg2: rgba(134, 174, 240, 0.4); --pcbg3: rgba(244, 192, 213, 0.4); --pcbg4: rgba(241, 242, 244, 0.3); --pcbg5: rgba(208, 120, 159, 0.42); --pcbg6: rgba(244, 192, 213, 0.4); --pcbg7: rgba(134, 174, 240, 0.4); --pcbg8: rgba(127, 132, 140, 0.4); --pcbg9: rgba(241, 242, 244, 0.3); --pcbg10: rgba(127, 132, 140, 0.4); --pcbg11: rgba(208, 120, 159, 0.42); --pcbg12: rgba(244, 192, 213, 0.4); --pcbg13: rgba(134, 174, 240, 0.4); }
         .pc0 { --plan-gray: var(--pcbg0); --plan-ink: #9aa0a8; }
         .pc1 { --plan-gray: var(--pcbg1); --plan-ink: #4677c4; }
         .pc2 { --plan-gray: var(--pcbg2); --plan-ink: #4677c4; }
@@ -257,6 +257,7 @@
         .pc11 { --plan-gray: var(--pcbg11); --plan-ink: #9c3d68; }
         .pc12 { --plan-gray: var(--pcbg12); --plan-ink: #e597b7; }
         .pc13 { --plan-gray: var(--pcbg13); --plan-ink: #4677c4; }
+        .pc14 { --plan-gray: var(--pcbg14); --plan-ink: #8b6fc9; }
         body.dark .pc0 { --plan-ink: #7f848c; }
         body.dark .pc1 { --plan-ink: #86aef0; }
         body.dark .pc2 { --plan-ink: #86aef0; }
@@ -271,6 +272,7 @@
         body.dark .pc11 { --plan-ink: #d0789f; }
         body.dark .pc12 { --plan-ink: #f4c0d5; }
         body.dark .pc13 { --plan-ink: #86aef0; }
+        body.dark .pc14 { --plan-ink: #b9a4ec; }
         .op-colors { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding: 0 2px; }
         .op-colors-lbl { font-size: 11px; font-weight: 600; color: var(--ink-3); }
         .op-dot { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; background: var(--dot); box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .25); position: relative; }
@@ -4454,7 +4456,7 @@ const STYLE = "list";
 const DIAL = "24";
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 // 予定の色(アプリの色番号 0〜8)。[ライト, ダーク] はアプリの予定の線の色と同じ
-const PCOL = [["#9aa0a8", "#7f848c"], ["#4677c4", "#86aef0"], ["#4677c4", "#86aef0"], ["#e597b7", "#f4c0d5"], ["#1f2124", "#f1f2f4"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"], ["#9aa0a8", "#7f848c"], ["#1f2124", "#f1f2f4"], ["#9aa0a8", "#7f848c"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"]];   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
+const PCOL = [["#9aa0a8", "#7f848c"], ["#4677c4", "#86aef0"], ["#4677c4", "#86aef0"], ["#e597b7", "#f4c0d5"], ["#1f2124", "#f1f2f4"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"], ["#9aa0a8", "#7f848c"], ["#1f2124", "#f1f2f4"], ["#9aa0a8", "#7f848c"], ["#9c3d68", "#d0789f"], ["#e597b7", "#f4c0d5"], ["#4677c4", "#86aef0"], ["#8b6fc9", "#b9a4ec"]];   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に   // 9〜13: 黒 濃/薄・暗いピンク 濃/薄・紺
 // バレーの人数の色(アプリのカレンダーと同じ: 十分=緑 / やや不足=黄 / 不足・多すぎ=赤)
 const LV = { sufficient: ["#5d9487", "#7fb5a8"], warning: ["#ad9e72", "#cbbb8c"], danger: ["#b27c85", "#d29aa3"] };
 
@@ -5060,6 +5062,12 @@ await main();
                 <div class="st-row pr-only"><span class="st-lbl">予定の表示</span><span class="st-seg" id="pvSeg"><button type="button" data-v="dot" onclick="setProtoPlanView('dot')">点</button><button type="button" data-v="text" onclick="setProtoPlanView('text')">文字</button><button type="button" data-v="en" onclick="setProtoPlanView('en')">EN</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">メニュー</span><span class="st-seg" id="menuSeg"><button type="button" data-v="hold" onclick="setMenuMode('hold')">長押し</button><button type="button" data-v="bar" onclick="setMenuMode('bar')">下</button></span></div>
+            </div>
+            <!-- Googleに接続中の挙動(管理者だけ・この端末だけの設定) -->
+            <div class="st-card st-rows" id="gcalPrefRows" style="display:none">
+                <div class="st-row"><span class="st-lbl">新しい予定の保存先</span><span class="st-seg" id="gpOnlySeg"><button type="button" data-v="app" onclick="gcalPrefSet('only',false)">アプリ</button><button type="button" data-v="g" onclick="gcalPrefSet('only',true)">Googleのみ</button></span></div>
+                <div class="st-row" id="gpAskRow"><span class="st-lbl">Googleへの追加確認</span><span class="st-seg" id="gpAskSeg"><button type="button" data-v="ask" onclick="gcalPrefSet('ask','ask')">聞く</button><button type="button" data-v="never" onclick="gcalPrefSet('ask','never')">追加しない</button><button type="button" data-v="auto" onclick="gcalPrefSet('ask','auto')">自動で追加</button></span></div>
+                <div class="st-sub" id="gpNote" style="font-size:11px;color:var(--ink-3);line-height:1.5;padding:2px 4px 4px"></div>
             </div>
             <!-- 使い方: 出っぱった細長い行 -->
             <button type="button" class="st-link" onclick="openGuide('home')">ホーム画面に追加<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -8143,7 +8151,7 @@ await main();
                 <div class="pd-when">${escapeHtml(planWhenText(p))}</div>
                 ${p.memo ? `<div class="pd-memo">${escapeHtml(p.memo)}</div>` : ""}
                 ${p.gcal ? "" : planNtfLine(p)}${btns}${mem}
-                <div class="pd-acts">${editable ? `<button type="button" class="op-delbtn" onclick="deleteOtherPlan(${p.id})">削除</button>` : ""}<span class="op-grow"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button>${editable ? `<button type="button" class="op-add" onclick="editFromDetail(${p.id})">編集</button>` : ""}</div>
+                <div class="pd-acts">${editable ? `<button type="button" class="op-delbtn" onclick="deleteOtherPlan(${p.id})">削除</button>` : (p.gcal && p.gEvId && gcalIsAdmin()) ? `<button type="button" class="op-delbtn" onclick="deleteGcalPlan(${p.id})">削除</button>` : ""}<span class="op-grow"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button>${editable ? `<button type="button" class="op-add" onclick="editFromDetail(${p.id})">編集</button>` : ""}</div>
             </div>`;
         }
         function renderNvPanel() { renderNvPanelCore(); document.body.classList.toggle("plan-detail", planDetailId != null && !!document.getElementById("planDetail")); protoDetailSync(); renderProto(); }
@@ -8241,6 +8249,56 @@ await main();
         const GCAL_ON_KEY = "gcal_on_v1", GCAL_TOKEN_KEY = "gcal_token_v1";   // ON印は端末だけ(共有しない)。トークンはこのタブだけ(sessionStorage)
         var gcalLastFetch = 0, gcalVisible = [], gcalResMap = {}, gcalPlanMap = {}, gcalWin = null, gcalRef = {};   // gcalRef=アプリ側の予約("r日付#id")/予定("p id")に対応するGoogle側の予定(削除の連動用)   // gcalVisible=画面に出す予定(重複を除いたもの)
         try { gcalOn = localStorage.getItem(GCAL_ON_KEY) === "1"; } catch (e) { gcalOn = false; }
+        // ------- Googleに接続中の挙動(この端末だけの設定) -------
+        // only=自分の端末の予定(ローカル予定)を、アプリには入れずGoogleカレンダーだけに入れる / ask=Googleにも追加するかの確認(ask=聞く, never=聞かずに追加しない, auto=聞かずに自動で追加)
+        const GCAL_PREF_KEY = "gcal_pref_v1";
+        var gcalPref = { only: false, ask: "ask" };
+        try { const v = JSON.parse(localStorage.getItem(GCAL_PREF_KEY) || "null"); if (v && typeof v === "object") gcalPref = { only: !!v.only, ask: ["ask", "never", "auto"].includes(v.ask) ? v.ask : "ask" }; } catch (e) { /* ignore */ }
+        function gcalPrefSet(k, v) {
+            gcalPref[k] = v;
+            try { localStorage.setItem(GCAL_PREF_KEY, JSON.stringify(gcalPref)); } catch (e) { /* ignore */ }
+            gcalPrefRender();
+        }
+        function gcalPrefRender() {
+            const box = document.getElementById("gcalPrefRows"); if (!box) return;
+            box.style.display = gcalIsAdmin() ? "" : "none";
+            const on = (id, v) => document.querySelectorAll("#" + id + " button").forEach(b => { const x = b.dataset.v === v; b.classList.toggle("on", x); b.setAttribute("aria-pressed", String(x)); });
+            on("gpOnlySeg", gcalPref.only ? "g" : "app"); on("gpAskSeg", gcalPref.ask);
+            const row = document.getElementById("gpAskRow"); if (row) { row.style.opacity = gcalPref.only ? ".45" : ""; row.style.pointerEvents = gcalPref.only ? "none" : ""; }
+            const n = document.getElementById("gpNote");
+            if (n) n.textContent = (gcalPref.only ? "Googleに接続中は、自分の端末の予定をGoogleカレンダーだけに入れます(アプリには残りません。LINE通知・出欠は付きません)。" : gcalPref.ask === "auto" ? "Googleに接続中は、新しい予定をGoogleカレンダーにも自動で追加します。" : gcalPref.ask === "never" ? "Googleに接続中でも、Googleカレンダーへは追加しません(確認も出しません)。" : "Googleに接続中は、予定を入れるたびにGoogleにも追加するか聞きます。") + "　※接続していないときは、いつもどおりです。";
+        }
+        function gcalDirectOK() { return gcalIsAdmin() && gcalHave() && !!gcalToken(); }   // 接続中で、書き込みもできる状態
+        // アプリの予定を、Googleカレンダー(メイン)に直接入れる。入れられたら true
+        async function gcalInsertPlan(p) {
+            const t = gcalToken(); if (!t || !p || !p.startDate) return false;
+            const z = n => String(n).padStart(2, "0");
+            const key = x => x.getFullYear() + "-" + z(x.getMonth() + 1) + "-" + z(x.getDate());
+            const addDays = (k, n) => { const [y, m, d] = k.split("-").map(Number); return key(new Date(y, m - 1, d + n)); };
+            const ed = p.endDate && p.endDate > p.startDate ? p.endDate : p.startDate;
+            const body = { summary: p.title || "予定", description: p.memo || "" };
+            const s0 = p.allDay ? null : (parseHM(p.start) ?? parseHM(p.end));
+            if (s0 == null) { body.start = { date: p.startDate }; body.end = { date: addDays(ed, 1) }; }
+            else {
+                let e0 = parseHM(p.end);
+                if (e0 == null || (ed === p.startDate && e0 <= s0)) e0 = s0 + 60;
+                const dt = (k, m) => { const [y, mo, d] = k.split("-").map(Number); const x = new Date(y, mo - 1, d, 0, m); return key(x) + "T" + z(x.getHours()) + ":" + z(x.getMinutes()) + ":00"; };
+                body.start = { dateTime: dt(p.startDate, s0), timeZone: "Asia/Tokyo" }; body.end = { dateTime: dt(ed, e0), timeZone: "Asia/Tokyo" };
+            }
+            try {
+                const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method: "POST", headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+                if (!r.ok) { console.warn("Googleカレンダーへの追加に失敗", r.status); return false; }
+            } catch (e) { console.warn(e); return false; }
+            gcalFetch();   // 取得し直して表示を更新
+            return true;
+        }
+        // アプリに新しい予定を入れた後: 設定に合わせて、Googleにも追加する/聞く/何もしない
+        function gcalAfterNewPlan(p) {
+            if (!p || p.gcal || p.holiday || !p.startDate || !gcalHave()) return;
+            if (gcalPref.ask === "never") return;
+            if (gcalPref.ask === "auto" && gcalDirectOK()) { gcalInsertPlan(p).then(ok => { if (!ok) alert("Googleカレンダーに追加できませんでした。"); }); return; }
+            gcalAskAdd(p);   // 聞く(自動にしていても、書き込みの権限がないときは聞く)
+        }
         function planById(id) { return planList.find(x => x.id === id) || (gcalPlans || []).find(x => x.id === id); }
         function gcalToken() {
             try { const o = JSON.parse(sessionStorage.getItem(GCAL_TOKEN_KEY) || "null"); if (o && o.t && o.exp > Date.now() + 30000) return o.t; } catch (e) { /* ignore */ }
@@ -8256,6 +8314,7 @@ await main();
             const lab = { off: "Google", loading: "取得中…", ok: "Google", expired: "再接続", error: "再試行" }[gcalState] || "Google";
             l.textContent = lab;
             t.classList.toggle("on", gcalState === "ok" || gcalState === "loading");
+            try { gcalPrefRender(); } catch (e) { /* ignore */ }
         }
         function gcalTap() {
             if (gcalState === "ok") { if (confirm("Googleカレンダーの表示をオフにしますか?\n(OK=オフ / キャンセル=最新に更新)")) gcalOff(); else gcalFetch(); return; }
@@ -8295,7 +8354,7 @@ await main();
             const z = n => String(n).padStart(2, "0"), hm = d => z(d.getHours()) + ":" + z(d.getMinutes());
             const s0 = ev.start || {}, e0 = ev.end || {};
             const memo = [cal && cal.summary ? "📅 " + cal.summary : "", ev.location || "", ev.description || ""].filter(Boolean).join("\n");
-            const p = { id, gcal: true, local: true, color: 0, title: ev.summary || "(無題)", memo, gEvId: ev.id || "", gCalId: (cal && cal.id) || "" };
+            const p = { id, gcal: true, local: true, color: 14, title: ev.summary || "(無題)", memo, gEvId: ev.id || "", gCalId: (cal && cal.id) || "" };
             if (s0.date) {
                 p.startDate = s0.date; p.allDay = true;
                 if (e0.date) { const d = new Date(e0.date + "T00:00:00"); d.setDate(d.getDate() - 1); const k = gcalDateKey(d); if (k > s0.date) p.endDate = k; }
@@ -8393,12 +8452,12 @@ await main();
             (keys || []).forEach(k => (gcalRef[k] || []).forEach(g => { if (g && g.gEvId && g.gCalId && !seen[g.gCalId + "/" + g.gEvId]) { seen[g.gCalId + "/" + g.gEvId] = 1; out.push({ cal: g.gCalId, ev: g.gEvId, title: g.title || "予定" }); } }));
             return out;
         }
-        async function gcalDeleteLinked(list) {
-            if (!list || !list.length || !gcalIsAdmin()) return;
+        async function gcalDeleteLinked(list, solo) {   // solo=Google側だけにある予定を、このアプリから消すとき。消せたら true
+            if (!list || !list.length || !gcalIsAdmin()) return false;
             const names = list.map(x => "「" + x.title + "」").join("");
-            if (!confirm("Googleカレンダーにある " + names + " も一緒に削除しますか?")) return;
+            if (!confirm(solo ? "Googleカレンダーの " + names + " を削除しますか?\n(Googleカレンダーからも消えます)" : "Googleカレンダーにある " + names + " も一緒に削除しますか?")) return false;
             const t = gcalToken();
-            if (!t) { alert("Googleとの接続が切れています。右上のGoogleから接続し直すと、Google側も消せます。"); return; }
+            if (!t) { alert("Googleとの接続が切れています。右上のGoogleから接続し直すと、Google側も消せます。"); return false; }
             let denied = false, failed = 0;
             for (const x of list) {
                 try {
@@ -8408,23 +8467,29 @@ await main();
                 } catch (e) { failed++; }
             }
             if (denied) {
-                if (confirm("Google側を消す権限がありません(接続のとき「予定の編集」を許可していない可能性があります)。\nいま接続し直しますか?\n(接続し直したあと、Google側の予定はお手数ですが手動で消してください)")) { try { sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e) { /* ignore */ } gcalConnect(); }
-                return;
+                if (confirm("Google側を消す権限がありません(接続のとき「予定の編集」を許可していない可能性があります)。\nいま接続し直しますか?")) { try { sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e) { /* ignore */ } gcalConnect(); }
+                return false;
             }
             if (failed) alert("Google側の削除に失敗した予定が " + failed + " 件あります。Googleカレンダーで確認してください。");
             gcalFetch();   // 取得し直して表示を更新
+            return !failed;
+        }
+        async function deleteGcalPlan(id) {   // Googleカレンダーだけにある予定を、このアプリから消す
+            const g = (gcalPlans || []).find(x => x.id === id);
+            if (!g || !g.gEvId || !g.gCalId) return;
+            if (await gcalDeleteLinked([{ cal: g.gCalId, ev: g.gEvId, title: g.title || "予定" }], true)) closePlanDetail();
         }
         function gcalHeaderLabel(d) {   // その日の予約のうちGoogleにもあるもの(接続していなくても、追加した記録があれば数える): "G✓" / "G 1/2" / ""
             const rs = (reservations[d] || []).filter(r => parseTimeRangeMin(r.time));
             if (!rs.length) return "";
             const n = rs.filter(r => { const st = gcalResState(d, r); return st === "g" || st === "l"; }).length;
-            return !n ? "" : n === rs.length ? "G✓" : "G " + n + "/" + rs.length;
+            return !n ? "" : n === rs.length ? "G" : "G " + n + "/" + rs.length;
         }
         function gcalHeaderMark(d) {   // バレー画面の日付の横の灰色マーク
             const t = gcalHeaderLabel(d);
             return t ? `<span class="gc-mark sd-gc" title="Googleカレンダーにもあります">${t}</span>` : "";
         }
-        function gcalMark(txt) { return `<span class="gc-mark" title="Googleカレンダーにもあります">${txt || "G✓"}</span>`; }
+        function gcalMark(txt) { return `<span class="gc-mark" title="Googleカレンダーにもあります">${txt || "G"}</span>`; }
         function gcalDayMark(d) {   // その日の予約のうち、Googleにあるもの
             const rs = (reservations[d] || []).filter(r => parseTimeRangeMin(r.time));
             if (!rs.length || !gcalInWin(d)) return "";
@@ -8548,7 +8613,7 @@ await main();
         function planStartKey(p) { if (!planTimed(p)) return -1; const s = parseHM(p.start); return s != null ? s : (parseHM(p.end) ?? 9999); }
         // 時間指定のある予定(終日にしていなくて、開始か終了の時間がある)
         function planTimed(p) { return !!(p && !p.allDay && (p.start || p.end)); }
-        function pcCls(p) { const c = +(p && p.color) || 0; return c >= 0 && c <= 13 ? " pc" + c : ""; }
+        function pcCls(p) { const c = +(p && p.color) || 0; return c >= 0 && c <= 14 ? " pc" + c : ""; }
         function parseHM(v) { const m = String(v || "").match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; }
         let calListNeedScroll = false;
         // 一覧に出す日: 「バレーあり」になっている日(タスクの状態は関係なし)
@@ -8991,6 +9056,17 @@ await main();
             }
             if (!toLocal && ((pairActive() && !keepNormal) || (prev && prev.pair))) p.pair = true;   // ペアモードで入れた予定(変更ログに出さない)
             const isNewPlan = planEditId == null;   // 新しく入れた予定か(直した予定ではない)
+            if (isNewPlan && toLocal && !p.holiday && gcalPref.only && gcalDirectOK()) {   // 設定: Googleに接続中は、ローカル予定をGoogleカレンダーだけに入れる(アプリには入れない)
+                planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = "";
+                renderCalendar(); renderOtherPlanBox(); jumpToPlanDate(sd);
+                gcalInsertPlan(p).then(ok => {
+                    if (ok) return;
+                    p.id = nextLocalPlanId--; planList.push(p); saveData(); try { syncLocalNtf(); } catch (e) { /* ignore */ }   // 入れられなかったときは、予定を失わないようアプリに保存する
+                    renderCalendar(); renderOtherPlanBox();
+                    alert("Googleカレンダーに追加できなかったので、アプリに保存しました。");
+                });
+                return;
+            }
             const i = planEditId != null ? planList.findIndex(x => x.id === planEditId) : -1;
             if (i >= 0 && !!planList[i].local === toLocal) { p.id = planEditId; planList[i] = p; }
             else {
@@ -9006,7 +9082,7 @@ await main();
             renderCalendar();
             renderOtherPlanBox();
             jumpToPlanDate(sd);
-            if (isNewPlan) setTimeout(() => { try { gcalAskAdd(p); } catch (e) { console.warn(e); } }, 350);   // Googleに接続中なら、Googleカレンダーにも追加するか聞く
+            if (isNewPlan) setTimeout(() => { try { gcalAfterNewPlan(p); } catch (e) { console.warn(e); } }, 350);   // Googleに接続中なら、Googleカレンダーにも追加するか聞く
         }
         function deleteOtherPlan(id, quiet) {   // quiet = 確かめずに消す(すぐ「戻す」を出すとき)
             const target = planList.find(x => x.id === id);
@@ -16720,7 +16796,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611101840;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611102000;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18090,8 +18166,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 : { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", hi: "#ffffff", lo: "#c9cfd8", rim: "rgba(255,255,255,.95)", rimLo: "rgba(80,90,110,.10)", red: "#c0504a", acc: "#2f6bf2", blue: "#3f63b0", today: "#2f9a72" };
             // 予定の色(アプリの色番号 0〜8): 渋い寒色〜茶系。バレーの人数の色(緑・黄土・小豆色)の系統は使わない
             const C = dark
-                ? ["#7f848c", "#86aef0", "#86aef0", "#f4c0d5", "#f1f2f4", "#d0789f", "#f4c0d5", "#86aef0", "#7f848c", "#f1f2f4", "#7f848c", "#d0789f", "#f4c0d5", "#86aef0"]
-                : ["#9aa0a8", "#4677c4", "#4677c4", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#4677c4", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#4677c4"]; window.PROTO_C = C;   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に寄せる
+                ? ["#7f848c", "#86aef0", "#86aef0", "#f4c0d5", "#f1f2f4", "#d0789f", "#f4c0d5", "#86aef0", "#7f848c", "#f1f2f4", "#7f848c", "#d0789f", "#f4c0d5", "#86aef0", "#b9a4ec"]
+                : ["#9aa0a8", "#4677c4", "#4677c4", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#4677c4", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#4677c4", "#8b6fc9"]; window.PROTO_C = C;   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に寄せる
             const LV = dark ? { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } : { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" };
             return { dark, P, C, LV };
         }
@@ -18294,7 +18370,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = !!p.endDate && p.endDate !== p.startDate;
                 const timed = !p.allDay && s0 != null && (first || !multi);
                 const endsHere = multi && last && !first && !p.allDay && e0 != null;   // 連続の最終日: 終わりの時間
-                return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", sub: planRsvpOn(p) ? `○${planComing(p)}` : "", gc: gcalPlanMap[p.id] ? "G✓" : "", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
+                return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", sub: planRsvpOn(p) ? `○${planComing(p)}` : "", gc: gcalPlanMap[p.id] ? "G" : "", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
             });
             if (sv) rows.push({ vol: true, t: sv.s != null ? fmtMin(sv.s) : "—", title: "バレー", sub: sv.place || "", gc: gcalHeaderLabel(sel), col: P.ink2, min: sv.s != null ? sv.s : 0 });
             // そろそろ: いつもの間隔なら、そろそろ入りそうな予定(描くたびに1回だけ数える。マスごとには数えない)
