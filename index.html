@@ -5040,6 +5040,7 @@ await main();
                 <button type="button" class="st-tile pr-only" data-seg="soonSeg" onclick="setTileTap(this)" aria-label="そろそろ"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5" stroke-dasharray="2.5 2.5"/></svg></i><span class="st-tl">そろそろ</span></button>
                 <button type="button" class="st-tile" data-seg="jpSeg" data-k="hol" onclick="setTileTap(this)" aria-label="祝日"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg></i><span class="st-tl">祝日</span></button>
                 <button type="button" class="st-tile" data-seg="jpSeg" data-k="ev" onclick="setTileTap(this)" aria-label="行事"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M7 20V10l5-5 5 5v10"/></svg></i><span class="st-tl">行事</span></button>
+                <button type="button" class="st-tile" id="gcalTile" onclick="gcalTap()" aria-label="Googleカレンダー" style="display:none"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg></i><span class="st-tl" id="gcalTl">Google</span></button>
                 <div class="st-tile-w" id="pairRow" style="display:none"><button type="button" class="st-tile" id="pairBtn" onclick="openPairPanel()" aria-label="ペアモード"></button></div>
             </div>
             <!-- もとの切替ボタン(画面には出さない。状態の「on」はここに付く) -->
@@ -6410,6 +6411,7 @@ await main();
             const adm = (() => { try { return realAdmin(); } catch (e) { return false; } })();
             av.innerHTML = n ? escapeHtml(Array.from(n)[0]) : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>`;
             nm.textContent = n || (adm ? "Admin" : "Guest");
+            try { gcalSyncTile(); } catch (e) { /* ignore */ }
         }
         // 隠した切替ボタンの「on」が変わったら(どこから変えても)、丸いボタンとつまみを合わせる
         (() => {
@@ -8085,7 +8087,7 @@ await main();
         function closePlanDetail() { planDetailId = null; protoDetailId = null; renderOtherPlanBox(); protoDetailSync(); }
         function editFromDetail(id) { planDetailId = null; protoDetailId = null; renderNvPanel(); protoOpenInput(id); }
         function nvTap(id) {
-            const p = planList.find(x => x.id === id);
+            const p = planById(id);
             if (!p) return;
             openPlanDetail(id);   // ローカルの予定も、まず詳細(編集はそこから)
         }
@@ -8112,7 +8114,7 @@ await main();
             return `${a} 終日`;
         }
         function planDetailHtml(p) {
-            const editable = isAdmin() || !!p.local || pairPlanEditable(p);
+            const editable = !p.gcal && (isAdmin() || !!p.local || pairPlanEditable(p));
             const inv = planInvitees(p), rsvp = planRsvpOn(p);
             const me = surveyWho(), canAnswer = rsvp && me && inv.includes(me);
             const myst = canAnswer ? planStatusOf(p, me) : "";
@@ -8134,7 +8136,7 @@ await main();
                 <div class="pd-head"><span class="pd-bar"></span><div class="pd-ttl">${p.local ? IC("phone") : ""}${escapeHtml(p.title || "予定")}</div>${rsvp ? `<span class="pd-cnt">○ ${planComing(p)}</span>` : ""}</div>
                 <div class="pd-when">${escapeHtml(planWhenText(p))}</div>
                 ${p.memo ? `<div class="pd-memo">${escapeHtml(p.memo)}</div>` : ""}
-                ${planNtfLine(p)}${btns}${mem}
+                ${p.gcal ? "" : planNtfLine(p)}${btns}${mem}
                 <div class="pd-acts">${editable ? `<button type="button" class="op-delbtn" onclick="deleteOtherPlan(${p.id})">削除</button>` : ""}<span class="op-grow"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button>${editable ? `<button type="button" class="op-add" onclick="editFromDetail(${p.id})">編集</button>` : ""}</div>
             </div>`;
         }
@@ -8142,7 +8144,7 @@ await main();
         // 予定の詳細(見るだけの予定・出欠の回答): 画面の下からシートで出す
         function protoDetailSync() {
             let ov = document.getElementById("prDetail");
-            const p = protoDetailId != null ? planList.find(x => x.id === protoDetailId) : null;
+            const p = protoDetailId != null ? planById(protoDetailId) : null;
             if (!p) { if (ov) ov.classList.remove("open"); return; }
             if (!ov) { ov = document.createElement("div"); ov.id = "prDetail"; ov.innerHTML = `<div class="prd-back" onclick="closePlanDetail()"></div><div class="prd-sheet"></div>`; document.body.appendChild(ov); }
             ov.querySelector(".prd-sheet").innerHTML = planDetailHtml(p).replace('id="planDetail"', 'id="prPlanDetail"');
@@ -8228,8 +8230,124 @@ await main();
             return isAdmin() && !!p.by && p.by === planAuthorKey();   // 管理者でも、共有相手か作った本人だけ
         }
         function planAuthorKey() { return (typeof myEmailHash !== "undefined" && myEmailHash) || ("n:" + (myMemberName() || "")); }
+        // ------- Googleカレンダー(管理者だけ・読み取りのみ)。予定はこの画面(メモリ)にだけ置き、サーバーにも端末の保存にも書かない -------
+        var gcalPlans = [], gcalOn = false, gcalState = "off";   // off / loading / ok / expired / error
+        const GCAL_ON_KEY = "gcal_on_v1", GCAL_TOKEN_KEY = "gcal_token_v1";   // ON印は端末だけ(共有しない)。トークンはこのタブだけ(sessionStorage)
+        let gcalLastFetch = 0;
+        try { gcalOn = localStorage.getItem(GCAL_ON_KEY) === "1"; } catch (e) { gcalOn = false; }
+        function planById(id) { return planList.find(x => x.id === id) || (gcalPlans || []).find(x => x.id === id); }
+        function gcalToken() {
+            try { const o = JSON.parse(sessionStorage.getItem(GCAL_TOKEN_KEY) || "null"); if (o && o.t && o.exp > Date.now() + 30000) return o.t; } catch (e) { /* ignore */ }
+            return "";
+        }
+        function gcalIsAdmin() { try { return !!(firebaseAvailable && firestoreEditor); } catch (e) { return false; } }
+        function gcalSetState(st) { gcalState = st; gcalSyncTile(); }
+        function gcalSyncTile() {
+            const t = document.getElementById("gcalTile"), l = document.getElementById("gcalTl");
+            if (!t || !l) return;
+            const show = gcalIsAdmin();
+            t.style.display = show ? "" : "none";
+            const lab = { off: "Google", loading: "取得中…", ok: "Google", expired: "再接続", error: "再試行" }[gcalState] || "Google";
+            l.textContent = lab;
+            t.classList.toggle("on", gcalState === "ok" || gcalState === "loading");
+        }
+        function gcalTap() {
+            if (gcalState === "ok") { if (confirm("Googleカレンダーの表示をオフにしますか?\n(OK=オフ / キャンセル=最新に更新)")) gcalOff(); else gcalFetch(); return; }
+            if (gcalState === "loading") return;
+            if (gcalState === "expired" || gcalState === "error") { if (gcalToken()) { gcalFetch(); return; } }
+            gcalConnect();
+        }
+        function gcalOff() {
+            gcalPlans = []; gcalOn = false;
+            try { localStorage.removeItem(GCAL_ON_KEY); sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e) { /* ignore */ }
+            gcalSetState("off");
+            try { renderCalendar(); } catch (e) { /* ignore */ }
+        }
+        function gcalConnect() {
+            if (!(window.firebase && firebase.auth) || !gcalIsAdmin()) { alert("管理者でGoogleログインしてから接続してください。"); return; }
+            const pv = new firebase.auth.GoogleAuthProvider();
+            pv.addScope("https://www.googleapis.com/auth/calendar.readonly");
+            const u = firebase.auth().currentUser;
+            gcalSetState("loading");
+            const pr = (u && !u.isAnonymous) ? u.reauthenticateWithPopup(pv) : firebase.auth().signInWithPopup(pv);
+            pr.then(r => {
+                const t = r && r.credential && r.credential.accessToken;
+                if (!t) throw new Error("no token");
+                try { sessionStorage.setItem(GCAL_TOKEN_KEY, JSON.stringify({ t, exp: Date.now() + 3500 * 1000 })); localStorage.setItem(GCAL_ON_KEY, "1"); } catch (e) { /* ignore */ }
+                gcalOn = true;
+                return gcalFetch();
+            }).catch(e => {
+                console.warn("Googleカレンダーに接続できませんでした。", e);
+                gcalSetState(gcalPlans.length ? "expired" : (gcalOn ? "expired" : "off"));
+                const c = e && e.code;
+                if (c && c !== "auth/popup-closed-by-user" && c !== "auth/cancelled-popup-request") alert("Googleカレンダーに接続できませんでした(" + c + ")。\nGoogle Cloudで「Google Calendar API」を有効にし、テストユーザーに自分のメールを登録してあるか確認してください。");
+            });
+        }
+        function gcalDateKey(d) { const z = n => String(n).padStart(2, "0"); return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()); }
+        function gcalToPlan(ev, cal, id) {
+            const z = n => String(n).padStart(2, "0"), hm = d => z(d.getHours()) + ":" + z(d.getMinutes());
+            const s0 = ev.start || {}, e0 = ev.end || {};
+            const memo = [cal && cal.summary ? "📅 " + cal.summary : "", ev.location || "", ev.description || ""].filter(Boolean).join("\n");
+            const p = { id, gcal: true, local: true, color: 0, title: ev.summary || "(無題)", memo };
+            if (s0.date) {
+                p.startDate = s0.date; p.allDay = true;
+                if (e0.date) { const d = new Date(e0.date + "T00:00:00"); d.setDate(d.getDate() - 1); const k = gcalDateKey(d); if (k > s0.date) p.endDate = k; }
+            } else if (s0.dateTime) {
+                const a = new Date(s0.dateTime), b = e0.dateTime ? new Date(e0.dateTime) : null;
+                p.startDate = gcalDateKey(a); p.start = hm(a);
+                if (b) {
+                    let bk = gcalDateKey(b), bh = hm(b);
+                    if (bk !== p.startDate && bh === "00:00") { bk = gcalDateKey(new Date(b.getTime() - 60000)); bh = ""; }
+                    if (bk !== p.startDate) p.endDate = bk;
+                    if (bh) p.end = bh;
+                }
+            } else return null;
+            return p;
+        }
+        async function gcalFetch() {
+            const t = gcalToken();
+            if (!t) { gcalSetState("expired"); return; }
+            gcalSetState("loading");
+            const H = { Authorization: "Bearer " + t };
+            const now = new Date(), from = new Date(now.getFullYear(), now.getMonth() - 2, 1), to = new Date(now.getFullYear(), now.getMonth() + 7, 1);
+            try {
+                const cl = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=50", { headers: H });
+                if (cl.status === 401) throw 401;
+                if (!cl.ok) throw new Error("calendarList " + cl.status);
+                const cals = ((await cl.json()).items || []).filter(c => c.selected && !/#holiday@group\.v\.calendar\.google\.com$/.test(c.id));
+                const out = []; let id = -1000001;
+                for (const c of cals) {
+                    let pageToken = "";
+                    do {
+                        const q = new URLSearchParams({ timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "250", fields: "nextPageToken,items(summary,description,location,start,end,status)" });
+                        if (pageToken) q.set("pageToken", pageToken);
+                        const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(c.id) + "/events?" + q, { headers: H });
+                        if (r.status === 401) throw 401;
+                        if (!r.ok) break;
+                        const j = await r.json(); pageToken = j.nextPageToken || "";
+                        (j.items || []).forEach(ev => { if (ev.status === "cancelled") return; const p = gcalToPlan(ev, c, id); if (p) { out.push(p); id--; } });
+                    } while (pageToken && out.length < 3000);
+                }
+                gcalPlans = out; gcalLastFetch = Date.now(); gcalSetState("ok");
+            } catch (e) {
+                if (e === 401) { try { sessionStorage.removeItem(GCAL_TOKEN_KEY); } catch (e2) { /* ignore */ } gcalSetState("expired"); }
+                else { console.warn("Googleカレンダーの取得に失敗しました。", e); gcalSetState("error"); }
+            }
+            try { renderCalendar(); } catch (e) { /* ignore */ }
+        }
+        function gcalInit() {
+            gcalSyncTile();
+            if (!gcalOn || !gcalIsAdmin()) { if (gcalOn && !gcalIsAdmin()) setTimeout(gcalInit, 2500); return; }
+            if (gcalToken()) gcalFetch(); else gcalSetState("expired");
+        }
+        window.addEventListener("load", () => setTimeout(gcalInit, 2000));
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden || !gcalOn || !gcalIsAdmin()) return;
+            if (!gcalToken()) { if (gcalState === "ok") gcalSetState("expired"); return; }
+            if (gcalState !== "loading" && Date.now() - gcalLastFetch > 5 * 60 * 1000) gcalFetch();
+        });
         function plansOn(key) {
-            return planList
+            return planList.concat(gcalOn && gcalPlans ? gcalPlans : [])
                 .filter(p => planHas(p) && planVisible(p) && p.startDate <= key && (p.endDate ? p.endDate >= key : p.startDate === key))
                 .sort((x, y) => (x.startDate < y.startDate ? -1 : x.startDate > y.startDate ? 1 : planStartKey(x) - planStartKey(y) || x.id - y.id))
                 .map(p => ({ p, origin: p.startDate, first: p.startDate === key, last: !p.endDate || p.endDate === key }));
@@ -18933,7 +19051,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 上のバレー部分 → その日のバレーのタスク画面 / 予定の行 → その予定を編集(編集できない予定は詳細)
         function protoVol(k) { if (!k) return; if (k !== selectedDate) { const [y, m] = k.split("-").map(Number); protoYM = [y, m]; selectDate(k); } openVolleyFull(); }
         function protoRow(id) {
-            const p = planList.find(x => x.id === id); if (!p) return;
+            const p = planById(id); if (!p) return;
             const editable = isAdmin() || !!p.local || pairPlanEditable(p);
             openPlanDetail(id);   // まず詳細(メモ・出欠)を見せる。直すときは詳細の「編集」から
         }
