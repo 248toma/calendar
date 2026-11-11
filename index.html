@@ -2025,6 +2025,13 @@
         .vb-del .ic { width: 12px; height: 12px; }
         .vb-del:active { box-shadow: var(--sink); }
         body:not(.nv-full) .vb-del { display: none !important; }
+        /* 未定 / 確定(○✖△と同じ、凹んだ溝の中で選んだ方が浮く) */
+        .vb-tent { flex: none; gap: 2px; padding: 3px; border-radius: 14px; }
+        .vb-tent button { height: 22px; min-width: 40px; padding: 0 9px; border-radius: 11px; font-size: 11.5px; }
+        .vb-tent button.on[data-v="1"] { color: var(--ink-2); }
+        body:not(.nv-full) .vb-tent { display: none !important; }
+        /* 未定の回: 出欠・チーム分け・精算のタブは出さない(予約と動画だけ) */
+        body.vb-tent-on #tabMemberBtn, body.vb-tent-on #tabTeamsBtn, body.vb-tent-on #tabSettleBtn, body.vb-tent-on #vbNtfBtn { display: none !important; }
         /* 日付枠の中の予定の影が、枠の角で切れないように */
         /* ヘッダーなし: カレンダーの上の段に まとめる */
         .app-header { display: none !important; }
@@ -2510,6 +2517,13 @@
         #protoCal button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
         #protoCal button:active { transform: scale(.95); }
         #protoCal button:disabled { cursor: default; opacity: .4; }
+        /* バレー予定の一括追加(カレンダー登録の画面と同じ作り) */
+        #protoVbAdd { display: none; }
+        body.proto-on #protoVbAdd.open { display: block; position: fixed; inset: 0; z-index: 56; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        #protoVbAdd button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        #protoVbAdd button:active { transform: scale(.95); }
+        #protoVbAdd button:disabled { cursor: default; opacity: .4; }
+        #protoVbAdd input.vba-ct { font: inherit; font-size: 16px; border: none; outline: none; background: transparent; color: inherit; width: 100%; min-width: 0; padding: 0; }
         body.proto-on #protoSv.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         #protoSv button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
         #protoSv button:active { transform: scale(.95); }
@@ -3896,19 +3910,19 @@ function itemsFor(data, today, myName, nowMin) {
   const me = myName ? (data.roster || []).find(r => r.name === myName) : null, myId = me ? me.id : null;
   const items = [];
   // バレー
-  if (data.events[today]) {
-    const rs = data.reservations[today] || [];
+  wSessKeys(data, today).forEach(sk => {   // 2回ある日は1回ずつ
+    const rs = (data.reservations || {})[sk] || [];
     const times = rs.map(r => String(r.time || "").match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/)).filter(Boolean);
     const s = times.length ? times.map(x => x[1]).sort((a, b) => hm(a) - hm(b))[0] : "";
     const e = times.length ? times.map(x => x[2]).sort((a, b) => hm(b) - hm(a))[0] : "";
-    const list = data.byDate[today] || [];
+    const list = (data.byDate || {})[sk] || [];
     const come = list.filter(m => m.status === "来る").length;
     const mine = myName ? list.find(m => m.name === myName) : null;
     const place = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
     const th = Object.assign({ yellowMin: 8, cyanMin: 12, cyanMax: 14 }, data.thresholds || {});
     const lv = come > th.cyanMax ? "danger" : come >= th.cyanMin ? "sufficient" : come >= th.yellowMin ? "warning" : "danger";
     items.push({ ad: 1, s: hm(s) ?? -1, endM: hm(e) ?? hm(s), t1: s || "終日", t2: e, title: `🏐 Volley · ${come}`, sub: [place, mine ? `自分 ${SYM[mine.status] || "?"}` : ""].filter(Boolean).join("  "), color: LV[lv] });
-  }
+  });
   const visible = p => !p.to || !p.to.length || (myId != null && p.to.includes(myId));
   const onDay = p => p && p.startDate && p.startDate <= today && (p.endDate ? p.endDate >= today : p.startDate === today);
   const has = p => p.title || p.start || p.end || p.memo || p.endDate;
@@ -3935,8 +3949,21 @@ function itemsFor(data, today, myName, nowMin) {
   const nowM = nowMin == null ? -1 : nowMin;
   return items.filter(it => it.endM == null || it.endM > nowM);
 }
+// 同じ日のバレー(1回目は "2026-02-06"、2回目からは "2026-02-06_2" …)。並びは日付 → 始まりの時刻の早い順(キーの番号順ではない)
+function wSessStart(data, k) {
+  const tr = ((data.reservations || {})[k] || []).map(r => String(r.time || "").match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/)).filter(Boolean);
+  return tr.length ? Math.min(...tr.map(x => hm(x[1]))) : null;
+}
+function wSessCmp(data, a, b) {
+  const da = a.slice(0, 10), db = b.slice(0, 10);
+  if (da !== db) return da < db ? -1 : 1;
+  const sa = wSessStart(data, a), sb = wSessStart(data, b);
+  return (sa == null ? 1e4 : sa) - (sb == null ? 1e4 : sb) || (parseInt(a.slice(11), 10) || 1) - (parseInt(b.slice(11), 10) || 1);
+}
+function wVolKeys(data) { return Object.keys(data.events || {}).filter(k => data.events[k] && !data.events[k].tent && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(k)).sort((a, b) => wSessCmp(data, a, b)); }
+function wSessKeys(data, d) { d = String(d).slice(0, 10); return wVolKeys(data).filter(k => k.slice(0, 10) === d); }
 function nextVolley(data, today) {
-  return Object.keys(data.events || {}).filter(k => data.events[k] && k > today && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(k)).sort()[0] || "";
+  return wVolKeys(data).filter(k => k.slice(0, 10) > today)[0] || "";   // 今日の2回目は「次のバレー」にしない
 }
 
 // ===== ウィジェット =====
@@ -4130,7 +4157,7 @@ function plansOnDay(data, k, myName) {
   return out.map(p => ({ p, first: p.startDate === k, last: !p.endDate || p.endDate === k, multi: !!p.endDate && p.endDate !== p.startDate }));
 }
 function volleyOn(data, k, myName) {
-  if (!(data.events || {})[k]) return null;
+  if (!(data.events || {})[k] || data.events[k].tent) return null;   // 未定の回は出さない
   const rs = (data.reservations || {})[k] || [];
   const tr = rs.map(r => String(r.time || "").match(/(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/)).filter(Boolean);
   const s = tr.length ? Math.min(...tr.map(x => hm(x[1]))) : null, e = tr.length ? Math.max(...tr.map(x => hm(x[2]))) : null;
@@ -4181,8 +4208,10 @@ function drawDial(S, k, data, myName, vol, mode, isToday, now, up) {
     if (h1 == null) return;
     arc(h1, h2, PC[+p.color || 0] || PC[0]);
   });
-  const sv = volleyOn(data, k, myName);
-  if (sv && sv.s != null) arc(sv.s / 60, sv.e / 60, P.ink2);
+  wSessKeys(data, k).forEach(sk => {   // バレーの時間(2回ある日は2つとも)
+    const sv = volleyOn(data, sk, myName);
+    if (sv && sv.s != null) arc(sv.s / 60, sv.e / 60, P.ink2);
+  });
   disc(Ri, P.bg);                     // 真ん中
   if (up) {   // 今日のバレーが終わったあと: 次のバレーの人数を、溝のさらに内側の細い12マスで(12人を超えたぶんは濃い色)
     const r2 = Ri - 5, r1 = r2 - 3, G = U * 0.13, LC = LVc[up.lv];
@@ -4219,8 +4248,10 @@ function busySpans(data, k, myName) {
     else if (multi && first && s0 != null) out.push([s0, 24 * 60]);
     else if (multi && last && e0 != null) out.push([0, e0]);
   });
-  const v = volleyOn(data, k, myName);
-  if (v && v.s != null) out.push([v.s, v.e != null && v.e > v.s ? v.e : v.s + 120]);
+  wSessKeys(data, k).forEach(sk => {   // 2回ある日は2つとも
+    const v = volleyOn(data, sk, myName);
+    if (v && v.s != null) out.push([v.s, v.e != null && v.e > v.s ? v.e : v.s + 120]);
+  });
   return out;
 }
 function setRefreshRing(w, now, spans) {
@@ -4237,13 +4268,17 @@ function buildRing(data, now, myName) {
   if (String(fam).startsWith("accessory")) return buildAccessory(data, now, myName, fam);
   const mode = ringMode(), P = RP[mode], PC = RCOL[mode], LVc = RLV[mode];
   const k = dkey(now);
-  const sv = volleyOn(data, k, myName);
-  const nextKey = sv ? k : Object.keys(data.events || {}).filter(x => data.events[x] && x >= k && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(x)).sort()[0] || "";
-  const vv = nextKey ? volleyOn(data, nextKey, myName) : null;
-  // 今日のバレーが終わった(終わりの時刻を過ぎた)ら: 今日のバレーはそのまま、次のバレーを予告(リングの内側の細いリング・「NEXT 7」・「NEXT 11/2 19:00〜」)
   const nowM = now.getHours() * 60 + now.getMinutes();
-  const done = sv && sv.s != null && nowM >= (sv.e != null && sv.e > sv.s ? sv.e : sv.s + 120);
-  const upKey = done ? Object.keys(data.events || {}).filter(x => data.events[x] && x > k && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(x)).sort()[0] || "" : "";
+  // 今日のバレー(2回ある日は、まだ終わっていない早い方。どちらも終わったら最後の回)
+  const tks = wSessKeys(data, k);
+  const volDone = x => { const v = volleyOn(data, x, myName); return !!v && v.s != null && nowM >= (v.e != null && v.e > v.s ? v.e : v.s + 120); };
+  const sk = tks.find(x => !volDone(x)) || tks[tks.length - 1] || "";
+  const sv = sk ? volleyOn(data, sk, myName) : null;
+  const nextKey = sv ? sk : wVolKeys(data).filter(x => x.slice(0, 10) >= k)[0] || "";
+  const vv = nextKey ? volleyOn(data, nextKey, myName) : null;
+  // 今日のバレーが(全部)終わった(終わりの時刻を過ぎた)ら: 今日のバレーはそのまま、次のバレーを予告(リングの内側の細いリング・「NEXT 7」・「NEXT 11/2 19:00〜」)
+  const done = !!sv && volDone(sk);
+  const upKey = done ? nextVolley(data, k) : "";
   const up = upKey ? volleyOn(data, upKey, myName) : null;
   const w = new ListWidget(); w.url = APP_URL;
   w.backgroundColor = BG_SET ? C.bg : new Color(P.bg);
@@ -4297,7 +4332,7 @@ function buildRing(data, now, myName) {
     const endsHere = multi && last && !first && !p.allDay && e0 != null;
     return { t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", col: PC[+p.color || 0] || PC[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
   });
-  if (sv) rows.push({ t: sv.s != null ? fmtM(sv.s) : "—", title: "バレー", col: P.ink2, min: sv.s != null ? sv.s : 0 });
+  tks.forEach(x => { const v = volleyOn(data, x, myName); if (v) rows.push({ t: v.s != null ? fmtM(v.s) : "—", title: "バレー", col: P.ink2, min: v.s != null ? v.s : 0 }); });   // 2回ある日は1回ずつ
   rows.sort((a, b) => a.min - b.min);
   const max = up && fam !== "large" ? 2 : 3;   // 予告の行が入るときは、予定は2つまで(はみ出さないように)
   if (!rows.length) { const t = col.addText("予定なし"); t.font = Font.systemFont(11.5); t.textColor = new Color(P.ink3); }
@@ -4749,6 +4784,7 @@ await main();
         <div class="selected-date-label" id="selectedDateLabel"></div>
         <button type="button" class="vb-del admin-only" id="vbDelBtn" onclick="deleteVolleyDay()" aria-label="この日のバレーを削除" title="この日のバレーを削除"><i class="ic ic-close"></i><span>削除</span></button>
         <button type="button" class="vb-ntf admin-only" id="vbNtfBtn" onclick="openVolleyNtf()" aria-label="この日のLINE通知"><i class="ic ic-bell"></i><span>通知</span></button>
+        <span class="st-seg vb-tent admin-only" id="vbTentSeg" role="group" aria-label="未定 / 確定(未定は管理者だけに見えます)"><button type="button" data-v="1" onclick="setVolleyTent(true)" title="未定: 管理者だけの仮の予定(閲覧者には見えません。アンケート・チーム分け・精算・通知なし)">未定</button><button type="button" data-v="0" onclick="setVolleyTent(false)" title="確定: みんなに共有するバレー">確定</button></span>
         <div class="day-toggles">
             <div class="event-toggle plan-toggle">
                 <input type="checkbox" id="planToggle" aria-label="バレー以外の予定の入力" onchange="togglePlanPanel(this.checked)">
@@ -5389,7 +5425,7 @@ await main();
         }
 
         let attendanceByDate = {}; // { "YYYY-MM-DD": [{id, name, status, updated}, ...] }
-        let events = {};           // { "YYYY-MM-DD": true }
+        let events = {};           // { "YYYY-MM-DD": true }。未定の回は { tent: true }(isTent / volOk)
         let planList = [];         // バレー以外の予定 [{ id, title, startDate, start, endDate, end, memo, color(1-3。無ければ灰) }]
         let nextPlanId = 1;
         let nextLocalPlanId = -1;   // ローカル予定のidは負の数(共有予定のidと重ならない)
@@ -5410,8 +5446,60 @@ await main();
 
         // ------- 同じ日のバレーを別々の回にする: 1回目は "2026-02-06"、2回目からは "2026-02-06_2" "_3"…(出欠・チーム分け・精算・動画も回ごと)
         function sessDay(k) { return String(k || "").slice(0, 10); }
-        function sessKeysOf(d) { d = sessDay(d); const out = []; if (events[d]) out.push(d); for (let n = 2; n < 10; n++) if (events[d + "_" + n]) out.push(d + "_" + n); return out; }   // その日のバレー(回の順)
-        function sessNoOf(k) { const t = String(k || "").slice(11); return t ? (parseInt(t, 10) || 1) : 1; }   // 何回目か: 順番ではなくキーで決める(1回目を消しても、2回目は2回目のまま)
+        function sessKeyNo(k) { const t = String(k || "").slice(11); return t ? (parseInt(t, 10) || 1) : 1; }   // キーの番号(_2 → 2)。作った順で、時刻の順とは限らない
+        function sessStartOf(k) { let rs = []; try { rs = reservations[k] || []; } catch (e) { rs = []; } const prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean); return prs.length ? Math.min(...prs.map(x => x.s)) : null; }   // その回の始まり(分)。予約がなければ null(読み込み前でも落ちないように)
+        function sessKeysOf(d) {   // その日のバレー(始まりの時刻の早い順。時刻がない回は後ろ、同じならキーの番号順)
+            d = sessDay(d); const out = []; if (events[d]) out.push(d); for (let n = 2; n < 10; n++) if (events[d + "_" + n]) out.push(d + "_" + n);
+            if (out.length < 2) return out;
+            const st = new Map(out.map(k => [k, sessStartOf(k)]));
+            return out.sort((a, b) => (st.get(a) == null ? 1e4 : st.get(a)) - (st.get(b) == null ? 1e4 : st.get(b)) || sessKeyNo(a) - sessKeyNo(b));
+        }
+        // 何回目か: その日の回を時刻の順に並べたときの番号(早い回が1回目)。キーの番号(作った順・消した回の欠番)には左右されない
+        function sessNoOf(k) { const i = sessKeysOf(k).indexOf(k); return i >= 0 ? i + 1 : sessKeyNo(k); }
+        function sessCmp(a, b) { const da = sessDay(a), db = sessDay(b); return da !== db ? (da < db ? -1 : 1) : sessNoOf(a) - sessNoOf(b); }   // バレーのキーの並べ方: 日付 → その日の時刻の順(sort() のままだと "_2" が時刻に関係なく後ろ)
+        // ------- 未定 / 確定: 未定の回は管理者だけの仮の予定(体育館の予約・日程の調整用)。events[k] = { tent: true }。確定の回は今までどおり true -------
+        //   未定の回は アンケート・出欠の数・チーム分け・精算・通知・「次のバレー」・何回目・集計 の対象にしない(volOk で判定)
+        function isTent(k) { const v = events[k]; return !!(v && typeof v === "object" && v.tent); }
+        function volOk(k) { return !!events[k] && !isTent(k); }   // 確定のバレー
+        // 閲覧者(管理者アカウントでない人)の端末では、未定の回を読み込んだ直後に events・reservations から外して tentHid に避けておく(画面のどこにも出ない)。
+        //   閲覧者は共有データのバレー日・予約を書かない(書けるのは出欠だけ)が、この端末の保存(saveData・saveReservations)では元の並びのまま戻して書く
+        //   (共有データとの違いにならないように・未定の回を消さないように)。管理者(閲覧モードを含む)の端末では外さない
+        let tentHid = { ev: {}, rs: {} }, tentOrd = { ev: null, rs: null };
+        function tentFullOf(obj, hid, ord) {
+            if (!Object.keys(hid).length) return obj;
+            const o = {};
+            (ord || []).forEach(k => { if (k in hid) o[k] = hid[k]; else if (k in obj) o[k] = obj[k]; });   // 閲覧者の端末では未定の回を変えない
+            Object.keys(obj).forEach(k => { if (!(k in o)) o[k] = obj[k]; });
+            Object.keys(hid).forEach(k => { if (!(k in o)) o[k] = hid[k]; });
+            return o;
+        }
+        function eventsFull() { return tentFullOf(events, tentHid.ev, tentOrd.ev); }
+        function reservationsFull() { let r = {}; try { r = reservations; } catch (e) { return {}; } return tentFullOf(r, tentHid.rs, tentOrd.rs); }
+        function tentApplyRole() {
+            let hide = true; try { hide = !realAdmin(); } catch (e) { hide = true; }
+            let rsv = null; try { rsv = reservations; } catch (e) { rsv = null; }   // 読み込み前
+            if (hide) {
+                const ks = Object.keys(events).filter(isTent);
+                if (!ks.length) return;
+                if (!Object.keys(tentHid.ev).length) tentOrd.ev = Object.keys(events);
+                if (rsv && !Object.keys(tentHid.rs).length) tentOrd.rs = Object.keys(rsv);
+                ks.forEach(k => {
+                    tentHid.ev[k] = events[k]; delete events[k];
+                    if (rsv && k in rsv) { tentHid.rs[k] = rsv[k]; delete rsv[k]; }
+                });
+            } else {
+                if (Object.keys(tentHid.ev).length) events = eventsFull();
+                if (rsv && Object.keys(tentHid.rs).length) reservations = reservationsFull();
+                tentHid = { ev: {}, rs: {} }; tentOrd = { ev: null, rs: null };
+            }
+        }
+        // 日付を押したときに選ぶ回: その日のいちばん早い回(閲覧モードでは確定の回を優先)。"_2" などの回を指定したときはそのまま
+        function sessPickKey(k) {
+            if (/_\d+$/.test(k)) return k;
+            const ks = sessKeysOf(k); if (!ks.length) return k;
+            let adm = true; try { adm = isAdmin(); } catch (e) { adm = true; }
+            return (adm ? null : ks.find(volOk)) || ks[0];
+        }
         function sessNewKey(d) { d = sessDay(d); if (!events[d]) return d; let n = 2; while (n < 9 && events[d + "_" + n]) n++; return d + "_" + n; }
         function formatDateKey(d) {
             const y = d.getFullYear();
@@ -5657,7 +5745,7 @@ await main();
         function saveData() {
             try {
                 localStorage.setItem(BYDATE_KEY, JSON.stringify(attendanceByDate));
-                localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+                localStorage.setItem(EVENTS_KEY, JSON.stringify(eventsFull()));   // 閲覧者の端末で外している未定の回も戻して書く
                 localStorage.setItem(PLANS_KEY, JSON.stringify(planList.filter(p => !p.local && !p.pp)));   // ペア予定は出欠データ側
                 localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify(planList.filter(p => p.local)));
                 localStorage.setItem(NEXTID_KEY, String(nextId));
@@ -6503,6 +6591,7 @@ await main();
         }
         // userTap=true(タブを押した時)だけ、タブ+中身がちょうど見える位置へスクロールする
         function switchView(view, userTap) {
+            if (["member", "teams", "settle"].includes(view) && isTent(selectedDate)) view = "reserve";   // 未定の回: 出欠・チーム分け・精算は使わない
             currentView = view;
             if (view !== "teams") { const f = document.getElementById("swapFloat"); if (f) f.remove(); if (typeof swapSel !== "undefined") swapSel = null; }
             const isMember = view === "member";
@@ -6669,7 +6758,7 @@ await main();
         function openVolleyFull() { volleyFull = true; if (isAdmin()) switchView(pickAdminTaskView()); else if (selectedDate >= formatDateKey(new Date())) switchView("member"); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
         // 管理者がバレーありにした直後の日。予約・メンバー・精算・動画に何も触らずカレンダーへ戻ったら、バレーなしに戻す
         let volleyDraft = null;
-        function volleyDaySig(k) { return JSON.stringify([attendanceByDate[k] || null, reservations[k] || null, settlements[k] || null, (typeof videos !== "undefined" ? videos : []).filter(v => v.date === k).length]); }
+        function volleyDaySig(k) { return JSON.stringify([attendanceByDate[k] || null, reservations[k] || null, settlements[k] || null, (typeof videos !== "undefined" ? videos : []).filter(v => v.date === k).length, isTent(k)]); }
         function beginVolleyDraft(k, hadAtt) { volleyDraft = { key: k, hadAtt, sig: volleyDaySig(k) }; }
         function dropUnchangedVolleyDraft() {
             const d = volleyDraft; volleyDraft = null;
@@ -6841,9 +6930,9 @@ await main();
             if (!isAdmin() || !events[selectedDate]) return;
             const [, m, d] = selectedDate.slice(0, 10).split("-").map(Number);
             if (!confirm(`${m}/${d} のバレーを削除しますか？`)) return;
-            const gl = gcalRefsFor((reservations[selectedDate] || []).map(r => "r" + selectedDate + "#" + r.id));
+            const gl = gcalRefsFor((reservations[selectedDate] || []).map(r => "r" + selectedDate + "#" + r.id)), tent = isTent(selectedDate);   // 未定の回は、Google側も聞かずに消す
             toggleEventDay(false);
-            if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl); } catch (e) { console.warn(e); } }, 50);
+            if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl, false, tent); } catch (e) { console.warn(e); } }, 50);
             { const cfg = notifyCfg(); if (cfg.vday[selectedDate]) { delete cfg.vday[selectedDate]; saveNotify(cfg); } }
             closeVolleyFull();
         }
@@ -7148,7 +7237,7 @@ await main();
             const pv = document.getElementById("ntfPv_volley"), pp = document.getElementById("ntfPv_plan");
             if (!pv || !pp) return;
             const today = formatDateKey(new Date()), daysTo = (k) => Math.max(0, Math.round((new Date(k + "T00:00") - new Date(today + "T00:00")) / 864e5));
-            const key = Object.keys(events).filter(k => events[k] && k >= today).sort()[0] || today;
+            const key = Object.keys(events).filter(k => volOk(k) && k >= today).sort(sessCmp)[0] || today;
             const tv = cfg.text.volley, g = ntfGroupsOf(attendanceByDate[key], cfg);
             const lines = [ntfFill(tv.head, daysTo(key), key)];
             (reservations[key] || []).forEach(r => { const l = `${r.time || ""} ${r.place || ""}${r.court ? " " + r.court : ""}`.trim(); if (l) lines.push(l); });
@@ -7299,7 +7388,7 @@ await main();
             b.title = `LINE通知: ${sm.text}`;
         }
         function openVolleyNtf() {
-            if (!isAdmin() || !events[selectedDate]) return;
+            if (!isAdmin() || !volOk(selectedDate)) return;   // 未定の回は通知しない
             const [, m, d] = selectedDate.slice(0, 10).split("-").map(Number);
             openNtfModal("vday", notifyCfg().vday[selectedDate], `${m}/${d} バレーの通知`, "LINEのグループに届きます");
         }
@@ -7312,6 +7401,35 @@ await main();
                 renderRoster(); renderCalendar();
                 volleyFull = true; switchView("reserve"); renderOtherPlanBox(); renderNvPanel(); window.scrollTo(0, 0);
             } else openVolleyFull();
+        }
+
+        // ------- 未定 / 確定の切り替え(管理者だけ) -------
+        function updateVbTent() {
+            const sg = document.getElementById("vbTentSeg"); if (!sg) return;
+            const t = isTent(selectedDate);
+            sg.querySelectorAll("button").forEach(b => { const on = (b.dataset.v === "1") === t; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+        }
+        // LINEのボット(GAS)はこの印を知らないので、未定のあいだはその回の通知を「なし」にしておく(確定に戻したら元の設定へ)
+        function tentNtfApply(k, on) {
+            try {
+                const cfg = notifyCfg(), cur = cfg.vday[k];
+                if (on) { if (!(cur && cur.tent)) cfg.vday[k] = cur ? { off: true, tent: true, prev: cur } : { off: true, tent: true }; }
+                else if (cur && cur.tent) { if (cur.prev) cfg.vday[k] = cur.prev; else delete cfg.vday[k]; }
+                saveNotify(cfg);
+            } catch (e) { console.warn("通知の設定を変えられませんでした。", e); }
+        }
+        // 未定: 閲覧者には見えない・アンケート/チーム分け/精算/通知なし。確定: 今までどおりの共有のバレー。切り替えても出欠・予約などの中身はそのまま残す
+        function setVolleyTent(on) {
+            const k = selectedDate;
+            if (!isAdmin() || !events[k] || on === isTent(k)) return;
+            events[k] = on ? { tent: true } : true;
+            tentNtfApply(k, on);
+            saveData();
+            renderRoster(); renderCalendar();
+            if (on && ["member", "teams", "settle"].includes(currentView)) switchView("reserve");
+            renderNvPanel();
+            try { renderDateLabel(); } catch (e) { /* ignore */ }
+            try { refreshSurveyBtn(); } catch (e) { /* ignore */ }
         }
 
         // ------- ペアモード(決まった相手とだけ共有。設定は各自の端末に保存) -------
@@ -7548,8 +7666,11 @@ await main();
             if (!el) return;
             if (volleyFull && !events[selectedDate]) volleyFull = false;   // バレーが無くなった日は全体表示を解除
             document.body.classList.toggle("nv-full", volleyFull);
+            document.body.classList.toggle("vb-tent-on", !!events[selectedDate] && isTent(selectedDate));
+            if (isTent(selectedDate) && ["member", "teams", "settle"].includes(currentView)) switchView("reserve");
             placeDayToggles();
             updateVbNtf();
+            updateVbTent();
             const rows = [];
             if (planDetailId != null && !plansOn(selectedDate).some(x => x.p.id === planDetailId)) planDetailId = null;   // 別の日に移ったら詳細は閉じる
             const rs = reservations[selectedDate] || [];
@@ -7558,7 +7679,7 @@ await main();
                 const prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean);
                 const pr = prs.length ? { s: Math.min(...prs.map(x => x.s)), e: Math.max(...prs.map(x => x.e)) } : null;
                 const places = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
-                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${IC("ball")}Volley · ${countComing(selectedDate)}</span>${gcalDayMark(selectedDate)}</div>${places ? `<div class="nv-sub">${escapeHtml(places)}</div>` : ""}</div></div>` });
+                rows.push({ ad: 1, s: pr ? pr.s : -1, html: `<div class="nv-row nv-go" onclick="openVolleyFull()"><div class="nv-time"><span>${pr ? fmtMin(pr.s) : "終日"}</span><span>${pr ? fmtMin(pr.e) : ""}</span></div><div class="nv-bar" style="background:var(--m-come-cal)"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${IC("ball")}Volley · ${isTent(selectedDate) ? "未定" : countComing(selectedDate)}</span>${gcalDayMark(selectedDate)}</div>${places ? `<div class="nv-sub">${escapeHtml(places)}</div>` : ""}</div></div>` });
             }
             { const jp = jpDay(selectedDate);
               [[jp.hol, "祝日", "var(--notcome)"], [jp.ev, "行事", "var(--ink-3)"]].forEach(([n, lb, c]) => { if (n) rows.push({ ad: -1, s: lb === "祝日" ? 0 : 1, html: `<div class="nv-row nv-jprow"><div class="nv-time"><span>${lb}</span><span></span></div><div class="nv-bar" style="background:${c}"></div><div class="nv-body"><div class="nv-ttl"><span class="nv-tt">${escapeHtml(n)}</span></div></div></div>` }); }); }
@@ -7837,10 +7958,10 @@ await main();
             (keys || []).forEach(k => (gcalRef[k] || []).forEach(g => { if (g && g.gEvId && g.gCalId && !seen[g.gCalId + "/" + g.gEvId]) { seen[g.gCalId + "/" + g.gEvId] = 1; out.push({ cal: g.gCalId, ev: g.gEvId, title: g.title || "予定" }); } }));
             return out;
         }
-        async function gcalDeleteLinked(list, solo) {   // solo=Google側だけにある予定を、このアプリから消すとき。消せたら true
+        async function gcalDeleteLinked(list, solo, quiet) {   // solo=Google側だけにある予定を、このアプリから消すとき。quiet=聞かずに消して「消しました」だけ出す(未定の回)。消せたら true
             if (!list || !list.length || !gcalIsAdmin()) return false;
             const names = list.map(x => "「" + x.title + "」").join("");
-            if (!confirm(solo ? "Googleカレンダーの " + names + " を削除しますか?\n(Googleカレンダーからも消えます)" : "Googleカレンダーにある " + names + " も一緒に削除しますか?")) return false;
+            if (!quiet && !confirm(solo ? "Googleカレンダーの " + names + " を削除しますか?\n(Googleカレンダーからも消えます)" : "Googleカレンダーにある " + names + " も一緒に削除しますか?")) return false;
             const t = gcalToken();
             if (!t) { alert("Googleとの接続が切れています。右上のGoogleから接続し直すと、Google側も消せます。"); return false; }
             let denied = false, failed = 0;
@@ -7856,8 +7977,19 @@ await main();
                 return false;
             }
             if (failed) alert("Google側の削除に失敗した予定が " + failed + " 件あります。Googleカレンダーで確認してください。");
+            else if (quiet) gcalToast("Googleカレンダーも消しました");
             gcalFetch();   // 取得し直して表示を更新
             return !failed;
+        }
+        function gcalToast(msg) {   // 画面の下に少しだけ出す短いお知らせ(押さなくても消える)
+            let el = document.getElementById("gcalToast");
+            if (!el) {
+                el = document.createElement("div"); el.id = "gcalToast"; el.setAttribute("role", "status");
+                el.style.cssText = "position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translate(-50%,8px);z-index:100000;padding:10px 18px;border-radius:20px;background:rgba(40,44,52,.88);color:#fff;font-size:13px;font-weight:600;letter-spacing:.02em;pointer-events:none;opacity:0;transition:opacity .2s ease,transform .2s ease;white-space:nowrap";
+                document.body.appendChild(el);
+            }
+            el.textContent = msg; el.style.opacity = "1"; el.style.transform = "translate(-50%,0)";
+            clearTimeout(el._t); el._t = setTimeout(() => { el.style.opacity = "0"; el.style.transform = "translate(-50%,8px)"; }, 2200);
         }
         async function deleteGcalPlan(id) {   // Googleカレンダーだけにある予定を、このアプリから消す
             const g = (gcalPlans || []).find(x => x.id === id);
@@ -7869,6 +8001,9 @@ await main();
         // e = { title, memo, location, startDate, endDate, allDay, start, end }(start・end は "HH:MM")
         const IMP_VB = /バレー|ばれー|volley/;
         function impIsVolley(e) { return IMP_VB.test(gcalNorm(e.title)); }
+        // Googleに入れるバレーの題名: 「バレー 場所 コート」(未定の回も確定と同じ題名。【未定】の付いた予定を取り込んだときだけ未定の回として入れる)
+        const GCAL_TENT_MARK = "【未定】", IMP_TENT = /[\[(【「]未定[\])】」]/;
+        function gcalResTitle(k, r) { return (`バレー ${r.place || ""}${r.court ? " " + r.court : ""}`).trim(); }
         function impTimeRange(e) { return (e.allDay || !e.start || !e.end || e.endDate) ? null : normalizeTimeRange(e.start + "-" + e.end); }   // 予約にできる時間("9:00-12:00")。終日・日またぎは null
         function impPlanDup(e) {   // 同じ日・同じ題名・同じ開始時刻の予定が、もうアプリにある
             const t = gcalNorm(e.title), st = e.allDay ? "" : (e.start || "");
@@ -7925,6 +8060,7 @@ await main();
                 });
                 list.sort((a, b) => a.time.localeCompare(b.time, "ja", { numeric: true }));
             }
+            if (!events[d] && IMP_TENT.test(String(e.title || "").normalize("NFKC"))) { events[d] = { tent: true }; tentNtfApply(d, true); }   // 【未定】の付いた予定は、新しく入れるときは未定の回に(もうある回は、未定/確定をそのまま)
             markEventDay(d);
         }
         function impCourtLabel(e) { const rs = impVolleyRes(e); const c = rs ? rs.map(x => x.court).filter(Boolean) : []; return c.length ? " ・ " + c.join("・") + (/^[A-Za-z0-9]$/.test(c[0]) ? "コート" : "") : ""; }   // 取り込み一覧に出すコート
@@ -8479,7 +8615,7 @@ await main();
         }
         function markEventDay(date) {
             if (!date) return;
-            events[date] = true;
+            if (!events[date]) events[date] = true;   // 未定の回({ tent: true })は、予約・動画を入れても未定のまま
             if (seedRosterForDay(date)) saveData();
         }
         function refreshAfterEventMark() {
@@ -11513,12 +11649,12 @@ await main();
         function surveyWho() { return myMemberName() || (isAdmin() ? surveyAdminName : ""); }
         function surveyDates() {
             const todayKey = formatDateKey(new Date());
-            return Object.keys(reservations || {}).filter(d => d >= todayKey && events[d] && (reservations[d] || []).length > 0 && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(d)).sort();
+            return Object.keys(reservations || {}).filter(d => d >= todayKey && volOk(d) && (reservations[d] || []).length > 0 && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(d)).sort();
         }
         // バレーの日を消したのに予約だけ残っている今日以降の日(前の版で消した日など)
         function orphanResvKeys() {
             const t = formatDateKey(new Date());
-            return Object.keys(reservations || {}).filter(k => k >= t && !events[k] && (reservations[k] || []).length > 0);
+            const ev = eventsFull(); return Object.keys(reservations || {}).filter(k => k >= t && !ev[k] && (reservations[k] || []).length > 0);   // 外している未定の回も「バレーあり」として見る
         }
         let svNoteFresh = new Set();   // 開いた時点でまだ見ていなかったひとこと(緑の印を付ける)
         function openSurvey() {
@@ -11781,6 +11917,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 開いている間は1分ごとに確認し、30分たっていて未回答ならもう一度出す(画面を戻したときも確認する)
         // 自動でアンケート画面へ移る処理はやめた(30分ごと・起動/更新時)
         function applyRole() {
+            tentApplyRole();
             setTimeout(() => { try { guestDevPut(false); } catch (e) { /* ignore */ } }, 3000);   // ゲストの端末を名簿に出すための記録(1日1回)
             setTimeout(() => { try { appSeenPut(false); } catch (e) { /* ignore */ } }, 3300);   // この端末の版を記録(開いたとき・版が変わったとき)
             if (rosterIdFixedCount && realAdmin()) {
@@ -11823,7 +11960,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const today = formatDateKey(new Date());
             const from = rosterStatsFrom();
             // 「来る」が1人もいない日は、出欠を記録していない日として数えない
-            const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(d) && events[d] && d < today && d >= from && (attendanceByDate[d] || []).some(m => m.status === "来る")).sort();
+            const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(d) && volOk(d) && d < today && d >= from && (attendanceByDate[d] || []).some(m => m.status === "来る")).sort();   // 未定の回は数えない
             const mst = matchStatsFrom(from);
             const rows = roster.filter(r => r.position !== GUEST_POS).map(r => {
                 let n = 0, come = 0, ans = 0, leadSum = 0, leadN = 0;
@@ -13756,7 +13893,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var propCache = null;
         function proposeNextHtml() {
             const today = formatDateKey(new Date());
-            const d = Object.keys(events).filter(k => events[k] && k >= today && (attendanceByDate[k] || []).some(m => m.status === "来る")).sort()[0];
+            const d = Object.keys(events).filter(k => volOk(k) && k >= today && (attendanceByDate[k] || []).some(m => m.status === "来る")).sort()[0];
             if (!d) return "";
             const outSet = new Set(teamOutGet(d));
             const names = (attendanceByDate[d] || []).filter(m => m.status === "来る" && !outSet.has(m.name) && findRosterByName(m.name)).map(m => m.name);
@@ -14577,7 +14714,7 @@ const namesBtn = isAdmin() && dates.length > 0
             });
             // 予測: 従来の計算(全員が切り上げ額を払った場合)
             let pred = 0, predDays = 0;
-            Object.keys(reservations).forEach(k => (reservations[k] || []).forEach(r => {
+            Object.keys(reservations).filter(k => !isTent(k)).forEach(k => (reservations[k] || []).forEach(r => {   // 未定の回は予測に入れない
                 const b = balanceFor(k, r.price);
                 if (b !== null) { pred += b; predDays++; }
             }));
@@ -14598,14 +14735,19 @@ const namesBtn = isAdmin() && dates.length > 0
                 ? ""
                 : `${rs[0].time} ${rs[0].place}${rs[0].court || ""}${rs.length > 1 ? ` +${rs.length - 1}` : ""}`;
             let gm = ""; try { gm = gcalHeaderMark(selectedDate); } catch (e) { gm = ""; }   // Googleにもある予定は題名の横に灰色で
-            const sn = sessKeysOf(selectedDate), si = sn.indexOf(selectedDate), sno = sessNoOf(selectedDate);
-            el.innerHTML = `<span class="sd-main">${m}月${d}日(${wd})${si >= 0 && (sn.length > 1 || sno > 1) ? `<small class="sd-sess"> ${sno}回目</small>` : ""}</span>${gm}<span class="sd-sub">${escapeHtml(sub)}</span>`;
+            // 何回目か: 確定の回だけで数える(未定の回は「未定」と出す)
+            const tent = isTent(selectedDate), sn = sessKeysOf(selectedDate).filter(volOk), si = sn.indexOf(selectedDate), sno = si + 1;
+            el.innerHTML = `<span class="sd-main">${m}月${d}日(${wd})${tent ? `<small class="sd-sess" style="color:var(--ink-3)"> 未定</small>` : si >= 0 && sn.length > 1 ? `<small class="sd-sess"> ${sno}回目</small>` : ""}</span>${gm}<span class="sd-sub">${escapeHtml(sub)}</span>`;
         }
         // タブの完了表示(薄い紺色)。左から順に完了したものだけ色が付く
         // 指定日のタスク状態(タブの完了・⚠️とカレンダーの⚠️で共通)
         const TASK_TAB_IDS = ["tabReserveBtn", "tabMemberBtn", "tabTeamsBtn", "tabSettleBtn", "tabVideosBtn"];
         function dayTaskState(d) {
             const todayKey = formatDateKey(new Date());
+            if (isTent(d)) {   // 未定の回: 予約のタスクだけ(出欠・チーム分け・精算の⚠️は出さない)
+                const r = (reservations[d] || []).length > 0, miss = !r && d >= todayKey;
+                return { oks: [r, false, false, false, false], warns: [miss, false, false, false, false], pastIncomplete: false, memberShortSoon: false, memberVeryShort: false, reserveMissing: miss, myUnanswered: false, mySettleUnpaid: false };
+            }
             const comers = (attendanceByDate[d] || []).filter(m => m.status === "来る").length;
             const todayOrPast = d <= todayKey;
             const isPast = d < todayKey;
@@ -14674,7 +14816,7 @@ const namesBtn = isAdmin() && dates.length > 0
             };
             const admin = isAdmin(), me = admin ? "" : myMemberName();
             if (!admin && !me) return [];
-            return Object.keys(events).filter(d => events[d] && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(d) && d >= from && d <= todayKey && ended(d)).sort().filter(d => {
+            return Object.keys(events).filter(d => volOk(d) && /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(d) && d >= from && d <= todayKey && ended(d)).sort().filter(d => {
                 const t = settleDayStats(d);
                 if (t.done) return false;
                 if (admin) return !(t.n > 0 && t.paidCount === t.n);
@@ -14875,7 +15017,7 @@ const namesBtn = isAdmin() && dates.length > 0
             } catch (e) { console.warn("予約の読み込みに失敗しました。", e); }
         }
         function saveReservations() {
-            try { localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(reservations)); }
+            try { localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(reservationsFull())); }   // 閲覧者の端末で外している未定の回の予約も戻して書く
             catch (e) { console.warn("予約の保存に失敗しました。", e); }
             renderTotalBalance();
             updateTabProgress();
@@ -14993,13 +15135,13 @@ const namesBtn = isAdmin() && dates.length > 0
         }
 
         function deleteReservation(id) {
-            const gl = gcalRefsFor(["r" + selectedDate + "#" + id]);   // 消す前にGoogle側の対応を控える
+            const gl = gcalRefsFor(["r" + selectedDate + "#" + id]), tent = isTent(selectedDate);   // 消す前にGoogle側の対応を控える(未定の回は聞かずに消す)
             const list = reservations[selectedDate] || [];
             reservations[selectedDate] = list.filter(r => r.id !== id);
             if (reservations[selectedDate].length === 0) delete reservations[selectedDate];
             saveReservations();
             renderReserveView();
-            if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl); } catch (e) { console.warn(e); } }, 50);
+            if (gl.length) setTimeout(() => { try { gcalDeleteLinked(gl, false, tent); } catch (e) { console.warn(e); } }, 50);
         }
 
         // ------- 予約スクショ取り込み(OCR → プリセット照合 → 予約へ反映) -------
@@ -15306,20 +15448,19 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!r) return;
             if (gcalResState(dateKey, r) === "g" && !confirm("Googleカレンダーにすでに入っています。もう一度追加しますか?")) return;
             gcalMarkAdded(dateKey, r);
-            const ymd = dateKey.replace(/-/g, "");
+            const ymd = sessDay(dateKey).replace(/-/g, "");   // 2回目からの回("_2")も、日付だけ
             const [st, en] = r.time.split("-").map(t => {
                 const [h, m] = t.split(":");
                 return ymd + "T" + h.padStart(2, "0") + m + "00";
             });
-            const courtTxt = r.court ? ` ${r.court}` : "";
             const detail = `${devMode ? `料金: ${yen(r.price)}\n` : ""}時間: ${r.time}${r.court ? `\nコート: ${r.court}` : ""}`;
             if (/Android/i.test(navigator.userAgent)) {
-                const q = new URLSearchParams({ action: "TEMPLATE", text: `バレー ${r.place}${courtTxt}`, dates: `${st}/${en}`, ctz: "Asia/Tokyo", location: r.address || r.place, details: detail }).toString();
+                const q = new URLSearchParams({ action: "TEMPLATE", text: gcalResTitle(dateKey, r), dates: `${st}/${en}`, ctz: "Asia/Tokyo", location: r.address || r.place, details: detail }).toString();
                 const web = "https://calendar.google.com/calendar/render?" + q;
                 location.href = `intent://calendar.google.com/calendar/render?${q}#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url=${encodeURIComponent(web)};end`;
                 return;
             }
-            const q = new URLSearchParams({ action: "TEMPLATE", text: `バレー ${r.place}${courtTxt}`, dates: `${st}/${en}`, ctz: "Asia/Tokyo", location: r.address || r.place, details: detail }).toString();
+            const q = new URLSearchParams({ action: "TEMPLATE", text: gcalResTitle(dateKey, r), dates: `${st}/${en}`, ctz: "Asia/Tokyo", location: r.address || r.place, details: detail }).toString();
             const web = "https://calendar.google.com/calendar/render?" + q;
             // 新しいタブで開く(管理アプリのタブはそのまま残る)。開けない場合のみ同じタブで開き、戻るボタンで復帰できる
             const w = window.open(web, "_blank");
@@ -15339,7 +15480,8 @@ const namesBtn = isAdmin() && dates.length > 0
             out.push(cur);
             return out.join("\r\n");
         }
-        function buildReservationsIcs(kind) {   // kind: "v" バレーだけ / "p" その他(共有された予定)だけ / なし=すべて
+        function buildReservationsIcs(kind, only) {   // kind: "v" バレーだけ / "p" その他(共有された予定)だけ / なし=すべて。only=[{ d, r }] を渡したら、そのバレーの予約だけ(未定の回も入れる)
+            if (only) kind = "v";
             const wantV = kind !== "p", wantP = kind !== "v";
             const today = formatDateKey(new Date());
             const now = new Date(), z = (n) => String(n).padStart(2, "0");
@@ -15348,21 +15490,22 @@ const namesBtn = isAdmin() && dates.length > 0
             const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Volley Schedule//JA", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + (kind === "p" ? "共有予定" : "バレー"), "X-WR-TIMEZONE:Asia/Tokyo",
                 "BEGIN:VTIMEZONE", "TZID:Asia/Tokyo", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0900", "TZOFFSETTO:+0900", "TZNAME:JST", "END:STANDARD", "END:VTIMEZONE"];
             let n = 0;
-            if (wantV) Object.keys(reservations).filter(d => d >= today && events[d]).sort().forEach(d => {
-                (reservations[d] || []).forEach((r, i) => {
+            const vItems = !wantV ? [] : only ? only.slice() : [];
+            if (wantV && !only) Object.keys(reservations).filter(d => d >= today && events[d]).sort().forEach(d => (reservations[d] || []).forEach((r, i) => vItems.push({ d, r, i })));
+            vItems.forEach(({ d, r, i }) => {
+                {
                     const t = parseTimeRangeMin(r.time);
                     if (!t) return;
-                    const ymd = d.replace(/-/g, "");
+                    const ymd = sessDay(d).replace(/-/g, "");   // 2回目からの回("_2")も、日付だけ
                     const hm = (v) => z(Math.floor(v / 60) % 24) + z(v % 60) + "00";
                     const endDay = t.e >= 1440 ? (() => { const x = new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10) + 1); return x.getFullYear() + z(x.getMonth() + 1) + z(x.getDate()); })() : ymd;
                     const uid = `volley-${d}-${r.id != null ? r.id : i}@volley-schedule`;
-                    const court = r.court ? ` ${r.court}` : "";
                     L.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp, "LAST-MODIFIED:" + stamp, "SEQUENCE:" + seq,
                         `DTSTART;TZID=Asia/Tokyo:${ymd}T${hm(t.s)}`, `DTEND;TZID=Asia/Tokyo:${endDay}T${hm(t.e >= 1440 ? 0 : t.e)}`,
-                        "SUMMARY:" + icsEsc(`バレー ${r.place || ""}${court}`.trim()), "LOCATION:" + icsEsc(r.address || r.place || ""),
+                        "SUMMARY:" + icsEsc(gcalResTitle(d, r)), "LOCATION:" + icsEsc(r.address || r.place || ""),
                         "DESCRIPTION:" + icsEsc(`時間: ${r.time}${r.court ? "\nコート: " + r.court : ""}`), "END:VEVENT");
                     n++;
-                });
+                }
             });
             const dk = x => x.getFullYear() + z(x.getMonth() + 1) + z(x.getDate());
             if (wantP) sharedPlanFuture().forEach(p => {   // 共有された予定
@@ -15404,10 +15547,12 @@ const namesBtn = isAdmin() && dates.length > 0
             el.innerHTML = `<div class="an-box" role="alertdialog" aria-modal="true"><i class="ic ic-warn"></i><div class="an-msg">${escapeHtml(msg)}</div><button type="button" class="op-add" onclick="document.getElementById('addNotice').classList.remove('show')">OK</button></div>`;
             el.classList.add("show");
         }
-        async function exportReservationsIcs(kind) {
-            const { text, count } = buildReservationsIcs(kind);
+        async function exportReservationsIcs(kind, only) {   // only=[{ d, r }]: その予約だけ(バレーの一括追加の画面から)
+            if (only) kind = "v";
+            const { text, count } = buildReservationsIcs(kind, only);
+            if (!count && only) { alert("追加できる予定がありません(時間が入っている予約)"); return; }
             if (!count) { alert(kind === "p" ? "追加できる予定がありません(今日以降の、共有された予定)" : kind === "v" ? "追加できる予定がありません(今日以降の、時間が入っているバレーの予約)" : "追加できる予定がありません(今日以降の、時間が入っている予約と、共有された予定)"); return; }
-            { const map = gcalAddedMap(), dup = calItems(map, kind).filter(x => x.done).length;
+            { const map = gcalAddedMap(), dup = only ? only.filter(x => gcalIsAdded(x.d, x.r, map)).length : calItems(map, kind).filter(x => x.done).length;
               if (dup) showAddNotice(`${dup}件はすでに追加済みでした。カレンダーに同じ予定が2つ入っていたら、片方を消してください。`); }
             const blob = new Blob([text], { type: "text/calendar;charset=utf-8" });
             const url = URL.createObjectURL(blob);
@@ -15470,7 +15615,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function gcalFutureList() {
             const today = formatDateKey(new Date()), out = [];
-            Object.keys(reservations).filter(d => d >= today && events[d]).sort().forEach(d => (reservations[d] || []).forEach(r => { if (parseTimeRangeMin(r.time)) out.push({ d, r }); }));
+            Object.keys(reservations).filter(d => d >= today && events[d]).sort().forEach(d => (reservations[d] || []).forEach(r => { if (parseTimeRangeMin(r.time)) out.push({ d, r }); }));   // 未定の回も確定と同じく入れる
             return out;
         }
         // ------- 人から共有された予定(共有予定・ペア予定のうち、自分が作ったものではない、今日以降のもの)も、バレーの予約と同じく一括追加できるようにする -------
@@ -15919,7 +16064,8 @@ const namesBtn = isAdmin() && dates.length > 0
         //   名簿・チーム分けを開くときには聞かない
         function isVolleyToday() {
             const k = formatDateKey(new Date());
-            return !!(events && events[k]) || !!(reservations && reservations[k] && reservations[k].length);
+            // 未定の回は「バレーの日」としない(確定の回があるか、バレーの印のない日に予約があるとき)
+            return sessKeysOf(k).some(volOk) || (!events[k] && !!(reservations && reservations[k] && reservations[k].length));
         }
         let devAskCallback = null;
         let devAskCancelCb = null;
@@ -16520,6 +16666,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "button") return true;
             if (typeof planPanelIsOpen === "function" && planPanelIsOpen()) return true;
             if (typeof rotDraft !== "undefined" && rotDraft) return true;   // ローテを入れている間
+            if (typeof vba !== "undefined" && vba && vba.rows.length && !vba.done) return true;   // バレー予定の一括追加で、まだ入れていない行がある間
             if (typeof currentView !== "undefined" && currentView === "teams" && lastTeamSplitResult) return true;
             return false;
         }
@@ -16557,8 +16704,8 @@ const namesBtn = isAdmin() && dates.length > 0
         window.addEventListener("pageshow", e => { if (e.persisted) onResume(); });
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
-        const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611112317;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        const APP_VERSION = 5;
+        var APP_BUILD_ID = 202611120122;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -16716,7 +16863,7 @@ const namesBtn = isAdmin() && dates.length > 0
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
             // 上に重なる画面(ローテ・フォーム分析・ペアなど)が開いているあいだは、引っぱって更新しない(編集の途中で読み直さない)
             const ptrOverlayOpen = () => editOverlayOpen();   // daySheet などは閉じていても display が残るので入れない(押した場所で別に止めている)
-            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #prFind, #prCal .pr-mhead, #rotOv, #fxOv, #pairOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
+            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #protoVbAdd, #prFind, #prCal .pr-mhead, #rotOv, #fxOv, #pairOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
                 || document.body.style.overflow === "hidden";
             const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
             document.addEventListener("touchstart", e => {
@@ -16750,7 +16897,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 更新ボタン: 見ていた日付・タブ・位置を保ったまま、最新の共有データで再読み込みする
         // ------- 更新の知らせ・書く画面を開くときの更新 -------
         const shownEl = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
-        function protoAwayNow() { return ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "savingOv", "rotOv", "fxOv"].some(shownEl) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full"); }
+        function protoAwayNow() { return ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoVbAdd", "savingOv", "rotOv", "fxOv"].some(shownEl) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full"); }
         // 今いる画面(読み直したあとに同じ画面を開き直すため)
         function protoCurKind() {
             if (shownEl("protoSv") || shownEl("surveyOv")) return "survey";
@@ -16815,7 +16962,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (!document.body.classList.contains("proto-on")) return;
                 const shown = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
                 const busy = ["rotOv", "fxOv", "pairOv"].some(shown);
-                const now = ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "savingOv"].some(shown) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full");
+                const now = ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoVbAdd", "savingOv"].some(shown) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full");
                 if (now) { protoBackWasAway = true; return; }   // まだ別の画面
                 if (!protoBackWasAway) return;   // 別の画面から戻ったときだけ
                 protoBackWasAway = false;
@@ -16989,6 +17136,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if ((user ? user.uid : "") !== authUid) return;   // 待っている間に別のアカウントに切り替わった
                 firestoreEditor = editor;
                 editorResolved = true;
+                tentApplyRole();   // 管理者なら未定の回を戻す / 閲覧者なら外す
                 if (firestoreEditor) {
                     setFirestoreSyncStatus("管理者");
                     if (!firestoreHasDocument) saveToFirestore();
@@ -17018,6 +17166,7 @@ const namesBtn = isAdmin() && dates.length > 0
         loadVideoLib();
         loadReservations();
         loadSettlements();
+        tentApplyRole();   // 閲覧者の端末では未定の回を外す(管理者かどうかが分かったら applyRole で戻す)
         renderTotalBalance();
         applyDevMode();
         loadTeamMemberOpen();
@@ -17132,8 +17281,10 @@ const namesBtn = isAdmin() && dates.length > 0
             // バレー日
             const ev0 = a[EVENTS_KEY] || {}, ev1 = b[EVENTS_KEY] || {};
             // 2回押しなどでバレーの画面を開いただけ(まだ何も入れていない下書き)は記録しない。何か入れた時点で「バレー日にした」を出す
-            Object.keys(ev1).filter(k => ev1[k] && !ev0[k]).sort().forEach(k => { if (clIsDraft(k)) { clDraftPending.add(k); return; } out.push(`${clMd(k)} をバレー日にした`); });
+            Object.keys(ev1).filter(k => ev1[k] && !ev0[k]).sort().forEach(k => { if (clIsDraft(k)) { clDraftPending.add(k); return; } out.push(`${clMd(k)} をバレー日にした${typeof ev1[k] === "object" && ev1[k].tent ? "(未定)" : ""}`); });
             Object.keys(ev0).filter(k => ev0[k] && !ev1[k]).sort().forEach(k => { if (clDraftPending.delete(k)) return; out.push(`${clMd(k)} のバレー日を解除した`); });
+            const tn = v => !!(v && typeof v === "object" && v.tent);   // 未定 / 確定の切り替え
+            Object.keys(ev1).filter(k => ev1[k] && ev0[k] && tn(ev0[k]) !== tn(ev1[k])).sort().forEach(k => out.push(`${clMd(k)} のバレーを${tn(ev1[k]) ? "未定" : "確定"}にした`));
             // 出欠
             const at0 = a[BYDATE_KEY] || {}, at1 = b[BYDATE_KEY] || {};
             const adds = {}, dels = {}, chg = [];
@@ -17990,8 +18141,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 const rs = reservations[k] || [];
                 const prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean);
                 const s0 = prs.length ? Math.min(...prs.map(x => x.s)) : null, e0 = prs.length ? Math.max(...prs.map(x => x.e)) : null;
-                const n = countComing(k), tri = (attendanceByDate[k] || []).filter(m => m.status === "未定").length;
-                return { n, tri, no: declinedVol(k), cap: thresholds.cyanMax, col: LV[getStatusLevel(n)], s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
+                const tent = isTent(k);   // 未定の回: 人数・出欠は数えない(リングの真ん中は「未」)
+                const n = tent ? 0 : countComing(k), tri = tent ? 0 : (attendanceByDate[k] || []).filter(m => m.status === "未定").length;
+                return { tent, n, tri, no: !tent && declinedVol(k), cap: thresholds.cyanMax, col: tent ? P.ink3 : LV[getStatusLevel(n)], s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
             };
 
             // ---------- 選んだ日(入力中は、入れようとしている日) ----------
@@ -18008,8 +18160,8 @@ const namesBtn = isAdmin() && dates.length > 0
             // 今日のバレーが終わった(終わりの時刻を過ぎた)ら: 今日のバレーはそのまま出し(精算などで迷わないように)、次のバレーを「NEXT」として小さく予告する
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
             const volDone = (k) => { if (sessDay(k) < todayKey) return true; if (sessDay(k) > todayKey) return false; const v = volInfo(k); if (!v || v.s == null) return false; const e = v.e != null && v.e > v.s ? v.e : v.s + 120; return nowMin >= e; };
-            const nextKey = sv ? selS : Object.keys(events).filter(k => events[k] && k >= todayKey && !volDone(k)).sort()[0];
-            const upKey = !pinOpen && sv && sel === todayKey && volDone(selS) ? Object.keys(events).filter(k => events[k] && k > selS && !volDone(k)).sort()[0] : null;
+            const nextKey = sv ? selS : Object.keys(events).filter(k => volOk(k) && sessDay(k) >= todayKey && !volDone(k)).sort(sessCmp)[0];   // 未定の回は「次」にしない
+            const upKey = !pinOpen && sv && sel === todayKey && volDone(selS) ? Object.keys(events).filter(k => volOk(k) && k !== selS && sessDay(k) >= sel && !volDone(k)).sort(sessCmp)[0] : null;   // 2回ある日は、まだ終わっていない同じ日の回も
             const up = upKey ? volInfo(upKey) : null;
             const vv = pin ? null : nextKey ? volInfo(nextKey) : null;
             // 大きな文字盤: 底=人数の12マス、内側の半分=選んだ日の予定(半透明)
@@ -18066,7 +18218,13 @@ const namesBtn = isAdmin() && dates.length > 0
                 const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.4;
                 fills.push(...hArcs(x.h1, e, pin ? `color-mix(in srgb, ${x.col} 35%, ${P.bot})` : x.col, arcAn));
             });
-            if (sv && sv.s != null) fills.push(...hArcs(hmv(sv.s), hmv(sv.e), pin ? `color-mix(in srgb, ${P.ink2} 35%, ${P.bot})` : sv.no ? `color-mix(in srgb, ${P.ink2} 32%, transparent)` : P.ink2, arcAn));   // ✖にしたバレーは、時間の弧を半透明に
+            // バレーの時間の弧: 2回ある日は全部の回(選んでいる回は濃く、ほかの回は少し淡く)。✖にしたバレーは半透明に
+            const selSs = sessKeysOf(sel);
+            selSs.forEach(sk => {
+                const v = sk === selS ? sv : volInfo(sk); if (!v || v.s == null) return;
+                const col = pin ? `color-mix(in srgb, ${P.ink2} 35%, ${P.bot})` : v.no ? `color-mix(in srgb, ${P.ink2} 32%, transparent)` : sk === selS || selSs.length < 2 ? P.ink2 : `color-mix(in srgb, ${P.ink2} 58%, transparent)`;
+                fills.push(...hArcs(hmv(v.s), hmv(v.e), col, arcAn));
+            });
             if (pin && !pin.empty) {   // 入れようとしている予定: 選んだ色で(終日・何日も続く日は全部)
                 const s0 = parseHM(pin.st), e0 = parseHM(pin.et), pc = C[planColor] || C[0];
                 if (pin.allDay || s0 == null) fills.push(...hArcs(0, 24, pc, null));
@@ -18092,7 +18250,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const OPTS = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"]];   // 並びは ○ ✖ △(今のアンケートと同じ)
             const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger };
             const idx = OPTS.findIndex(([st]) => st === myAns);
-            const segHtml = `<div onclick="event.stopPropagation()" style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;max-width:160px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
+            const segFor = vv && nextKey && sessKeysOf(nextKey).length > 1 ? `${+nextKey.slice(5, 7)}/${+nextKey.slice(8, 10)} ${vv.s != null ? fmtMin(vv.s) + "〜" : "時間未定"} ${vv.place}` : "";   // 2回ある日: この○✖△がどの回の出欠か
+            const segHtml = vv && vv.tent ? "" : `<div onclick="event.stopPropagation()" role="group" aria-label="出欠${segFor ? `(${esc(segFor)})` : ""}"${segFor ? ` title="${esc(segFor)} の出欠"` : ""} style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;max-width:160px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
                 ${idx >= 0 ? L(`position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 3 * ${idx});width:calc((100% - 8px) / 3);border-radius:15px;${raiseS}`) : ""}
                 ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg>${myMem ? protoHapHtml() : ""}</button>`).join("")}
             </div>`;
@@ -18103,7 +18262,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const endsHere = multi && last && !first && !p.allDay && e0 != null;   // 連続の最終日: 終わりの時間
                 return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", sub: planRsvpOn(p) ? `○${planComing(p)}` : "", gc: gcalPlanMap[p.id] ? "G" : "", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
             });
-            if (!pin) sessKeysOf(sel).forEach(sk => { const v = volInfo(sk); if (v) rows.push({ vol: true, no: !!v.no, k: sk, t: v.s != null ? fmtMin(v.s) : "—", title: "バレー", sub: v.place || "", gc: gcalHeaderLabel(sk), col: P.ink2, min: v.s != null ? v.s : 0 }); });   // 2回ある日は1回ずつ;
+            if (!pin) sessKeysOf(sel).forEach((sk, i, a) => { const v = volInfo(sk); if (v) rows.push({ vol: true, no: !!v.no, tent: v.tent, k: sk, cur: a.length > 1 && sk === selS, t: v.s != null ? fmtMin(v.s) : "—", title: v.tent ? "バレー(未定)" : "バレー", sub: v.place || "", gc: gcalHeaderLabel(sk), col: P.ink2, min: v.s != null ? v.s : 0 }); });   // 2回ある日は1回ずつ;
             // そろそろ: いつもの間隔なら、そろそろ入りそうな予定(描くたびに1回だけ数える。マスごとには数えない)
             const soon = protoSoonOn && !pin ? protoSoonCalc(todayKey) : null;
             protoSoonSel = soon ? (soon.get(sel) || []) : [];
@@ -18149,7 +18308,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 予定は日付の下に「何があるか」を小さく。連続予定は日をまたいでつながる帯
                 const col7 = i % 7;
                 const items = [];
-                vs.forEach(x => items.push({ t: "バレー", col: x.col, vol: true, s: x.s, no: !!x.no }));
+                vs.forEach(x => items.push({ t: x.tent ? "バレー(未)" : "バレー", col: x.col, vol: true, tent: x.tent, s: x.s, no: !!x.no }));   // 未定の回: 点は点線の丸・題名は薄く
                 plansOn(k).forEach(({ p, first, last }) => {
                     if (pin && p.id === planEditId) return;
                     const col = C[+p.color || 0] || C[0];
@@ -18169,7 +18328,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const pidA = x => x.pid != null ? ` data-pid="${esc(String(x.pid))}"` : "";   // つかんで動かすときに、どの予定かわかるように
                 const lineHtml = lines.map(x => `<i${pidA(x)} style="display:block;height:3px;margin:0 ${x.r ? 6 : 0}px 0 ${x.l ? 6 : 0}px;border-radius:${x.l ? 2 : 0}px ${x.r ? 2 : 0}px ${x.r ? 2 : 0}px ${x.l ? 2 : 0}px;background:${x.col}"></i>`).join("");
                 const dotHtml = dots.slice(0, MAXD).map(x => x.vol
-                    ? `<i style="width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:2px solid ${x.col}${x.no ? ";opacity:.38" : ""}"></i>`
+                    ? `<i style="width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:${x.tent ? `1.4px dashed ${x.col}` : `2px solid ${x.col}`}${x.no ? ";opacity:.38" : x.tent ? ";opacity:.75" : ""}"></i>`
                     : `<i${pidA(x)} style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
                 const gh = soon && inM && k >= todayKey ? soon.get(k) : null;   // そろそろ(見ている月の、今日から先の日だけ)
                 const ghDot = gh && dots.length < MAXD ? `<i class="pr-soon" style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px dashed ${P.ink3}"></i>` : "";   // 点線の小さな丸
@@ -18186,7 +18345,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     // 1日の予定(バレーも)は線なしで題名だけ / 3行まで(残りは右上に +N) / 過ぎた日は薄く
                     let dotsT = dots.slice().sort((a, b) => (a.hol ? 1 : 0) - (b.hol ? 1 : 0) || (a.s == null ? -1 : a.s) - (b.s == null ? -1 : b.s));
                     if (lines.length + dotsT.length > 3) dotsT = dotsT.filter(x => !x.hol);   // ほかの予定が隠れる日は、休日にした予定は出さない   // 1日の予定は時刻順(終日 → 朝 → 夜)
-                    const sg = dotsT.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"${pidA(x)}><b style="color:${x.col};--c:${x.col}${x.no ? ";opacity:.38" : ""}">${esc(word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
+                    const sg = dotsT.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"${pidA(x)}><b style="color:${x.col};--c:${x.col}${x.no ? ";opacity:.38" : x.tent ? ";opacity:.6" : ""}">${esc(x.tent ? "バレー(未)" : word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
                     const room = 3;
                     // 連続予定が階段状になると、上の段が空いた日は透明の線が1行ぶん場所をとって、3つしか予定がないのに下の1つがはみ出す。
                     // はみ出すときは、その空いた段に1日の予定を入れて詰める(線の高さは隣の日とそろったまま)
@@ -18210,34 +18369,36 @@ const namesBtn = isAdmin() && dates.length > 0
             const sdue = !pin && typeof settleDueDays === "function" ? settleDueDays() : [];   // 精算が終わっていない日(予定の行と同じ見た目で、いちばん下に1行)
             // 精算が終わっていない日: バレーの時間の横に、お金のアイコンと日付だけ(押すと精算の画面)
             const coin = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 7.5 12 12l3.5-4.5M12 12v5M9 13h6M9 15.5h6"></path></svg>`;
-            const sdueHtml = sdue.length ? `<span role="button" tabindex="0" onclick="event.stopPropagation();openSettleDue()" title="精算が終わっていない日${sdue.length > 1 ? `(ほか${sdue.length - 1}日)` : ""}" style="display:inline-flex;align-items:center;gap:2px;margin-left:7px;flex:none;color:${P.red};font-family:${en};font-size:11px;font-weight:700;cursor:pointer">${coin}${nextKey && nextKey !== sel && vv ? "" : `${+sdue[0].slice(5, 7)}/${+sdue[0].slice(8)}`}</span>` : "";   // 「NEXT 11/7」で幅が足りないときはアイコンだけ
+            const sdueHtml = sdue.length ? `<span role="button" tabindex="0" onclick="event.stopPropagation();openSettleDue()" title="精算が終わっていない日${sdue.length > 1 ? `(ほか${sdue.length - 1}日)` : ""}" style="display:inline-flex;align-items:center;gap:2px;margin-left:7px;flex:none;color:${P.red};font-family:${en};font-size:11px;font-weight:700;cursor:pointer">${coin}${nextKey && sessDay(nextKey) !== sel && vv ? "" : `${+sdue[0].slice(5, 7)}/${+sdue[0].slice(8, 10)}`}</span>` : "";   // 「NEXT 11/7」で幅が足りないときはアイコンだけ
             const headHtml = `
               <div class="pr-head" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${raise}">
                 <div class="pr-headrow" style="display:flex;align-items:center;gap:20px;height:${up ? 164 : 158}px">
-                  <div class="pr-dial${vv && nextKey !== sel ? " pr-dial-next" : ""}" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
+                  <div class="pr-dial${vv && sessDay(nextKey) !== sel ? " pr-dial-next" : ""}" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${upRing}${hand}${vv ? protoRippleHtml(hAn, vv.col) : ""}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
-                      <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}">${vv ? vv.n : sd}</span>
-                      <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? `/ ${vv.cap}人` : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
+                      <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}${vv && vv.tent ? ";font-family:'Noto Sans JP', system-ui, sans-serif;font-weight:700" : ""}">${vv ? (vv.tent ? "未" : vv.n) : sd}</span>
+                      <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? (vv.tent ? "TBD" : `/ ${vv.cap}人`) : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
                       ${up ? `<span style="font-family:${en};font-size:8px;font-weight:700;letter-spacing:.1em;color:${P.ink3};margin-top:2px">NEXT <b style="font-size:10px;color:${up.col}">${up.n}</b></span>` : ""}
                     </div>
                   </div>
                   <div id="prDayInfo" class="${Date.now() < protoFlashUntil ? "pr-flash" : ""}" style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;--fl:${P.acc};${Date.now() < protoFlashUntil ? `animation-delay:-${Date.now() - (protoFlashUntil - PROTO_FLASH_MS)}ms` : ""}">
-                    <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${vv && nextKey !== sel ? (t => t ? `<span style="font-size:10.5px;font-weight:600;color:${P.red};white-space:nowrap">${t}</span>` : "")((() => {
+                    <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${vv && sessDay(nextKey) !== sel ? (t => t ? `<span style="font-size:10.5px;font-weight:600;color:${P.red};white-space:nowrap">${t}</span>` : "")((() => {
                         // 選んだ日の週(月曜〜日曜)にバレーが1日もなければ「今週なし」
                         const wk = d0 => { const t = new Date(d0.slice(0, 10) + "T00:00:00"); t.setDate(t.getDate() - (t.getDay() + 6) % 7); return formatDateKey(t); };
                         const ws = wk(sel), days = []; { const t = new Date(ws.slice(0, 10) + "T00:00:00"); for (let i = 0; i < 7; i++) { days.push(formatDateKey(t)); t.setDate(t.getDate() + 1); } }
-                        if (days.some(k => events[k])) return "";   // その週のほかの日にあるときは出さない
+                        if (days.some(k => sessKeysOf(k).some(volOk))) return "";   // その週のほかの日にあるときは出さない(未定の回は数えない)
                         return "今週なし";
                     })()) : ""}${wxSel ? `<span aria-label="天気" style="display:inline-flex;align-items:center;gap:3px;flex:none;font-family:${en};font-size:10.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${protoWxIco(wxSel.kind, 11)}${esc(wxSel.txt)}</span>` : ""}${!vv ? sdueHtml : ""}${holP ? `<span role="button" tabindex="0" onclick="protoRow(${holP.p.id})" style="font-size:10.5px;color:${P.red};white-space:nowrap;cursor:pointer">休日</span>` : ""}${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
                     ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;cursor:pointer">
-                      <span style="display:flex;align-items:center;min-width:0;font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap"><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${nextKey === sel ? "VOLLEY" : `<span style="color:${P.ink3};font-weight:600">NEXT ${+nextKey.slice(5, 7)}/${+nextKey.slice(8)}</span> <span style="font-size:9.5px;color:${P.ink3};opacity:.8">${WEN[new Date(nextKey.slice(0, 10) + "T00:00:00").getDay()].slice(0, 3).toUpperCase()}</span>`}</b>　${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>${sdueHtml}</span>
+                      <span style="display:flex;align-items:center;min-width:0;font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap"><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${sessDay(nextKey) === sel ? (vv.tent ? `VOLLEY <span style="color:${P.ink3};font-weight:600">未定</span>` : "VOLLEY") : `<span style="color:${P.ink3};font-weight:600">NEXT ${+nextKey.slice(5, 7)}/${+nextKey.slice(8, 10)}</span> <span style="font-size:9.5px;color:${P.ink3};opacity:.8">${WEN[new Date(nextKey.slice(0, 10) + "T00:00:00").getDay()].slice(0, 3).toUpperCase()}</span>`}</b>　${sessKeysOf(nextKey).length > 1   // 2回ある日: どの回の出欠か分かるように、時間と場所を(下の一覧で選んでいる回と同じ色で)
+                        ? `<span style="color:${P.acc};font-weight:600">${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"} ${esc(vv.place)}</span>`
+                        : vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>${sdueHtml}</span>
                       ${segHtml}</div>` : ""}
                     ${up ? `<div role="button" tabindex="0" aria-label="次のバレーの日へ" onclick="protoPick('${upKey}')" style="display:flex;align-items:center;gap:6px;min-width:0;font-family:${en};font-size:11px;color:${P.ink3};cursor:pointer;white-space:nowrap;overflow:hidden">
-                      <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
+                      <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8, 10)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
                     <div style="position:relative">
                       <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 2 * PROTO_ROW_H : 3 * PROTO_ROW_H}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > visN ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
-                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" ${r.soon != null ? `class="pr-soon" aria-label="${esc(r.title)} を入れる" ` : ""}onclick="${r.soon != null ? `protoSoonAdd(${r.soon})` : r.vol ? `protoVol('${r.k || sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer${r.no ? ";opacity:.42" : ""}">${r.soon != null ? `<i style="width:8px;height:8px;margin:0 -1.5px;border-radius:50%;flex:none;box-sizing:border-box;border:1.2px dashed ${P.ink3}"></i>` : `<i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.col}"></i>`}<span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:${r.gc ? "0 1 auto" : "1"};min-width:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}${r.sub ? `<span style="margin-left:6px;font-size:11px;font-weight:500;color:${P.ink3}">${esc(r.sub)}</span>` : ""}</span>${r.gc ? `<span class="gc-mark" title="Googleカレンダーにもあります" style="flex:none;margin-left:0">${r.gc}</span><span style="flex:1"></span>` : ""}</div>`).join("") : ""}
+                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" ${r.soon != null ? `class="pr-soon" aria-label="${esc(r.title)} を入れる" ` : ""}onclick="${r.soon != null ? `protoSoonAdd(${r.soon})` : r.vol ? `protoVol('${r.k || sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer${r.no ? ";opacity:.42" : ""}${r.cur ? `;margin:0 -6px;padding:0 6px;border-radius:10px;${insetS}` : ""}"${r.cur ? ` aria-current="true"` : ""}>${r.soon != null ? `<i style="width:8px;height:8px;margin:0 -1.5px;border-radius:50%;flex:none;box-sizing:border-box;border:1.2px dashed ${P.ink3}"></i>` : `<i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.cur ? P.acc : r.col}"></i>`}<span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:${r.gc ? "0 1 auto" : "1"};min-width:0;font-size:11px;font-weight:${r.cur ? 700 : 600};${r.cur ? `color:${P.acc};` : ""}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}${r.sub ? `<span style="margin-left:6px;font-size:11px;font-weight:500;color:${P.ink3}">${esc(r.sub)}</span>` : ""}</span>${r.gc ? `<span class="gc-mark" title="Googleカレンダーにもあります" style="flex:none;margin-left:0">${r.gc}</span><span style="flex:1"></span>` : ""}</div>`).join("") : ""}
                       </div>
                       <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
                     </div>
@@ -18429,7 +18590,7 @@ const namesBtn = isAdmin() && dates.length > 0
             vks.forEach(vk => {   // 2回ある日は1回ずつ
                 const rs = reservations[vk] || [], prs = rs.map(r => parseTimeRangeMin(r.time)).filter(Boolean);
                 const place = [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
-                rows.push(row(`closePlanDetail();protoVol('${vk}')`, prs.length ? fmtMin(Math.min(...prs.map(x => x.s))) : "", "バレー" + (place ? " " + place : ""), `○${countComing(vk)}`, "var(--sn-ink3)"));
+                rows.push(row(`closePlanDetail();protoVol('${vk}')`, prs.length ? fmtMin(Math.min(...prs.map(x => x.s))) : "", (isTent(vk) ? "バレー(未定)" : "バレー") + (place ? " " + place : ""), isTent(vk) ? "" : `○${countComing(vk)}`, "var(--sn-ink3)"));   // 未定の回は人数を出さない
             });
             ps.forEach(p => rows.push(row(`openPlanDetail(${Number(p.id)})`, planTimed(p) && p.start ? p.start : "終日", p.title || "予定", planRsvpOn(p) ? `○${planComing(p)}` : (p.memo ? p.memo : ""), (window.PROTO_C || [])[+p.color || 0] || "var(--sn-ink3)")));
             ov.querySelector(".prd-sheet").innerHTML = `<div class="nv-detail pds"><div class="pd-head"><div class="pd-ttl">${mm}/${dd}(${wd})</div></div><div class="pds-list">${rows.join("")}</div><div class="pd-acts"><span class="op-grow" style="flex:1"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button></div></div>`;
@@ -18455,7 +18616,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             const now = Date.now(), dbl = protoTapK === k && now - protoTapAt < PROTO_DBL_MS;
             protoTapK = k; protoTapAt = now;
-            if (k === selectedDate) {
+            if (k === selectedDate || (k.length === 10 && sessDay(selectedDate) === k)) {   // 2回ある日の別の回を開いていても、同じ日を押したとき
                 clearTimeout(protoFlashT);
                 if (dbl) {   // ダブルタップ
                     protoTapK = null;
@@ -18471,7 +18632,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const f0 = document.querySelector("#prCal .pr-face"), from = f0 ? f0.getBoundingClientRect() : null;
             const sameMonth = protoYM && protoYM[0] === y && protoYM[1] === m;
             protoYM = [y, m];
-            selectDate(k);
+            selectDate(sessPickKey(k));   // 日付を押したら、その日のいちばん早い回(閲覧モードは確定の回を先に)
             if (sameMonth) protoFaceSlide(from);
         }
         // カレンダーを横にスライドして月を移る(指・マウスどちらでも)
@@ -18655,11 +18816,13 @@ const namesBtn = isAdmin() && dates.length > 0
         const PR_RAD_SUB = [
             { k: "volley", label: "Volley", run: () => addChooseVolley() },
             { k: "plan", label: "予定", run: () => addChoosePlan() },
-            { k: "saving", label: "節約", run: () => openSaving() }
+            { k: "saving", label: "節約", run: () => openSaving() },
+            { k: "vbulk", label: "まとめて", run: () => openVbAdd() }   // バレー予定の一括追加(管理者だけ。この中身は管理者にしか出さない)
         ];
         PR_RAD_ICONS.volley = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5c-1.5 4 .5 8 5.5 9.5M5 7.5c3.5 2.5 8 2 10.5-2.5M5.5 16.5c2-3.5 6.5-5 10-3.5"></path></svg>`;
         PR_RAD_ICONS.plan = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path></svg>`;
         PR_RAD_ICONS.google = `<b style="font-size:18px;font-weight:800;line-height:1;font-family:'Montserrat',system-ui,sans-serif">G</b>`;
+        PR_RAD_ICONS.vbulk = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="13" height="13" rx="3"></rect><path d="M3.5 9.5h13M7.5 3.5v3.5M12.5 3.5v3.5"></path><path d="M19.5 9v8M15.5 13h8" stroke-width="1.9"></path></svg>`;
         PR_RAD_ICONS.saving = `<b style="font-size:17px;font-weight:800;line-height:1">¥</b>`;
         const PR_RAD_HOLD = 300;
         var prRad = null;   // { x, y, sx, sy, timer, open, sel, tap }
@@ -19349,7 +19512,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const okK = k => /^\d{4}-\d\d-\d\d(_\d+)?$/.test(String(k || ""));   // 日付の形でないもの(壊れたデータ)は出さない
             const rows = planList.filter(p => p && !p.deleted && okK(p.startDate) && (!p.endDate || okK(p.endDate)) && planHas(p) && planVisible(p) && !!p.title && hit(p.title))
                 .map(p => ({ k: p.startDate, e: p.endDate && p.endDate !== p.startDate ? p.endDate : "", t: p.title, n: normName(p.title), col: C[+p.color || 0] || C[0] }));
-            if (hit("バレー")) Object.keys(events).filter(k => events[k] && /^\d{4}-\d\d-\d\d(_\d+)?$/.test(k)).forEach(k => rows.push({ k, e: "", t: "バレー", n: normName("バレー"), col: P.ink2, vol: true }));
+            if (hit("バレー")) Object.keys(events).filter(k => events[k] && /^\d{4}-\d\d-\d\d(_\d+)?$/.test(k)).forEach(k => rows.push({ k, e: "", t: isTent(k) ? "バレー(未定)" : "バレー", n: normName("バレー"), col: P.ink2, vol: true }));
             // 並べる日: 今日をまたいで続いている予定は「今日」として(今日より前の行の下に沈まないように)
             const tk = formatDateKey(new Date());
             rows.forEach(r => { r.o = r.k < tk && r.e && r.e >= tk ? tk : r.k; });
@@ -19559,7 +19722,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const tk = formatDateKey(new Date());
                 const days = []; { const d = new Date(r.sd.slice(0, 10) + "T00:00:00"), e = r.ed || r.sd; for (let i = 0; i < 60; i++) { const k = formatDateKey(d); if (k > e) break; days.push(k); d.setDate(d.getDate() + 1); } }
                 const hit = days.find(k => {
-                    if (k < tk || !events[k]) return false;
+                    if (k < tk || !volOk(k)) return false;
                     const mem = (attendanceByDate[k] || []).find(m => m.name === who);
                     if (!mem || mem.status === "来ない") return false;
                     if (r.ed) return true;   // 何日も続く予定(旅行など)
@@ -19813,7 +19976,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const tab = protoCalTab === "p" ? "p" : "v", list = tab === "p" ? listP : listV, todo = list.filter(x => !x.done);   // 一括追加は、いま出している方だけ
             const head = `<div style="display:flex;align-items:center;gap:12px">
                 <button type="button" aria-label="戻る" onclick="protoCloseCal()" style="width:40px;height:40px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${ico('<path d="M15 5l-7 7 7 7"></path>')}</button>
-                <span style="flex:1;font-family:${en};font-size:11px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">CALENDAR</span></div>`;
+                <span style="flex:1;font-family:${en};font-size:11px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">CALENDAR</span>
+                ${isAdmin() ? `<button type="button" onclick="openVbAdd()" aria-label="バレー予定の一括追加" style="height:36px;padding:0 14px;border-radius:18px;flex:none;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:${P.acc};${raiseS}">${ico('<path d="M12 5v14M5 12h14"></path>', 13, 2.2)}バレーをまとめて</button>` : ""}</div>`;
             // まとめて(.ics: iPhone・Googleカレンダーに一度に入る。同じ予約は上書き) / 1つずつ(まだ入れていない予約を順に Googleカレンダーで開く)
             const num = n => `<b style="min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;font-family:${en};font-size:11px;line-height:20px;text-align:center;${insetS}">${n}</b>`;
             const tabBtn = (id, label, n) => `<button type="button" role="tab" aria-selected="${tab === id}" onclick="protoCalSetTab('${id}')" style="flex:1;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:700;color:${tab === id ? P.acc : P.ink3};${tab === id ? raiseS : ""}">${label}<span style="font-family:${en};font-size:11px;opacity:.75">${n}</span></button>`;
@@ -19833,6 +19997,285 @@ const namesBtn = isAdmin() && dates.length > 0
             }).join("") || `<div style="padding:40px 0;text-align:center;color:${P.ink3}">${tab === "p" ? "追加できる共有予定はありません" : "追加できるバレーの予約はありません"}</div>`;
             el.style.background = P.bg; el.style.color = P.ink;
             el.innerHTML = `<div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px);display:flex;flex-direction:column;gap:18px;font-family:'Noto Sans JP',system-ui,sans-serif">${head}${tabs}${acts}<div style="display:flex;flex-direction:column;gap:12px">${rows}</div></div>`;
+        }
+        // ------- バレー予定の一括追加(管理者だけ。カレンダー登録の画面を元にした入力画面) -------
+        //   日付をいくつも選ぶ(曜日の見出しを押すと、その月のその曜日をまとめて) → 場所・コート・時間は予約と同じ選び方 → 未定/確定(最初は未定) → 「リストに追加」
+        //   「アプリに追加」で、回(同じ日の別の時間は "_2" などの別の回)と予約を入れ、Googleカレンダーにも追加する
+        //   Googleに接続中(書き込みもできる)ならそのまま入れる。接続していないときは、カレンダー登録の画面と同じ(ALL=.ics / 1つずつ=Googleの作成画面)
+        var vba = null;   // { ym:[年,月], dates:Set, pi, courts:Set, si(-1=未選択 / -2=入力), ct, tent, rows:[], nid, done, busy }
+        const VBA_LAST_KEY = "vba_last_v1";   // 最後に選んだ場所・時間(この端末だけ)
+        function openVbAdd() {
+            if (!isAdmin()) return;
+            try { prRadClose(); } catch (e) { /* ignore */ }
+            const now = new Date();
+            let last = {}; try { last = JSON.parse(localStorage.getItem(VBA_LAST_KEY) || "{}") || {}; } catch (e) { last = {}; }
+            const pi = Math.max(0, rvPresets.findIndex(x => x.name === last.place));
+            const pl = rvPresets[pi], si = pl ? pl.slots.findIndex(o => o.time === last.time) : -1;
+            const courts = new Set(pl ? (last.courts || []).filter(c => pl.courts.includes(c)) : []);
+            if (pl && pl.courts.length === 1) courts.add(pl.courts[0]);
+            vba = { ym: [now.getFullYear(), now.getMonth()], dates: new Set(), pi: pl ? pi : -1, courts, si, ct: "", tent: true, rows: [], nid: 1, done: null, busy: false };
+            let el = document.getElementById("protoVbAdd");
+            if (!el) { el = document.createElement("div"); el.id = "protoVbAdd"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "バレー予定の一括追加"); document.body.appendChild(el); }
+            el.classList.add("open"); el.scrollTop = 0;
+            vbaRender();
+        }
+        function closeVbAdd(force) {
+            if (!force && vba && !vba.done && vba.rows.length && !confirm("リストの予定は、まだアプリに入っていません。閉じますか?")) return;
+            const el = document.getElementById("protoVbAdd"); if (el) el.classList.remove("open");
+            vba = null;
+            try { renderBulkAdd(); } catch (e) { /* ignore */ }
+        }
+        function vbaToday() { return formatDateKey(new Date()); }
+        function vbaMonth(n) { if (!vba) return; const d = new Date(vba.ym[0], vba.ym[1] + n, 1); vba.ym = [d.getFullYear(), d.getMonth()]; vbaRender(); }
+        function vbaToggleDate(k) { if (!vba || k < vbaToday()) return; if (vba.dates.has(k)) vba.dates.delete(k); else vba.dates.add(k); vbaRender(); }
+        function vbaToggleWd(w) {   // その月の、今日からあとのその曜日をまとめて選ぶ(全部選んであれば外す)
+            if (!vba) return;
+            const [y, m] = vba.ym, last = new Date(y, m + 1, 0).getDate(), today = vbaToday(), ks = [];
+            for (let d = 1; d <= last; d++) { const x = new Date(y, m, d); if (x.getDay() === w) { const k = formatDateKey(x); if (k >= today) ks.push(k); } }
+            if (!ks.length) return;
+            const all = ks.every(k => vba.dates.has(k));
+            ks.forEach(k => { if (all) vba.dates.delete(k); else vba.dates.add(k); });
+            vbaRender();
+        }
+        function vbaClearDates() { if (vba) { vba.dates.clear(); vbaRender(); } }
+        function vbaPlace(i) {
+            if (!vba || !rvPresets[i]) return;
+            const pl = rvPresets[i], prev = vba.si >= 0 && rvPresets[vba.pi] ? rvPresets[vba.pi].slots[vba.si] : null;
+            vba.pi = i; vba.courts = new Set(pl.courts.length === 1 ? [pl.courts[0]] : []);
+            vba.si = prev ? pl.slots.findIndex(o => o.time === prev.time) : vba.si === -2 ? -2 : -1;   // 同じ時間の枠があれば、そのまま
+            vbaRender();
+        }
+        function vbaCourt(j) {
+            const pl = vba && rvPresets[vba.pi]; if (!pl || !pl.courts[j]) return;
+            const c = pl.courts[j];
+            if (vba.courts.has(c)) { if (pl.courts.length > 1) vba.courts.delete(c); } else vba.courts.add(c);   // コートはいくつでも(同じ回の予約になる)
+            vbaRender();
+        }
+        function vbaSlot(j) { if (!vba) return; vba.si = vba.si === j ? -1 : j; vbaRender(); if (j === -2) setTimeout(() => { const i = document.querySelector("#protoVbAdd .vba-ct"); if (i) i.focus(); }, 0); }
+        function vbaCt(v) {   // 入力中は描き直さない(描き直すと、入力欄から「リストに追加」を押したときに押せなくなる)。ボタンとお知らせだけ合わせる
+            if (!vba) return; vba.ct = String(v || "");
+            const ok = !!normalizeTimeRange(vba.ct), b = document.querySelector("#protoVbAdd [data-vba-add]"), w = document.querySelector("#protoVbAdd [data-vba-ctw]");
+            if (b) b.disabled = !(vbaPick() && vba.dates.size);
+            if (w) w.style.display = vba.ct && !ok ? "" : "none";
+        }
+        function vbaTent(on) { if (!vba) return; vba.tent = !!on; vbaRender(); }
+        // いま選んでいる場所・時間(足りなければ null)
+        function vbaPick() {
+            const pl = vba && rvPresets[vba.pi]; if (!pl) return null;
+            let time = null, price = 0;
+            if (vba.si >= 0 && pl.slots[vba.si]) { time = pl.slots[vba.si].time; price = pl.slots[vba.si].price; }
+            else if (vba.si === -2) { time = normalizeTimeRange(vba.ct); const sl = time && pl.slots.find(o => o.time === time); price = sl ? sl.price : 0; }
+            const courts = pl.courts.filter(c => vba.courts.has(c));
+            if (!time || !courts.length) return null;
+            return { place: pl.name, address: pl.address || "", courts, time, price };
+        }
+        // その日に、同じ時間・場所・コートの予約がもうある(すべてのコート)
+        function vbaExists(row) {
+            return sessKeysOf(row.d).some(k => row.courts.every(c => (reservations[k] || []).some(r => r.time === row.time && r.place === row.place && (r.court || "") === c)));
+        }
+        function vbaAddRows() {
+            const pk = vbaPick(); if (!vba || !pk || !vba.dates.size) return;
+            let added = 0;
+            [...vba.dates].sort().forEach(d => {
+                if (vba.rows.some(x => x.d === d && x.time === pk.time && x.place === pk.place && x.courts.join("|") === pk.courts.join("|"))) return;   // リストに同じものがある
+                vba.rows.push({ id: vba.nid++, d, ...pk, courts: pk.courts.slice(), tent: vba.tent }); added++;
+            });
+            vba.rows.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : ((parseTimeRangeMin(a.time) || {}).s || 0) - ((parseTimeRangeMin(b.time) || {}).s || 0)));
+            try { localStorage.setItem(VBA_LAST_KEY, JSON.stringify({ place: pk.place, time: pk.time, courts: pk.courts })); } catch (e) { /* ignore */ }
+            vba.dates.clear();   // 続けて別の時間・場所を入れられるように、日付だけ外す
+            vbaRender();
+            if (added) setTimeout(() => { const el = document.querySelector("#protoVbAdd [data-vba-list]"); if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30);
+        }
+        function vbaRowDel(id) { if (!vba) return; vba.rows = vba.rows.filter(x => x.id !== id); vbaRender(); }
+        function vbaRowTent(id) { const x = vba && vba.rows.find(r => r.id === id); if (!x) return; x.tent = !x.tent; vbaRender(); }
+        // 入れる先の回: 同じ時間の予約がある回 → 予約がまだ無い、同じ未定/確定の回 → 新しい回(取り込みの impVolleyKey と同じ考え方)
+        function vbaKeyFor(row) {
+            const ks = sessKeysOf(row.d);
+            const k = ks.find(k => (reservations[k] || []).some(r => r.time === row.time)) || ks.find(k => !(reservations[k] || []).length && isTent(k) === !!row.tent);
+            if (k) return { k, isNew: false };
+            const nk = sessNewKey(row.d);
+            return events[nk] ? null : { k: nk, isNew: true };   // 同じ日に9回まで
+        }
+        // リストの行をアプリに入れる。返り値: 行ごとの結果 { row, st: "new"(新しい回) / "add"(もうある回に足した) / "dup"(もうある) / "full"(9回まで), k, rs:[入れた予約] }
+        function vbaApply(rows) {
+            const out = [];
+            rows.forEach(row => {
+                if (vbaExists(row)) { out.push({ row, st: "dup", rs: [] }); return; }
+                const at = vbaKeyFor(row);
+                if (!at) { out.push({ row, st: "full", rs: [] }); return; }
+                const k = at.k;
+                if (at.isNew) {
+                    events[k] = row.tent ? { tent: true } : true;
+                    seedRosterForDay(k);
+                    if (row.tent) tentNtfApply(k, true);
+                }
+                const list = reservations[k] || (reservations[k] = []), rs = [];
+                row.courts.forEach(c => {
+                    if (list.some(r => r.time === row.time && r.place === row.place && (r.court || "") === c)) return;
+                    const id = list.reduce((mx, r) => Math.max(mx, r.id), 0) + 1;
+                    const r = { id, place: row.place, court: c, time: row.time, price: row.price, address: row.address || "" };
+                    list.push(r); rs.push(r);
+                });
+                list.sort((a, b) => a.time.localeCompare(b.time, "ja", { numeric: true }));
+                markEventDay(k);   // 未定の回は未定のまま
+                out.push({ row, st: at.isNew ? "new" : "add", k, rs });
+            });
+            return out;
+        }
+        // Googleカレンダー(メイン)に、予約を1件そのまま入れる(Googleに接続中で、書き込みもできるとき)。入れられたら true
+        async function gcalInsertRes(k, r) {
+            const t = gcalToken(), tr = parseTimeRangeMin(r.time); if (!t || !tr) return false;
+            const day = sessDay(k), z = n => String(n).padStart(2, "0");
+            const dt = m => { const [y, mo, d] = day.split("-").map(Number); const x = new Date(y, mo - 1, d, 0, m); return x.getFullYear() + "-" + z(x.getMonth() + 1) + "-" + z(x.getDate()) + "T" + z(x.getHours()) + ":" + z(x.getMinutes()) + ":00"; };
+            const body = { summary: gcalResTitle(k, r), location: r.address || r.place || "", description: `時間: ${r.time}${r.court ? "\nコート: " + r.court : ""}`,   // 「Add」・.ics と同じ中身(取り込むときにコートを読める)
+                start: { dateTime: dt(tr.s), timeZone: "Asia/Tokyo" }, end: { dateTime: dt(tr.e), timeZone: "Asia/Tokyo" } };
+            try {
+                const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method: "POST", headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+                if (!res.ok) { console.warn("Googleカレンダーへの追加に失敗", res.status); return false; }
+            } catch (e) { console.warn(e); return false; }
+            gcalMarkAdded(k, r);   // 追加した記録(接続を切っても「G」が付く)
+            return true;
+        }
+        async function vbaSave() {
+            if (!vba || vba.busy || !isAdmin()) return;
+            const rows = vba.rows.filter(x => !vbaExists(x));
+            if (!rows.length) { alert(vba.rows.length ? "リストの予定は、すべてアプリに入っています。" : "リストに予定がありません。"); return; }
+            vba.busy = true;
+            const res = vbaApply(rows);
+            vba.rows.filter(x => !rows.includes(x)).forEach(row => res.push({ row, st: "dup", rs: [] }));
+            res.sort((a, b) => (a.row.d < b.row.d ? -1 : a.row.d > b.row.d ? 1 : ((parseTimeRangeMin(a.row.time) || {}).s || 0) - ((parseTimeRangeMin(b.row.time) || {}).s || 0)));
+            const anyIn = res.some(x => x.rs.length);
+            if (anyIn) impAfter(true);   // 保存(変更ログもここで付く)・描き直し
+            const items = res.flatMap(x => x.rs.map(r => ({ d: x.k, r })));
+            vba.done = { res, items, direct: false, gOk: 0, gNg: 0 };
+            if (items.length && gcalDirectOK()) {   // Googleに接続中: そのまま入れる
+                vba.done.direct = true; vba.done.sending = true; vbaRender();
+                for (const it of items) { if (await gcalInsertRes(it.d, it.r)) vba.done.gOk++; else vba.done.gNg++; }
+                vba.done.sending = false;
+                try { gcalFetch().then(() => vbaRender(), () => vbaRender()); } catch (e) { /* ignore */ }   // 取り直して「G✓」を付ける
+            }
+            vba.busy = false;
+            vbaRender();
+            const el = document.getElementById("protoVbAdd"); if (el) el.scrollTop = 0;
+        }
+        // 接続していないとき: カレンダー登録の画面と同じ追加のしかた
+        function vbaGOne(k, id) {
+            const r = (reservations[k] || []).find(x => x.id === id); if (!r) return;
+            const was = gcalIsAdded(k, r);
+            addReservationToGoogleCalendar(id, k);
+            if (was) { const [, m, dd] = sessDay(k).split("-").map(Number); showAddNotice(`${m}/${dd} ${r.time} はすでに追加済みでした。カレンダーに2つ入っていたら、片方を消してください。`); }
+            vbaRender();
+        }
+        function vbaGItems() { return vba && vba.done ? vba.done.items.filter(it => (reservations[it.d] || []).some(r => r === it.r || r.id === it.r.id)) : []; }
+        function vbaGNext() { const map = gcalAddedMap(), it = vbaGItems().find(x => !gcalIsAdded(x.d, x.r, map)); if (it) vbaGOne(it.d, it.r.id); }
+        function vbaGAll() { const it = vbaGItems(); if (it.length) exportReservationsIcs("v", it); }
+        function vbaAgain() { if (!vba) return; vba.rows = []; vba.done = null; vbaRender(); const el = document.getElementById("protoVbAdd"); if (el) el.scrollTop = 0; }
+        document.addEventListener("visibilitychange", () => { if (!document.hidden && vba && vba.done) vbaRender(); });   // Googleの作成画面から戻ったら、追加済みの印を付け直す
+        function vbaRender() {
+            const el = document.getElementById("protoVbAdd"); if (!el || !el.classList.contains("open") || !vba) return;
+            const { dark, P, LV } = protoPal();
+            const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif", esc = escapeHtml;
+            const { raise, raiseS, insetS } = protoNeu(P, dark);
+            const ico = (d, sz, sw) => `<svg width="${sz || 16}" height="${sz || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+            const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"], today = vbaToday();
+            const wdCol = w => w === 0 ? P.red : w === 6 ? P.blue : P.ink3;
+            const card = (inner, gap) => `<div style="border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:${gap || 12}px;${raiseS}">${inner}</div>`;
+            const lbl = (t, right) => `<div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.14em;color:${P.ink3}">${t}</span>${right || ""}</div>`;
+            const chip = (on, label, click, aria) => `<button type="button" onclick="${click}" aria-pressed="${on}"${aria ? ` aria-label="${aria}"` : ""} style="min-height:38px;padding:0 15px;border-radius:19px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:${on ? P.acc : P.ink2};${on ? insetS : raiseS}">${label}</button>`;
+            const tentPill = (t, click) => { const st = `height:24px;padding:0 9px;border-radius:12px;flex:none;display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;color:${t ? LV.warning : LV.sufficient};${insetS}`; return click ? `<button type="button" onclick="${click}" aria-label="${t ? "未定" : "確定"}(押すと切り替え)" style="${st}">${t ? "未定" : "確定"}</button>` : `<span style="${st}">${t ? "未定" : "確定"}</span>`; };
+            const dayLbl = d => { const [, m, dd] = sessDay(d).split("-").map(Number), w = new Date(sessDay(d) + "T00:00:00").getDay(); return `<div style="width:50px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:${en};font-size:16px;font-weight:700">${m}/${dd}</span><span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.08em;color:${wdCol(w)}">${WD3[w]}</span></div>`; };
+            const head = `<div style="display:flex;align-items:center;gap:12px">
+                <button type="button" aria-label="戻る" onclick="closeVbAdd()" style="width:40px;height:40px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${ico('<path d="M15 5l-7 7 7 7"></path>')}</button>
+                <span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:${en};font-size:11px;font-weight:700;letter-spacing:.16em;color:${P.ink3}">VOLLEY</span><span style="font-size:13px;font-weight:700">バレー予定の一括追加</span></span></div>`;
+            const wrap = inner => `<div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px);display:flex;flex-direction:column;gap:18px;font-family:'Noto Sans JP',system-ui,sans-serif">${inner}</div>`;
+            el.style.background = P.bg; el.style.color = P.ink;
+            // ---- 入れたあと ----
+            if (vba.done) {
+                const D = vba.done, map = gcalAddedMap();
+                const nIn = D.res.filter(x => x.rs.length).length, nDup = D.res.filter(x => x.st === "dup").length, nFull = D.res.filter(x => x.st === "full").length;
+                const gItems = vbaGItems(), todo = gItems.filter(x => !gcalIsAdded(x.d, x.r, map));
+                const num = n => `<b style="min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;font-family:${en};font-size:11px;line-height:20px;text-align:center;${insetS}">${n}</b>`;
+                const sum = `<div style="font-size:14px;font-weight:700">アプリに ${nIn}件 入れました</div>`
+                    + (nDup ? `<div style="font-size:12px;color:${P.ink3}">${nDup}件は、もうアプリにあったので入れていません</div>` : "")
+                    + (nFull ? `<div style="font-size:12px;color:${P.red}">${nFull}件は、同じ日に9回まで入っているので入れられませんでした</div>` : "");
+                let gHtml = "";
+                if (gItems.length) {
+                    if (D.direct) {
+                        gHtml = D.sending ? `<div style="font-size:12.5px;color:${P.ink2}">Googleカレンダーに追加しています…</div>`
+                            : `<div style="font-size:12.5px;color:${D.gNg ? P.red : P.today};font-weight:700">Googleカレンダーに ${D.gOk}件 追加しました${D.gNg ? `(${D.gNg}件は追加できませんでした。下の + から追加できます)` : ""}</div>`;
+                    } else {
+                        gHtml = `<div style="font-size:12px;color:${P.ink3};line-height:1.6">Googleカレンダーにも追加してください(ALL=まとめて / ONE BY ONE=1つずつGoogleの作成画面)。Googleに接続していれば、次からはそのまま入ります。</div>
+                          <div style="display:flex;gap:12px">
+                            <button type="button" onclick="vbaGAll()" aria-label="今入れた予定をすべてカレンダーに追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.acc};${raise}">${ico('<rect x="4.5" y="5.5" width="15" height="14.5" rx="3"></rect><path d="M4.5 10h15M9 3.5v4M15 3.5v4"></path><path d="M12 12.5v5M9.8 15.3 12 17.5l2.2-2.2"></path>', 17)}<span style="font-family:${en};letter-spacing:.08em">ALL</span>${num(gItems.length)}</button>
+                            <button type="button" ${todo.length ? "" : "disabled"} onclick="vbaGNext()" aria-label="まだの予定を1つずつ追加" style="flex:1;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:${P.ink2};${raiseS}"><span style="font-family:${en};letter-spacing:.08em">ONE BY ONE</span>${num(todo.length)}</button>
+                          </div>`;
+                    }
+                }
+                const rows = D.res.map(({ row, st, k, rs }) => {
+                    const ok = rs.length > 0, tent = ok ? isTent(k) : row.tent;
+                    const r0 = ok ? rs[0] : null, gDone = ok && rs.every(r => gcalIsAdded(k, r, map));
+                    const sub = st === "dup" ? "もうあります" : st === "full" ? "入れられませんでした" : st === "add" ? `${sessNoOf(k)}回目に追加` : sessKeysOf(k).length > 1 ? `${sessNoOf(k)}回目` : "";
+                    const gBtns = ok && !(D.direct && D.sending) ? rs.map(r => { const dn = gcalIsAdded(k, r, map); return `<button type="button" onclick="vbaGOne('${k}', ${r.id})" aria-label="${esc(r.court || "")} ${dn ? "追加済み(もう一度追加)" : "Googleカレンダーに追加"}" style="width:38px;height:38px;border-radius:19px;flex:none;display:flex;align-items:center;justify-content:center;color:${dn ? P.today : P.acc};${dn ? insetS : raiseS}">${dn ? ico('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 15, 2.4) : ico('<path d="M12 5v14M5 12h14"></path>', 15, 2.2)}</button>`; }).join("") : "";
+                    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px 12px 16px;border-radius:20px;${raiseS};${ok ? "" : "opacity:.55"}">
+                        ${dayLbl(row.d)}
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="display:flex;align-items:center;gap:7px;font-family:${en};font-size:13px;font-weight:700">${esc(row.time)}${tentPill(tent)}${gDone ? `<span class="gc-mark">G</span>` : ""}</span><span style="font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(row.place + " " + row.courts.join("・"))}${sub ? " ・ " + sub : ""}</span></div>
+                        <div style="display:flex;gap:6px;flex:none">${gBtns}</div>
+                      </div>`;
+                }).join("");
+                el.innerHTML = wrap(`${head}${card(sum + gHtml, 10)}<div style="display:flex;flex-direction:column;gap:12px">${rows}</div>
+                    <div style="display:flex;gap:12px"><button type="button" onclick="vbaAgain()" style="flex:1;height:48px;border-radius:24px;font-size:13.5px;font-weight:700;color:${P.ink2};${raiseS}">続けて入れる</button><button type="button" onclick="closeVbAdd(true)" style="flex:1;height:48px;border-radius:24px;font-size:13.5px;font-weight:700;color:${P.acc};${raiseS}">閉じる</button></div>`);
+                return;
+            }
+            // ---- 入力 ----
+            const segBtn = (on, label, click, col) => `<button type="button" onclick="${click}" aria-pressed="${on}" style="flex:1;height:38px;border-radius:19px;font-size:13.5px;font-weight:700;color:${on ? col : P.ink3};${on ? raiseS : ""}">${label}</button>`;
+            const tentSeg = card(lbl("STATUS", `<span style="font-size:11px;color:${P.ink3}">${vba.tent ? "未定=管理者だけに見える仮の予定" : "確定=みんなに見える"}</span>`)
+                + `<div role="group" aria-label="未定・確定" style="display:flex;gap:4px;padding:4px;border-radius:23px;${insetS}">${segBtn(vba.tent, "未定", "vbaTent(true)", LV.warning)}${segBtn(!vba.tent, "確定", "vbaTent(false)", LV.sufficient)}</div>`);
+            // 日付(何日でも選べる。曜日を押すと、その月のその曜日をまとめて)
+            const [Y, M] = vba.ym, wsd = weekStartDay === 1 ? 1 : 0, off = (new Date(Y, M, 1).getDay() - wsd + 7) % 7, nDays = new Date(Y, M + 1, 0).getDate();
+            const rowsN = Math.ceil((off + nDays) / 7);
+            let cells = "";
+            for (let i = 0; i < 7; i++) { const w = (i + wsd) % 7; cells += `<button type="button" onclick="vbaToggleWd(${w})" aria-label="${WEEKDAYS[w]}曜日をまとめて選ぶ" style="height:26px;border-radius:13px;font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.06em;color:${wdCol(w)}">${WD3[w]}</button>`; }
+            for (let i = 0; i < rowsN * 7; i++) {
+                const dn = i - off + 1;
+                if (dn < 1 || dn > nDays) { cells += "<span></span>"; continue; }
+                const x = new Date(Y, M, dn), k = formatDateKey(x), w = x.getDay(), past = k < today, on = vba.dates.has(k);
+                const ks = sessKeysOf(k), inList = vba.rows.some(r => r.d === k);
+                const dots = ks.slice(0, 3).map(s => `<i style="width:5px;height:5px;border-radius:50%;box-sizing:border-box;${isTent(s) ? `border:1.2px solid ${LV.warning}` : `background:${LV.sufficient}`}"></i>`).join("") + (inList ? `<i style="width:5px;height:5px;border-radius:50%;background:${P.acc}"></i>` : "");
+                cells += `<button type="button" ${past ? "disabled" : ""} onclick="vbaToggleDate('${k}')" aria-pressed="${on}" aria-label="${M + 1}月${dn}日" style="height:44px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;${on ? insetS : ""}">
+                    <span style="font-family:${en};font-size:13.5px;font-weight:${on || k === today ? 700 : 500};color:${on ? P.acc : k === today ? P.today : w === 0 ? P.red : w === 6 ? P.blue : P.ink}">${dn}</span><span style="display:flex;gap:2px;height:5px">${dots}</span></button>`;
+            }
+            const canPrev = Y * 12 + M > new Date().getFullYear() * 12 + new Date().getMonth();
+            const navB = (n, d, dis) => `<button type="button" ${dis ? "disabled" : ""} onclick="vbaMonth(${n})" aria-label="${n < 0 ? "前の月" : "次の月"}" style="width:34px;height:34px;border-radius:17px;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${ico(d, 14)}</button>`;
+            const calCard = card(`<div style="display:flex;align-items:center;gap:10px">${navB(-1, '<path d="M15 5l-7 7 7 7"></path>', !canPrev)}<span style="flex:1;text-align:center;font-family:${en};font-size:15px;font-weight:700">${Y}.${M + 1}</span>${navB(1, '<path d="M9 5l7 7-7 7"></path>')}</div>
+                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px">${cells}</div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:${P.ink3}"><span style="flex:1">${vba.dates.size ? `<b style="color:${P.acc}">${vba.dates.size}日</b> 選択中` : "日付を押して選ぶ(曜日を押すと、その月のその曜日をまとめて)"}</span>${vba.dates.size ? `<button type="button" onclick="vbaClearDates()" style="height:28px;padding:0 12px;border-radius:14px;font-size:11.5px;font-weight:700;color:${P.ink2};${raiseS}">クリア</button>` : ""}</div>`, 10);
+            // 場所・コート・時間(予約と同じ選び方)
+            const pl = rvPresets[vba.pi];
+            const placeChips = rvPresets.map((x, i) => chip(i === vba.pi, esc(x.name), `vbaPlace(${i})`)).join("");
+            const courtChips = pl ? pl.courts.map((c, j) => chip(vba.courts.has(c), esc(c), `vbaCourt(${j})`)).join("") : `<span style="font-size:12px;color:${P.ink3}">先に場所を選んでください</span>`;
+            const ctOk = vba.si !== -2 || !!normalizeTimeRange(vba.ct);
+            const timeChips = pl ? pl.slots.map((o, j) => chip(j === vba.si, `<span style="font-family:${en}">${esc(o.time)}</span>`, `vbaSlot(${j})`)).join("") + chip(vba.si === -2, "ほかの時間", "vbaSlot(-2)") : "";
+            const ctIn = pl && vba.si === -2 ? `<div style="display:flex;align-items:center;gap:8px;height:42px;padding:0 16px;border-radius:21px;${insetS}"><input class="vba-ct" type="text" inputmode="text" value="${esc(vba.ct)}" placeholder="例 18:30-21:00" aria-label="時間" oninput="vbaCt(this.value)" onkeydown="if(event.key==='Enter'){this.blur();}"></div><div data-vba-ctw style="font-size:11.5px;color:${P.red};${vba.ct && !ctOk ? "" : "display:none"}">「9:00-12:00」のように、開始と終了を入れてください</div>` : "";
+            const flex = inner => `<div style="display:flex;flex-wrap:wrap;gap:10px">${inner}</div>`;
+            const pk = vbaPick();
+            const pickCard = card(lbl("PLACE") + flex(placeChips) + lbl("COURT", pl && pl.courts.length > 1 ? `<span style="font-size:11px;color:${P.ink3}">いくつでも</span>` : "") + flex(courtChips) + lbl("TIME") + flex(timeChips) + ctIn);
+            const canAdd = !!pk && vba.dates.size > 0;
+            const addBtn = `<button type="button" data-vba-add ${canAdd ? "" : "disabled"} onclick="vbaAddRows()" style="height:50px;border-radius:25px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:${P.acc};${raiseS}">${ico('<path d="M12 5v14M5 12h14"></path>', 15, 2.2)}リストに追加${vba.dates.size ? ` · ${vba.dates.size}日` : ""}</button>`;
+            // リスト
+            const list = vba.rows.map(row => {
+                const ex = vbaExists(row), at = ex ? null : vbaKeyFor(row);
+                const same = !ex && (!at ? "同じ日に9回まで" : !at.isNew ? "もうある回に追加" : (sessKeysOf(row.d).length || vba.rows.some(x => x.d === row.d && x.time !== row.time && x.id < row.id)) ? "同じ日に別の回" : "");
+                return `<div style="display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:20px;${raiseS};${ex ? "opacity:.55" : ""}">
+                    ${dayLbl(row.d)}
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="display:flex;align-items:center;gap:7px;font-family:${en};font-size:13px;font-weight:700">${esc(row.time)}${ex ? "" : tentPill(row.tent, `vbaRowTent(${row.id})`)}</span><span style="font-size:11.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(row.place + " " + row.courts.join("・"))}${ex ? " ・ もうあります" : same ? " ・ " + same : ""}</span></div>
+                    <button type="button" onclick="vbaRowDel(${row.id})" aria-label="リストから外す" style="width:34px;height:34px;border-radius:17px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink3};${raiseS}">${ico('<path d="M7 7l10 10M17 7 7 17"></path>', 13, 2.2)}</button>
+                  </div>`;
+            }).join("");
+            const nNew = vba.rows.filter(x => !vbaExists(x)).length;
+            const gNote = gcalDirectOK() ? "Googleカレンダーにも、そのまま追加します" : "このあと、Googleカレンダーへの追加ボタンが出ます";
+            const saveBtn = vba.rows.length ? `<button type="button" ${nNew && !vba.busy ? "" : "disabled"} onclick="vbaSave()" style="height:56px;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:${P.acc};${raise}"><span style="display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:700">アプリに追加<span style="font-family:${en}">· ${nNew}</span></span><span style="font-size:10.5px;font-weight:600;color:${P.ink3}">${gNote}</span></button>` : "";
+            el.innerHTML = wrap(`${head}${tentSeg}${calCard}${pickCard}${addBtn}
+                ${vba.rows.length ? `<div data-vba-list style="display:flex;flex-direction:column;gap:12px">${lbl("LIST", `<span style="font-family:${en};font-size:11px;color:${P.ink3}">${vba.rows.length}</span>`)}${list}</div>${saveBtn}` : ""}`);
         }
         // ======================================================================
         // はじめての人向けチュートリアル(ログインしていない人が起動・更新したときに出る。閲覧モードの使い方だけ)
