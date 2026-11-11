@@ -3124,7 +3124,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail, #icsOv {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3138,7 +3138,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed, body.dark #icsOv {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -3746,6 +3746,42 @@
         #prDetail .pds-ttl { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #prDetail .pds-sub { flex: none; max-width: 38%; font-size: 11.5px; color: var(--sn-ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #prDetail .pds-go { flex: none; color: var(--sn-ink3); font-size: 16px; }
+        /* ===== 外のカレンダーの予定をアプリに入れる(11/11): Googleの予定の詳細のボタン・.ics の取り込みシート。色と影は設定と同じ(--sn-*) ===== */
+        #prDetail .pd-imp { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+        #prDetail .pd-imp-lbl { flex: 1; font-size: 12px; font-weight: 600; color: var(--sn-ink3); }
+        #prDetail .pd-imp button, #icsOv .ics-acts button, #icsOv .ics-allbtn { height: 42px; padding: 0 20px; border: none; border-radius: 21px; background: var(--sn-bg); color: var(--sn-ink2); font: inherit; font-size: 13px; font-weight: 700; box-shadow: var(--sn-raiseS); cursor: pointer; }
+        #prDetail .pd-imp button.on, #icsOv .ics-acts button.on { color: var(--sn-acc); }
+        #prDetail .pd-imp button:active, #icsOv .ics-acts button:active, #icsOv .ics-allbtn:active { box-shadow: var(--sn-insetS); }
+        #icsOv .ics-acts button:disabled { color: var(--sn-ink3); opacity: .6; box-shadow: none; cursor: default; }
+        #icsOv { display: none; position: fixed; inset: 0; z-index: 9960; color: var(--sn-ink); }   /* 設定(9500)の上に出す */
+        #icsOv.open { display: block; }
+        #icsOv .ics-back { position: absolute; inset: 0; background: rgba(20, 24, 32, .18); animation: prrFade .15s ease-out; }
+        #icsOv .ics-sheet { position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); max-width: 460px; margin: 0 auto; max-height: 82vh; display: flex; flex-direction: column; gap: 14px; padding: 22px 18px 16px; border-radius: 28px; background: var(--sn-bg); box-shadow: 0 -6px 28px rgba(0, 0, 0, .14); animation: prdUp .22s cubic-bezier(.2, .9, .3, 1); }
+        #icsOv .ics-head { display: flex; align-items: baseline; gap: 10px; padding: 0 4px; }
+        #icsOv .ics-head b { font-size: 17px; letter-spacing: .01em; }
+        #icsOv .ics-sub { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--sn-ink3); }
+        #icsOv .ics-bar, #icsOv .ics-acts { display: flex; align-items: center; gap: 10px; }
+        #icsOv .ics-grow { flex: 1; }
+        #icsOv .ics-seg { display: inline-flex; padding: 4px; border-radius: 20px; box-shadow: var(--sn-insetS); }
+        #icsOv .ics-seg button { height: 32px; padding: 0 16px; border: none; border-radius: 16px; background: transparent; color: var(--sn-ink3); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+        #icsOv .ics-seg button.on { background: var(--sn-bg); color: var(--sn-acc); box-shadow: var(--sn-raiseXS); }
+        #icsOv .ics-allbtn { height: 36px; padding: 0 16px; border-radius: 18px; font-size: 12px; box-shadow: var(--sn-raiseXS); }
+        #icsOv .ics-list { flex: 1; min-height: 60px; overflow-y: auto; margin: 0 -6px; padding: 6px; border-radius: 20px; box-shadow: var(--sn-insetS); -webkit-overflow-scrolling: touch; }
+        #icsOv .ics-row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 4px 8px; }
+        #icsOv .ics-row + .ics-row { border-top: 1px solid var(--sn-line); }
+        #icsOv .ics-chk { flex: none; width: 44px; height: 44px; margin: 0 -8px; padding: 0; border: none; background: transparent; display: grid; place-items: center; cursor: pointer; }
+        #icsOv .ics-chk i { width: 22px; height: 22px; border-radius: 50%; box-shadow: var(--sn-insetS); display: grid; place-items: center; }
+        #icsOv .ics-row.on .ics-chk i::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--sn-acc); }
+        #icsOv .ics-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        #icsOv .ics-ttl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; color: var(--sn-ink); }
+        #icsOv .ics-when { font-family: var(--sn-en); font-size: 11.5px; font-weight: 600; color: var(--sn-ink3); }
+        #icsOv .ics-row:not(.on) .ics-ttl { color: var(--sn-ink3); }
+        #icsOv .ics-kind { flex: none; height: 32px; min-width: 62px; padding: 0 12px; border: none; border-radius: 16px; background: var(--sn-bg); color: var(--sn-ink2); font: inherit; font-size: 12px; font-weight: 700; box-shadow: var(--sn-raiseXS); cursor: pointer; }
+        #icsOv .ics-kind.vb { color: var(--sn-acc); }
+        #icsOv .ics-kind:disabled { box-shadow: none; color: var(--sn-ink3); cursor: default; }
+        #icsOv .ics-empty { padding: 18px 10px; font-size: 12.5px; line-height: 1.6; color: var(--sn-ink3); text-align: center; }
+        #icsOv .ics-note { flex: 1; min-width: 0; font-size: 11px; line-height: 1.4; color: var(--sn-ink3); }
+        #icsOv .ics-note + .ics-grow { display: none; }
         /* =========================================================
            統一(11/11): アプリ全体の色と凹凸を、メイン画面(protoPal / protoNeu)と同じ値にそろえる
            - 背景: ライト #e7eaf0 / ダーク #2b2e34(メイン画面・設定と同じ)
@@ -4403,6 +4439,9 @@ await main();
                 <div class="st-row" id="gpAskRow"><span class="st-lbl">Googleへの追加確認</span><span class="st-seg" id="gpAskSeg"><button type="button" data-v="ask" onclick="gcalPrefSet('ask','ask')">聞く</button><button type="button" data-v="never" onclick="gcalPrefSet('ask','never')">追加しない</button><button type="button" data-v="auto" onclick="gcalPrefSet('ask','auto')">自動で追加</button></span></div>
                 <div class="st-sub" id="gpNote" style="font-size:11px;color:var(--ink-3);line-height:1.5;padding:2px 4px 4px"></div>
             </div>
+            <!-- カレンダーのファイル(.ics)を取り込む: Googleカレンダーの「エクスポート」で出したファイルなど -->
+            <button type="button" class="st-link" onclick="icsPick()">カレンダーのファイル(.ics)を取り込む<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+            <input type="file" id="icsFile" accept=".ics,text/calendar" hidden onchange="icsFileChosen(this)">
             <!-- 使い方: 出っぱった細長い行 -->
             <button type="button" class="st-link" onclick="openGuide('home')">ホーム画面に追加<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
             <button type="button" class="st-link" onclick="openGuide('widget')">ホームウィジェット<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -7480,6 +7519,7 @@ await main();
                 <div class="pd-when">${escapeHtml(planWhenText(p))}</div>
                 ${p.memo ? `<div class="pd-memo">${escapeHtml(p.memo)}</div>` : ""}
                 ${p.gcal ? "" : planNtfLine(p)}${btns}${mem}
+                ${p.gcal ? impButtonsHtml(p) : ""}
                 <div class="pd-acts">${editable ? `<button type="button" class="op-delbtn" onclick="deleteOtherPlan(${p.id})">削除</button>` : (p.gcal && p.gEvId && gcalIsAdmin()) ? `<button type="button" class="op-delbtn" onclick="deleteGcalPlan(${p.id})">削除</button>` : ""}<span class="op-grow"></span><button type="button" class="op-cancel" onclick="closePlanDetail()">閉じる</button>${editable ? `<button type="button" class="op-add" onclick="editFromDetail(${p.id})">編集</button>` : ""}</div>
             </div>`;
         }
@@ -7686,7 +7726,7 @@ await main();
             const z = n => String(n).padStart(2, "0"), hm = d => z(d.getHours()) + ":" + z(d.getMinutes());
             const s0 = ev.start || {}, e0 = ev.end || {};
             const memo = [cal && cal.summary ? "📅 " + cal.summary : "", ev.location || "", ev.description || ""].filter(Boolean).join("\n");
-            const p = { id, gcal: true, local: true, color: 14, title: ev.summary || "(無題)", memo, gEvId: ev.id || "", gCalId: (cal && cal.id) || "" };
+            const p = { id, gcal: true, local: true, color: 14, title: ev.summary || "(無題)", memo, gEvId: ev.id || "", gCalId: (cal && cal.id) || "", loc: ev.location || "", desc: ev.description || "" };   // loc・desc=アプリに入れるときに使う(memo は表示用にまとめたもの)
             if (s0.date) {
                 p.startDate = s0.date; p.allDay = true;
                 if (e0.date) { const d = new Date(e0.date + "T00:00:00"); d.setDate(d.getDate() - 1); const k = gcalDateKey(d); if (k > s0.date) p.endDate = k; }
@@ -7812,6 +7852,284 @@ await main();
             const g = (gcalPlans || []).find(x => x.id === id);
             if (!g || !g.gEvId || !g.gCalId) return;
             if (await gcalDeleteLinked([{ cal: g.gCalId, ev: g.gEvId, title: g.title || "予定" }], true)) closePlanDetail();
+        }
+        // ------- 外のカレンダーの予定をアプリに入れる(Googleと同期した予定をボタンで / .ics ファイルから) -------
+        // 入れる先は2つ: 「予定」=自分の端末の予定(ローカル予定) / 「バレー」=その日をバレーの日にして、時間があれば予約を1件入れる(管理者だけ)
+        // e = { title, memo, location, startDate, endDate, allDay, start, end }(start・end は "HH:MM")
+        const IMP_VB = /バレー|ばれー|volley/;
+        function impIsVolley(e) { return IMP_VB.test(gcalNorm(e.title)); }
+        function impTimeRange(e) { return (e.allDay || !e.start || !e.end || e.endDate) ? null : normalizeTimeRange(e.start + "-" + e.end); }   // 予約にできる時間("9:00-12:00")。終日・日またぎは null
+        function impPlanDup(e) {   // 同じ日・同じ題名・同じ開始時刻の予定が、もうアプリにある
+            const t = gcalNorm(e.title), st = e.allDay ? "" : (e.start || "");
+            return planList.some(p => p && !p.gcal && !p.deleted && p.startDate === e.startDate && gcalNorm(p.title) === t && (planTimed(p) ? (p.start || "") : "") === st);
+        }
+        function impVolleyDup(e) {   // 同じ時間の予約がある(時間が無いときは、もうバレーの日になっている)
+            const tr = impTimeRange(e);
+            return tr ? (reservations[e.startDate] || []).some(r => r.time === tr) : !!events[e.startDate];
+        }
+        function impAddPlan(e) {
+            const p = { title: e.title || "予定", start: e.allDay ? "" : (e.start || ""), end: e.allDay ? "" : (e.end || ""), memo: e.memo || "", startDate: e.startDate, local: true };
+            if (e.allDay) p.allDay = true;
+            if (e.endDate && e.endDate > e.startDate) p.endDate = e.endDate;
+            { const cr = planCreatorId(); if (cr != null) p.byId = cr; }
+            p.id = nextLocalPlanId--; planList.push(p);
+            return p;
+        }
+        function impAddVolley(e) {
+            const d = e.startDate, tr = impTimeRange(e);
+            if (tr) {
+                const text = gcalNorm([e.location, e.title, e.memo].filter(Boolean).join(" "));
+                const pl = rvPresets.find(x => x && x.name && text.includes(gcalNorm(x.name))) || null;   // 場所の名前が登録済みの体育館と合えば、名前・住所・料金をそこから
+                const slot = pl ? (pl.slots || []).find(x => x.time === tr) : null;
+                const place = pl ? pl.name : (String(e.location || "").split(/[\n,、]/)[0].trim().slice(0, 20) || "バレー");
+                const list = reservations[d] || (reservations[d] = []);
+                if (!list.some(r => r.time === tr && r.place === place)) {
+                    const id = list.reduce((mx, r) => Math.max(mx, r.id), 0) + 1;
+                    list.push({ id, place, court: "", time: tr, price: slot ? slot.price : 0, address: pl ? (pl.address || "") : "" });
+                    list.sort((a, b) => a.time.localeCompare(b.time, "ja", { numeric: true }));
+                }
+            }
+            markEventDay(d);
+        }
+        function impAfter(anyVolley) {   // 入れたあとの保存と描き直し
+            if (anyVolley) saveReservations();
+            saveData();
+            try { syncLocalNtf(); } catch (e) { /* ignore */ }
+            try { if (anyVolley) { renderReserveView(); renderRoster(); } } catch (e) { /* ignore */ }
+            renderCalendar();
+        }
+        // Googleと同期した予定の詳細に出すボタン(バレーらしい題名なら「バレーに入れる」を青く、それ以外は「予定に入れる」を青く)
+        function impButtonsHtml(p) {
+            const vb = isAdmin() && impIsVolley(p);
+            const b = (kind, label, main) => `<button type="button" class="${main ? "on" : ""}" onclick="gcalImport(${p.id},'${kind}')">${label}</button>`;
+            return `<div class="pd-imp"><span class="pd-imp-lbl">アプリに入れる</span>${b("plan", "予定", !vb)}${isAdmin() ? b("volley", "バレー", vb) : ""}</div>`;
+        }
+        function gcalImport(id, kind) {
+            const g = (gcalPlans || []).find(x => x.id === id);
+            if (!g) return;
+            const e = { title: g.title || "", memo: [g.loc, g.desc].filter(Boolean).join("\n"), location: g.loc || "", startDate: g.startDate, endDate: g.endDate || "", allDay: !!g.allDay, start: g.start || "", end: g.end || "" };
+            const vol = kind === "volley" && isAdmin();
+            if (vol) impAddVolley(e); else if (!impPlanDup(e)) impAddPlan(e);
+            planDetailId = null; protoDetailId = null;
+            impAfter(vol);   // 描き直すと、同じ予定はGoogle側が隠れてアプリ側に「G」が付く
+            try { renderOtherPlanBox(); protoDetailSync(); } catch (e2) { /* ignore */ }
+        }
+
+        // ------- .ics ファイルの取り込み(Googleカレンダーの「エクスポート」など) -------
+        var icsSt = null;   // { name, src:[読み取った予定の元データ], past, rows:[{ e, kind, on, dup }], done(取り込んだ件数。まだなら -1) }
+        function icsPick() { const f = document.getElementById("icsFile"); if (f) { f.value = ""; f.click(); } }
+        function icsFileChosen(inp) {
+            const f = inp.files && inp.files[0]; if (!f) return;
+            const rd = new FileReader();
+            rd.onload = () => { try { icsOpen(f.name, icsParse(String(rd.result || ""))); } catch (e) { console.warn(e); alert("このファイルは読み込めませんでした。"); } };
+            rd.onerror = () => alert("このファイルは読み込めませんでした。");
+            rd.readAsText(f);
+        }
+        function icsUnesc(v) { return String(v || "").replace(/\\([nN,;\\])/g, (m, c) => (c === "n" || c === "N") ? "\n" : c).trim(); }   // 1回で読む(「\\n」=円記号+n を改行にしない)
+        const icsTzFmt = {};   // タイムゾーンごとの書式(作るのが重いので使い回す)
+        function icsTzOffset(ts, tz) {   // その時刻の、タイムゾーン tz の時差(分)。分からないゾーンは null
+            try {
+                const f = icsTzFmt[tz] || (icsTzFmt[tz] = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" }));
+                const o = {}; f.formatToParts(new Date(ts)).forEach(x => { o[x.type] = +x.value; });
+                return (Date.UTC(o.year, o.month - 1, o.day, o.hour, o.minute, o.second) - Math.floor(ts / 1000) * 1000) / 60000;
+            } catch (e) { return null; }
+        }
+        // 予定に書かれた時計の時刻(年月日・時分)→ 実際の時刻。z="Z"=協定世界時 / ゾーン名 / ""=ゾーンなし(この端末の時刻として読む)
+        function icsWall(y, mo, d, h, mi, z) {
+            if (z === "Z") return new Date(Date.UTC(y, mo, d, h, mi));
+            if (z) {
+                const guess = Date.UTC(y, mo, d, h, mi), o1 = icsTzOffset(guess, z);
+                if (o1 != null) { let t = guess - o1 * 60000; const o2 = icsTzOffset(t, z); if (o2 != null && o2 !== o1) t = guess - o2 * 60000; return new Date(t); }
+            }
+            return new Date(y, mo, d, h, mi);
+        }
+        function icsDate(value, params) {   // → { d: 実際の時刻, allDay, w: [年, 月(0〜), 日, 時, 分](書かれたままの時計の時刻), z }
+            const m = String(value || "").trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/);
+            if (!m) return null;
+            const y = +m[1], mo = +m[2] - 1, d = +m[3];
+            if (m[4] == null) return { d: new Date(y, mo, d), allDay: true, w: [y, mo, d, 0, 0], z: "" };
+            const h = +m[4], mi = +m[5], z = m[7] ? "Z" : ((params && params.TZID) || "");
+            return { d: icsWall(y, mo, d, h, mi, z), allDay: false, w: [y, mo, d, h, mi], z };
+        }
+        function icsDurMs(v) { const m = String(v || "").match(/^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/); return m ? (((+m[1] || 0) * 7 + (+m[2] || 0)) * 86400 + (+m[3] || 0) * 3600 + (+m[4] || 0) * 60 + (+m[5] || 0)) * 1000 : 0; }
+        // くり返し(RRULE)を、[from, to) に入る回だけ実際の時刻にする。s=icsDate の結果(最初の回)
+        // 対応: 毎日・毎週(曜日・週の始まり)・毎月(日付いくつでも・月末から・第n曜日)・毎年、間隔・回数・終了日
+        // 日付と曜日は「予定に書かれたゾーンの時計」で数える(計算は UTC の入れ物を借りる)。1回ずつ実際の時刻に直すので、別のゾーンの予定や夏時間でもずれない
+        function icsExpand(s, rule, from, to) {
+            const W = s.w, out = [], iv = Math.max(1, parseInt(rule.INTERVAL, 10) || 1), cnt = parseInt(rule.COUNT, 10), max = rule.COUNT && !isNaN(cnt) ? cnt : Infinity;   // 回数が読めないときは、回数の指定なしとして扱う
+            let until = null;
+            if (rule.UNTIL) { const u = icsDate(rule.UNTIL, {}); if (u) until = u.allDay ? new Date(u.w[0], u.w[1], u.w[2], 23, 59, 59) : u.d; }
+            if (until && until < from) return out;   // 取り込む期間より前に終わっている
+            const DOW = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 }, DAY = 86400000, fromMs = from.getTime();
+            const at = (y, mo, d) => new Date(Date.UTC(y, mo, d, W[3], W[4]));   // 時計の時刻を入れておくだけの入れ物
+            const real = f => s.allDay ? new Date(f.getUTCFullYear(), f.getUTCMonth(), f.getUTCDate()) : icsWall(f.getUTCFullYear(), f.getUTCMonth(), f.getUTCDate(), W[3], W[4], s.z);
+            const start = at(W[0], W[1], W[2]);
+            let n = 0;
+            const push = f => {   // false=もう先は見なくてよい
+                if (f < start) return true;
+                if (f.getTime() < fromMs - 2 * DAY) return ++n <= max;   // 期間よりずっと前の回は、数えるだけ
+                const d = real(f);
+                if (until && d > until) return false;
+                if (++n > max) return false;
+                if (d >= to) return false;
+                if (d >= from) out.push(d);
+                return out.length < 800;
+            };
+            const y0 = W[0], m0 = W[1], d0 = W[2];
+            const by = String(rule.BYDAY || "").split(",").map(x => x.trim()).filter(Boolean);
+            if (rule.FREQ === "DAILY") { for (let i = 0; i < 60000; i++) if (!push(at(y0, m0, d0 + i * iv))) break; }
+            else if (rule.FREQ === "WEEKLY") {
+                const wk = DOW[rule.WKST] != null ? DOW[rule.WKST] : 1;   // 週の始まり(書いていなければ月曜)
+                let days = by.map(x => DOW[x.slice(-2)]).filter(x => x != null);
+                if (!days.length) days = [start.getUTCDay()];
+                const offs = [...new Set(days.map(dw => (dw - wk + 7) % 7))].sort((a, b) => a - b);
+                const w0 = d0 - ((start.getUTCDay() - wk + 7) % 7);   // 最初の回がある週の、始まりの日
+                outer: for (let w = 0; w < 9000; w++) for (const o of offs) if (!push(at(y0, m0, w0 + w * iv * 7 + o))) break outer;
+            } else if (rule.FREQ === "MONTHLY") {
+                const nths = by.map(x => x.match(/^(-?\d)([A-Z]{2})$/)).filter(x => x && DOW[x[2]] != null && +x[1] !== 0);
+                const mds = String(rule.BYMONTHDAY || "").split(",").map(x => parseInt(x, 10)).filter(x => x);
+                outer2: for (let i = 0; i < 2400; i++) {
+                    const mo = m0 + i * iv, last = new Date(Date.UTC(y0, mo + 1, 0)), ld = last.getUTCDate();
+                    let ds;
+                    if (nths.length) ds = nths.map(x => {   // 第n曜日(-1 は最後)
+                        const k = +x[1], dw = DOW[x[2]];
+                        return k > 0 ? 1 + ((dw - new Date(Date.UTC(y0, mo, 1)).getUTCDay() + 7) % 7) + (k - 1) * 7 : ld - ((last.getUTCDay() - dw + 7) % 7) + (k + 1) * 7;
+                    });
+                    else ds = (mds.length ? mds : [d0]).map(v => v > 0 ? v : ld + 1 + v);   // マイナスは月末から
+                    ds = [...new Set(ds)].filter(v => v >= 1 && v <= ld).sort((a, b) => a - b);   // その月に無い日(31日など)はとばす
+                    for (const v of ds) if (!push(at(y0, mo, v))) break outer2;
+                }
+            } else if (rule.FREQ === "YEARLY") { for (let i = 0; i < 300; i++) { const f = at(y0 + i * iv, m0, d0); if (f.getUTCDate() !== d0) continue; if (!push(f)) break; } }   // 2/29 は、うるう年だけ
+            return out;
+        }
+        function icsParse(text) {   // .ics の文章 → 予定の元データ [{ title, memo, location, s:{d,allDay}, durMs, endExcl, rule, ex:Set, rid, uid }]
+            const lines = String(text).replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n");
+            const evs = []; let cur = null, depth = 0;
+            lines.forEach(line => {
+                if (/^BEGIN:VEVENT/i.test(line)) { cur = { ex: [] }; depth = 0; return; }
+                if (!cur) return;
+                if (/^BEGIN:/i.test(line)) { depth++; return; }   // 予定の中のアラームなどは読みとばす
+                if (/^END:VEVENT/i.test(line)) { evs.push(cur); cur = null; return; }
+                if (/^END:/i.test(line)) { depth = Math.max(0, depth - 1); return; }
+                if (depth) return;
+                let ci = -1; for (let k = 0, q = false; k < line.length; k++) { const ch = line[k]; if (ch === '"') q = !q; else if (ch === ":" && !q) { ci = k; break; } }   // 最初の「:」(引用符で囲んだ設定値の中は除く)。値の中の引用符は関係ない
+                if (ci < 0) return;
+                const head = line.slice(0, ci).split(";"), value = line.slice(ci + 1), name = head[0].toUpperCase(), params = {};
+                head.slice(1).forEach(x => { const i = x.indexOf("="); if (i > 0) params[x.slice(0, i).toUpperCase()] = x.slice(i + 1).replace(/^"|"$/g, ""); });
+                if (name === "SUMMARY") cur.title = icsUnesc(value);
+                else if (name === "DESCRIPTION") cur.desc = icsUnesc(value);
+                else if (name === "LOCATION") cur.location = icsUnesc(value);
+                else if (name === "UID") cur.uid = value.trim();
+                else if (name === "STATUS") cur.status = value.trim().toUpperCase();
+                else if (name === "DTSTART") cur.s = icsDate(value, params);
+                else if (name === "DTEND") cur.e = icsDate(value, params);
+                else if (name === "DURATION") cur.dur = icsDurMs(value.trim());
+                else if (name === "RRULE") { cur.rule = {}; value.split(";").forEach(x => { const i = x.indexOf("="); if (i > 0) cur.rule[x.slice(0, i).toUpperCase()] = x.slice(i + 1).toUpperCase(); }); }
+                else if (name === "EXDATE") value.split(",").forEach(v => { const x = icsDate(v, params); if (x) cur.ex.push(x.d.getTime()); });
+                else if (name === "RECURRENCE-ID") cur.rid = icsDate(value, params);
+            });
+            const moved = {};   // くり返しのうち、1回だけ変えた回(RECURRENCE-ID)。元の回は出さない
+            evs.forEach(v => { if (v.rid && v.uid) (moved[v.uid] = moved[v.uid] || new Set()).add(v.rid.d.getTime()); });
+            return evs.filter(v => v.s && v.status !== "CANCELLED").map(v => {
+                const durMs = v.e ? Math.max(0, v.e.d - v.s.d) : (v.dur || 0);
+                const skip = new Set(v.ex); if (!v.rid && v.uid && moved[v.uid]) moved[v.uid].forEach(t => skip.add(t));
+                return { title: v.title || "(無題)", memo: [v.location, v.desc].filter(Boolean).join("\n"), location: v.location || "", s: v.s, durMs, rule: v.rid ? null : (v.rule || null), skip };
+            });
+        }
+        function icsToEvent(src, d) {   // 元データの1回ぶん(開始 d)→ アプリの予定の形
+            const z = n => String(n).padStart(2, "0"), hm = x => z(x.getHours()) + ":" + z(x.getMinutes());
+            const e = { title: src.title, memo: src.memo, location: src.location, startDate: gcalDateKey(d), endDate: "", allDay: src.s.allDay, start: "", end: "" };
+            if (src.s.allDay) {
+                const days = Math.round(src.durMs / 86400000);   // 終了日は「次の日」で書かれている
+                if (days > 1) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days - 1); e.endDate = gcalDateKey(x); }
+            } else {
+                e.start = hm(d);
+                if (src.durMs > 0) {
+                    const b = new Date(d.getTime() + src.durMs); let bk = gcalDateKey(b), bh = hm(b);
+                    if (bk !== e.startDate && bh === "00:00") { bk = gcalDateKey(new Date(b.getTime() - 60000)); bh = ""; }   // 0時ちょうどまでは、前の日の終わりまで
+                    if (bk !== e.startDate) e.endDate = bk;
+                    if (bh) e.end = bh;
+                }
+            }
+            return e;
+        }
+        function icsBuildRows() {   // 取り込む範囲(これから / 過去も)に合わせて、一覧を作り直す
+            const st = icsSt, now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const from = st.past ? new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()) : today, to = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+            const list = [];
+            st.src.forEach(src => {
+                const rep = src.rule && ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(src.rule.FREQ);   // 読めないくり返し方は、最初の1回だけ
+                const starts = rep ? icsExpand(src.s, src.rule, from, to).filter(d => !src.skip.has(d.getTime())) : [src.s.d];
+                starts.forEach(d => {
+                    const e = icsToEvent(src, d);
+                    if ((e.endDate || e.startDate) < gcalDateKey(from)) return;   // 終わった予定(「過去も」のときは1年前まで)
+                    list.push(e);
+                });
+            });
+            list.sort((a, b) => (a.startDate + (a.start || "")).localeCompare(b.startDate + (b.start || "")));
+            const seen = {};
+            st.rows = list.filter(e => { const k = e.startDate + "|" + e.start + "|" + gcalNorm(e.title); if (seen[k]) return false; seen[k] = 1; return true; }).map(e => {
+                const kind = isAdmin() && impIsVolley(e) ? "volley" : "plan";
+                const dup = kind === "volley" ? impVolleyDup(e) : impPlanDup(e);
+                return { e, kind, dup, on: !dup };
+            });
+            st.rows = st.rows.filter(r => !r.dup).concat(st.rows.filter(r => r.dup));   // まだ入れていない予定を先に(件数の上限より多いファイルでも、くり返し選べば全部入る)
+        }
+        function icsOpen(name, src) {
+            icsSt = { name: name || "", src, past: false, rows: [], done: -1 };
+            icsBuildRows();
+            let ov = document.getElementById("icsOv");
+            if (!ov) { ov = document.createElement("div"); ov.id = "icsOv"; ov.innerHTML = `<div class="ics-back" onclick="icsClose()"></div><div class="ics-sheet" role="dialog" aria-label="カレンダーの取り込み"></div>`; document.body.appendChild(ov); }
+            icsRender(); ov.classList.add("open");
+        }
+        function icsClose() { const ov = document.getElementById("icsOv"); if (ov) ov.classList.remove("open"); icsSt = null; }
+        function icsWhen(e) {
+            const [y, m, d] = e.startDate.split("-").map(Number), wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
+            let t = `${m}/${d}(${wd})`;
+            if (e.endDate) { const [, m2, d2] = e.endDate.split("-").map(Number); t += `〜${m2}/${d2}`; }
+            return t + (e.allDay || !e.start ? "" : " " + e.start.replace(/^0/, "") + (e.end ? "–" + e.end.replace(/^0/, "") : ""));
+        }
+        const ICS_SHOW = 300;   // 一覧に出す件数の上限(それより多いファイルは、先の予定から順に)
+        function icsRender() {
+            const ov = document.getElementById("icsOv"), st = icsSt; if (!ov || !st) return;
+            const sh = ov.querySelector(".ics-sheet");
+            if (st.done >= 0) {
+                sh.innerHTML = `<div class="ics-head"><b>${st.done}件を取り込みました</b></div><div class="ics-acts"><span class="ics-grow"></span><button type="button" class="on" onclick="icsClose()">閉じる</button></div>`;
+                return;
+            }
+            const rows = st.rows.slice(0, ICS_SHOW), nOn = rows.filter(r => r.on && !r.dup).length, more = st.rows.length - rows.length;
+            const body = rows.length ? rows.map((r, i) => `<div class="ics-row${r.dup ? " dup" : r.on ? " on" : ""}">
+                    <button type="button" class="ics-chk" onclick="icsToggle(${i})" ${r.dup ? "disabled" : ""} aria-pressed="${r.on && !r.dup}" aria-label="${escapeHtml(r.e.title)} を取り込む"><i></i></button>
+                    <span class="ics-txt"><span class="ics-ttl">${escapeHtml(r.e.title)}</span><span class="ics-when">${escapeHtml(icsWhen(r.e))}${r.dup ? " ・ 追加済み" : ""}</span></span>
+                    ${isAdmin() ? `<button type="button" class="ics-kind${r.kind === "volley" ? " vb" : ""}" onclick="icsKind(${i})" ${r.dup ? "disabled" : ""}>${r.kind === "volley" ? "バレー" : "予定"}</button>` : ""}
+                </div>`).join("") : `<div class="ics-empty">${st.past ? "取り込める予定がありません。" : "これからの予定がありません。「過去も」で1年前までの予定を出せます。"}</div>`;
+            sh.innerHTML = `<div class="ics-head"><b>カレンダーの取り込み</b><span class="ics-sub">${escapeHtml(st.name)}</span></div>
+                <div class="ics-bar"><span class="ics-seg"><button type="button" class="${st.past ? "" : "on"}" onclick="icsPast(false)">これから</button><button type="button" class="${st.past ? "on" : ""}" onclick="icsPast(true)">過去も</button></span><span class="ics-grow"></span><button type="button" class="ics-allbtn" onclick="icsAll()">${nOn ? "すべて外す" : "すべて選ぶ"}</button></div>
+                <div class="ics-list">${body}${more > 0 ? `<div class="ics-empty">ほか ${more} 件は、この一覧を取り込んだあとに、もう一度ファイルを選ぶと出てきます。</div>` : ""}</div>
+                <div class="ics-acts"><span class="ics-note">${isAdmin() ? "右のボタンで種類を切り替え" : "自分の端末の予定として入ります"}</span><span class="ics-grow"></span><button type="button" onclick="icsClose()">閉じる</button><button type="button" class="on" onclick="icsApply()" ${nOn ? "" : "disabled"}>${nOn}件を取り込む</button></div>`;
+        }
+        function icsKeepScroll(fn) { const l = document.querySelector("#icsOv .ics-list"), y = l ? l.scrollTop : 0; fn(); icsRender(); const l2 = document.querySelector("#icsOv .ics-list"); if (l2) l2.scrollTop = y; }
+        function icsToggle(i) { icsKeepScroll(() => { const r = icsSt && icsSt.rows[i]; if (r && !r.dup) r.on = !r.on; }); }
+        function icsKind(i) {
+            icsKeepScroll(() => {
+                const r = icsSt && icsSt.rows[i]; if (!r || !isAdmin()) return;
+                r.kind = r.kind === "volley" ? "plan" : "volley";
+                r.dup = r.kind === "volley" ? impVolleyDup(r.e) : impPlanDup(r.e); r.on = !r.dup;
+            });
+        }
+        function icsAll() { icsKeepScroll(() => { const rows = icsSt.rows.slice(0, ICS_SHOW), any = rows.some(r => r.on && !r.dup); rows.forEach(r => { if (!r.dup) r.on = !any; }); }); }
+        function icsPast(v) { if (!icsSt) return; icsSt.past = !!v; icsBuildRows(); icsRender(); }
+        function icsApply() {
+            const st = icsSt; if (!st) return;
+            let n = 0, vol = false;
+            st.rows.slice(0, ICS_SHOW).forEach(r => {
+                if (!r.on || r.dup) return;
+                if (r.kind === "volley" && isAdmin()) { if (impVolleyDup(r.e)) return; impAddVolley(r.e); vol = true; }
+                else { if (impPlanDup(r.e)) return; impAddPlan(r.e); }
+                n++;
+            });
+            if (n) impAfter(vol);
+            st.done = n; icsRender();
         }
         function gcalHeaderLabel(d) {   // その日の予約のうちGoogleにもあるもの(接続していなくても、追加した記録があれば数える): "G✓" / "G 1/2" / ""
             const rs = (reservations[d] || []).filter(r => parseTimeRangeMin(r.time));
@@ -16177,7 +16495,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611110913;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611111959;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
