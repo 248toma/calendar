@@ -37,14 +37,9 @@
            Design tokens
            ========================================================= */
         :root {
-            --bg: #eceff4;
-            --surface: #ffffff;
-            --surface-2: #f7f8fa;
             --ink: #12151c;
             --ink-2: #4a5262;
             --ink-3: #8a93a3;
-            --line: #e6e8ed;
-            --line-2: #d4d8e0;
 
             --accent: #0a8f6a;
             --accent-soft: #e2f5ee;
@@ -63,6 +58,24 @@
             --r-sm: 10px;
             --shadow-sm: 0 1px 2px rgba(18, 21, 28, .04), 0 1px 3px rgba(18, 21, 28, .05);
             --shadow-md: 0 2px 8px rgba(18, 21, 28, .06), 0 10px 28px rgba(18, 21, 28, .07);
+        }
+
+        /* ---- 色と凹凸の基本(11/11 にここへ集約): メイン画面(protoPal / protoNeu)と同じ値。背景・面・線・光と影・出っぱり・へこみは、ここだけで決める ---- */
+        :root {
+            --bg: #e7eaf0; --surface: #f1f3f7; --surface-2: #e9ecf1; --line: #dfe3ea; --line-2: #cfd5de;
+            --hl: rgba(255, 255, 255, .95);
+            --sh: rgba(160, 172, 194, .62);
+            --edge-hi: rgba(255, 255, 255, .9); --edge-lo: rgba(120, 132, 155, .22);
+            --raise:    6px 6px 14px var(--sh), -6px -6px 14px var(--hl), inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo);
+            --raise-sm: 4px 4px 9px var(--sh), -4px -4px 9px var(--hl), inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo);
+            --raise-xs: 2px 2px 5px var(--sh), -2px -2px 5px var(--hl), inset 1px 1px 0 var(--edge-hi);
+            --sink:     inset 3px 3px 5px var(--sh), inset -3px -3px 5px var(--hl), inset -1px -1px 0 var(--edge-hi);
+        }
+        :root:has(body.dark) {
+            --bg: #2b2e34; --surface: #34383f; --surface-2: #3b3f47; --line: #42464e; --line-2: #555a64;
+            --hl: rgba(255, 255, 255, .06);
+            --sh: rgba(0, 0, 0, .55);
+            --edge-hi: rgba(255, 255, 255, .08); --edge-lo: rgba(0, 0, 0, .45);
         }
 
         /* =========================================================
@@ -142,7 +155,6 @@
         /* =========================================================
            Header
            ========================================================= */
-        .app-header { margin: 2px 0 16px; }
         .app-title {
             margin: 0 0 12px; font-size: 24px; font-weight: 800; letter-spacing: .02em;
             display: flex; align-items: center; gap: 10px;
@@ -153,7 +165,6 @@
             flex: 1 1 auto; white-space: nowrap; background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
             font-size: 13px; font-weight: 600; padding: 0 10px; min-height: 38px; color: var(--ink-2); box-shadow: var(--shadow-sm);
         }
-        .settings-btn:active { background: var(--surface-2); }
 
         /* =========================================================
            Cards / panels
@@ -186,7 +197,6 @@
         .st-done-row { display: flex; align-items: center; gap: 8px; margin: 10px 2px 0; font-size: 13px; color: var(--ink-2); cursor: pointer; }
         .st-done-row input { width: 18px; height: 18px; margin: 0; flex: none; }
         /* 時間表示: 週は縦軸=時間(1時間ごとに薄い線)、予約日モードは月単位で各日に時間軸 */
-        .legend { flex-wrap: nowrap; gap: 6px; }
         .cal-hbtns { display: flex; gap: 4px; flex: none; }
         .legend .today-btn { height: 30px; padding: 0 10px; font-size: 12px; white-space: nowrap; }
         .legend { align-items: center; }
@@ -232,7 +242,6 @@
         .op-colors { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding: 0 2px; }
         .op-colors-lbl { font-size: 11px; font-weight: 600; color: var(--ink-3); }
         .op-dot { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: none; background: var(--dot); box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .25); position: relative; }
-        .op-dot.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
         .op-dot[data-c="0"] { --dot: #9aa0a8; }
         .op-dot[data-c="1"] { --dot: #4677c4; }
         .op-dot[data-c="2"] { --dot: #4677c4; }
@@ -258,12 +267,10 @@
         .op-box.attached { margin-top: -6px; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
         .op-box input { box-sizing: border-box; height: 36px; min-width: 0; padding: 0 6px; font-size: 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); color: var(--ink); font-family: inherit; }
         .op-row { display: flex; gap: 4px; align-items: center; }
-        .op-row + .op-row { margin-top: 6px; }
         .op-box.allday .op-t { display: none; }
         .op-opts { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
         .op-opts { flex-wrap: wrap; gap: 8px 10px; }
         .op-opts .op-colors { margin: 0 0 0 auto; padding: 0; gap: 7px; flex: 1 1 0; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
-        .op-opts .op-dot { width: 24px; height: 24px; flex: none; }
         .op-opts .op-sc { flex: none; white-space: nowrap; writing-mode: horizontal-tb; padding: 6px 14px; font-size: 13px; }
         .op-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
         .op-grow { flex: 1; }
@@ -316,9 +323,6 @@
         .nv-ic { display: inline-flex; align-items: center; gap: 2px; }
         .cal-day .nv-ic .cal-warn { position: static; font-size: 10px; line-height: 1; }
         #nvBack { display: none; margin: 0 0 8px; }
-        body.nv-full #nvBack { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        #nvBack .nv-step { display: flex; gap: 6px; }
-        body.nv-full #nvBack { display: block; }
         body.nv-full #calCard, body.nv-full #nvDayPanel, body.nv-full #otherPlanBox { display: none !important; }
         .nv-row.nv-go { cursor: pointer; }
         .nv-go .nv-ttl::after { content: " ›"; color: var(--ink-3); }
@@ -349,10 +353,6 @@
             border: none; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: 500;
             background: transparent; color: var(--ink); min-height: 44px;
         }
-        .cal-day:active { filter: brightness(.95); }
-        .cal-day.today { font-weight: 800; box-shadow: inset 0 0 0 2px var(--accent); }
-        .cal-day.selected { box-shadow: inset 0 0 0 2px var(--ink); }
-        .cal-day.today.selected { box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px var(--ink); }
         .cal-day .cnt { font-size: 10px; font-weight: 700; margin-top: 1px; opacity: .8; }
 
         .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); margin: 12px 2px 0; }
@@ -381,7 +381,6 @@
            Input view
            ========================================================= */
 
-        .summary { font-size: 12.5px; font-weight: 600; color: var(--ink-3); letter-spacing: .02em; }
 
         .bulk-action-row { display: flex; gap: 8px; margin-bottom: 8px; }
         .bulk-action-row button { flex: 1; min-height: 38px; font-size: 13px; }
@@ -420,7 +419,6 @@
         .status-badge.danger { background: var(--notcome-soft); color: var(--notcome-ink); }
 
 
-        .confirm-group { margin-bottom: 22px; }
         .confirm-group-title {
             display: flex; align-items: center; justify-content: space-between; gap: 8px;
             font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 0 2px 10px; letter-spacing: .02em;
@@ -485,8 +483,6 @@
             display: flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); border-radius: var(--r-sm);
             padding: 10px 8px; font-size: 13.5px; font-weight: 500; background: var(--surface); cursor: pointer; white-space: nowrap;
         }
-        .param-checkbox-item:has(input:checked) { border-color: var(--ink); background: var(--surface-2); font-weight: 700; }
-        .param-checkbox-item input { width: 18px; height: 18px; }
 
         .conflict-rule { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px; background: var(--surface-2); margin-bottom: 8px; }
         .conflict-rule-side { display: flex; gap: 6px; }
@@ -559,7 +555,6 @@
         .note-details > summary::-webkit-details-marker { display: none; }
         .note-details > summary::before { content: "›"; color: var(--ink-3); width: .8em; flex-shrink: 0; font-size: 1.2em; line-height: 1; transition: transform .15s; }
         .note-details[open] > summary::before { transform: rotate(90deg); }
-        .note-details[open] > summary { border-bottom: 1px solid var(--line); }
         .note-details > .settings-note, .note-details > .team-split-note { margin: 0; padding: 10px 14px 12px; }
         .team-split-note ol { margin: 6px 0 0; padding-left: 1.5em; }
         .team-split-note ol > li { margin-bottom: 8px; }
@@ -579,7 +574,6 @@
         }
         .court-cell.front { background: #ffffff; }
         .court-cell.back { background: #fbf8f2; }
-        .court-cell.fixed { box-shadow: inset 0 0 0 1.5px var(--accent); }
         .court-slot-no { position: absolute; top: 4px; left: 7px; font-size: 10px; font-weight: 800; color: #b09670; }
         .court-name { font-weight: 700; font-size: 13.5px; }
         .court-pos { position: absolute; top: 3px; right: 5px; max-width: calc(100% - 28px); font-size: 9.5px; line-height: 1.2; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -725,12 +719,9 @@
         }
         .acc > summary::-webkit-details-marker { display: none; }
         .acc > summary::after { content: "›"; color: var(--ink-3); font-size: 18px; line-height: 1; transition: transform .15s; }
-        .acc[open] > summary { border-bottom: 1px solid var(--line); background: var(--surface-2); }
         .acc[open] > summary::after { transform: rotate(90deg); }
-        .acc-body { padding: 10px 12px 12px; }
         .acc-body .note-details { margin: 4px 0 10px; }
         .param-checkbox-grid { gap: 5px; }
-        .param-checkbox-item { padding: 8px 6px; font-size: 13px; }
         .mob-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }
         .mob-item label { display: block; text-align: center; font-size: 11px; font-weight: 600; color: var(--ink-3); margin-bottom: 3px; white-space: nowrap; }
         .mob-item input { width: 100%; text-align: center; padding: 0 2px; }
@@ -766,7 +757,6 @@
         /* ---- 日付バー(日付 + バレーあり) ---- */
         .day-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 2px 8px; }
         .selected-date-label { margin: 0; gap: 8px; align-items: baseline; min-width: 0; }
-        .selected-date-label .sd-main { font-size: 20px; }
         .selected-date-label .sd-sub { font-size: 12px; white-space: nowrap; }
         .event-toggle { margin: 0; padding: 0; border: none; background: none; box-shadow: none; gap: 8px; flex: none; }
         .event-toggle label { flex: none; font-size: 13px; }
@@ -784,8 +774,6 @@
 
         .input-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; padding: 0 2px; }
         .summary { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; font-weight: 600; color: var(--ink-2); letter-spacing: 0; }
-        .bulk-action-row { margin-bottom: 6px; }
-        .bulk-action-row button { min-height: 34px; }
 
 
         /* ---- 確認ビュー ---- */
@@ -852,7 +840,6 @@
         .roster-eff { margin-top: 6px; font-size: 11.5px; padding: 4px 8px; }
 
         /* ---- チーム分けビュー ---- */
-        .team-toolbar { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
         .team-split-btn { min-height: 44px; font-size: 14.5px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(18, 21, 28, .14); }
         .predict-box {
             display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; padding: 8px 12px;
@@ -873,7 +860,6 @@
         .team-result-card { padding: 12px; margin-bottom: 8px; box-shadow: none; border-radius: var(--r-md); }
         .team-result-title { font-size: 16px; margin-bottom: 0; }
         .team-avg-line { font-size: 11.5px; margin-bottom: 6px; }
-        .court-box { margin: 6px 0; padding: 8px; }
         .court-net { font-size: 9px; padding: 3px 0 3px .6em; }
         .court-grid { gap: 4px; padding: 5px; }
         .court-cell { min-height: 56px; padding: 21px 2px 5px; }
@@ -956,13 +942,10 @@
         /* =========================================================
            Minimal skin: 枠線・影・装飾を減らし、白い面と余白だけで区切る
            ========================================================= */
-        :root { --line: #eef0f3; }
-        body { background: #f5f6f8; }
+        body { background: var(--bg); }   /* ページの地の色は、出っぱった部品と同じ色 */
 
         /* ---- ヘッダー: 文字だけのボタン ---- */
         .app-title { font-size: 18px; gap: 0; }
-        .app-title::before { display: none; }
-        .header-btns { gap: 0; }
         .settings-btn { background: transparent; border: none; box-shadow: none; color: var(--ink-2); min-height: 30px; padding: 0 9px; font-size: 13px; font-weight: 600; border-radius: 8px; }
         .settings-btn:active { background: var(--line); }
 
@@ -986,10 +969,8 @@
         #rosterList .roster-card:last-child { border-bottom: none; }
         #rosterList .roster-card.open { background: transparent; }
         .rc-body { border-top: none; background: var(--surface-2); border-radius: 10px; margin: 0 0 8px; }
-        .rs-seg { background: #eef0f3; }
 
         /* ---- チーム分け ---- */
-        .team-toolbar { gap: 6px; }
         .team-split-btn { box-shadow: none; }
         .predict-box { border: none; }
         .team-legend { font-size: 10.5px; color: var(--ink-3); margin: 0 2px 6px; }
@@ -1079,7 +1060,6 @@
         .rvs-yen input { width: 66px; min-height: 38px; font-size: 13px; padding: 0 4px; }
 
         /* ===== 精算 ===== */
-        .selected-date-label .sd-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
         .view-tab-btn.done { background: #dde4f2; color: #3b4d7a; }
         .view-tab-btn.active.done { background: #b3c3e6; color: #1b2a57; box-shadow: inset 0 0 0 1.5px #4a62a0, var(--shadow-sm); }
         .view-tab-btn { font-size: 12.5px; padding: 0 2px; white-space: nowrap; }
@@ -1088,7 +1068,6 @@
         .rv-chip:has(.rv-chip-price) { padding: 4px 14px; border-radius: 14px; }
         .rv-chip-price { display: block; font-size: 11px; font-weight: 500; opacity: .7; line-height: 1.2; font-variant-numeric: tabular-nums; }
         .st-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
-        .st-row { display: flex; align-items: center; gap: 8px; min-height: 40px; }
         .st-k { font-size: 12.5px; font-weight: 700; color: var(--ink-3); width: 62px; flex: none; }
         .st-v { font-size: 15px; font-variant-numeric: tabular-nums; }
         .st-sub { font-size: 11.5px; color: var(--ink-3); }
@@ -1197,14 +1176,9 @@
            ========================================================= */
         :root:has(body.dark) {
             color-scheme: dark;
-            --bg: #313746;
-            --surface: #3e4556;
-            --surface-2: #485066;
             --ink: #eef0f5;
             --ink-2: #cdd3df;
             --ink-3: #a6aebd;
-            --line: #535c72;
-            --line-2: #66708a;
             --ink-fill: #6677a8;
             --accent-soft: #266a57;   --accent-ink: #7fe6c2;
             --come-soft: #266a57;     --come-ink: #7fe6c2;
@@ -1262,17 +1236,8 @@
            構造を表現する。罫線は使わない。
            ========================================================= */
         :root {
-            --hl: #ffffff;
-            --sh: rgba(120, 130, 152, .30);
-            --raise:    -3px -3px 8px var(--hl), 3px 4px 10px var(--sh);
-            --raise-sm: -2px -2px 5px var(--hl), 2px 2px 6px var(--sh);
-            --sink:     inset 2px 2px 5px var(--sh), inset -2px -2px 5px var(--hl);
             --press:    inset 2px 2px 6px rgba(0, 0, 0, .32);
             --r-lg: 16px; --r-md: 12px; --r-sm: 10px;
-        }
-        :root:has(body.dark) {
-            --hl: rgba(255, 255, 255, .055);
-            --sh: rgba(12, 15, 24, .55);
         }
 
         /* ---- 凸: 大きな面 ---- */
@@ -1364,9 +1329,7 @@
         .cal-day:active { filter: none; }
         .cal-day[class*="event-"] { box-shadow: var(--raise-sm); }
         .cal-day.today { box-shadow: var(--raise-sm), inset 0 0 0 1.5px var(--accent); font-weight: 800; }
-        .cal-day.selected { box-shadow: var(--sink); font-weight: 800; }
         .cal-day.selected:not([class*="event-"]) { background-color: var(--bg); }
-        .cal-day.today.selected { box-shadow: var(--sink), inset 0 0 0 1.5px var(--accent); }
 
         /* ---- コート ---- */
         .court-cell { border: none; box-shadow: var(--raise-sm); }
@@ -1417,13 +1380,10 @@
            v20: メンバー画面をさらにコンパクトに
            ========================================================= */
         /* 新しいメンバー欄 */
-        #memberView .add-row { gap: 6px; margin: 0 0 6px; }
-        #memberView .add-row input { min-height: 32px; height: 32px; font-size: 14px; padding: 0 10px; border-radius: 8px; }
         #memberView .add-row .add-btn { min-height: 32px; height: 32px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
         /* 入力欄は短く、右に「過去日コピー」「スクショ取込」を同じ行へ */
         #memberView .add-row { display: flex; align-items: center; flex-wrap: nowrap; margin: 0 0 8px; }
         #memberView .add-row input { flex: 0 1 96px; width: 96px; min-width: 0; }
-        #memberView .add-row .add-btn { flex: none; padding: 0 12px; }
 
         /* 一括選択のチェックは、名前の幅を変えないよう角に重ねて表示(選択しても位置がズレない) */
         .confirm-group .mv-chip { position: relative; }
@@ -1471,39 +1431,23 @@
         #memberView .mv-state { grid-column: 1 / -1; flex: none; min-height: 0; font-size: 11.5px; }
 
         /* 全選択・全解除 */
-        #memberView .input-toolbar { justify-content: space-between; margin: 0 0 4px; }
         #memberView .input-toolbar .bulk-action-row { margin: 0; gap: 4px; flex: none; }
         #memberView .input-toolbar .bulk-action-row button { flex: none; min-height: 26px; padding: 0 12px; font-size: 12px; border-radius: 8px; }
 
         /* 状態ごとの太い帯: 名前は帯の上に乗せ、右端の縦の帯に ○ ✖ △ ? を置く(タップで選択中の人をその状態へ) */
         #memberView .confirm-group { display: flex; align-items: stretch; margin: 0 0 6px; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); }
-        #memberView .confirm-group.come { background: var(--come-soft); }
-        #memberView .confirm-group.notcome { background: var(--notcome-soft); }
-        #memberView .confirm-group.pending { background: var(--pending-soft); }
-        #memberView .confirm-group.unconfirmed { background: var(--unconf-soft); }
         #memberView .confirm-group .mv-group-body { flex: 1; min-width: 0; display: flex; align-items: center; padding: 7px 8px; }
         #memberView .confirm-group .confirm-name-list { gap: 6px; }
         #memberView .confirm-group .confirm-name-chip { background: var(--surface); color: var(--ink); border-color: transparent; }
-        #memberView .confirm-group .confirm-empty-note { padding: 0 2px; }
         #memberView button.confirm-group-title {
             flex: none; width: 46px; min-height: 46px; margin: 0; padding: 0; border: none; border-radius: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
             font: inherit; text-align: center; cursor: pointer; color: #fff; background: var(--pending); box-shadow: none;
         }
-        #memberView button.confirm-group-title.come { background: var(--come); }
-        #memberView button.confirm-group-title.notcome { background: var(--notcome); }
-        #memberView button.confirm-group-title.pending { background: var(--pending); }
-        #memberView button.confirm-group-title.unconfirmed { background: var(--unconf); }
         #memberView button.confirm-group-title > span { color: inherit; }
         #memberView button.confirm-group-title .gt-sym { font-size: 24px; font-weight: 800; line-height: 1; }
         #memberView button.confirm-group-title .gt-n { font-size: 10px; font-weight: 700; line-height: 1; opacity: .9; }
-        #memberView button.confirm-group-title.armed { box-shadow: inset 0 0 0 2.5px rgba(255, 255, 255, .75); }
-        #memberView button.confirm-group-title:active { filter: brightness(.92); }
         /* 人数欄: 記号と数字を横に並べる(○7 ✖2 △1 ?3) */
-        #memberView .confirm-count-item.come .lbl { color: var(--come); }
-        #memberView .confirm-count-item.notcome .lbl { color: var(--notcome); }
-        #memberView .confirm-count-item.pending .lbl { color: var(--pending); }
-        #memberView .confirm-count-item.unconfirmed .lbl { color: var(--unconf); }
     
         /* =========================================================
            v25: メンバー欄を落ち着いた配色に / 選択日の凹みをはっきり
@@ -1593,7 +1537,6 @@
             background: var(--ink-fill); color: #fff; border: 1px solid var(--ink-fill);
             box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
         }
-        body.dark #memberView .confirm-group .confirm-name-chip.chip-unlinked { border: 1px dashed var(--m-pend-t); }
         body.dark #memberView .confirm-group .mv-chip.sel {
             background: var(--surface); color: var(--ink); border-color: var(--ink-fill);
             box-shadow: inset 0 0 0 2px var(--ink-fill);
@@ -1603,11 +1546,9 @@
         /* ---- v31 ---- */
         /* 左の記号の帯: 外枠(14px)に合わせて角を丸め、選択中のハイライト枠の角が切れないように */
         #memberView button.confirm-group-title { border-radius: 14px 0 0 14px; }
-        #memberView button.confirm-group-title.armed { box-shadow: inset 0 0 0 2.5px rgba(255, 255, 255, .8); }
         /* 出欠の人数帯は廃止。バッジ + ボタンを全選択/全解除と同じ行に */
         #memberView .input-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin: 0 0 6px; }
         #memberView .input-toolbar .bulk-action-row { flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin: 0 0 0 auto; }
-        #memberView .input-toolbar .bulk-action-row button { padding: 0 10px; white-space: nowrap; }
         #memberView .input-toolbar .status-badge { font-size: 10.5px; padding: 2px 8px; white-space: nowrap; }
         #memberView .input-toolbar .bulk-action-row button.mv-act:disabled { color: var(--ink-3); box-shadow: none; }
         #memberView > .mv-state { margin: 0 2px 6px; }
@@ -1624,7 +1565,6 @@
         .rv-det > summary::before { content: "▸"; font-size: 11px; transition: transform .15s; }
         .rv-det[open] > summary::before { transform: rotate(90deg); }
         /* チーム分け: チーム数は小さく、チーム分け/リセットはランダムの横(1行) */
-        .team-toolbar { flex-wrap: wrap; gap: 6px; }
         .team-toolbar .team-split-btn, .team-toolbar .team-rerun-btn {
             width: auto; flex: none; margin: 0; min-height: 34px; padding: 0 12px; font-size: 12.5px; white-space: nowrap; border-radius: 8px;
         }
@@ -1642,16 +1582,6 @@
         /* =========================================================
            v45: ライトモードでも凹凸をはっきり(写真のようなニューモーフィズム。色は変えない)
            ========================================================= */
-        :root {
-            --sh: rgba(112, 124, 150, .38);
-            --raise:    -4px -4px 10px var(--hl), 4px 5px 12px var(--sh);
-            --raise-sm: -3px -3px 7px var(--hl), 3px 3px 8px var(--sh);
-            --sink:     inset 3px 3px 7px var(--sh), inset -3px -3px 7px var(--hl);
-        }
-        :root:has(body.dark) {
-            --hl: rgba(255, 255, 255, .055);
-            --sh: rgba(12, 15, 24, .55);
-        }
         /* 選択日: 深く凹ませる(予定ありの色付きの日でも凹みが見えるように、他の指定より強く) */
 
         /* =========================================================
@@ -1663,7 +1593,6 @@
         .sv-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
         .sv-head h2 { font-size: 16px; font-weight: 800; margin: 0; }
         .sv-close { border: none; background: var(--bg); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 700; min-height: 38px; padding: 0 16px; border-radius: 999px; box-shadow: var(--raise-sm); cursor: pointer; }
-        .sv-who { font-size: 14px; margin: 0 2px 6px; }
         .sv-who select { font: inherit; margin-left: 8px; }
         .sv-note { font-size: 12.5px; color: var(--ink-3); margin: 0 2px 12px; }
         .sv-empty { padding: 28px 8px; text-align: center; color: var(--ink-3); font-size: 13.5px; line-height: 1.7; }
@@ -1674,8 +1603,6 @@
         .sv-ppls { display: flex; flex-wrap: wrap; gap: 4px 6px; flex: 1 1 0; min-width: 0; justify-content: flex-end; }
         .sv-ppl { font-size: 11px; font-weight: 600; line-height: 1.5; padding: 1px 8px; border-radius: 10px; max-width: 100%; }
         .sv-ppl b { font-weight: 800; margin-right: 2px; }
-        .sv-ppl.un { background: var(--unconf-soft); color: var(--unconf-ink); }
-        .sv-ppl.pd { background: var(--pending-soft); color: var(--pending-ink); }
         .sv-tag { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--unconf-soft); color: var(--unconf-ink); }
         .sv-info { font-size: 13.5px; color: var(--ink-2); margin: 4px 0 12px; line-height: 1.5; }
         .sv-btns { display: flex; gap: 12px; }
@@ -1772,7 +1699,6 @@
             --i-dice:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='4'%20y='4'%20width='16'%20height='16'%20rx='4.500'/%3E%3Ccircle%20cx='9'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='15'%20cy='9'%20r='1.200'%20fill='black'/%3E%3Ccircle%20cx='9'%20cy='15'%20r='1.200'%20fill='black'/%3E%3C/svg%3E");--i-shuffle:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%207h3c4.500%200%205.500%2010%2010%2010h2M3%2017h3c1.800%200%203-1.200%204-2.800M14%208.800C15%207.800%2015.800%207%2017%207h1M18%204l3%203-3%203M18%2014l3%203-3%203'/%3E%3C/svg%3E");--i-undo:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M9%2014%204%209l5-5M4%209h10.500a5.500%205.500%200%200%201%200%2011H11'/%3E%3C/svg%3E");--i-close:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%206l12%2012M18%206%206%2018'/%3E%3C/svg%3E");
             --i-eye:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3.600-7%2010-7%2010%207%2010%207-3.600%207-10%207S2%2012%202%2012z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3C/svg%3E");--i-eyeoff:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3.600-7%2010-7%2010%207%2010%207-3.600%207-10%207S2%2012%202%2012z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3Cpath%20d='M4%204l16%2016'/%3E%3C/svg%3E");
             --i-caldown:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2012V7.500a2.500%202.500%200%200%200-2.500-2.500h-11A2.500%202.500%200%200%200%204%207.500v11A2.500%202.500%200%200%200%206.500%2021H12M4%2010h16M8.500%203.500v3M15.500%203.500v3M18%2015v6M15%2018.500l3%203%203-3'/%3E%3C/svg%3E");
-            --raise-xs: -1px -1px 2px var(--hl), 1.5px 2px 3.5px var(--sh);
             --amber: #d98a00; }
         body.dark { --amber: #f0b44a; }
         body, button, input, select, textarea { font-family: "Outfit", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; letter-spacing: .01em; }
@@ -1863,7 +1789,6 @@
         #memberView .confirm-group .confirm-name-chip.me::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 2px; }
         #memberView .confirm-group .confirm-empty-note { padding: 0 4px; color: var(--ink-3); }
         body.dark #memberView .confirm-group .confirm-name-chip, body.dark #memberView .confirm-group.pending .confirm-name-chip, body.dark #memberView .confirm-group.unconfirmed .confirm-name-chip { background: var(--bg); color: var(--ink); border-color: transparent; }
-        body.dark #memberView .confirm-group .confirm-name-chip.chip-unlinked { border: 1px dashed var(--ink-3); }
 
         /* ===== v50: アンケート・チーム分けをシンプルに / 選択は色の反転 ===== */
         .sv-head h2 .ic { width: 20px; height: 20px; margin-right: 4px; }
@@ -2001,14 +1926,6 @@
         .roster-eye-btn[aria-pressed="true"] { color: var(--accent); box-shadow: var(--sink); }
 
         /* ===== v57: ライトモードの凹凸を強く / お金マークを見やすく / 時間入力の凹み ===== */
-        :root {
-            --sh: rgba(105, 118, 150, .40);
-            --raise:    -4px -4px 10px var(--hl), 4px 5px 12px var(--sh);
-            --raise-sm: -3px -3px 6px var(--hl), 3px 3px 7px var(--sh);
-            --raise-xs: -2px -2px 4px var(--hl), 2px 2.5px 4.5px var(--sh);
-            --sink:     inset 3px 3px 6px var(--sh), inset -3px -3px 6px var(--hl);
-        }
-        :root:has(body.dark) { --sh: rgba(12, 15, 24, .55); }
         .op-box input[type="time"] { -webkit-appearance: none; appearance: none; background: var(--bg); box-shadow: var(--sink); border: none; border-radius: 10px; min-height: 38px; height: 38px; color: var(--ink); }
         .op-box input[type="time"]::-webkit-date-and-time-value { text-align: center; min-height: 1em; }
 
@@ -2086,11 +2003,8 @@
         #settingsPanel .set-saved.ok { color: var(--accent); }
         #settingsPanel .set-saved.err { color: var(--notcome-ink, #c0392b); }
         #settingsPanel #rosterPanel .panel-sticky { position: static; box-shadow: none; padding-top: 0; }   /* 設定の見出しと重ならないように */
-        #settingsPanel .mob-in-roster { margin: 0 0 14px; }
-        #settingsPanel .mob-in-roster .mob-wrap { padding: 0 12px 10px; }
         #settingsPanel .panel-group-label { margin-top: 22px; }
         #setTop .st-sub { margin: 14px 2px 2px; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--ink-3); }
-        #setTop .st-sub:first-child { margin-top: 2px; }
         /* カレンダー下のボタン列はなし(時間・予約日はピンチ、Todayは右下、一括追加は上) */
         #calCard, #calGrid * { touch-action: pan-y; }   /* 2本指はページの拡大ではなく表示切り替えに使う */
         body.plan-editing #addFab, body.plan-editing #addChooser { opacity: 0; pointer-events: none; transform: scale(.8); }
@@ -2378,7 +2292,6 @@
         .mt-top { display: flex; align-items: center; gap: 8px; font-size: 13px; }
         .mt-no { color: var(--ink-3); font-size: 11px; font-weight: 700; }
         .mt-team { font-weight: 700; color: var(--ink-2); }
-        .mt-team.win { color: var(--accent); }
         .mt-vs { font-size: 12px; color: var(--ink-3); }
         .mt-del { margin-left: auto; border: none; background: none; color: var(--ink-3); font-size: 14px; }
         .mt-day { margin: 12px 2px 6px; font-size: 12px; font-weight: 800; color: var(--ink-2); }
@@ -2614,7 +2527,6 @@
         #teamsView .tb2 .team-rerun-btn { background: var(--bg); color: var(--ink); box-shadow: var(--raise-sm); }
         #teamsView .tb2 .team-split-btn[style*="none"], #teamsView .tb2 .team-rerun-btn[style*="none"] { display: none !important; }
         #teamsView .tchip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; margin: 0; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 11.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-        #teamsView .tchip .ic { width: 14px; height: 14px; }
         #teamsView .tchip input { display: none; }
         #teamsView label.tchip > span { display: inline-flex; align-items: center; gap: 5px; }
         #teamsView .tchip:has(input:checked), #teamsView .tchip[aria-pressed="true"] { background: var(--accent); color: #fff; box-shadow: none; }
@@ -2656,7 +2568,6 @@
         .mt-rec { flex-direction: row; align-items: center; gap: 8px; }
         .mt-gt b { min-width: 1em; }
         .mt-no { min-width: 1.2em; }
-        .mt-back { font-size: 14px; width: 28px; padding: 0; }
 
         /* 操作は1列に収める(チーム数・分ける・小さい丸ボタン) */
         #teamsView .tb2 { gap: 6px; margin: 0 0 10px; }
@@ -2727,7 +2638,6 @@
         .sc-in.bad .sc-num { color: var(--sn-neg, #c4575c); box-shadow: var(--sn-insetS, var(--sink)), 0 0 0 1.5px color-mix(in srgb, var(--sn-neg, #c4575c) 55%, transparent); }
         .sc-in.shake { animation: rotShake .32s ease; }
         .mt-rec .sc-in { flex: 1 1 auto; }
-        .mt-ed-sc { flex-wrap: wrap; }
         .mt-ed-sc .sc-in { justify-content: flex-start; }
         .mt-ed-sc .sc-in .sc-num { width: 56px !important; height: 38px !important; font-size: 19px !important; }
         .mt-ed-old { display: inline-flex; align-items: center; gap: 4px; opacity: .65; font-size: 11px; font-weight: 600; }
@@ -2810,6 +2720,7 @@
         /* 文字は1色(色は続く予定の線だけ)。長い題名は「…」を付けずに切る(幅がそろって静かに見える) */
         #protoUI .pr-lt-solo > b, #protoUI .pr-lt-lane > b { color: var(--pr-ink2, #4a5262) !important; text-overflow: clip !important; }
         #protoUI .pr-lts.past .pr-lt > b { color: var(--pr-ink3, #8a909a) !important; }
+        #protoUI .pr-lt-solo > b.pr-cut { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 9px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 9px), transparent); }   /* 入りきらない題名: 右端をなだらかに消す */
         /* 文字は1色のまま、予定の色は題名の頭の小さな点で(続く予定は線の色) */
         #protoUI .pr-lt-solo > b::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 2.5px; vertical-align: .5px; }
         /* 長押しメニュー(試作UI) */
@@ -2970,7 +2881,6 @@
         #fxOv .fx-netopt select { height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
         #fxOv .fx-opts input, #fxOv .fx-opts select { height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 0 8px; font-size: 13px; }
         #fxOv .fx-acts { display: flex; gap: 8px; justify-content: flex-end; margin: 12px 0 0; flex-wrap: wrap; }
-        #fxOv .fx-go { background: var(--accent) !important; color: #fff !important; }
         #fxOv .fx-go:disabled { opacity: .4; }
         #fxOv .fx-ev { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
         #fxOv .fx-ev:first-of-type { border-top: none; }
@@ -2984,7 +2894,6 @@
         #fxOv .fx-tagrow:first-of-type { border-top: none; }
         #fxOv .fx-tagrow > span { font-size: 12px; color: var(--ink-3); padding-top: 6px; }
         #fxOv .fx-tagrow div { display: flex; flex-wrap: wrap; gap: 6px; }
-        #fxOv .fx-tagrow button { border: 1px solid var(--line); border-radius: 15px; background: var(--bg); color: var(--ink-2); font-size: 12px; padding: 6px 11px; }
         #fxOv .fx-tagrow button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
         #fxOv .fx-hrow em { font-style: normal; font-size: 10.5px; margin-left: 6px; padding: 1px 7px; border-radius: 8px; background: var(--bg); color: var(--ink-2); }
         #fxOv .fx-hedit { padding: 4px 0 10px; }
@@ -3024,7 +2933,6 @@
         #fxOv .fx-grp > h5 { display: flex; flex-direction: column; justify-content: center; min-height: 50px; margin: 0 -16px 2px; padding: 8px 16px; box-sizing: border-box; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; color: var(--ink); }
         #fxOv .fx-grp > h5 small { margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--ink-3); }
         #fxOv .fx-row { padding: 11px 0; gap: 3px 12px; }
-        #fxOv .fx-row > span { font-size: 13.5px; color: var(--ink); }
         #fxOv .fx-row b { font-size: 15px; font-weight: 700; text-align: right; }
         #fxOv .fx-row small { font-size: 11px; line-height: 1.5; }
         #fxOv .fx-note { margin: 14px 6px 0; font-size: 11px; color: var(--ink-3); }
@@ -3036,15 +2944,10 @@
         #fxOv .fx-card > summary > em { font-style: normal; font-size: 12px; font-weight: 500; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
         #fxOv .fx-card > summary::after { content: "›"; margin-left: 10px; color: var(--ink-3); font-size: 18px; line-height: 1; transition: transform .15s; }
         #fxOv .fx-card > summary > span { flex: 1; min-width: 0; }
-        #fxOv .fx-card[open] > summary { border-bottom: 1px solid var(--line); }
-        #fxOv .fx-card[open] > summary::after { transform: rotate(90deg); }
-        #fxOv .fx-cbody { padding: 2px 0 8px; }
         #fxOv .fx-cbody > .fx-grp { margin: 0; padding-top: 0; border-radius: 0; background: none; }
-        #fxOv .fx-cbody > .fx-grp + .fx-grp { border-top: 1px solid var(--line); }
         #fxOv .fx-cbody > .fx-grp > h5 { min-height: 0; margin: 0 -16px; padding: 12px 16px 4px; border-bottom: none; font-size: 12px; font-weight: 700; color: var(--ink-3); }
         #fxOv .fx-cbody > .fx-grp:first-child > h5 { font-size: 0; padding-top: 10px; }   /* カードの見出しと同じ名前は出さず、説明だけ */
         #fxOv .fx-cbody > .fx-grp:first-child > h5 small { font-size: 11px; margin: 0; }
-        #fxOv .fx-cbody > .fx-note, #fxOv .fx-cbody > .fx-acts { margin-left: 16px; margin-right: 16px; }
         /* 動画のすぐ下の「直す」と、シークバーの印 */
         #fxOv .fx-stick.on { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-bottom: 6px; box-shadow: 0 -80px 0 0 var(--bg); }
         #fxOv .fx-stick.on .fx-cvbox { display: flex; justify-content: center; }
@@ -3054,7 +2957,6 @@
         #fxOv .fx-tl { position: relative; height: 18px; margin-top: 2px; }
         #fxOv .fx-ctrl .fx-tk { width: auto; }
         #fxOv .fx-ctrl .fx-tk, #fxOv .fx-tk { position: absolute; top: 0; transform: translateX(-50%); min-width: 18px; height: 18px; padding: 0 3px; border: none; border-radius: 6px; background: var(--surface); box-shadow: var(--raise-sm); color: var(--ink-2); font-size: 10px; font-weight: 700; line-height: 18px; }
-        #fxOv .fx-ctrl .fx-tk.on { color: var(--accent); box-shadow: var(--sink); background: var(--bg); }
         #fxOv .fx-bd { position: absolute; top: 7px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--ink-3); }
         #fxOv .fx-edbar { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; }
         #fxOv .fx-warn { color: #d9534f; font-weight: 700; }
@@ -3062,7 +2964,6 @@
         #fxOv .fx-edchips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 6px; }
         #fxOv .fx-edchips::-webkit-scrollbar { display: none; }
         #fxOv .fx-edchips button { flex: none; height: 32px; padding: 0 12px; border: none; border-radius: 11px; background: var(--surface); box-shadow: var(--raise-sm); color: var(--ink); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-        #fxOv .fx-edchips button.on { background: var(--bg); box-shadow: var(--sink); color: var(--accent); }
         #fxOv .fx-edrow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface); margin: 2px 0 4px; }
         #fxOv .fx-edrow > div { flex: 1; min-width: 0; }
         #fxOv .fx-edrow b { display: block; font-size: 13.5px; color: var(--ink); }
@@ -3070,7 +2971,6 @@
         #fxOv .fx-edrow > span { display: flex; flex-direction: column; gap: 6px; flex: none; }
         #fxOv .fx-edrow > span button { height: 32px; padding: 0 12px; border: none; border-radius: 11px; background: var(--bg); box-shadow: var(--raise-sm); color: var(--ink-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
         #fxOv .fx-edrow > span button:disabled { opacity: .45; }
-        #fxOv .fx-edrow .fx-go3 { color: var(--accent); }
         /* ベストなタイミング・スロー再生・動画を重ねる */
         #fxOv .fx-verdict { padding: 14px 16px 4px; }
         #fxOv .fx-verdict b { display: block; font-size: 17px; font-weight: 700; color: var(--ink); }
@@ -3092,24 +2992,18 @@
         #fxOv .fx-vsel .fx-cvbox { margin: 8px 0; }
         #fxOv .fx-pillrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
         #fxOv .fx-pillrow button, #fxOv .fx-pillrow label.fx-pill { height: 34px; padding: 0 14px; display: inline-flex; align-items: center; border: none; border-radius: 12px; background: var(--surface); box-shadow: var(--raise-sm); color: var(--ink); font-size: 12.5px; font-weight: 600; }
-        #fxOv .fx-pillrow button.on { box-shadow: var(--sink); background: var(--bg); color: var(--accent); }
         #fxOv .fx-pillrow input[type=file] { display: none; }
         #fxOv .fx-vsel input[type=range] { width: 100%; }
         #fxOv .fx-tiplist { margin: 10px 16px 6px; padding-left: 1.1em; font-size: 12.5px; line-height: 1.8; color: var(--ink-2); }
         #fxOv .fx-tiplist b { color: var(--ink); }
         /* ボタン・入力: アプリのほかの画面と同じ凸凹 */
-        #fxOv .st-btn { height: 36px; }
-        #fxOv .fx-go { background: var(--bg) !important; color: var(--accent) !important; }
         #fxOv .fx-acts { margin-top: 14px; }
         #fxOv .fx-acts-main { margin-top: 18px; }
         #fxOv .fx-ctrl button { background: var(--surface); box-shadow: var(--raise-sm); border-radius: 14px; }
         #fxOv .fx-set { border: none; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-sm); color: var(--ink-2); font-weight: 600; }
         #fxOv .fx-opts input, #fxOv .fx-opts select, #fxOv .fx-netopt select, #fxOv .fx-cmphead select, #fxOv .fx-refsel select { border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--sink); color: var(--ink); }
-        #fxOv .fx-tagrow button { border: none; border-radius: 16px; background: var(--bg); box-shadow: var(--raise-sm); color: var(--ink-2); padding: 7px 12px; }
-        #fxOv .fx-tagrow button.on { background: var(--bg); color: var(--accent); box-shadow: var(--sink); font-weight: 700; }
         #fxOv .fx-seg { background: var(--bg); box-shadow: var(--sink); border-radius: 12px; padding: 3px; }
         #fxOv .fx-seg button.on { background: var(--surface); color: var(--accent); box-shadow: var(--raise-sm); border-radius: 9px; }
-        #fxOv .fx-hrow em { background: var(--bg); box-shadow: var(--sink); }
         #fxOv .fx-ov svg, #fxOv .fx-curve svg { background: var(--bg); border-radius: 12px; }
         #fxOv .fx-sticks > div { background: var(--bg); }
         #fxOv .fx-guide { font-size: 13px; }
@@ -3856,29 +3750,12 @@
            統一(11/11): アプリ全体の色と凹凸を、メイン画面(protoPal / protoNeu)と同じ値にそろえる
            - 背景: ライト #e7eaf0 / ダーク #2b2e34(メイン画面・設定と同じ)
            - 影: 青みのある影 + 白い光。出っぱりのふちに細い光と影の線(--sn-raise と同じ作り)
-           ここより前の --bg / --hl / --sh / --raise* / --sink は、すべてこの値で上書きされる
+           色と影の値そのものは、スタイルの先頭「色と凹凸の基本」にまとめてある
            ========================================================= */
-        :root {
-            --bg: #e7eaf0; --surface: #f1f3f7; --surface-2: #e9ecf1; --line: #dfe3ea; --line-2: #cfd5de;
-            --hl: rgba(255, 255, 255, .95);
-            --sh: rgba(160, 172, 194, .62);
-            --edge-hi: rgba(255, 255, 255, .9); --edge-lo: rgba(120, 132, 155, .22);
-            --raise:    6px 6px 14px var(--sh), -6px -6px 14px var(--hl), inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo);
-            --raise-sm: 4px 4px 9px var(--sh), -4px -4px 9px var(--hl), inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo);
-            --raise-xs: 2px 2px 5px var(--sh), -2px -2px 5px var(--hl), inset 1px 1px 0 var(--edge-hi);
-            --sink:     inset 3px 3px 5px var(--sh), inset -3px -3px 5px var(--hl), inset -1px -1px 0 var(--edge-hi);
-        }
-        :root:has(body.dark) {
-            --bg: #2b2e34; --surface: #34383f; --surface-2: #3b3f47; --line: #42464e; --line-2: #555a64;
-            --hl: rgba(255, 255, 255, .06);
-            --sh: rgba(0, 0, 0, .55);
-            --edge-hi: rgba(255, 255, 255, .08); --edge-lo: rgba(0, 0, 0, .45);
-        }
         /* 名簿の「追加」: 黒い塗りをやめて、ほかのボタンと同じ出っぱりに */
         .roster-add-row .add-btn { border: none; background: var(--bg); color: var(--accent); box-shadow: var(--raise-sm); }
         .roster-add-row .add-btn:active { box-shadow: var(--sink); }
-        /* ページの地の色も同じに(以前はライトだけ #f5f6f8 で、出っぱった部品と地の色がずれていた)。上に固定する帯も同じ色 */
-        body { background: var(--bg); }
+        /* 上に固定する帯も、地と同じ色 */
         .view-tabs-wrap { background: color-mix(in srgb, var(--bg) 92%, transparent); }
 </style>
 </head>
@@ -16300,7 +16177,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 4;
-        var APP_BUILD_ID = 202611110828;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611110913;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -16512,7 +16389,7 @@ const namesBtn = isAdmin() && dates.length > 0
             pendingReopenBusy = true;
             try { showPtrSpin(); } catch (e) { /* ignore */ }
             // 管理者は、この端末の変更を先に保存してから最新を読み込む(読み直すと、開き直す)
-            const go = () => { if (firestorePendingValues && !appOutdated) { flushPendingRemote(); setTimeout(() => { if (pendingReopenBusy && firestorePendingValues) fail(); }, 4000); } else fail(); };   // 読み直しが始まらなかったとき(保存の失敗など)だけ、止まったままにしない(読み直しが始まると firestorePendingValues は空になる)
+            const go = () => { if (firestorePendingValues && !appOutdated) { flushPendingRemote(); setTimeout(() => { if (pendingReopenBusy && firestorePendingValues) fail(); }, 4000); setTimeout(() => { if (pendingReopenBusy) fail(); }, 15000); } else fail(); };   // 読み直しが始まらなかったとき(保存の失敗など)だけ、止まったままにしない(読み直しが始まると firestorePendingValues は空になる)
             const fail = () => { pendingReopenBusy = false; try { sessionStorage.removeItem(REOPEN_KEY); hidePtrSpin(); } catch (e) { /* ignore */ } if (openNow) openNow(); };
             const t = setTimeout(fail, 5000);   // うまくいかないときは、今のまま開く
             (firestoreEditor ? saveToFirestore() : Promise.resolve()).catch(() => { }).then(() => { clearTimeout(t); go(); });
@@ -18324,6 +18201,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!protoCalPlans) return;
             const cal = document.getElementById("prCal");
             if (!cal || !cal.offsetHeight) return;   // 画面が隠れている間(設定などを開いているとき)は測れないので、何もしない(戻ったときに描き直す)
+            document.querySelectorAll("#prCal .pr-lt-solo > b").forEach(b => b.classList.toggle("pr-cut", b.scrollWidth > b.clientWidth + 1));   // 1日の予定の題名が入りきらないときは、切れる端を薄く消す(何日も続く予定は、線が透けるのでそのまま)
             document.querySelectorAll("#prCal .pr-cell").forEach(c => {
                 const box = c.querySelector(".pr-lts"); if (!box) return;
                 const bottom = c.getBoundingClientRect().bottom - 1;
