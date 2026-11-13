@@ -3091,6 +3091,22 @@
         body.dark #protoUI .pr-menubar { background: linear-gradient(145deg, color-mix(in srgb, var(--pr-bg, #2b2e34) 92%, #fff), color-mix(in srgb, var(--pr-bg, #2b2e34) 88%, #000)); box-shadow: 6px 6px 14px rgba(0,0,0,.55), -6px -6px 14px rgba(255,255,255,.06), inset 1px 1px 0 rgba(255,255,255,.08), inset -1px -1px 0 rgba(0,0,0,.45); }
         body.dark #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 6px rgba(0,0,0,.55), inset -3px -3px 6px rgba(255,255,255,.06); }
         body.dark #protoUI .pr-menubar button.main { color: #7aa2ff; }   /* ＋: ダークでは選択色と同じ明るい青 */
+        /* バーの並べ替え(アイコンを長押し): ぷるぷる揺れる・つかんだアイコンは指についてくる */
+        #protoUI .pr-menubar button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        #protoUI .pr-menubar.editing button { touch-action: none; animation: prBarJig .26s ease-in-out infinite alternate; }
+        #protoUI .pr-menubar.editing button:nth-child(even) { animation-delay: -.13s; animation-direction: alternate-reverse; }
+        #protoUI .pr-menubar.editing button:active { box-shadow: none; }
+        #protoUI .pr-menubar.editing button.dragging { animation: none; z-index: 2; border-radius: 23px; background: var(--pr-bg, #e7eaf0); box-shadow: 4px 6px 14px rgba(120,132,155,.45), -3px -3px 8px rgba(255,255,255,.8); }
+        body.dark #protoUI .pr-menubar.editing button.dragging { box-shadow: 4px 6px 14px rgba(0,0,0,.6), -3px -3px 8px rgba(255,255,255,.05); }
+        @keyframes prBarJig { from { rotate: -3deg; } to { rotate: 3deg; } }
+        @media (prefers-reduced-motion: reduce) { #protoUI .pr-menubar.editing button { animation: none; } #protoUI .pr-menubar.editing { outline: 1.5px dashed rgba(47,111,224,.55); outline-offset: 3px; } }
+        #prBarEditTb { position: fixed; z-index: 45; display: flex; align-items: center; gap: 6px; padding: 5px 5px 5px 12px; border-radius: 22px; background: var(--rbg, #e9ecf2); color: var(--rink, #4a5262); box-shadow: 4px 4px 10px rgba(160,172,194,.55), -4px -4px 10px rgba(255,255,255,.9); font-family: 'Noto Sans JP', system-ui, sans-serif; white-space: nowrap; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; animation: prrFade .18s ease-out; }
+        body.dark #prBarEditTb { box-shadow: 4px 4px 10px rgba(0,0,0,.55), -4px -4px 10px rgba(255,255,255,.05); }
+        #prBarEditTb .hint { font-size: 11px; font-weight: 600; opacity: .75; }
+        #prBarEditTb button { font: inherit; font-size: 12.5px; font-weight: 700; height: 32px; padding: 0 12px; border: none; border-radius: 16px; background: none; color: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        #prBarEditTb button.done { color: #fff; background: #2f6fe0; }
+        body.dark #prBarEditTb button.done { background: #4f7fe8; }
+        #prBarEditTb button:active { transform: scale(.95); }
         body.proto-on #protoUI .pr-wrap.has-bar > .pr-cal { padding-bottom: calc(var(--mb-d) + 64px) !important; }
         @media (orientation: landscape) and (max-height: 620px) {
             body.proto-on #protoUI .pr-wrap.has-bar > .pr-cal { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important; }
@@ -16747,7 +16763,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611120207;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611131112;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18919,26 +18935,214 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "today", label: "今日", run: () => protoToday() }
         ];
         function prRadItems() { return PR_RAD_ITEMS.filter(it => (!it.adm || isAdmin()) && !it.gcal); }   // 長押しの扇メニュー(Googleは入れない)
-        function prBarItems() { return PR_RAD_ITEMS.filter(it => (!it.adm || isAdmin()) && (!it.gcal || gcalIsAdmin())); }   // 下のメニュー(バー)
+        function prBarItems() {   // 下のメニュー(バー)。長押しで並べ替えた順(この端末に覚える)で並べる
+            const vis = PR_RAD_ITEMS.filter(it => (!it.adm || isAdmin()) && (!it.gcal || gcalIsAdmin()));
+            const pos = new Map(prBarFullOrder().map((k, i) => [k, i]));
+            return vis.map((it, i) => [it, pos.has(it.k) ? pos.get(it.k) : 1000 + i]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+        }
+        // ------- 下のメニュー(バー)の並べ替え: アイコンを長押し → ぷるぷる揺れる → 横にドラッグで入れ替え → 完了 -------
+        var PR_BAR_ORDER_KEY = "attendance_barorder_v1", prBe = null, prBeHold = null, prBeBlockClick = 0;   // prBe: 並べ替え中 { full: [全部のキー], drag, anim }
+        // 覚えた順に、知らないキーは捨て、新しく増えたボタンは「元の並びで前にあるボタンのすぐあと」に入れる
+        function prBarMerge(saved, defs) {
+            const out = [];
+            (Array.isArray(saved) ? saved : []).forEach(k => { if (typeof k === "string" && defs.includes(k) && !out.includes(k)) out.push(k); });
+            defs.forEach((k, i) => {
+                if (out.includes(k)) return;
+                let at = 0;
+                for (let j = i - 1; j >= 0; j--) { const p = out.indexOf(defs[j]); if (p >= 0) { at = p + 1; break; } }
+                out.splice(at, 0, k);
+            });
+            return out;
+        }
+        function prBarFullOrder() {
+            if (prBe) return prBe.full;
+            let saved = null; try { saved = JSON.parse(localStorage.getItem(PR_BAR_ORDER_KEY) || "null"); } catch (e) { saved = null; }
+            return prBarMerge(saved, PR_RAD_ITEMS.map(it => it.k));
+        }
+        // 見えているボタンだけを並べ替えた順を、全部の並び(管理者だけのボタンなど、今は見えないものも入る)に戻す: 見えないボタンの場所はそのまま
+        function prBarPutVisible(full, visOrder) {
+            const set = new Set(visOrder), out = full.slice(); let j = 0;
+            for (let i = 0; i < out.length; i++) if (set.has(out[i])) out[i] = visOrder[j++];
+            return out;
+        }
         // メニューの出し方: "hold" = 長押しで扇のメニュー / "bar" = カレンダーの下に常に並べる(設定で切り替え。この端末に覚える)
         const PR_MENU_KEY = "pr_menu_mode_v1";
         function prMenuMode() { try { return localStorage.getItem(PR_MENU_KEY) === "hold" ? "hold" : "bar"; } catch (e) { return "bar"; } }   // 最初は「下に常に出す」
         function setMenuMode(v) {
             try { localStorage.setItem(PR_MENU_KEY, v === "bar" ? "bar" : "hold"); } catch (e) { /* ignore */ }
+            if (prBe) prBeDone();
             applyMenuSeg(); try { renderProto(); } catch (e) { console.warn(e); }
             try { gcalSyncTile(); } catch (e) { /* ignore */ }
         }
         function applyMenuSeg() { const m = prMenuMode(); document.querySelectorAll("#menuSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); }
         function prMenuBarHtml() {
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
-            return `<div class="pr-menubar">${prBarItems().map((it, i) => `<button type="button" class="${it.k === "add" ? "main" : it.k === "google" ? gcalBarCls() : ""}"${it.k === "google" ? " data-gcal-btn" : ""} onclick="prMenuRun(${i}, this)" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="svdot"></i>` : ""}</button>`).join("")}</div>`;
+            if (prBe) setTimeout(prBeAfterRender, 0);   // 並べ替えの途中で描き直したとき: 完了ボタンの位置・ドラッグ中の見た目を合わせ直す
+            return `<div class="pr-menubar${prBe ? " editing" : ""}">${prBarItems().map((it, i) => `<button type="button" data-k="${it.k}" class="${it.k === "add" ? "main" : it.k === "google" ? gcalBarCls() : ""}"${it.k === "google" ? " data-gcal-btn" : ""} onclick="prMenuRun(${i}, this)" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="svdot"></i>` : ""}</button>`).join("")}</div>`;
         }
         function prMenuRun(i, btn) {
             const it = prBarItems()[i]; if (!it) return;
+            if (prBe || Date.now() < prBeBlockClick) return;   // 並べ替え中(と長押しで入った直後)は、押しても実行しない
             protoHaptic && protoHaptic();
             if (it.k === "add" && isAdmin()) { const r = btn.getBoundingClientRect(); prRadLast = [r.left + r.width / 2, r.top]; prRadSub(); return; }   // 追加は、その場で「Volley / 予定 / 節約」を出す
             it.run();
         }
+        const PR_BE_HOLD = 500;
+        function prBeBar() { return document.querySelector("#protoUI .pr-menubar"); }
+        function prBeBtn(t) { return t && t.closest ? t.closest("#protoUI .pr-menubar button[data-k]") : null; }
+        function prBeIn(t) { return !!(t && t.closest && t.closest("#protoUI .pr-menubar, #prBarEditTb")); }
+        function prBeCol(bar) { try { return getComputedStyle(bar).flexDirection.indexOf("column") === 0; } catch (e) { return false; } }   // 横画面ではメニューが縦に並ぶ
+        function prBeRefresh() {   // バーだけを描き直す(カレンダーは描き直さない)
+            const bar = prBeBar();
+            if (bar) { const w = document.createElement("div"); w.innerHTML = prMenuBarHtml(); bar.replaceWith(w.firstElementChild); }
+        }
+        function prBeEnter() {
+            if (prBe || prMenuMode() !== "bar" || !prBeBar()) return;
+            prBe = { full: prBarFullOrder().slice(), drag: null, anim: false };
+            prBeBlockClick = Date.now() + 700;
+            try { if (hapOn && navigator.vibrate) navigator.vibrate(12); else protoHaptic(); } catch (e) { /* ignore */ }
+            prBeBar().classList.add("editing");   // 描き直さない(押している指のボタンを消すと、そのあとの指の動きが届かなくなる)
+            prBeToolbar();
+        }
+        function prBeToolbar() {
+            let tb = document.getElementById("prBarEditTb");
+            if (!tb) {
+                tb = document.createElement("div"); tb.id = "prBarEditTb"; tb.setAttribute("role", "toolbar"); tb.setAttribute("aria-label", "メニューの並べ替え");
+                tb.innerHTML = `<span class="hint">ドラッグで並べ替え</span><button type="button" onclick="prBeReset()">元に戻す</button><button type="button" class="done" onclick="prBeDone()">完了</button>`;
+                document.body.appendChild(tb);
+            }
+            const ui = document.getElementById("protoUI"), cs = ui ? getComputedStyle(ui) : null;
+            if (cs) { tb.style.setProperty("--rbg", cs.getPropertyValue("--pr-bg").trim() || "#e9ecf2"); tb.style.setProperty("--rink", cs.getPropertyValue("--pr-ink2").trim() || "#4a5262"); }
+            prBePlaceTb();
+        }
+        function prBePlaceTb() {
+            const tb = document.getElementById("prBarEditTb"), bar = prBeBar(); if (!tb || !bar) return;
+            const r = bar.getBoundingClientRect();
+            const col = prBeCol(bar);   // 横画面(縦に並ぶメニュー)では左側に、ふつうは上に出す
+            Object.assign(tb.style, col
+                ? { left: "auto", bottom: "auto", top: Math.round(r.top + r.height / 2) + "px", right: Math.round(innerWidth - r.left + 12) + "px", transform: "translateY(-50%)" }
+                : { right: "auto", top: "auto", left: Math.round(r.left + r.width / 2) + "px", bottom: Math.round(innerHeight - r.top + 12) + "px", transform: "translateX(-50%)" });
+        }
+        function prBeAfterRender() {
+            if (!prBe) return;
+            if (!prBeBar()) { prBeDone(); return; }   // メニューが消えた(長押しメニューに切り替えた・別の画面など)
+            prBePlaceTb();
+            if (prBe.drag && prBe.drag.on) prBePaint();
+        }
+        function prBeDone() {
+            if (!prBe) return;
+            const full = prBe.full, defs = PR_RAD_ITEMS.map(it => it.k);
+            prBe = null; clearTimeout(prBeHold && prBeHold.timer); prBeHold = null;
+            try { if (full.join() === defs.join()) localStorage.removeItem(PR_BAR_ORDER_KEY); else localStorage.setItem(PR_BAR_ORDER_KEY, JSON.stringify(full)); } catch (e) { /* ignore */ }   // 元の並びなら覚えない(あとでボタンが増えても元の並びのまま)
+            const tb = document.getElementById("prBarEditTb"); if (tb) tb.remove();
+            prBeRefresh();
+        }
+        // 元の並びに戻す(完了で覚える)。ボタンは今の場所から新しい場所へすっと動く
+        function prBeReset() {
+            if (!prBe || prBe.anim) return;
+            const before = {}; document.querySelectorAll("#protoUI .pr-menubar button[data-k]").forEach(b => { before[b.dataset.k] = b.getBoundingClientRect(); });
+            prBe.full = PR_RAD_ITEMS.map(it => it.k); prBe.drag = null;
+            prBeRefresh();
+            document.querySelectorAll("#protoUI .pr-menubar button[data-k]").forEach(b => {
+                const o = before[b.dataset.k]; if (!o || !b.animate) return; const r = b.getBoundingClientRect();
+                const dx = o.left - r.left, dy = o.top - r.top; if (!dx && !dy) return;
+                b.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: "none" }], { duration: 260, easing: "cubic-bezier(.2,.9,.25,1)" });
+            });
+            prBePlaceTb();
+        }
+        // ドラッグ: つかんだボタンは指についてきて、通りすぎたボタンは1つずつずれる
+        function prBeDragStart(d) {
+            const bar = prBeBar(); if (!bar) return false;
+            const btns = [...bar.querySelectorAll("button[data-k]")]; d.col = prBeCol(bar);
+            d.keys = btns.map(b => b.dataset.k); d.from = d.keys.indexOf(d.k); if (d.from < 0) return false;
+            d.c = btns.map(b => { const r = b.getBoundingClientRect(); return d.col ? r.top + r.height / 2 : r.left + r.width / 2; });
+            d.to = d.from; d.on = true;
+            return true;
+        }
+        function prBeEls(d) { const bar = prBeBar(); return bar ? d.keys.map(k => bar.querySelector(`button[data-k="${k}"]`)) : []; }
+        function prBePaint() {
+            const d = prBe && prBe.drag; if (!d || !d.on) return;
+            const n = d.c.length, raw = d.col ? d.y - d.sy : d.x - d.sx;
+            const off = Math.max(d.c[0] - d.c[d.from] - 8, Math.min(d.c[n - 1] - d.c[d.from] + 8, raw)), p = d.c[d.from] + off;
+            let to = 0, best = Infinity; d.c.forEach((c, i) => { const q = Math.abs(c - p); if (q < best) { best = q; to = i; } });
+            if (to !== d.to) { d.to = to; try { if (hapOn && navigator.vibrate) navigator.vibrate(6); } catch (e) { /* ignore */ } }
+            const tr = v => d.col ? `translate(0,${v}px)` : `translate(${v}px,0)`;
+            prBeEls(d).forEach((b, i) => {
+                if (!b) return;
+                if (i === d.from) { b.classList.add("dragging"); b.style.transition = "none"; b.style.transform = `${tr(off)} scale(1.14)`; return; }
+                let sh = 0;
+                if (d.from < to && i > d.from && i <= to) sh = d.c[i - 1] - d.c[i];
+                else if (to < d.from && i >= to && i < d.from) sh = d.c[i + 1] - d.c[i];
+                b.style.transition = "transform .2s cubic-bezier(.2,.9,.25,1)"; b.style.transform = sh ? tr(sh) : "";
+            });
+        }
+        function prBeDrop() {
+            const d = prBe && prBe.drag; if (!d) return; prBe.drag = null;
+            if (!d.on) return;
+            prBe.anim = true;
+            const els = prBeEls(d), b = els[d.from], v = d.c[d.to] - d.c[d.from];
+            if (b) { b.style.transition = "transform .18s cubic-bezier(.2,.9,.25,1)"; b.style.transform = d.col ? `translate(0,${v}px)` : `translate(${v}px,0)`; }
+            setTimeout(() => {
+                if (!prBe) return;
+                prBe.anim = false;
+                if (d.to !== d.from) { const vis = d.keys.slice(), [k] = vis.splice(d.from, 1); vis.splice(d.to, 0, k); prBe.full = prBarPutVisible(prBe.full, vis); }
+                prBeRefresh(); prBePlaceTb();
+            }, 190);
+        }
+        // 指・マウスの共通の入口(document の capture で受ける)。true を返したら、そのイベントは後ろに渡さない
+        function prBeDown(x, y, t) {
+            clearTimeout(prBeHold && prBeHold.timer); prBeHold = null;
+            if (prBe) {
+                if (prMenuMode() !== "bar") { prBeDone(); return false; }
+                if (!prBeIn(t)) { prBeDone(); prBeBlockClick = Date.now() + 600; return false; }   // メニューの外を押した: 完了(その押した先は動かさない)
+                const b = prBeBtn(t);
+                if (b && !prBe.anim) prBe.drag = { k: b.dataset.k, sx: x, sy: y, x, y, on: false };
+                return !!b;
+            }
+            if (prMenuMode() !== "bar") return false;
+            const b = prBeBtn(t); if (!b) return false;
+            const h = { k: b.dataset.k, sx: x, sy: y, x, y };
+            h.timer = setTimeout(() => {
+                if (prBeHold !== h) return; prBeHold = null;
+                prBeEnter();
+                if (prBe) prBe.drag = { k: h.k, sx: h.x, sy: h.y, x: h.x, y: h.y, on: false };   // 指を離さずに、そのままドラッグできる
+            }, PR_BE_HOLD);
+            prBeHold = h;
+            return false;
+        }
+        function prBeMove(x, y) {   // true: スクロールを止める
+            if (prBeHold) {
+                prBeHold.x = x; prBeHold.y = y;
+                if (Math.hypot(x - prBeHold.sx, y - prBeHold.sy) > 10) { clearTimeout(prBeHold.timer); prBeHold = null; return false; }
+                return true;   // 長押しを待つ間: ページを動かし始めない
+            }
+            const d = prBe && prBe.drag; if (!d) return false;
+            d.x = x; d.y = y;
+            if (!d.on) { if (Math.hypot(x - d.sx, y - d.sy) < 6 || !prBeDragStart(d)) return true; }
+            prBePaint();
+            return true;
+        }
+        function prBeUp() {
+            if (prBeHold) { clearTimeout(prBeHold.timer); prBeHold = null; return false; }   // 短く押した: ふつうのタップ
+            if (prBe && prBe.drag) { const on = prBe.drag.on; prBeDrop(); prBeBlockClick = Date.now() + 400; return on; }
+            return false;
+        }
+        document.addEventListener("touchstart", e => { if (e.touches.length !== 1) { if (prBeHold) { clearTimeout(prBeHold.timer); prBeHold = null; } if (prBe && prBe.drag) prBeDrop(); return; } const t = e.touches[0]; if (prBeDown(t.clientX, t.clientY, e.target)) e.stopPropagation(); }, { capture: true, passive: true });
+        document.addEventListener("touchmove", e => { if (!prBeHold && !(prBe && prBe.drag)) return; const t = e.touches[0]; if (t && prBeMove(t.clientX, t.clientY)) { if (e.cancelable) e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchend", e => { if (prBeUp()) { if (e.cancelable) e.preventDefault(); e.stopPropagation(); } }, { capture: true, passive: false });
+        document.addEventListener("touchcancel", () => { if (prBeHold) { clearTimeout(prBeHold.timer); prBeHold = null; } if (prBe && prBe.drag) prBeDrop(); }, { capture: true });
+        document.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse" || e.button !== 0) return; if (prBeDown(e.clientX, e.clientY, e.target)) e.stopPropagation(); }, true);
+        document.addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; prBeMove(e.clientX, e.clientY); }, true);
+        document.addEventListener("pointerup", e => { if (e.pointerType !== "mouse") return; if (prBeUp()) e.stopPropagation(); }, true);
+        // 並べ替え中: メニューのボタンを押しても実行しない / 外を押して完了したときの、そのクリックも後ろに通さない
+        document.addEventListener("click", e => {
+            const inTb = !!(e.target && e.target.closest && e.target.closest("#prBarEditTb"));
+            if (inTb) return;
+            if ((prBe && prBeBtn(e.target)) || Date.now() < prBeBlockClick) { e.stopPropagation(); e.preventDefault(); }
+        }, true);
+        document.addEventListener("contextmenu", e => { if (prBe || prBeHold) e.preventDefault(); }, true);
+        document.addEventListener("visibilitychange", () => { if (document.hidden && prBe) prBeDone(); });
+        addEventListener("resize", () => { if (prBe) { if (prBe.drag) prBeDrop(); setTimeout(prBePlaceTb, 60); } });
         // 設定パネルの一部だけを、単独の画面として開く(""=ふつうの設定 / "roster"=名簿 / "ana"=分析)
         function protoSolo(kind) {
             const panel = document.getElementById("settingsPanel"); if (!panel) return;
@@ -20160,6 +20364,7 @@ const namesBtn = isAdmin() && dates.length > 0
             let el = document.getElementById("protoVbAdd");
             if (!el) { el = document.createElement("div"); el.id = "protoVbAdd"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "バレー予定の一括追加"); document.body.appendChild(el); }
             el.classList.add("open"); el.scrollTop = 0;
+            vbaSwipeInit(el);
             vbaRender();
             el.querySelectorAll(".vba-scr").forEach(x => {   // 前に選んだ場所・時間が横に隠れていれば見えるところへ
                 const b = x.querySelector('[aria-pressed="true"]'); if (!b) return;
@@ -20174,7 +20379,43 @@ const namesBtn = isAdmin() && dates.length > 0
             try { renderBulkAdd(); } catch (e) { /* ignore */ }
         }
         function vbaToday() { return formatDateKey(new Date()); }
-        function vbaMonth(n) { if (!vba) return; const d = new Date(vba.ym[0], vba.ym[1] + n, 1); vba.ym = [d.getFullYear(), d.getMonth()]; vbaRender(); }
+        function vbaCanMonth(n) { if (!vba) return false; const t = new Date(), v = vba.ym[0] * 12 + vba.ym[1] + n; return v >= t.getFullYear() * 12 + t.getMonth(); }   // 今月より前へは行かない(‹ のボタンと同じ)
+        function vbaMonth(n) { if (!vba || !vbaCanMonth(n)) return; const d = new Date(vba.ym[0], vba.ym[1] + n, 1); vba.ym = [d.getFullYear(), d.getMonth()]; vba.slide = n; vbaRender(); }
+        // カレンダーを左右に払って月を変える(左へ払う → 次の月 / 右へ → 前の月)。描き直しても残るように、画面の外枠(#protoVbAdd)に1回だけ付ける
+        function vbaSwipeInit(el) {
+            if (!el || el._vbaSw) return; el._vbaSw = true;
+            let s = null, skipAt = 0;
+            const grid = () => el.querySelector("[data-vba-grid]");
+            const paint = (dx, tr) => { const g = grid(); if (!g) return; g.style.transition = tr || "none"; g.style.transform = dx ? `translateX(${dx}px)` : ""; };
+            el.addEventListener("touchstart", e => {
+                s = null;
+                if (!vba || vba.done || e.touches.length !== 1 || !e.target.closest || !e.target.closest("[data-vba-cal]")) return;
+                const t = e.touches[0]; s = { x: t.clientX, y: t.clientY, lock: 0, dx: 0 };
+            }, { passive: true });
+            el.addEventListener("touchmove", e => {
+                if (!s || s.lock === -1) return;
+                const t = e.touches[0], dx = t.clientX - s.x, dy = t.clientY - s.y;
+                if (!s.lock) {
+                    if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { s.lock = -1; return; }   // 縦: ふつうにスクロール
+                    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.4) s.lock = 1;
+                    else { if (Math.abs(dx) > Math.abs(dy) && e.cancelable) e.preventDefault(); return; }   // まだ決まらない: 横向きならスクロールを始めさせない
+                }
+                if (e.cancelable) e.preventDefault();
+                s.dx = dx;
+                const can = vbaCanMonth(dx < 0 ? 1 : -1);
+                paint(dx * (can ? 0.4 : 0.15));   // 指に少しついてくる(行けない向きは重く)
+            }, { passive: false });
+            const end = () => {
+                const d = s; s = null; if (!d || d.lock !== 1) return;
+                skipAt = Date.now();   // 払ったあとのクリックで日付を選ばない
+                const dir = d.dx < 0 ? 1 : -1;
+                if (Math.abs(d.dx) >= 40 && vbaCanMonth(dir)) { paint(0); vbaMonth(dir); }
+                else paint(0, "transform .25s cubic-bezier(.2,.9,.25,1)");
+            };
+            el.addEventListener("touchend", end, { passive: true });
+            el.addEventListener("touchcancel", () => { if (s && s.lock === 1) paint(0, "transform .25s"); s = null; }, { passive: true });
+            el.addEventListener("click", e => { if (Date.now() - skipAt < 400 && e.target.closest && e.target.closest("[data-vba-cal]")) { e.stopPropagation(); e.preventDefault(); } }, true);
+        }
         function vbaToggleDate(k) { if (!vba || k < vbaToday()) return; if (vba.dates.has(k)) vba.dates.delete(k); else vba.dates.add(k); vbaRender(); }
         function vbaToggleWd(w) {   // その月の、今日からあとのその曜日をまとめて選ぶ(全部選んであれば外す)
             if (!vba) return;
@@ -20462,8 +20703,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const canPrev = Y * 12 + M > new Date().getFullYear() * 12 + new Date().getMonth();
             const navB = (n, d, dis) => `<button type="button" ${dis ? "disabled" : ""} onclick="vbaMonth(${n})" aria-label="${n < 0 ? "前の月" : "次の月"}" style="width:32px;height:32px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink2};${raiseS}">${ico(d, 13)}</button>`;
             const selInfo = vba.dates.size ? `<b style="font-size:12px;color:${P.acc}">${vba.dates.size}日</b><button type="button" onclick="vbaClearDates()" style="height:32px;padding:0 12px;border-radius:16px;font-size:11.5px;font-weight:700;color:${P.ink2};${raiseS}">クリア</button>` : `<span style="font-size:10.5px;color:${P.ink3}">曜日でまとめて選べます</span>`;
+            const slideAn = vba.slide ? `;animation:prSlide${vba.slide > 0 ? "L" : "R"} .42s cubic-bezier(.16,1,.3,1)` : ""; vba.slide = 0;   // 月を変えた直後: 新しい月が、めくった向きから入ってくる(本体のカレンダーと同じ動き)
             const calCard = card(`<div style="display:flex;align-items:center;gap:8px">${navB(-1, '<path d="M15 5l-7 7 7 7"></path>', !canPrev)}<span style="min-width:62px;text-align:center;font-family:${en};font-size:14.5px;font-weight:700">${Y}.${M + 1}</span>${navB(1, '<path d="M9 5l7 7-7 7"></path>')}<span style="flex:1"></span>${selInfo}</div>
-                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px 2px">${cells}</div>`, 6);
+                <div style="overflow:hidden"><div data-vba-grid class="pr-anim" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px 2px;touch-action:pan-y${slideAn}">${cells}</div></div>`, 6).replace("<div ", "<div data-vba-cal ");
             // 場所・コート・時間(予約と同じ選び方)。1行ずつ、入りきらなければ横に動かす
             const pl = rvPresets[vba.pi];
             const placeChips = rvPresets.map((x, i) => chip(i === vba.pi, esc(x.name), `vbaPlace(${i})`)).join("");
