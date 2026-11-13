@@ -16763,7 +16763,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611131112;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611131215;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -21055,6 +21055,162 @@ const namesBtn = isAdmin() && dates.length > 0
             tutShow(0);
             if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (tutOpen) tutPlace(); });   // 文字が読み込まれて大きさが変わっても、光る位置をずらさない
         }
+
+        // ------- 左の端から右へ払うと、ひとつ前の画面へ戻る(カレンダー以外の画面で。押す「‹」・「閉じる」と同じ動き) -------
+        //   いちばん上に出ている画面を EDGE_BACK_SCREENS の上から順に探し、その画面の戻るボタンと同じ関数を呼ぶ
+        //   (重なっていれば上の画面だけ閉じる = 1段だけ戻る。閉じる前の確認(一括追加のリストが残っているとき など)も同じ道を通る)。
+        //   iPhone の Safari(ホーム画面に追加していないとき)は、左端から払うと Safari 自体の「戻る」になるので使わない
+        //   (このアプリは履歴(pushState)を使っていないため、両方が動いてしまう)。ホーム画面から開いたとき・iPhone以外では使う。
+        const EDGE_BACK_SCREENS = (() => {
+            const $ = id => document.getElementById(id);
+            const vis = el => !!el && el.isConnected && getComputedStyle(el).display !== "none";
+            const cls = (id, c) => { const el = $(id); return !!el && el.classList.contains(c) && vis(el); };
+            const flow = () => [...document.body.children].filter(el => !/^(SCRIPT|STYLE|TEMPLATE)$/.test(el.tagName) && el.offsetHeight > 0 && getComputedStyle(el).position !== "fixed");
+            const self = id => () => [$(id)];
+            return [
+                // 確認・選ぶまで進めない小さな窓: 払っても何もしない(押し間違いを防ぐ)
+                { k: "tut", open: () => !!$("tutOv"), block: true },
+                { k: "swapConfirm", open: () => !!$("swapConfirmModal"), block: true },
+                { k: "gcalAsk", open: () => cls("gcalAsk", "show"), block: true },
+                { k: "devAsk", open: () => cls("devAskOv", "open"), block: true },
+                { k: "guestPick", open: () => !!$("guestPickOv"), block: true },
+                // 自分の閉じるがある窓・シート
+                { k: "svRel", open: () => !!$("svRelOv"), back: () => { const b = document.querySelector("#svRelOv .svrel-later"); if (b) b.click(); else $("svRelOv").remove(); }, els: self("svRelOv") },
+                { k: "ntf", open: () => cls("ntfModal", "show"), back: () => closeNtfModal(), els: () => [document.querySelector("#ntfModal .nm-box")] },
+                { k: "ics", open: () => cls("icsOv", "open"), back: () => icsClose(), els: self("icsOv") },
+                { k: "rot", open: () => vis($("rotOv")), back: () => rotClose(), els: self("rotOv") },
+                { k: "pair", open: () => vis($("pairOv")), back: () => closePairPanel(), els: self("pairOv") },
+                { k: "formAna", open: () => cls("fxOv", "open"), back: () => closeFormAna(), els: self("fxOv") },
+                { k: "find", open: () => !!$("prFind"), back: () => protoFindClose(), els: self("prFind") },
+                // 設定・名簿・分析(同じパネル)
+                { k: "settings", open: () => cls("settingsPanel", "open"), back: () => toggleSettings(), els: self("settingsPanel") },
+                { k: "saving", open: () => vis($("savingOv")), back: () => closeSaving(), els: self("savingOv") },
+                { k: "bulkAdd", open: () => cls("bulkAddOv", "open"), back: () => { const x = document.querySelector("#bulkAddOv .ba-x"); if (x) x.click(); else $("bulkAddOv").classList.remove("open"); }, els: self("bulkAddOv") },
+                { k: "guide", open: () => vis($("guideOv")), back: () => closeGuide(), els: self("guideOv") },
+                { k: "surveyOld", open: () => vis($("surveyOv")), back: () => closeSurvey(), els: self("surveyOv") },
+                { k: "planDetail", open: () => cls("prDetail", "open"), back: () => closePlanDetail(), els: () => [document.querySelector("#prDetail .prd-sheet")] },
+                // 試作UIの画面(カレンダーの上に重ねて出す)
+                { k: "vbAdd", open: () => cls("protoVbAdd", "open"), back: () => closeVbAdd(), guard: () => typeof vba !== "undefined" && !!vba && !vba.done && vba.rows.length > 0, els: self("protoVbAdd") },
+                { k: "survey", open: () => cls("protoSv", "open"), back: () => closeSurvey(), els: self("protoSv") },
+                { k: "cal", open: () => cls("protoCal", "open"), back: () => protoCloseCal(), els: self("protoCal") },
+                // バレーの画面・(前のUIの)予定の入力
+                { k: "volley", open: () => document.body.classList.contains("nv-full"), back: () => closeVolleyFull(), els: flow },
+                { k: "planEdit", open: () => document.body.classList.contains("plan-editing"), back: () => closePlanPanel(), els: flow }
+            ];
+        })();
+        function edgeBackTop() { for (const s of EDGE_BACK_SCREENS) { try { if (s.open()) return s; } catch (e) { /* ignore */ } } return null; }
+        // 今いちばん上の画面で「戻る」を押したのと同じことをする(払う以外からも呼べる)。戻れたら true
+        function edgeBackRun() { const s = edgeBackTop(); if (!s || s.block || !s.back) return false; s.back(); return true; }
+        function edgeBackEnabled() {
+            if (!("ontouchstart" in window)) return false;
+            const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+            return !ios || isStandaloneApp();
+        }
+        (function initEdgeBack() {
+            const EDGE = 24, DECIDE = 8, COMMIT = 70, FLICK_V = 0.45, FLICK_MIN = 28, FOLLOW = 0.6;
+            let g = null, blockClickUntil = 0, safeL = 0, ind = null, passClick = false;
+            const st = document.createElement("style");
+            st.textContent = `#edgeBackInd { position: fixed; left: 0; top: 0; z-index: 100001; width: 34px; height: 34px; margin: -17px 0 0 -6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; color: var(--ink-2, #556); background: var(--bg, #e7eaf0); box-shadow: 3px 3px 8px rgba(0,0,0,.18), -2px -2px 6px rgba(255,255,255,.55); transform: translateX(-30px) scale(.7); }
+                #edgeBackInd.on { color: var(--accent, #2f7cf6); }
+                body.dark #edgeBackInd { box-shadow: 3px 3px 8px rgba(0,0,0,.5), -2px -2px 6px rgba(255,255,255,.04); }`;
+            document.head.appendChild(st);
+            const reduced = () => (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) || document.body.classList.contains("pr-noanim");
+            const measureSafe = () => { const p = document.createElement("div"); p.style.cssText = "position:fixed;left:0;top:0;visibility:hidden;padding-left:env(safe-area-inset-left,0px)"; document.body.appendChild(p); safeL = parseFloat(getComputedStyle(p).paddingLeft) || 0; p.remove(); };
+            addEventListener("resize", () => setTimeout(measureSafe, 60)); measureSafe();
+            const indEl = () => { if (!ind) { ind = document.createElement("div"); ind.id = "edgeBackInd"; ind.setAttribute("aria-hidden", "true"); ind.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>'; } if (!ind.isConnected) document.body.appendChild(ind); return ind; };
+            // 横に動かせる入れ物(チップの列など)を、すでに右へ送ってあるときは、そちらのスクロールに任せる
+            const hScrolled = (t) => { for (let n = t && t.nodeType === 1 ? t : t && t.parentElement; n && n !== document.body; n = n.parentElement) { if (n.scrollLeft > 0 && n.scrollWidth > n.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) return true; } return false; };
+            const paint = (dx, tr) => {
+                if (!g) return;
+                const p = Math.min(1, dx / COMMIT), red = g.reduced;
+                g.els.forEach(el => {
+                    el.style.transition = tr || "none";
+                    el.style.transform = red || dx <= 0 ? "" : `translateX(${Math.round(dx * FOLLOW)}px)`;
+                    el.style.boxShadow = red || dx <= 0 ? g.orig.get(el).boxShadow : "-10px 0 28px rgba(0,0,0,.16)";
+                });
+                const i = indEl();
+                i.style.transition = tr ? "opacity .2s, transform .2s" : "none";
+                i.style.top = g.y + "px";
+                i.style.opacity = String(dx <= 0 ? 0 : Math.min(1, 0.25 + p));
+                i.style.transform = red ? "translateX(10px)" : `translateX(${Math.round(-30 + Math.min(1, dx / COMMIT) * 44)}px) scale(${(0.7 + 0.3 * p).toFixed(3)})`;
+                i.classList.toggle("on", dx >= COMMIT);
+            };
+            const restore = () => {
+                if (!g) return;
+                g.els.forEach(el => { const o = g.orig.get(el); el.style.transition = o.transition; el.style.transform = o.transform; el.style.boxShadow = o.boxShadow; el.style.willChange = o.willChange; });
+                if (ind) { ind.style.transition = "none"; ind.style.opacity = "0"; ind.classList.remove("on"); }
+            };
+            const finish = (ok) => {
+                const d = g; if (!d) return;
+                const springBack = (then) => {
+                    if (d.reduced) { restore(); g = null; if (then) then(); return; }
+                    paint(0, "transform .22s cubic-bezier(.2,.9,.25,1), box-shadow .22s");
+                    setTimeout(() => { if (g === d) { restore(); g = null; } if (then) then(); }, 230);
+                };
+                if (!ok) { springBack(); return; }
+                const go = () => { passClick = true; try { d.scr.back(); } catch (e) { console.warn(e); } finally { passClick = false; } };   // 画面の閉じる処理の中のクリックは止めない
+                // 閉じる前に確認が出る画面: 先に元の位置へ戻してから、ボタンと同じ道で確認を出す
+                if (d.scr.guard && d.scr.guard()) { springBack(go); return; }
+                if (d.reduced) { restore(); g = null; go(); return; }
+                const W = window.innerWidth || 400;
+                d.els.forEach(el => { el.style.transition = "transform .18s ease-out, opacity .18s ease-out"; el.style.transform = `translateX(${W}px)`; });
+                if (ind) { ind.style.transition = "opacity .18s"; ind.style.opacity = "0"; }
+                setTimeout(() => {
+                    go();
+                    if (g === d) {
+                        if (d.scr.open()) springBack();   // 閉じなかった(確認でキャンセルした など): 元に戻す
+                        else { restore(); g = null; }
+                    }
+                }, 180);
+            };
+            document.addEventListener("touchstart", e => {
+                if (g && g.lock === 1) return;   // 戻る動きの途中
+                g = null;
+                if (e.touches.length !== 1 || !edgeBackEnabled()) return;
+                const t = e.touches[0];
+                if (t.clientX > EDGE + safeL) return;
+                if ((typeof prBe !== "undefined" && prBe) || (typeof tutOpen !== "undefined" && tutOpen)) return;
+                const tg = e.target;
+                if (tg && tg.closest && tg.closest("input, textarea, select, [contenteditable], canvas, video")) return;   // 文字の入力・スライダー・動画の操作はそのまま
+                const scr = edgeBackTop();
+                if (!scr || scr.block || !scr.back) return;   // カレンダー(ほかに何も開いていない)・確認の窓では何もしない
+                if (hScrolled(tg)) return;
+                g = { scr, x: t.clientX, y: t.clientY, dx: 0, lock: 0, t0: e.timeStamp || Date.now(), lastX: t.clientX, lastT: e.timeStamp || Date.now(), v: 0, els: [], orig: new Map(), reduced: reduced() };
+            }, { capture: true, passive: true });
+            document.addEventListener("touchmove", e => {
+                if (!g || g.lock === -1) return;
+                const t = e.touches[0]; if (!t) return;
+                const dx = t.clientX - g.x, dy = t.clientY - g.y;
+                if (!g.lock) {
+                    // 決まるまでは、ほかの払う動き(月めくりなど)に渡さない(縦と決まったら、そこから先はふつうに渡す)
+                    e.stopPropagation();
+                    if (Math.abs(dx) < DECIDE && Math.abs(dy) < DECIDE) { if (dx > 2 && dx > Math.abs(dy) * 1.5 && e.cancelable) e.preventDefault(); return; }   // 右向きなら、横のスクロール・画面のはずみを始めさせない
+                    if (dx > 0 && dx > Math.abs(dy) * 1.3 && e.cancelable) {
+                        g.lock = 1;
+                        g.els = (g.scr.els ? g.scr.els() : []).filter(Boolean);
+                        g.els.forEach(el => g.orig.set(el, { transition: el.style.transition, transform: el.style.transform, boxShadow: el.style.boxShadow, willChange: el.style.willChange }));
+                        g.els.forEach(el => { el.style.willChange = "transform"; });
+                    } else { g.lock = -1; return; }
+                }
+                e.preventDefault(); e.stopPropagation();
+                const now = e.timeStamp || Date.now(), dt = Math.max(1, now - g.lastT);
+                g.v = 0.7 * ((t.clientX - g.lastX) / dt) + 0.3 * g.v; g.lastX = t.clientX; g.lastT = now;
+                g.dx = Math.max(0, dx);
+                paint(g.dx);
+            }, { capture: true, passive: false });
+            const end = (e, cancel) => {
+                if (!g) return;
+                if (g.lock !== 1) { g = null; return; }   // 払っていない(タップ・縦のスクロール): そのまま通す
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+                blockClickUntil = Date.now() + 450;   // 離したときのクリックを、後ろの画面に通さない
+                const ok = !cancel && (g.dx >= COMMIT || (g.v >= FLICK_V && g.dx >= FLICK_MIN));
+                finish(ok);
+            };
+            document.addEventListener("touchend", e => end(e, false), { capture: true, passive: false });
+            document.addEventListener("touchcancel", e => end(e, true), { capture: true, passive: false });
+            document.addEventListener("click", e => { if (!passClick && Date.now() < blockClickUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
+        })();
 
         (function initProtoUI() {
             const host = document.createElement("div"); host.id = "protoUI"; document.body.appendChild(host);
