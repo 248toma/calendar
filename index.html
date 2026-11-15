@@ -12259,15 +12259,15 @@ const namesBtn = isAdmin() && dates.length > 0
         function chemHtml(from) {
             const { ind, pairs, rivals, base, prior } = chemData(from);
             const guests = new Set(roster.filter(r => r.position === GUEST_POS).map(r => r.name));
-            const names = Object.keys(ind).filter(n => !guests.has(n) && pairs.some(p => p.a === n || p.b === n));
-            if (names.length < 3) return `<details class="note-details chem"><summary>相性</summary><div class="acc-desc">一緒に3回以上試合をした組が増えると、ここに出ます。</div></details>`;
+            // 対象(参加率)の外の人は、相性ではまったく出さない(図の輪・線・一覧・選択のどれにも)。輪の並びも対象の人だけで作る
+            const pIn = p => !anaOut(p.a) && !anaOut(p.b);
+            const names = Object.keys(ind).filter(n => !guests.has(n) && !anaOut(n) && pairs.some(p => (p.a === n || p.b === n) && pIn(p)));
+            if (names.length < 3) return `<details class="note-details chem"><summary>相性</summary><div class="acc-desc">${anaInSet ? "対象の人どうしで" : ""}一緒に3回以上試合をした組が増えると、ここに出ます。</div></details>`;
             const order = roster.map(r => r.name).filter(n => names.includes(n)).concat(names.filter(n => !roster.some(r => r.name === n)));
             if (chemFocus && !order.includes(chemFocus)) chemFocus = "";
             const W = 340, cx = W / 2, cy = W / 2, R = W / 2 - 62, N = order.length, pos = {};
             order.forEach((n, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / N; pos[n] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a), a }; });
-            const maxG = Math.max(...pairs.map(p => p.g)), f = chemFocus;
-            // 対象(参加率)の外の人が入った組: 図の線にも一覧にも出さない(対象外の人の名前を押したときだけ、その人の組を薄く出す)
-            const fOut = !!f && anaOut(f), pIn = p => fOut || (!anaOut(p.a) && !anaOut(p.b));
+            const maxG = Math.max(1, ...pairs.filter(pIn).map(p => p.g)), f = chemFocus;
             // 線も一覧も、相性(xc = 実際の勝率 − 2人の個人の勝率から見込んだ勝率)で決める(+ = 見込みより勝っている、− = 負けている)
             //   強い人と組んだ組が、それだけで「相性がいい」にならないように
             const CHEM_SHOW = 0.06;   // 全体の図に出すのは、相性が ±6pt 以上の組
@@ -12275,16 +12275,16 @@ const namesBtn = isAdmin() && dates.length > 0
             let shown = pairs.filter(p => pos[p.a] && pos[p.b] && pIn(p) && (f ? (p.a === f || p.b === f) : Math.abs(p.xc) >= CHEM_SHOW)).sort((x, y) => Math.abs(y.xc) - Math.abs(x.xc) || y.g - x.g);
             if (!f) shown = shown.slice(0, Math.max(8, Math.round(N * 1.2)));   // 全体表示は、差の大きい組だけ(線だらけにしない)
             shown.reverse();   // 濃い線を上に
-            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], good = p.xc >= 0, op = Math.min(1, 0.3 + Math.abs(p.xc) * 3.2) * (f ? 1 : 0.85) * (fOut ? 0.3 : 1), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
+            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], good = p.xc >= 0, op = Math.min(1, 0.3 + Math.abs(p.xc) * 3.2) * (f ? 1 : 0.85), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
                 return `<line class="${good ? "good" : "bad"}" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke-width="${(good ? w : Math.max(1, w * 0.7)).toFixed(2)}" opacity="${op.toFixed(2)}"></line>`; }).join("");
             // 人を選んでいるとき: 線の上に、その組の相性(pt)を出す(選んだ人の側から 6割のところ。中心に集まって重ならないように)
             const pcts = !f ? "" : shown.map(p => { const o = p.a === f ? p.b : p.a, A = pos[f], B = pos[o], t = 0.6, x = A.x + (B.x - A.x) * t, y = A.y + (B.y - A.y) * t;
-                return `<text class="pc ${p.xc >= 0 ? "g" : "b"}${fOut ? " ana-out" : ""}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle">${pt(p.xc)}</text>`; }).join("");   // 相性(見込みとの差)
+                return `<text class="pc ${p.xc >= 0 ? "g" : "b"}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle">${pt(p.xc)}</text>`; }).join("");   // 相性(見込みとの差)
             const linked = new Set(); if (f) shown.forEach(p => { linked.add(p.a); linked.add(p.b); });
             const labels = order.map(n => { const P0 = pos[n], c = Math.cos(P0.a), s = Math.sin(P0.a), lx = cx + (R + 9) * c, ly = cy + (R + 9) * s, anc = Math.abs(c) < 0.25 ? "middle" : c > 0 ? "start" : "end", dy = Math.abs(c) < 0.25 ? (s > 0 ? 9 : -3) : 3.5;
                 const cls = f ? (n === f ? "on" : linked.has(n) ? "" : "dim") : "";
                 const nm = n.length > 6 ? n.slice(0, 6) + "…" : n;
-                return `<g class="chem-nm${anaOut(n) ? " ana-out" : ""}" data-n="${encodeURIComponent(n)}" style="cursor:pointer"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="16" fill="transparent" style="cursor:pointer"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}" style="cursor:pointer">${escapeHtml(nm)}</text></g>`; }).join("");
+                return `<g class="chem-nm" data-n="${encodeURIComponent(n)}" style="cursor:pointer"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="16" fill="transparent" style="cursor:pointer"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}" style="cursor:pointer">${escapeHtml(nm)}</text></g>`; }).join("");
             let list = "";
             if (f) {
                 const mine = pairs.filter(p => (p.a === f || p.b === f) && pIn(p)).map(p => ({ n: p.a === f ? p.b : p.a, xc: p.xc, ex: p.ex, g: p.g, w: p.w }));
@@ -12295,80 +12295,124 @@ const namesBtn = isAdmin() && dates.length > 0
                 const it = (x, cls) => `<div style="grid-column:1/-1"><span>${escapeHtml(x.n)}</span><b class="${cls}">${pt(x.xc)}</b><small>勝率 ${Math.round(x.w / x.g * 100)}%(見込み ${Math.round(x.ex * 100)}%)・${x.w}勝${x.g - x.w}敗</small></div>`;   // 相性・組んだとき(当たったとき)の勝率と見込み
                 const sec = (t, arr, cls) => arr.length ? `<h5>${t}</h5>${arr.map(x => it(x, cls)).join("")}` : "";
                 const gap = (base[f] || 0) - (prior[f] || 0), gl = gap > 0.12 ? "パラメータより強い" : gap < -0.12 ? "パラメータより弱い" : "パラメータどおり";
-                list = `<div class="${fOut ? "ana-out" : ""}"><div class="chem-hint">${escapeHtml(f)}${fOut ? "(対象外)" : ""}　<b style="color:var(--ink-2)">${gl}</b></div><div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">${anaInSet && !fOut ? "対象の人どうしでは、" : ""}まだ目立った相性はありません</div>`) + `</div>`;
+                list = `<div><div class="chem-hint">${escapeHtml(f)}　<b style="color:var(--ink-2)">${gl}</b></div><div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">${anaInSet ? "対象の人どうしでは、" : ""}まだ目立った相性はありません</div>`) + `</div>`;
             } else {
                 const top = pairs.filter(p => p.xc >= CHEM_SHOW && pIn(p)).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 4);
                 list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${pt(p.xc)}</b><small>勝率 ${Math.round(p.w / p.g * 100)}%(見込み ${Math.round(p.ex * 100)}%)・${p.w}勝${p.g - p.w}敗</small></div>`).join("")}</div>` : "";
-                list += `<div class="chem-hint">名前を押すと、その人の相性${anaInSet ? "・対象外の人が入った組は出していません" : ""}</div>`;
+                list += `<div class="chem-hint">名前を押すと、その人の相性${anaInSet ? "・対象外の人は出していません" : ""}</div>`;
             }
             return `<details class="note-details chem"${chemOpen ? " open" : ""} ontoggle="chemOpen=this.open"><summary>相性</summary>
                 <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${pcts}${labels}</svg>${list}
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">相性 = 実際に組んだとき(「当たると」は相手チームにいたとき)の勝率 − 2人の個人の勝率から見込んだ勝率(pt)。強い人と組めば勝率は上がりやすいので、その分を引いた「見込みより勝っているか」で見ます。個人の勝率は、なるべく相手の人が出ていない試合で数えます(2人とも出た試合ばかりのときは、その人の全体の勝率に近くなります)。実線(色)=見込みより勝っている / 赤い点線=見込みより負けている。線の太さ=一緒に出た数。回数が少ないうちは 0 に近く出ます。3回以上の組だけ。全体の図は、相性が ±6pt 以上の組だけ。対象(いちばん上の切り替え。参加率)の外の人は名前を薄くし、その人が入った組は図にも一覧にも出しません(その人の名前を押すと、その人の相性だけ薄く出ます)。相性の計算そのものは全員の試合で行います</div></details></details>`;
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">相性 = 実際に組んだとき(「当たると」は相手チームにいたとき)の勝率 − 2人の個人の勝率から見込んだ勝率(pt)。強い人と組めば勝率は上がりやすいので、その分を引いた「見込みより勝っているか」で見ます。個人の勝率は、なるべく相手の人が出ていない試合で数えます(2人とも出た試合ばかりのときは、その人の全体の勝率に近くなります)。実線(色)=見込みより勝っている / 赤い点線=見込みより負けている。線の太さ=一緒に出た数。回数が少ないうちは 0 に近く出ます。3回以上の組だけ。全体の図は、相性が ±6pt 以上の組だけ。対象(いちばん上の切り替え。参加率)の外の人は、図にも一覧にも出しません(名前も出さず、選べません)。相性の計算そのものは全員の試合で行います</div></details></details>`;
         }
         var chemOpen = false, stgOpen = false, whyOpen = false, propOpen = false, whySort = "rate";
-        // 提案の分け方を作る: 「一人ひとりの勝率が5割に近づく」ように分ける
-        //   ・勝率が高い人は、予想(勝ち負けの要因)が低いチームへ。勝率が低い人は、予想が高いチームへ。
-        //     (勝率が高い人と低い人を同じチームにしても、勝てば高い人がもっと高くなるだけで、5割には近づかない)
-        //   ・やり方: 一人ひとりの「この1試合のあとの勝率の見込み」= (これまでの勝ち数 + チームの勝つ見込み) ÷ (これまでの試合数 + 1) が、
-        //     5割からできるだけ離れない組み合わせを選ぶ(全員のずれの2乗の平均が小さいもの)
-        //   ・チームの勝つ見込みは、強さ(勝率には見えない強さ)と勝ち負けの要因を合わせて出す。勝率が高くても、強さが高い人ばかりのチームは「予想が高い」になる。
-        //     片方に偏りすぎる分け方(PROP_MAXP より偏る)は避ける。ペア設定・チームの人数・男女の人数も守る。一緒に出た回数が少ない2人は、ほんの少し優先
-        const PROP_MAXP = 0.7;   // 予想がこれ(70:30)より偏る分け方は避ける
+        // 提案の分け方を作る: 「勝率の高い人が負けやすい」分け方
+        //   ・平均はそこそこ近く: チームの平均(チーム分けの画面と同じ平均値パラメータ + 総合。機動力の補正込み・背反の除外も同じ)の
+        //     いちばん高いチーム − いちばん低いチーム が、どれも PROP_AVG_TOL 以内(10段階。5段階の名簿なら半分)。守れる分け方がなければ、外れがいちばん小さいもの
+        //   ・その中で、勝ち負けの要因(平均以外の特徴: 上位の人の偏り・1位や最下位の有無など)から見た予想で、
+        //     勝率の高い人がいるチームが負け、勝率の低い人がいるチームが勝つ見込みになる分け方を選ぶ
+        //     S = Σ 重み ×(0.5 − 勝率')×(チームの勝つ見込み − 0.5)÷ Σ 重み × |0.5 − 勝率'|(大きいほど、高い人が負け・低い人が勝つ見込み)
+        //     勝率' =(勝ち + 2)÷(試合 + 4)。3試合以上の人の、勝率の上位2人・下位2人は重み PROP_EMPH 倍
+        //   ・予想が PROP_QMAX(80:20)より偏る分け方は避ける(一方的な試合にしない)。ペア設定・チームの人数・男女・希望ポジションの人数も守る
+        //   ・勝ち負けの要因がまだ使えない(試合が PROP_WHY_MIN 未満・効き目が出ている要因がない)ときは、前の方法:
+        //     一人ひとりの「この1試合のあとの勝率の見込み」=(勝ち数 + チームの勝つ見込み)÷(試合数 + 1)が5割からできるだけ離れない分け方(見込みは 強さ + 要因)
+        const PROP_MAXP = 0.7;   // 前の方法: 予想がこれ(70:30)より偏る分け方は避ける
+        const PROP_QMAX = 0.8, PROP_AVG_TOL = 1.0, PROP_WHY_MIN = 10, PROP_EMPH = 3;
         function proposeSplit(names, teamCount) {
             const recs = chemRecords("0000"), wm = whyModel("0000"), { base, prior } = chemData("0000");
             const st = n => n in base ? base[n] : (n in prior ? prior[n] : chemPrior(n));
             const known = wm.rows.filter(x => x.ok);   // 今わかっている要因の効き目
-            const sig = x => 1 / (1 + Math.exp(-x));
+            const sig = x => 1 / (1 + Math.exp(-x)), clampP = p => Math.max(0.03, Math.min(0.97, p));
+            const mode = known.length && wm.recs >= PROP_WHY_MIN ? "why" : "old";
             const mateG = {}; recs.forEach(r => r.teams.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { const k = t[i] < t[j] ? t[i] + "\u0000" + t[j] : t[j] + "\u0000" + t[i]; mateG[k] = (mateG[k] || 0) + 1; } }));
             const gOf = (a, b) => mateG[a < b ? a + "\u0000" + b : b + "\u0000" + a] || 0;
             // 一人ひとりの勝ち数・試合数(勝率の数え方は、分析の勝率と同じ記録から)
             const rec = {}; recs.forEach(r => r.teams.forEach((t, k) => t.forEach(n => { const o = rec[n] || (rec[n] = { g: 0, w: 0 }); o.g++; if (k === r.win) o.w++; })));
             const gw = n => rec[n] || { g: 0, w: 0 };
-            // チームAがチームBに勝つ見込み: 強さ(試合結果から出した、勝率には見えない強さ)の差 + 勝ち負けの要因
+            // 要因だけから見た、チームAがチームBに勝つ見込み(予想の「要因」と同じ。総合の差は入れない)
             let usedWhy = false;
-            const pOf = (A, B) => {
-                let zw = 0, used = 0;
-                known.forEach(r => { const u = r.f(A, names), v = r.f(B, names); if (u == null || v == null || u === v) return; zw += r.b * (u - v); used++; });
-                if (used) usedWhy = true;
-                const z = A.reduce((t, n) => t + st(n), 0) - B.reduce((t, n) => t + st(n), 0) + zw;   // 強さの差 + 要因(要因には総合の差が入っていないので、足してよい)
-                return Math.max(0.03, Math.min(0.97, sig(z)));
-            };
-            const units = buildUnits(names.map(teamParticipant)).map(u => u.members.map(m => m.name));
+            const zWhy = (A, B) => { let zw = 0, used = 0; known.forEach(r => { const u = r.f(A, names), v = r.f(B, names); if (u == null || v == null || u === v) return; zw += r.b * (u - v); used++; }); if (used) usedWhy = true; return zw; };
+            // 前の方法: 強さ(試合結果から出した、勝率には見えない強さ)の差 + 勝ち負けの要因
+            const pOf = mode === "why" ? (A, B) => clampP(sig(zWhy(A, B)))
+                : (A, B) => clampP(sig(A.reduce((t, n) => t + st(n), 0) - B.reduce((t, n) => t + st(n), 0) + zWhy(A, B)));
+            const pmax = mode === "why" ? PROP_QMAX : PROP_MAXP;
+            const unitList = buildUnits(names.map(teamParticipant)).map(u => u.members.map(m => m.name));
             const size = names.length / teamCount;
+            const part = {}; names.forEach(n => { part[n] = teamParticipant(n); });
             const gen = {}; names.forEach(n => { const r = findRosterByName(n); gen[n] = r ? r.gender : ""; });
             const genGap = teams => ["male", "female"].reduce((a, g) => { const c = teams.map(t => t.filter(n => gen[n] === g).length); return a + Math.max(0, Math.max(...c) - Math.min(...c) - 1); }, 0);
+            // 希望ポジション(セッターなど)の人数も、どのチームも差が1人まで
+            const poss = [...new Set(names.map(n => part[n].position).filter(Boolean))];
+            const posGap = teams => poss.reduce((a, ps) => { const c = teams.map(t => t.filter(n => part[n].position === ps).length); return a + Math.max(0, Math.max(...c) - Math.min(...c) - 1); }, 0);
+            // チームの平均(チーム分けの画面の「平均」と同じ値 + 総合)
+            const avgDefs = ROLE_PARAM_DEFS.filter(d => isAvgParam(d.key));
+            const tot = n => { const e = part[n].params || {}; return ROLE_PARAM_DEFS.reduce((a, d) => a + (e[d.key] ?? 3), 0) / ROLE_PARAM_DEFS.length; };
+            const scale10 = names.some(n => { const r = findRosterByName(n); return r && PARAM_DEFS.some(d => ((r.params || {})[d.key] || 0) > 5); });
+            const tol = PROP_AVG_TOL * (scale10 ? 1 : 0.5);
+            const teamAvgs = teams => avgDefs.map(d => ({ label: d.label + "の平均", v: teams.map(t => averageOfParam(t.map(n => part[n]), d.key)) }))
+                .concat([{ label: "総合の平均", v: teams.map(t => t.length ? t.reduce((a, n) => a + tot(n), 0) / t.length : 0) }]);
+            const avgViol = avs => avs.reduce((a, x) => a + Math.max(0, Math.max(...x.v) - Math.min(...x.v) - tol), 0);
+            // 勝率'(少ない試合は5割寄り)と重み: 3試合以上の人の上位2人・下位2人を強く
+            const wr = {}, wt = {}; names.forEach(n => { const { g, w } = gw(n); wr[n] = (w + 2) / (g + 4); wt[n] = 1; });
+            const ranked = names.filter(n => gw(n).g >= 3).sort((a, b) => wr[b] - wr[a]);
+            const top = ranked.slice(0, 2).filter(n => wr[n] > 0.5), bottom = ranked.slice(-2).reverse().filter(n => wr[n] < 0.5 && !top.includes(n));
+            top.concat(bottom).forEach(n => { wt[n] = PROP_EMPH; });
+            const sDen = names.reduce((a, n) => a + wt[n] * Math.abs(0.5 - wr[n]), 0);
             const np = teamCount - 1;
-            // この分け方の評価: 各チームの勝つ見込み q、一人ひとりの「この試合のあとの勝率の見込み」の5割からのずれ(2乗の平均)、偏りすぎ
+            // この分け方の評価: 各チームの勝つ見込み q(3チーム以上は、ほかのチームとの見込みの平均)、偏りすぎ、S、前の方法のずれ、平均の外れ
             const evalTeams = teams => {
                 const q = teams.map(() => 0); let lop = 0;
                 for (let a = 0; a < teamCount; a++) for (let b = a + 1; b < teamCount; b++) {
                     const p = pOf(teams[a], teams[b]); q[a] += p; q[b] += 1 - p;
-                    lop += Math.pow(Math.max(0, Math.abs(p - 0.5) - (PROP_MAXP - 0.5)), 2);
+                    lop += Math.pow(Math.max(0, Math.abs(p - 0.5) - (pmax - 0.5)), 2);
                 }
                 const qq = q.map(v => v / np);
-                let dev = 0, cnt = 0;
-                teams.forEach((t, i) => t.forEach(n => { const { g, w } = gw(n), e = (w + qq[i]) / (g + 1); dev += (e - 0.5) * (e - 0.5); cnt++; }));
-                return { q: qq, dev: dev / Math.max(1, cnt), lop };
+                let dev = 0, cnt = 0, s = 0, ext = 0;
+                teams.forEach((t, i) => { ext += (qq[i] - 0.5) * (qq[i] - 0.5); t.forEach(n => { const { g, w } = gw(n), e = (w + qq[i]) / (g + 1); dev += (e - 0.5) * (e - 0.5); cnt++; s += wt[n] * (0.5 - wr[n]) * (qq[i] - 0.5); }); });
+                const avs = teamAvgs(teams);
+                return { q: qq, dev: dev / Math.max(1, cnt), lop, S: sDen > 0 ? s / sDen : 0, ext: ext / teamCount, avs, av: avgViol(avs) };
             };
-            let best = null, bestSc = -Infinity, bestE = null;
-            for (let tries = 0; tries < 4000; tries++) {
-                const us = units.slice().sort(() => Math.random() - 0.5), teams = Array.from({ length: teamCount }, () => []);
-                us.forEach(u => { let ti = 0; for (let i = 1; i < teamCount; i++) if (teams[i].length < teams[ti].length) ti = i; teams[ti].push(...u); });
-                if (teams.some(t => Math.abs(t.length - size) > 1)) continue;
-                const e = evalTeams(teams);
-                let nov = 0, npair = 0; teams.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { nov += 1 / (1 + gOf(t[i], t[j])); npair++; } });
-                const sc = -100 * genGap(teams) - 1000 * e.dev - 1500 * e.lop + 0.3 * nov / Math.max(1, npair);
-                if (sc > bestSc) { bestSc = sc; best = teams; bestE = e; }
+            const novOf = teams => { let nov = 0, npair = 0; teams.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { nov += 1 / (1 + gOf(t[i], t[j])); npair++; } }); return nov / Math.max(1, npair); };
+            const scoreOf = (teams, e) => mode === "why"
+                ? -1e4 * (e.av + genGap(teams) + posGap(teams)) - 1e5 * e.lop + 1000 * e.S - 200 * e.ext + 0.3 * novOf(teams)
+                : -100 * genGap(teams) - 100 * posGap(teams) - 1000 * e.dev - 1500 * e.lop + 0.3 * novOf(teams);
+            const teamsOf = ua => { const teams = Array.from({ length: teamCount }, () => []); ua.forEach((ti, ui) => teams[ti].push(...unitList[ui])); return teams; };
+            let bestUa = null, bestSc = -Infinity, bestE = null;
+            // 1) ランダムに分けて、良いものを5つ残す
+            const cand = [];
+            for (let tries = 0; tries < 3000; tries++) {
+                const ord = unitList.map((_, i) => i).sort(() => Math.random() - 0.5), cntT = Array(teamCount).fill(0), ua = Array(unitList.length);
+                ord.forEach(ui => { let ti = 0; for (let i = 1; i < teamCount; i++) if (cntT[i] < cntT[ti]) ti = i; ua[ui] = ti; cntT[ti] += unitList[ui].length; });
+                if (cntT.some(c => Math.abs(c - size) > 1)) continue;
+                const teams = teamsOf(ua), e = evalTeams(teams), sc = scoreOf(teams, e);
+                if (cand.length < 5 || sc > cand[cand.length - 1].sc) { if (cand.some(c => Math.abs(c.sc - sc) < 1e-9)) continue; cand.push({ ua, e, sc }); cand.sort((x, y) => y.sc - x.sc); if (cand.length > 5) cand.pop(); }
             }
+            // 2) それぞれから、同じ人数のまとまり(1人どうし・ペアどうし)を入れかえて、良くなる間くり返す(いちばん良いものを使う)
+            cand.forEach(c0 => {
+                let ua0 = c0.ua, sc0 = c0.sc, e0 = c0.e;
+                for (let pass = 0; pass < 6; pass++) {
+                    let imp = false;
+                    for (let i = 0; i < unitList.length; i++) for (let j = i + 1; j < unitList.length; j++) {
+                        if (ua0[i] === ua0[j] || unitList[i].length !== unitList[j].length) continue;
+                        const ua = ua0.slice(); [ua[i], ua[j]] = [ua[j], ua[i]];
+                        const teams = teamsOf(ua), e = evalTeams(teams), sc = scoreOf(teams, e);
+                        if (sc > sc0 + 1e-9) { sc0 = sc; ua0 = ua; e0 = e; imp = true; }
+                    }
+                    if (!imp) break;
+                }
+                if (sc0 > bestSc) { bestSc = sc0; bestUa = ua0; bestE = e0; }
+            });
+            let best = bestUa ? teamsOf(bestUa) : null;
             if (!best) { best = Array.from({ length: teamCount }, () => []); names.forEach((n, i) => best[i % teamCount].push(n)); bestE = evalTeams(best); }
             // 説明用: 一人ひとりの今の勝率と、チーム、この試合のあとの見込み
-            const rates = []; best.forEach((t, i) => t.forEach(n => { const { g, w } = gw(n); rates.push({ n, g, w, r: g ? w / g : null, team: i + 1, after: (w + bestE.q[i]) / (g + 1) }); }));
+            const rates = []; best.forEach((t, i) => t.forEach(n => { const { g, w } = gw(n); rates.push({ n, g, w, r: g ? w / g : null, team: i + 1, after: (w + bestE.q[i]) / (g + 1), top: top.includes(n), bottom: bottom.includes(n) }); }));
             const withG = rates.filter(x => x.g >= 1);
             const dev0 = withG.length ? withG.reduce((t, x) => t + Math.abs(x.r - 0.5), 0) / withG.length * 100 : null;
             const dev1 = withG.length ? withG.reduce((t, x) => t + Math.abs(x.after - 0.5), 0) / withG.length * 100 : null;
             let fresh = 0; best.forEach(t => { for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) if (!gOf(t[i], t[j])) fresh++; });
             const keys = rates.filter(x => x.g >= 3 && Math.abs(x.r - 0.5) >= 0.1).map(x => ({ n: x.n, tags: [Math.round(x.r * 100) + "%"], team: x.team }));
-            return { teams: best, info: { win: teamCount === 2 ? bestE.q[0] : null, q: bestE.q, whyUsed: usedWhy ? "強さ+要因" : "強さ", rates, dev0, dev1, fresh, gOk: !genGap(best), keys } };
+            return { teams: best, info: { mode, win: teamCount === 2 ? bestE.q[0] : null, q: bestE.q, whyUsed: mode === "why" ? "要因" : usedWhy ? "強さ+要因" : "強さ", rates, dev0, dev1, fresh, gOk: !genGap(best), pOk: !posGap(best), keys,
+                avgs: bestE.avs, tol, avgOk: bestE.av <= 1e-9, S: bestE.S, top, bottom } };
         }
         // ======================================================================
         // 動画でフォーム分析(スパイク)
@@ -14078,34 +14122,41 @@ const namesBtn = isAdmin() && dates.length > 0
             const { pr } = propCache, [, mm, dd] = d.slice(0, 10).split("-").map(Number); propCache.d = d;
             const inf = pr.info || {}, km = {}; (inf.keys || []).forEach(k => { km[k.n] = k.tags; });
             const rt = inf.rates || [], qs = inf.q || [], pc = v => Math.round(v * 100);
-            const why = [];
+            const isWhy = inf.mode === "why", why = [];
             if (rt.some(x => x.g >= 3)) pr.teams.forEach((t, i) => {
                 const hi = rt.filter(x => x.team === i + 1 && x.g >= 3 && x.r >= 0.55).sort((a, b) => b.r - a.r), lo = rt.filter(x => x.team === i + 1 && x.g >= 3 && x.r <= 0.45).sort((a, b) => a.r - b.r);
-                const nm = x => anaOut(x.n) ? `<span class="ana-out">${escapeHtml(x.n)} ${pc(x.r)}%</span>` : `${escapeHtml(x.n)} ${pc(x.r)}%`;
-                why.push(`<li><b>チーム${i + 1}</b>　${escapeHtml(inf.whyUsed || "要因")}の予想 ${qs[i] != null ? pc(qs[i]) + "%" : "—"}${hi.length ? `<small>勝率が高い: ${hi.map(nm).join("・")}</small>` : ""}${lo.length ? `<small>勝率が低い: ${lo.map(nm).join("・")}</small>` : ""}</li>`);
+                const nm = x => { const s = `${escapeHtml(x.n)} ${pc(x.r)}%${isWhy && (x.top || x.bottom) ? (x.top ? "(上位)" : "(下位)") : ""}`; return anaOut(x.n) ? `<span class="ana-out">${s}</span>` : s; };
+                why.push(`<li><b>チーム${i + 1}</b>　${escapeHtml(inf.whyUsed || "要因")}の予想 ${qs[i] != null ? pc(qs[i]) + "%" : "—"}${isWhy && qs[i] != null ? (qs[i] < 0.47 ? "(負けやすい)" : qs[i] > 0.53 ? "(勝ちやすい)" : "(五分)") : ""}${hi.length ? `<small>勝率が高い: ${hi.map(nm).join("・")}</small>` : ""}${lo.length ? `<small>勝率が低い: ${lo.map(nm).join("・")}</small>` : ""}</li>`);
             });
-            const avgRows = inf.dev0 != null ? `<div><span>勝率の5割からのずれ(平均)</span><b>今 ${inf.dev0.toFixed(1)}点</b><b>この試合後の見込み ${inf.dev1.toFixed(1)}点</b></div>` : "";
+            const f1 = v => v.toFixed(1);
+            const avgRows = isWhy ? (inf.avgs || []).map(a => `<div><span>${escapeHtml(a.label)}${pr.teams.length > 2 ? `(${a.v.map((_, i) => i + 1).join("・")})` : ""}</span><b>${a.v.map(f1).join(" / ")}</b><b>差 ${f1(Math.max(...a.v) - Math.min(...a.v))}</b></div>`).join("") + (inf.avgOk ? "" : `<div><span>平均の差を ${f1(inf.tol)} 以内にできる分け方がなく、いちばん近いものです</span></div>`)
+                : inf.dev0 != null ? `<div><span>勝率の5割からのずれ(平均)</span><b>今 ${inf.dev0.toFixed(1)}点</b><b>この試合後の見込み ${inf.dev1.toFixed(1)}点</b></div>` : "";
+            const head = isWhy ? "勝率の高い人が負けやすい分け方" : "勝率が5割に近づく分け方";
+            const oldNote = isWhy ? "" : `<small>勝ち負けの要因がまだ使えない(試合が少ない)ので、前の方法(一人ひとりの勝率が5割に近づく分け方)です</small>`;
             return `<details class="note-details chem"${propOpen ? " open" : ""} ontoggle="propOpen=this.open"><summary>チーム分けの提案(${mm}/${dd}・${names.length}人)</summary>
                 <div class="prop-teams">${pr.teams.map((t, i) => `<div><h5>チーム${i + 1}</h5>${t.map(n => `<span${km[n] || anaOut(n) ? ` class="${[km[n] ? "key" : "", anaOut(n) ? "ana-out" : ""].filter(Boolean).join(" ")}"` : ""}>${escapeHtml(n)}${km[n] ? `<em>${km[n].map(escapeHtml).join("・")}</em>` : ""}</span>`).join("")}</div>`).join("")}</div>
-                ${why.length ? `<div class="prop-why"><h6>勝率が5割に近づく分け方</h6><ul>${why.join("")}</ul>${avgRows ? `<div class="prop-avg">${avgRows}</div>` : ""}</div>` : `<div class="prop-why"><small>勝率が出ている人(3試合以上)がまだいないので、予想がなるべく五分になる分け方です</small></div>`}
-                <div class="prop-info">${inf.win != null ? `<div class="prop-win"><span>予想</span><span class="prop-wbar" aria-hidden="true"><i style="width:${pc(inf.win)}%"></i></span><b>${pc(inf.win)}:${100 - pc(inf.win)}</b></div>` : ""}${inf.fresh ? `<div class="prop-fresh"><span>初めて組む2人</span><b>${inf.fresh}組</b></div>` : ""}</div>
+                ${why.length ? `<div class="prop-why"><h6>${head}</h6>${oldNote}<ul>${why.join("")}</ul>${avgRows ? `<div class="prop-avg">${avgRows}</div>` : ""}</div>` : `<div class="prop-why">${oldNote}<small>勝率が出ている人(3試合以上)がまだいないので、${isWhy ? "平均を近くして、要因の予想をもとに分けた案" : "予想がなるべく五分になる分け方"}です</small>${isWhy && avgRows ? `<div class="prop-avg">${avgRows}</div>` : ""}</div>`}
+                <div class="prop-info">${inf.win != null ? `<div class="prop-win"><span>${isWhy ? "要因の予想" : "予想"}</span><span class="prop-wbar" aria-hidden="true"><i style="width:${pc(inf.win)}%"></i></span><b>${pc(inf.win)}:${100 - pc(inf.win)}</b></div>` : ""}${inf.fresh ? `<div class="prop-fresh"><span>初めて組む2人</span><b>${inf.fresh}組</b></div>` : ""}</div>
                 <div class="prop-acts"><button type="button" class="st-btn" onclick="propCache=null;renderRosterStats()">別の案</button><button type="button" class="st-btn prop-go" onclick="propUseInTeams()">この分け方でチーム分けへ</button></div>
                 <details class="rs-help"><summary>?</summary><div class="why-help">
                     <h6>何をする分け方か</h6>
-                    <p>一人ひとりの勝率が、5割に近づくように分けます。勝率が高い人と低い人を同じチームにしても、勝てば高い人がもっと高くなるだけです。そこで、<b>勝率が高い人は予想が低いチームへ、勝率が低い人は予想が高いチームへ</b>入れます。</p>
+                    <p>チームの平均はそこそこ近いまま、<b>「勝ち負けの要因」から見ると、勝率の高い人がいるチームが負けやすく、勝率の低い人がいるチームが勝ちやすい</b>分け方にします。勝率の高い人には負けて、低い人には勝って、勝率が5割に近づくようにするためです。</p>
                     <h6>決め方</h6>
                     <ul>
-                        <li><b>この試合のあとの勝率の見込み</b> … 一人ひとり、(これまでの勝ち数 + チームの勝つ見込み) ÷ (これまでの試合数 + 1) を計算します。全員の見込みが、5割からいちばん離れない組み合わせを選びます。試合数が少ない人ほど、1試合で大きく動くので、強く効きます。</li>
-                        <li><b>チームの勝つ見込み</b> … 「強さ」と「勝ち負けの要因」を合わせて出します。強さは、試合結果から出した「勝率には見えない強さ」です(強い人たちと当たって勝率が低い人は強く、弱い相手に勝って勝率が高い人は低く見ます)。勝率が高くても強さが高い人ばかりのチームは、予想が高くなります。</li>
-                        <li><b>偏りすぎない</b> … 予想が ${Math.round(PROP_MAXP * 100)}:${100 - Math.round(PROP_MAXP * 100)} より偏る分け方は避けます(一方的な試合にならないように)。</li>
+                        <li><b>平均はそこそこ近く</b> … チーム分けの画面と同じ平均(平均値パラメータ。機動力の補正込み・背反の人は除く)と、総合(4項目の平均)の平均で、チームの差がどれも ${PROP_AVG_TOL.toFixed(1)} 以内(5段階の名簿なら ${(PROP_AVG_TOL / 2).toFixed(1)} 以内)の分け方だけから選びます。そういう分け方がなければ、いちばん近いものにします。</li>
+                        <li><b>要因の予想</b> … 「勝ち負けの要因」で見つかった特徴(上位の人の偏り、1位・最下位がいるか、など)の差から出す、チームの勝つ見込みです(チーム分けの画面の「予想」の「要因」と同じ。平均が近いので、平均以外の特徴で差がつきます)。</li>
+                        <li><b>選び方</b> … 一人ひとり「勝率が5割より高いほど、チームの予想が低いほど」点が高くなるように足し合わせ、いちばん高い分け方を選びます。勝率は少ない試合だと5割寄りに見ます((勝ち + 2) ÷ (試合 + 4))。3試合以上の人の、<b>勝率の上位2人・下位2人は ${PROP_EMPH}倍</b>に効かせます(表示の「(上位)」「(下位)」)。</li>
+                        <li><b>偏りすぎない</b> … 要因の予想が ${Math.round(PROP_QMAX * 100)}:${100 - Math.round(PROP_QMAX * 100)} より偏る分け方は避けます(一方的な試合にならないように)。</li>
                         <li>一緒に出た回数が少ない2人も、ほんの少しだけ同じチームにしやすくします。</li>
-                        <li><b>最低限のルール</b> … ペア設定とチームの人数は守り、男女はどのチームも人数の差が1人までになるように分けます。</li>
+                        <li><b>最低限のルール</b> … ペア設定とチームの人数は守り、男女・希望ポジション(セッターなど)は、どのチームも人数の差が1人までになるように分けます。</li>
+                        <li><b>試合が少ないとき</b> … 勝ち負けの要因がまだ使えない(記録が ${PROP_WHY_MIN} 試合未満、または効き目が出ている要因がない)ときは、前の方法(一人ひとりの「この試合のあとの勝率の見込み」が5割からいちばん離れない分け方。予想は強さ + 要因、${Math.round(PROP_MAXP * 100)}:${100 - Math.round(PROP_MAXP * 100)} より偏らない)にします。</li>
                     </ul>
                     <h6>表示の読み方</h6>
                     <ul>
                         <li><b>名前の横の%</b> … その人のこれまでの勝率(3試合以上で、5割から10ポイント以上離れている人だけ)。</li>
                         <li><b>勝率が高い / 低い</b> … チームごとに、勝率が55%以上・45%以下の人。</li>
-                        <li><b>5割からのずれ</b> … 全員の勝率が5割からどれだけ離れているかの平均(点 = パーセントポイント)。「この試合後の見込み」が「今」より小さければ、近づく分け方です。</li>
+                        <li><b>〇〇の平均</b> … チームごとの平均と、いちばん大きい差。</li>
+                        <li><b>要因の予想</b> … チームの勝つ見込み(勝ち負けの要因から)。勝率の高い人のいるチームが低く、低い人のいるチームが高ければ、ねらいどおりです。</li>
                     </ul>
                     <p>その日のチーム分け画面の電球のボタンで、この考え方の分け方にできます。</p>
                 </div></details></details>`;
@@ -16873,7 +16924,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611152333;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611160217;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
