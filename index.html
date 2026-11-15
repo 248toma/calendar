@@ -2251,7 +2251,8 @@
         .rs-c { position: relative; height: 18px; border-radius: 5px; background: rgba(128, 128, 128, .1); overflow: hidden; }
         .rs-c b { position: relative; z-index: 1; padding-left: 5px; font-size: 11px; line-height: 18px; color: var(--ink); }
         .rs-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; opacity: .35; }
-        .rs-bar.c { background: #2fb380; } .rs-bar.a { background: #3b82f6; } .rs-bar.w { background: #f59e0b; }
+        .rs-bar.c { background: #2fb380; } .rs-bar.a { background: #3b82f6; } .rs-bar.w { background: #f59e0b; } .rs-bar.w.mid { background: #7cc79a; }
+        .rs-c.few b { opacity: .42; } .rs-c.few .rs-bar { opacity: .15; }
         .rs-c b small { font-size: 9px; font-weight: 600; color: var(--ink-3); margin-left: 1px; }
         .team-sync-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
         .team-sync-btn .tsync-l { font-size: 11px; font-weight: 800; }
@@ -2321,6 +2322,9 @@
         .mt-rc b { position: relative; font-size: 11.5px; color: var(--ink); }
         .mt-rc small { position: relative; font-size: 10px; color: var(--ink-3); }
         .mt-rc.none { color: var(--ink-3); }
+        .mt-rc.mid i { background: #7cc79a; opacity: .45; }   /* 勝率 45〜55%: うすい緑 */
+        .mt-rc.few b, .mt-rc.few small { opacity: .42; }   /* 全体の半分も出ていない人: 薄い文字 */
+        .mt-rc.few i { opacity: .14; }
         .rs-note { margin-top: 8px; }
         .outdated-bar { position: fixed; left: 12px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 9997; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #e5484d; color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
         .outdated-bar button { flex: none; margin-left: auto; height: 34px; padding: 0 14px; border: none; border-radius: 10px; background: #fff; color: #e5484d; font-weight: 800; }
@@ -3416,6 +3420,9 @@
         #settingsPanel[data-solo="ana"] .rs-c { height: 22px; border-radius: 11px; background: var(--sn-pit); box-shadow: var(--sn-insetXS); }
         #settingsPanel[data-solo="ana"] .rs-bar { top: 3px; bottom: 3px; left: 3px; max-width: calc(100% - 6px); border-radius: 8px; opacity: 1; background: color-mix(in srgb, var(--sn-acc) 26%, var(--sn-bg)) !important; }
         #settingsPanel[data-solo="ana"] .rs-bar.w.lo { background: color-mix(in srgb, var(--sn-neg) 26%, var(--sn-bg)) !important; }
+        #settingsPanel[data-solo="ana"] .rs-bar.w.mid { background: color-mix(in srgb, #3fae6b 30%, var(--sn-bg)) !important; }   /* 勝率 45〜55%: うすい緑 */
+        #settingsPanel[data-solo="ana"] .rs-c.few b { opacity: .42; }   /* 全体の半分も出ていない人: 薄い文字 */
+        #settingsPanel[data-solo="ana"] .rs-c.few .rs-bar { opacity: .45; }
         #settingsPanel[data-solo="ana"] .rs-c b { padding-left: 9px; font: 700 10.5px/22px var(--sn-en); color: var(--sn-ink); }
         #settingsPanel[data-solo="ana"] .rs-c b small { font: 500 8.5px var(--sn-en); color: var(--sn-ink3); }
         /* 試合の履歴: 日付は小さな見出し、試合は線で区切った行 */
@@ -10862,14 +10869,14 @@ await main();
             // 管理者アカウント: この日の「来る」メンバーの勝率(全期間)
             let rates = "";
             if (adm) {
-                const st = matchStatsFrom("0000"), dy = {};
+                const st = matchStatsFrom("0000"), dy = {}, totA = matchCountFrom("0000"), totD = matchCountDay(list, matchRateUnit);
                 matchStatsAddDay(dy, list, matchRateUnit);
                 const mem = (attendanceByDate[selectedDate] || []).filter(m => m.status === "来る").map(m => ({ n: m.name, a: st[m.name] || { g: 0, w: 0 }, d: dy[m.name] || { g: 0, w: 0 } }));
                 const rt = o => o.g ? o.w / o.g : -1;
                 mem.sort((x, y) => (rt(y.a) - rt(x.a)) || y.a.g - x.a.g || (rt(y.d) - rt(x.d)));
-                const cell = o => o.g ? `<span class="mt-rc"><i style="width:${Math.round(o.w / o.g * 100)}%"></i><b>${Math.round(o.w / o.g * 100)}%</b><small>${o.w}勝${o.g - o.w}敗</small></span>` : `<span class="mt-rc none">—</span>`;
+                const cell = (o, tot) => o.g ? `<span class="mt-rc${wrMid(o.w / o.g) ? " mid" : ""}${o.g * 2 < tot ? " few" : ""}"><i style="width:${Math.round(o.w / o.g * 100)}%"></i><b>${Math.round(o.w / o.g * 100)}%</b><small>${o.w}勝${o.g - o.w}敗</small></span>` : `<span class="mt-rc none">—</span>`;
                 if (mem.length) rates = `<details class="mt-sub"${matchRatesOpen ? " open" : ""} ontoggle="matchRatesOpen=this.open"><summary>勝率${matchUnitSegHtml()}${admMark()}</summary>
-                    <div class="mt-rt"><div class="mt-rr mt-rh"><span>名前</span><span>累計</span><span>この日</span></div>${mem.map(x => `<div class="mt-rr"><span class="mt-rn">${escapeHtml(x.n)}</span>${cell(x.a)}${cell(x.d)}</div>`).join("")}</div></details>`;
+                    <div class="mt-rt"><div class="mt-rr mt-rh"><span>名前</span><span>累計</span><span>この日</span></div>${mem.map(x => `<div class="mt-rr"><span class="mt-rn">${escapeHtml(x.n)}</span>${cell(x.a, totA)}${cell(x.d, totD)}</div>`).join("")}</div></details>`;
             }
             const rule = matchRule();
             const ruleHtml = isAdmin() ? `<div class="mt-rule"><select onchange="setMatchRule(this.value)">${MATCH_RULES.map(([t, n, lb]) => `<option value="${t}:${n}"${rule.type === t && rule.n === n ? " selected" : ""}>${lb}</option>`).join("")}</select></div>` : `<div class="mt-rule"><span>${matchRuleLabel(rule)}</span></div>`;
@@ -11327,6 +11334,19 @@ await main();
                 });
             });
         }
+        // 数えた試合(ゲーム)の数: 勝率の数え方に合わせる。半分も出ていない人の勝率は薄く出す(当てになりにくい)
+        function matchCountDay(list, unit) {
+            if (unit !== "match") return (list || []).length;
+            const rule = matchRule(); let n = 0;
+            matchGroupsOf(list || []).forEach(g => { if (matchGroupState(g, rule).done) n++; });
+            return n;
+        }
+        function matchCountFrom(fromKey, unit) {
+            unit = unit || matchRateUnit; let n = 0;
+            Object.keys(matchesByDate).filter(d => d >= fromKey).forEach(d => { n += matchCountDay(matchesByDate[d] || [], unit); });
+            return n;
+        }
+        function wrMid(v) { const p = Math.round(v * 100); return p >= 45 && p <= 55; }   // 勝率 45〜55% = 5割前後(うすい緑)
         function matchStatsFrom(fromKey, unit) {
             const st = {};
             unit = unit || matchRateUnit;
@@ -12019,7 +12039,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const from = rosterStatsFrom();
             // 「来る」が1人もいない日は、出欠を記録していない日として数えない
             const days = Object.keys(attendanceByDate).filter(d => /^\d{4}-\d{2}-\d{2}(_\d+)?$/.test(d) && volOk(d) && d < today && d >= from && (attendanceByDate[d] || []).some(m => m.status === "来る")).sort();   // 未定の回は数えない
-            const mst = matchStatsFrom(from);
+            const mst = matchStatsFrom(from), mtot = matchCountFrom(from);
             const rows = roster.filter(r => r.position !== GUEST_POS).map(r => {
                 let n = 0, come = 0, ans = 0, leadSum = 0, leadN = 0;
                 days.forEach(d => {
@@ -12033,7 +12053,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     }
                 });
                 const ms = mst[r.name] || { g: 0, w: 0 };
-                return { name: r.name, n, come, ans, cr: n ? come / n : -1, ar: n ? ans / n : -1, lead: leadN ? leadSum / leadN : -1, g: ms.g, wr: ms.g ? ms.w / ms.g : -1 };
+                return { name: r.name, n, come, ans, cr: n ? come / n : -1, ar: n ? ans / n : -1, lead: leadN ? leadSum / leadN : -1, g: ms.g, wr: ms.g ? ms.w / ms.g : -1, few: ms.g > 0 && ms.g * 2 < mtot };
             });
             return { days: days.length, rows };
         }
@@ -14338,7 +14358,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const key = { come: "cr", ans: "ar", win: "wr" }[rstatSort];
             rows.sort((a, b) => (b[key] - a[key]) || a.name.localeCompare(b.name, "ja"));
             const pct = v => v < 0 ? "—" : Math.round(v * 100) + "%";
-            const bar = (v, cls) => v < 0 ? "" : `<i class="rs-bar ${cls}${cls === "w" && v < 0.5 ? " lo" : ""}" style="width:${Math.round(v * 100)}%"></i>`;   // 勝率が 50% 未満なら赤
+            const bar = (v, cls) => v < 0 ? "" : `<i class="rs-bar ${cls}${cls === "w" ? (wrMid(v) ? " mid" : v < 0.5 ? " lo" : "") : ""}" style="width:${Math.round(v * 100)}%"></i>`;   // 勝率: 45〜55% はうすい緑、50% 未満は赤
             const per = [[3, "3か月"], [6, "6か月"], [0, "全部"]].map(([v, l]) => `<button type="button" class="${rstatPeriod === v ? "on" : ""}" onclick="setRstat('p',${v})">${l}</button>`).join("");
             const hd = (k, l) => `<button type="button" class="rs-h${rstatSort === k ? " on" : ""}" onclick="setRstat('s','${k}')">${l}${rstatSort === k ? " ▾" : ""}</button>`;
             // 上: 期間と勝率の数え方(1行) / 下: 項目ごとに開く(説明は「?」の中)
@@ -14351,7 +14371,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${rotAnaHtml(rosterStatsFrom())}
                 <details class="note-details chem"${rtblOpen ? " open" : ""} ontoggle="rtblOpen=this.open"><summary>参加率・回答率・勝率<span class="rs-days">バレー${days}回分</span></summary>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
-                ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c">${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
+                ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c${r.few ? " few" : ""}"${r.few ? ` title="全${matchRateUnit === "match" ? "試合" : "ゲーム"}の半分未満"` : ""}>${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div></details></details>
                 <details class="note-details chem"${matchHistOpen ? " open" : ""} ontoggle="matchHistOpen=this.open; if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
                 <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データを書き出す<small>名前は記号に</small></button></div><div class="rs-build">BUILD ${APP_BUILD}</div>`;
@@ -16763,7 +16783,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611131215;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611151410;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
