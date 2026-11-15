@@ -2518,6 +2518,8 @@
         @keyframes prNumPop { 0% { opacity: .35; } 100% { opacity: 1; } }
         @media (prefers-reduced-motion: reduce) { .pr-anim { animation: none !important; } }
         #protoCal { display: none; }
+        #protoBell { display: none; }
+        body.proto-on #protoBell.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         body.proto-on #protoCal.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         #protoCal button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
         #protoCal button:active { transform: scale(.95); }
@@ -3090,6 +3092,7 @@
         #protoUI .pr-menubar button.g-ok { color: #8b6fc9; }
         #protoUI .pr-menubar button.g-ex::after { content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
         #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 6px rgba(160,172,194,.62), inset -3px -3px 6px rgba(255,255,255,.95); }
+        #protoUI .pr-menubar .bldot { position: absolute; top: 5px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: #e5484d; color: #fff; font: 800 9.5px/16px 'Montserrat', system-ui, sans-serif; font-style: normal; text-align: center; pointer-events: none; box-shadow: 0 0 0 1.5px var(--pr-bg, #e7eaf0); }
         #protoUI .pr-menubar .svdot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #e5484d; }
         /* ダークは端末の設定ではなく、アプリのテーマ(body.dark)に合わせる */
         body.dark #protoUI .pr-menubar { background: linear-gradient(145deg, color-mix(in srgb, var(--pr-bg, #2b2e34) 92%, #fff), color-mix(in srgb, var(--pr-bg, #2b2e34) 88%, #000)); box-shadow: 6px 6px 14px rgba(0,0,0,.55), -6px -6px 14px rgba(255,255,255,.06), inset 1px 1px 0 rgba(255,255,255,.08), inset -1px -1px 0 rgba(0,0,0,.45); }
@@ -3164,7 +3167,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail, #icsOv {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail, #icsOv, #protoBell {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3178,7 +3181,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed, body.dark #icsOv {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed, body.dark #icsOv, body.dark #protoBell {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -3247,6 +3250,13 @@
         #settingsPanel #setTop .st-link + .st-link { margin-top: -8px; }
         #settingsPanel .st-link:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
         #settingsPanel .st-chev { flex: none; color: var(--sn-ink3); }
+        /* 分析(押すと分析の画面)・Googleカレンダー(開くと設定): 下の項目と同じ、開く行 */
+        #settingsPanel .st-group > .st-acc-link { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; margin: 0; padding: 0 20px; border: none; border-radius: 0; background: none; box-shadow: none; color: var(--sn-ink2); font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; }
+        #settingsPanel .st-group > .st-acc-link::after { content: ""; flex: none; width: 7px; height: 7px; margin-right: 3px; border: solid var(--sn-ink3); border-width: 0 1.8px 1.8px 0; border-radius: 1px; transform: rotate(-45deg); }
+        #settingsPanel .st-group > .st-acc-link:active { color: var(--sn-ink); }
+        #settingsPanel .st-group.two > .acc > summary { background: linear-gradient(var(--sn-line), var(--sn-line)) no-repeat 20px 0 / calc(100% - 40px) 1px; }
+        #settingsPanel #setTop .st-group > .acc > .acc-body { padding: 0 20px 12px; }
+        #settingsPanel #setTop .st-rows.st-rows-in { padding: 0; background: none; box-shadow: none; border-radius: 0; }
         /* 下の項目(管理者): 同じカードと行。見出しは小さく字間をあける */
         #settingsPanel .panel-group-label { margin: 30px 8px 12px; padding: 0; border: none; font: 700 11px var(--sn-en); letter-spacing: .1em; color: var(--sn-ink3); }
         #settingsPanel .st-group { padding: 4px 0; overflow: hidden; }
@@ -3279,6 +3289,37 @@
             #settingsPanel .st-rows { padding: 4px 14px; }
             #settingsPanel .st-seg > button { min-width: 40px; padding: 0 10px; }
         }
+        /* ===== お知らせ(ベル): 設定と同じ凹凸(--sn-*)。日ごとの見出し → 出っぱったカードに行を並べる(変更ログと同じ並び) ===== */
+        #protoBell.open { background: var(--sn-bg); color: var(--sn-ink); }
+        #protoBell .bl-wrap { max-width: 440px; margin: 0 auto; box-sizing: border-box; padding: calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px); display: flex; flex-direction: column; gap: 12px; font-family: 'Noto Sans JP', system-ui, sans-serif; }
+        #protoBell .bl-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+        #protoBell .bl-back { width: 40px; height: 40px; flex: none; display: flex; align-items: center; justify-content: center; padding: 0; border: none; border-radius: 20px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); cursor: pointer; }
+        #protoBell .bl-back:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #protoBell .bl-title { flex: 1; font: 700 11px var(--sn-en); letter-spacing: .16em; color: var(--sn-ink3); }
+        #protoBell .bl-day, #protoBell .bl-sec { margin: 10px 8px 0; font: 700 11px var(--sn-en); letter-spacing: .06em; color: var(--sn-ink3); }
+        #protoBell .bl-sec { margin-top: 22px; display: flex; align-items: center; gap: 8px; }
+        #protoBell .bl-sec span { min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: var(--sn-pit); box-shadow: var(--sn-insetS); font-size: 10.5px; line-height: 20px; text-align: center; }
+        #protoBell .bl-card { border-radius: 24px; background: var(--sn-dome); box-shadow: var(--sn-raise); padding: 4px 0; overflow: hidden; }
+        #protoBell .bl-row { position: relative; display: flex; align-items: flex-start; gap: 12px; width: 100%; margin: 0; padding: 13px 16px; border: none; border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        #protoBell .bl-row + .bl-row { background: linear-gradient(var(--sn-line), var(--sn-line)) no-repeat 16px 0 / calc(100% - 32px) 1px; }
+        #protoBell .bl-row:not(:disabled):active { background-color: color-mix(in srgb, var(--sn-ink) 5%, transparent); }
+        #protoBell .bl-row:disabled { cursor: default; color: inherit; }
+        #protoBell .bl-row.new::before { content: ""; position: absolute; left: 6px; top: 26px; width: 6px; height: 6px; border-radius: 50%; background: var(--sn-acc); }
+        #protoBell .bl-ic { flex: none; width: 32px; height: 32px; margin-top: 1px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-pit); box-shadow: var(--sn-insetS); color: var(--sn-acc); }
+        #protoBell .bl-ic.chg { color: #c08a2a; }
+        #protoBell .bl-ic.del, #protoBell .bl-ic.out { color: var(--sn-neg); }
+        #protoBell .bl-b { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        #protoBell .bl-h { font-size: 11px; font-weight: 600; color: var(--sn-ink3); }
+        #protoBell .bl-ttl { font-size: 14px; font-weight: 700; color: var(--sn-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #protoBell .bl-ttl.del { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--sn-ink3) 70%, transparent); color: var(--sn-ink2); }
+        #protoBell .bl-pp { font-style: normal; margin-left: 6px; padding: 1px 6px; border-radius: 8px; font-size: 9.5px; font-weight: 700; color: var(--sn-ink3); background: var(--sn-pit); box-shadow: var(--sn-insetS); vertical-align: 2px; }
+        #protoBell .bl-when { font: 600 12px var(--sn-en); color: var(--sn-ink2); }
+        #protoBell .bl-chg { font-size: 11.5px; line-height: 1.5; color: var(--sn-ink2); }
+        #protoBell .bl-meta { font-size: 10.5px; color: var(--sn-ink3); }
+        #protoBell .bl-row.gone { opacity: .78; }
+        #protoBell .bl-chev { flex: none; align-self: center; width: 7px; height: 7px; margin-right: 3px; border: solid var(--sn-ink3); border-width: 0 1.8px 1.8px 0; border-radius: 1px; transform: rotate(-45deg); }
+        #protoBell .bl-empty { padding: 48px 12px; text-align: center; font-size: 13px; font-weight: 600; color: var(--sn-ink3); line-height: 1.8; }
+        #protoBell .bl-empty small { font-size: 11px; font-weight: 500; }
         /* ===== 分析(11/06): 設定と同じ、やわらかい凹凸。カード=出っぱり、棒・切り替え=へこんだ溝。色は青ひとつ(負け・マイナスだけくすんだ赤) ===== */
         /*   変数は設定の --sn-* をそのまま使う。分析(#settingsPanel[data-solo="ana"])とフォーム分析(#fxOv)の中だけ、緑のアクセントを青に・面の色を背景にそろえる */
         #settingsPanel[data-solo="ana"], #fxOv { --accent: var(--sn-acc); --accent-ink: var(--sn-acc); --accent-soft: color-mix(in srgb, var(--sn-acc) 16%, var(--sn-bg)); --bg: var(--sn-bg); --surface: var(--sn-bg); --ink: var(--sn-ink); --ink-2: var(--sn-ink2); --ink-3: var(--sn-ink3); --line: var(--sn-line); --sink: var(--sn-insetS); --raise-xs: var(--sn-raiseXS); --raise-sm: var(--sn-raiseS);
@@ -3356,7 +3397,7 @@
         #settingsPanel[data-solo="ana"] .why-it small { font-size: 10.5px; color: var(--sn-ink3); }
         #settingsPanel[data-solo="ana"] .why-tg { color: var(--sn-acc); }
         #settingsPanel[data-solo="ana"] .why-lnote { margin-top: 8px; font-size: 10px; color: var(--sn-ink3); }
-        /* 相性: へこんだ丸の中に図。線 = 青(勝ち越し)/ 赤の点線(負け越し) */
+        /* 相性: へこんだ丸の中に図。線 = 青(見込みより勝っている)/ 赤の点線(見込みより負けている) */
         #settingsPanel[data-solo="ana"] .chem-svg { max-width: 330px; margin: 18px auto 6px; border-radius: 50%; background: var(--sn-pit); box-shadow: var(--sn-inset); }
         #settingsPanel[data-solo="ana"] #rosterStats > details.note-details > .chem-svg { width: calc(100% - 40px); margin: 18px auto 6px; }   /* カードの左右の余白の分だけ細く(はみ出さない) */
         #settingsPanel[data-solo="ana"] .chem-svg text { font-family: var(--sn-en); font-weight: 600; fill: var(--sn-ink2); }
@@ -3751,13 +3792,8 @@
         #rotOv .rot-score.shake { animation: rotShake .32s ease; }
         @keyframes rotShake { 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
         #rotOv .rot-acts button.off { opacity: .45; box-shadow: var(--sn-raiseXS); cursor: default; }
-        #settingsPanel .rot-last { margin-top: 16px; }
         .rot-mk { display: inline-flex; vertical-align: -1px; margin-left: 4px; color: var(--sn-ink3, var(--ink-3)); font-style: normal; }
         .why-it .rot-mk { margin: 0 2px 0 4px; color: var(--sn-acc, var(--accent)); }
-        #settingsPanel .rot-lh { margin: 0 2px 8px; font: 700 11px var(--sn-en); color: var(--sn-ink3); }
-        #settingsPanel .rot-lt { display: flex; align-items: center; gap: 6px; margin: 12px 2px 0; font: 700 12px var(--sn-en); color: var(--sn-ink2); }
-        #settingsPanel .rot-lt .rot-sc { margin-left: auto; font: 700 13px var(--sn-en); color: var(--sn-ink); }
-        #settingsPanel .rot-lt + .rot-list { margin-top: 6px; }
         @media (max-width: 389px) {
             :is(#rotOv, .mt-ed) .rot-court { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
             :is(#rotOv, .mt-ed) .rot-tb { padding: 0 8px; }
@@ -4497,11 +4533,19 @@ await main();
                 <div class="st-row pr-only"><span class="st-lbl">時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">メニュー</span><span class="st-seg" id="menuSeg"><button type="button" data-v="hold" onclick="setMenuMode('hold')">長押し</button><button type="button" data-v="bar" onclick="setMenuMode('bar')">下</button></span></div>
             </div>
-            <!-- Googleに接続中の挙動(管理者だけ・この端末だけの設定) -->
-            <div class="st-card st-rows" id="gcalPrefRows" style="display:none">
-                <div class="st-row"><span class="st-lbl">新しい予定の保存先</span><span class="st-seg" id="gpOnlySeg"><button type="button" data-v="app" onclick="gcalPrefSet('only',false)">アプリ</button><button type="button" data-v="g" onclick="gcalPrefSet('only',true)">Googleのみ</button></span></div>
-                <div class="st-row" id="gpAskRow"><span class="st-lbl">Googleへの追加確認</span><span class="st-seg" id="gpAskSeg"><button type="button" data-v="ask" onclick="gcalPrefSet('ask','ask')">聞く</button><button type="button" data-v="never" onclick="gcalPrefSet('ask','never')">追加しない</button><button type="button" data-v="auto" onclick="gcalPrefSet('ask','auto')">自動で追加</button></span></div>
-                <div class="st-sub" id="gpNote" style="font-size:11px;color:var(--ink-3);line-height:1.5;padding:2px 4px 4px"></div>
+            <!-- 管理者だけ: 分析(前は下のメニューにあった) と Googleに接続中の挙動(この端末だけの設定。開くと出す) -->
+            <div class="st-card st-group" id="setAdmLinks" style="display:none">
+                <button type="button" class="st-acc-link admin-only" id="setAnaLink" onclick="openAnaFromSettings()">分析</button>
+                <details class="acc" id="gcalPrefRows" style="display:none" ontoggle="if (this.open) requestAnimationFrame(() => syncSetTop(true))">
+                    <summary>Googleカレンダー</summary>
+                    <div class="acc-body">
+                        <div class="st-rows st-rows-in">
+                        <div class="st-row"><span class="st-lbl">新しい予定の保存先</span><span class="st-seg" id="gpOnlySeg"><button type="button" data-v="app" onclick="gcalPrefSet('only',false)">アプリ</button><button type="button" data-v="g" onclick="gcalPrefSet('only',true)">Googleのみ</button></span></div>
+                        <div class="st-row" id="gpAskRow"><span class="st-lbl">Googleへの追加確認</span><span class="st-seg" id="gpAskSeg"><button type="button" data-v="ask" onclick="gcalPrefSet('ask','ask')">聞く</button><button type="button" data-v="never" onclick="gcalPrefSet('ask','never')">追加しない</button><button type="button" data-v="auto" onclick="gcalPrefSet('ask','auto')">自動で追加</button></span></div>
+                        <div class="st-sub" id="gpNote" style="font-size:11px;color:var(--ink-3);line-height:1.5;padding:2px 4px 4px"></div>
+                        </div>
+                    </div>
+                </details>
             </div>
             <!-- カレンダーのファイル(.ics)の取り込み: ボタンは「バレー予定の一括追加」の画面にある(ファイルを選ぶ入力欄だけここに置く) -->
             <!-- 管理者でない人だけ: 自分の端末の予定として .ics を取り込む(管理者は「まとめて追加」の画面から) -->
@@ -5778,6 +5822,7 @@ await main();
             } catch (e) {
                 console.warn("保存に失敗しました。", e);
             }
+            try { if (typeof bellScan === "function") bellScan(true); } catch (e) { /* ignore */ }   // 自分で保存した予定は、お知らせにしない(写しだけ取り直す)
         }
 
         function saveThresholds() {
@@ -5844,6 +5889,16 @@ await main();
         function toggleSettings() {
             const panel = document.getElementById("settingsPanel");
             const opening = !panel.classList.contains("open");
+            // 設定の「分析」から開いた分析を閉じたときは、設定に戻る(× ・左端から払うのどちらでも)
+            if (!opening && panel.dataset.solo && panel.dataset.back === "settings") {
+                delete panel.dataset.back; delete panel.dataset.solo;
+                const h = panel.querySelector(".panel-head h3"); if (h) h.textContent = "SETTINGS";
+                panel.querySelectorAll("details.acc[open]").forEach(d => { d.open = false; });
+                panel.scrollTop = 0;
+                requestAnimationFrame(() => { try { syncSetTop(true); } catch (e) { /* ignore */ } });
+                return;
+            }
+            delete panel.dataset.back;
             if (!opening) { delete panel.dataset.solo; const h = panel.querySelector(".panel-head h3"); if (h) h.textContent = "SETTINGS"; }
             if (!opening) panel.querySelectorAll("details.acc[open]").forEach(d => { d.open = false; });   // 閉じるときは、開いていた項目も閉じる
             if (!opening) panel.scrollTop = 0;
@@ -5908,6 +5963,21 @@ await main();
             const ms = document.getElementById("modeSelect");
             document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", !!ms && b.dataset.m === ms.value));
             top.querySelectorAll(".st-rows .st-seg, #modeSeg").forEach(sg => setSegPill(sg, first));
+            setAdmLinksSync();
+        }
+        // 分析・Googleカレンダーのカード: どちらも出ないときはカードごと隠す。両方出るときだけ間に線を引く
+        function setAdmLinksSync() {
+            const card = document.getElementById("setAdmLinks"); if (!card) return;
+            const ana = (() => { try { return isAdmin(); } catch (e) { return false; } })(), g = (() => { try { return gcalIsAdmin(); } catch (e) { return false; } })();
+            const gr = document.getElementById("gcalPrefRows"); if (gr) gr.style.display = g ? "" : "none";
+            card.style.display = ana || g ? "" : "none";
+            card.classList.toggle("two", ana && g);
+        }
+        // 設定の「分析」: 分析の画面を開き、閉じたら設定に戻る
+        function openAnaFromSettings() {
+            protoSolo("ana");
+            const panel = document.getElementById("settingsPanel");
+            if (panel && panel.dataset.solo === "ana") panel.dataset.back = "settings";
         }
         // アカウントのカード: 頭文字(名前がなければ人の形)・名前(なければ Admin / Guest)
         function renderSetAcct() {
@@ -6820,12 +6890,12 @@ await main();
         function closeAddChooser() { const ac = document.getElementById("addChooser"), fb = document.getElementById("addFab"); if (ac) ac.classList.remove("open"); if (fb) fb.classList.remove("open"); }
         // ======================================================================
         // 節約の記録(管理者だけ。バレーとは関係ない)
-        //   ＋ →「節約」: 金額と項目(朝・昼・夜・飲み物・おやつ・ご飯・消耗品・その他)を記録。ペアモードの相手に共有できる
+        //   ＋ →「節約」: 金額と項目(朝・昼・夜・飲み物・おやつ・ご飯・消耗品・ガソリン・その他)を記録。ペアモードの相手に共有できる
         //   今年の合計を、カレンダーの年の横に小さく出す(押すと一覧)
         //   共有データ: [{ id, date, amount, cat, memo, owner, to: [名簿id…] }]
         // ======================================================================
         const SAVING_KEY = "attendance_saving_v1";
-        const SAVING_CATS = ["朝", "昼", "夜", "飲み物", "おやつ", "ご飯", "消耗品", "その他"];
+        const SAVING_CATS = ["朝", "昼", "夜", "飲み物", "おやつ", "ご飯", "消耗品", "ガソリン", "その他"];   // 記録には名前(文字)で入る。順番を変えても前の記録はそのまま
         // 共有しない記録は、この端末だけに保存(共有データには入れない)。ペアの相手に共有する記録だけ共有データへ
         const SAVING_LOCAL_KEY = "saving_local_v1";
         const svRead = key => { try { const v = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(v) ? v.filter(x => x && x.id && x.date) : []; } catch (e) { return []; } };
@@ -6939,12 +7009,15 @@ await main();
             } else {
                 const y = +(f.date || selectedDate).slice(0, 4), list = savingList().filter(r => r.date.slice(0, 4) === String(y)).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
                 const total = list.reduce((t, r) => t + r.amount, 0);
-                const byCat = SAVING_CATS.map(c => [c, list.filter(r => r.cat === c).reduce((t, r) => t + r.amount, 0)]).filter(x => x[1] > 0);
+                // 項目の一覧にない名前(別の版で入れた記録など)も、合計に入っているので棒に出す(その他の前に)
+                const extraCats = [...new Set(list.map(r => r.cat).filter(c => c && !SAVING_CATS.includes(c)))];
+                const catOrder = SAVING_CATS.slice(0, -1).concat(extraCats, SAVING_CATS.slice(-1));
+                const byCat = catOrder.map(c => [c, list.filter(r => r.cat === c).reduce((t, r) => t + r.amount, 0)]).filter(x => x[1] > 0);
                 const max = Math.max(1, ...byCat.map(x => x[1]));
                 const byMonth = {}; list.forEach(r => { const k = r.date.slice(0, 7); (byMonth[k] = byMonth[k] || []).push(r); });
                 body = `<div class="sv-yr"><button type="button" onclick="savingSet('date','${y - 1}-12-31')" aria-label="前の年">‹</button><span>${y}</span><button type="button" onclick="savingSet('date','${y + 1}-01-01')" aria-label="次の年">›</button></div>
                     <div class="sv-big">${svYen(total)}</div>
-                    ${byCat.length ? `<div class="sv-bars">${byCat.map(([c, v]) => `<div class="sv-bar"><span>${c}</span><i><b style="width:${Math.round(v / max * 100)}%"></b></i><em>${svYen(v)}</em></div>`).join("")}</div>` : `<div class="sv-empty">まだ記録はありません</div>`}
+                    ${byCat.length ? `<div class="sv-bars">${byCat.map(([c, v]) => `<div class="sv-bar"><span>${escapeHtml(c)}</span><i><b style="width:${Math.round(v / max * 100)}%"></b></i><em>${svYen(v)}</em></div>`).join("")}</div>` : `<div class="sv-empty">まだ記録はありません</div>`}
                     ${Object.keys(byMonth).map(k => `<div class="sv-day"><div class="sv-dh"><span>${+k.slice(5)}月</span><b>${svYen(byMonth[k].reduce((t, r) => t + r.amount, 0))}</b></div>${byMonth[k].map(r => savingRowHtml(r).replace('<span class="sv-cat">', `<span class="sv-d">${md(r.date)}</span><span class="sv-cat">`)).join("")}</div>`).join("")}`;
             }
             ov.innerHTML = `<div class="sv-box" role="dialog" aria-label="節約"><div class="sv-head"><b>節約</b>${tabs}<button type="button" class="sv-x" onclick="closeSaving()" aria-label="閉じる">✕</button></div>${body}</div>`;
@@ -7822,6 +7895,7 @@ await main();
         function gcalPrefRender() {
             const box = document.getElementById("gcalPrefRows"); if (!box) return;
             box.style.display = gcalIsAdmin() ? "" : "none";
+            try { setAdmLinksSync(); } catch (e) { /* ignore */ }
             const on = (id, v) => document.querySelectorAll("#" + id + " button").forEach(b => { const x = b.dataset.v === v; b.classList.toggle("on", x); b.setAttribute("aria-pressed", String(x)); });
             on("gpOnlySeg", gcalPref.only ? "g" : "app"); on("gpAskSeg", gcalPref.ask);
             const row = document.getElementById("gpAskRow"); if (row) { row.style.opacity = gcalPref.only ? ".45" : ""; row.style.pointerEvents = gcalPref.only ? "none" : ""; }
@@ -10717,7 +10791,7 @@ await main();
             const sides = teams.map((t, k) => m.rot && fits(m.rot[k], t) ? { c: m.rot[k].c.map(n => n || null), b: m.rot[k].b.slice(), side: m.rot[k].side, fx: (m.rot[k].fx || []).slice() } : rotPrefill(t, labels[k], k, null));
             matchEdit = { date, id, win: m.win, diff: m.diff || 0, sc: Array.isArray(m.score) ? m.score.map(String) : ["", ""], all: false, outOpen: false,   // 点数のない古い記録は、点数を入れ直す
                 rd: { labels, names: teams, sides, out: [] }, rui: { sel: null, mode: "", mk: -1, note: {} },
-                useRot: !!m.rot || sides.every(sd => sd.c.filter(Boolean).length === 6) };   // 「ローテも保存」: ローテがあるか、両方のコートに6人いればオン
+                useRot: !!m.rot };   // 「ローテも保存」: もうローテがある記録だけオン(ないときは、ボタンを押したときだけ)
             matchRerender(date);
         }
         function mtEdRender() { if (matchEdit) matchRerender(matchEdit.date); }
@@ -11220,7 +11294,7 @@ await main();
         }
         // 「ローテも保存」: 入れていなければ、両チームともコートに6人そろっているときにオン
         function rotLuDefault(a, b) { const res = lastTeamSplitResult; return !!(res && res.lineups && [a, b].every(i => { const l = res.lineups[i]; return l && l.slots && [1, 2, 3, 4, 5, 6].every(no => l.slots[no]); })); }
-        function rotLuOn(a, b) { return matchForm.luRot == null ? rotLuDefault(a, b) : !!matchForm.luRot; }
+        function rotLuOn(a, b) { return !!matchForm.luRot; }   // 「ローテも保存」は、ボタンを押したときだけ(ふだんはオフ。並びがそろっているかは rotLuDefault)
         function rotLuToggle() { matchForm.luRot = !rotLuOn(matchForm.a, matchForm.b); renderMatchBox(); }
         // ゲームのメンバーを直したとき: メンバーと合わなくなったローテは外す
         function rotSanitize(m) {
@@ -11292,24 +11366,6 @@ await main();
             </div>`;
             if (top) ov.querySelector(".rot-box").scrollTop = top;
             rotScoreUi();
-        }
-        // 分析: ローテ(ローテを記録したゲームだけで数える)
-        var rotAnaOpen = false;
-        function rotAnaHtml(from) {
-            let n = 0, last = null;
-            Object.keys(matchesByDate).filter(d => d >= from).sort().forEach(d => (matchesByDate[d] || []).forEach(m => { if (m.rot && m.rot.every(rotValid)) { n++; last = { d, m }; } }));
-            if (!n) return "";
-            const recs = chemRecords(from), { F, P } = whyFactors();
-            const rows = F.filter(([lb]) => ROT_FACTORS.has(lb)).map(([lb, f, min]) => ({ lb, ...whySimple(recs, f, min, lb, P), P }));
-            const rowHtml = x => { if (!x.n) return `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">まだ差がついたゲームなし</span></div>`;
-                const pc = Math.round(x.rate * 100), few = x.n < 8;
-                return `<details class="why-det"><summary class="stg-row why-row${few ? " few" : ""}"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}<i class="why-open">試合を見る</i></span><span class="stg-bar wr-bar"><i class="${pc >= 50 ? "" : "lo"}" style="width:${pc}%"></i><b style="left:50%"></b></span><span class="stg-v">${pc}%</span><span class="stg-d">${x.w}勝${x.l}敗</span></summary>${whyListHtml(x)}</details>`; };
-            const md = d => { const p = d.split("-"); return `${+p[1]}/${+p[2]}`; }, pv = rotPv(), m = last.m;
-            const lastHtml = m.labels.slice(0, 2).map((lb, k) => `<div class="rot-lt">${teamChip(lb)}${k === m.win ? `<i class="mt-crown">🏆</i>` : ""}${m.score ? `<b class="rot-sc">${m.score[k]}</b>` : ""}</div>${rotListHtml(m.rot[k], pv, "a" + k + ":" + m.id, m.teams.flat())}`).join("");
-            return `<details class="note-details chem rot-ana"${rotAnaOpen ? " open" : ""} ontoggle="rotAnaOpen=this.open"><summary>ローテ<span class="rs-days">${n}ゲーム</span></summary>
-                <div class="rs-tbl" style="margin-top:6px">${rows.map(rowHtml).join("")}</div>
-                <div class="rot-last"><div class="rot-lh">${md(last.d)} の最後のゲーム</div>${lastHtml}</div>
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">ローテを記録したゲームだけで数えます。セッター = そのローテで前衛中央(位置3)の人。固定 = その位置にずっといる人(ほかの人は固定の位置をとばして回る)。強さ = (セット + 攻撃 + レシーブ) ÷ 3。セット = 位置3 の人のセット、攻撃 = 前衛の左右(位置4・2)の2人のスパイクの高いほう、レシーブ = 位置3 以外の5人の 0.8 × 平均 + 0.2 × いちばん低い人 − レシーブの低い2人がとなり合う減点。ローテの底が相手より高いチーム = 各チームでいちばん低いローテの強さを比べる。相手より基準(その日のばらつき ÷ √5)以上に高いチーム。どのローテも〜 = そのゲームのローテすべてで当てはまるチーム(両チームとも同じなら数えない)。スパイカー = その日のスパイク上位3分の1。</div></details></details>`;
         }
         // 名前ごとの勝ち数・試合数(期間内)
         // 勝率の数え方: "game" = 1ゲームごと / "match" = 1試合(組)ごと。決着していない試合は数えない
@@ -12058,7 +12114,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return { days: days.length, rows };
         }
         // ------- 相性(同じチームのとき勝ちやすい2人 / 当たると負けやすい相手) -------
-        // 2人の「個人の勝率から予想される勝率」と、実際に組んだときの勝率の差。少ない回数はふつう(差0)寄りに補正。3回未満の組は出さない
+        // 相性 = 実際に組んだ(当たった)ときの勝率 − 2人の個人の勝率から見込んだ勝率(chemDataCalc の xc)。少ない回数はふつう(差0)寄りに補正。3回未満の組は出さない
         var chemFocus = "";
         // 点差を「どれだけはっきり勝ったか」(0.5〜1)にする。点差なし(0/未入力)は ふつうの勝ち(0.8)。1点差 0.6 / 3点差 0.73 / 5点差 0.82 / 10点差 0.93
         function chemWinScore(diff) { const d = parseInt(diff, 10) || 0; return d > 0 ? 0.5 + 0.5 * (1 - Math.exp(-d / 5)) : 0.8; }
@@ -12157,8 +12213,25 @@ const namesBtn = isAdmin() && dates.length > 0
                 o.rs.forEach(([ri, k]) => { const r = recs[ri], p0 = sig(D[ri] + (side[ri][a] || 0) * xa + (side[ri][b] || 0) * xb), p = k === 0 ? p0 : 1 - p0, y = k === 0 ? r.y : 1 - r.y; w += r.win === k ? 1 : 0; e += y - p; });
                 return { a, b, g: o.rs.length, w, c: e / (o.rs.length + K) };
             };
-            const pairs = Object.values(mate).filter(o => o.rs.length >= MIN).map(score);
-            const rivals = Object.values(vs).filter(o => o.rs.length >= MIN).map(score);
+            // 相性(図・一覧・勝率の予想で使う): 実際の勝率 − 2人の個人の勝率から見込んだ勝率
+            //   個人の勝率 = その人の勝率(勝ち + 2) ÷ (試合 + 4) を、「相手の人が出ていない試合」での勝率で直したもの(その試合 + 4試合ぶんの重みで、全体の勝率に寄せる)。
+            //   2人とも出た試合を使うと、強い人と組んだ人ほど「組まなかった試合 = 強い人と当たった試合」ばかりになって見込みが下がり、強い人との組がみな相性よく見えるため。
+            //   同じチーム: logit(見込み) = logit(a) + logit(b)、当たったとき(a から見て): logit(a) − logit(b)。0.05〜0.95 に収める
+            //   xc = (勝ち数 − 回数 × 見込み) ÷ (回数 + 3)(少ない回数は 0 寄り)。ex = 見込みの勝率
+            const lgt = q => Math.log(q / (1 - q)), CHEM_IND_K = 4;
+            const indWo = (n, o) => {   // n の勝率(o が出ていない試合で直したもの)
+                const t = ind[n] || { g: 0, w: 0 }, all = (t.w + 2) / (t.g + 4);
+                let g = 0, w = 0; (byName[n] || []).forEach(ri => { if (side[ri][o]) return; g++; if ((side[ri][n] === 1) === (recs[ri].win === 0)) w++; });
+                return (w + CHEM_IND_K * all) / (g + CHEM_IND_K);
+            };
+            const adj = (o, rival) => {
+                const n = o.g, pa = indWo(o.a, o.b), pb = indWo(o.b, o.a);
+                const ex = Math.max(0.05, Math.min(0.95, sig(rival ? lgt(pa) - lgt(pb) : lgt(pa) + lgt(pb))));
+                o.pa = pa; o.pb = pb; o.ex = ex; o.xc = (o.w - n * ex) / (n + K);
+                return o;
+            };
+            const pairs = Object.values(mate).filter(o => o.rs.length >= MIN).map(o => adj(score(o), false));
+            const rivals = Object.values(vs).filter(o => o.rs.length >= MIN).map(o => adj(score(o), true));
             return { ind, pairs, rivals, games: recs.length, base, prior };
         }
         function chemFocusSet(n) { chemFocus = chemFocus === n ? "" : n; renderRosterStats(); }
@@ -12173,16 +12246,18 @@ const namesBtn = isAdmin() && dates.length > 0
             const W = 340, cx = W / 2, cy = W / 2, R = W / 2 - 62, N = order.length, pos = {};
             order.forEach((n, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / N; pos[n] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a), a }; });
             const maxG = Math.max(...pairs.map(p => p.g)), f = chemFocus;
-            // 線も一覧も、組んだときの勝率で決める(50% より上 = 組むと勝ちやすい、下 = 負けやすい)
-            const wrOf = p => p.g ? p.w / p.g : 0.5;
-            let shown = pairs.filter(p => pos[p.a] && pos[p.b] && (f ? (p.a === f || p.b === f) : Math.abs(wrOf(p) - 0.5) >= 0.15)).sort((x, y) => Math.abs(wrOf(y) - 0.5) - Math.abs(wrOf(x) - 0.5) || y.g - x.g);
+            // 線も一覧も、相性(xc = 実際の勝率 − 2人の個人の勝率から見込んだ勝率)で決める(+ = 見込みより勝っている、− = 負けている)
+            //   強い人と組んだ組が、それだけで「相性がいい」にならないように
+            const CHEM_SHOW = 0.06;   // 全体の図に出すのは、相性が ±6pt 以上の組
+            const pt = v => `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(Math.round(v * 100))}pt`;
+            let shown = pairs.filter(p => pos[p.a] && pos[p.b] && (f ? (p.a === f || p.b === f) : Math.abs(p.xc) >= CHEM_SHOW)).sort((x, y) => Math.abs(y.xc) - Math.abs(x.xc) || y.g - x.g);
             if (!f) shown = shown.slice(0, Math.max(8, Math.round(N * 1.2)));   // 全体表示は、差の大きい組だけ(線だらけにしない)
             shown.reverse();   // 濃い線を上に
-            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], wr = wrOf(p), good = wr >= 0.5, op = Math.min(1, 0.3 + Math.abs(wr - 0.5) * 1.6) * (f ? 1 : 0.85), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
+            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], good = p.xc >= 0, op = Math.min(1, 0.3 + Math.abs(p.xc) * 3.2) * (f ? 1 : 0.85), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
                 return `<line class="${good ? "good" : "bad"}" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke-width="${(good ? w : Math.max(1, w * 0.7)).toFixed(2)}" opacity="${op.toFixed(2)}"></line>`; }).join("");
-            // 人を選んでいるとき: 線の上に、その組の相性(%)を出す(選んだ人の側から 6割のところ。中心に集まって重ならないように)
+            // 人を選んでいるとき: 線の上に、その組の相性(pt)を出す(選んだ人の側から 6割のところ。中心に集まって重ならないように)
             const pcts = !f ? "" : shown.map(p => { const o = p.a === f ? p.b : p.a, A = pos[f], B = pos[o], t = 0.6, x = A.x + (B.x - A.x) * t, y = A.y + (B.y - A.y) * t;
-                const wr = p.g ? p.w / p.g : 0; return `<text class="pc ${wr >= 0.5 ? "g" : "b"}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle">${Math.round(wr * 100)}%</text>`; }).join("");   // 組んだときの勝率
+                return `<text class="pc ${p.xc >= 0 ? "g" : "b"}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle">${pt(p.xc)}</text>`; }).join("");   // 相性(見込みとの差)
             const linked = new Set(); if (f) shown.forEach(p => { linked.add(p.a); linked.add(p.b); });
             const labels = order.map(n => { const P0 = pos[n], c = Math.cos(P0.a), s = Math.sin(P0.a), lx = cx + (R + 9) * c, ly = cy + (R + 9) * s, anc = Math.abs(c) < 0.25 ? "middle" : c > 0 ? "start" : "end", dy = Math.abs(c) < 0.25 ? (s > 0 ? 9 : -3) : 3.5;
                 const cls = f ? (n === f ? "on" : linked.has(n) ? "" : "dim") : "";
@@ -12190,23 +12265,23 @@ const namesBtn = isAdmin() && dates.length > 0
                 return `<g class="chem-nm" data-n="${encodeURIComponent(n)}" style="cursor:pointer"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="16" fill="transparent" style="cursor:pointer"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}" style="cursor:pointer">${escapeHtml(nm)}</text></g>`; }).join("");
             let list = "";
             if (f) {
-                const mine = pairs.filter(p => p.a === f || p.b === f).map(p => ({ n: p.a === f ? p.b : p.a, c: p.c, g: p.g, w: p.w }));
-                const R0 = x => x.g ? x.w / x.g : 0.5;
-                const best = mine.filter(x => R0(x) > 0.5).sort((a, b) => R0(b) - R0(a) || b.g - a.g).slice(0, 3), worst = mine.filter(x => R0(x) < 0.5).sort((a, b) => R0(a) - R0(b) || b.g - a.g).slice(0, 2);
-                const rv = rivals.filter(o => o.a === f || o.b === f).map(o => ({ n: o.a === f ? o.b : o.a, c: o.a === f ? o.c : -o.c, g: o.g, w: o.a === f ? o.w : o.g - o.w }));
-                const tough = rv.filter(x => R0(x) < 0.5).sort((a, b) => R0(a) - R0(b) || b.g - a.g).slice(0, 2), easy = rv.filter(x => R0(x) > 0.5).sort((a, b) => R0(b) - R0(a) || b.g - a.g).slice(0, 2);
-                const it = (x, cls) => `<div><span>${escapeHtml(x.n)}</span><b class="${cls}">${x.g ? Math.round(x.w / x.g * 100) : 0}%</b><small>${x.w}勝${x.g - x.w}敗</small></div>`;   // 組んだとき(当たったとき)の勝率
+                const mine = pairs.filter(p => p.a === f || p.b === f).map(p => ({ n: p.a === f ? p.b : p.a, xc: p.xc, ex: p.ex, g: p.g, w: p.w }));
+                const best = mine.filter(x => x.xc > 0).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 3), worst = mine.filter(x => x.xc < 0).sort((a, b) => a.xc - b.xc || b.g - a.g).slice(0, 2);
+                // 当たったとき: f から見た勝率と見込み(rivals は a から見た値なので、f が b なら裏返す)
+                const rv = rivals.filter(o => o.a === f || o.b === f).map(o => ({ n: o.a === f ? o.b : o.a, xc: o.a === f ? o.xc : -o.xc, ex: o.a === f ? o.ex : 1 - o.ex, g: o.g, w: o.a === f ? o.w : o.g - o.w }));
+                const tough = rv.filter(x => x.xc < 0).sort((a, b) => a.xc - b.xc || b.g - a.g).slice(0, 2), easy = rv.filter(x => x.xc > 0).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 2);
+                const it = (x, cls) => `<div style="grid-column:1/-1"><span>${escapeHtml(x.n)}</span><b class="${cls}">${pt(x.xc)}</b><small>勝率 ${Math.round(x.w / x.g * 100)}%(見込み ${Math.round(x.ex * 100)}%)・${x.w}勝${x.g - x.w}敗</small></div>`;   // 相性・組んだとき(当たったとき)の勝率と見込み
                 const sec = (t, arr, cls) => arr.length ? `<h5>${t}</h5>${arr.map(x => it(x, cls)).join("")}` : "";
                 const gap = (base[f] || 0) - (prior[f] || 0), gl = gap > 0.12 ? "パラメータより強い" : gap < -0.12 ? "パラメータより弱い" : "パラメータどおり";
                 list = `<div class="chem-hint">${escapeHtml(f)}　<b style="color:var(--ink-2)">${gl}</b></div><div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">まだ目立った相性はありません</div>`);
             } else {
-                const top = pairs.filter(p => p.g && p.w / p.g > 0.5).sort((a, b) => b.w / b.g - a.w / a.g || b.g - a.g).slice(0, 4);
-                list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${p.g ? Math.round(p.w / p.g * 100) : 0}%</b><small>${p.w}勝${p.g - p.w}敗</small></div>`).join("")}</div>` : "";
+                const top = pairs.filter(p => p.xc >= CHEM_SHOW).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 4);
+                list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${pt(p.xc)}</b><small>勝率 ${Math.round(p.w / p.g * 100)}%(見込み ${Math.round(p.ex * 100)}%)・${p.w}勝${p.g - p.w}敗</small></div>`).join("")}</div>` : "";
                 list += `<div class="chem-hint">名前を押すと、その人の相性</div>`;
             }
             return `<details class="note-details chem"${chemOpen ? " open" : ""} ontoggle="chemOpen=this.open"><summary>相性</summary>
                 <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${pcts}${labels}</svg>${list}
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">%は、組んだとき(「当たると」は相手チームにいたとき)の勝率。緑の線=勝率が50%より上 / 点線=50%より下。線の太さ=一緒に出た数。全体の図は、勝率が 35% 以下か 65% 以上の組だけ。強い2人が組めば勝率は高くなりやすいので、強さの差も見ながら読んでください</div></details></details>`;
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">相性 = 実際に組んだとき(「当たると」は相手チームにいたとき)の勝率 − 2人の個人の勝率から見込んだ勝率(pt)。強い人と組めば勝率は上がりやすいので、その分を引いた「見込みより勝っているか」で見ます。個人の勝率は、なるべく相手の人が出ていない試合で数えます(2人とも出た試合ばかりのときは、その人の全体の勝率に近くなります)。実線(色)=見込みより勝っている / 赤い点線=見込みより負けている。線の太さ=一緒に出た数。回数が少ないうちは 0 に近く出ます。3回以上の組だけ。全体の図は、相性が ±6pt 以上の組だけ</div></details></details>`;
         }
         var chemOpen = false, stgOpen = false, whyOpen = false, propOpen = false, whySort = "rate";
         // 提案の分け方を作る: 「一人ひとりの勝率が5割に近づく」ように分ける
@@ -13948,8 +14023,8 @@ const namesBtn = isAdmin() && dates.length > 0
             const pWhy = used ? clamp(sig(zw)) : null;
             // 3) 相性: チーム内の2人の相性の平均の差 + 相手との相性(当たると強い・弱い)
             const pk = (a, b) => a < b ? [a, b] : [b, a];
-            const pm = {}; pairs.forEach(p => { pm[p.a + "\u0000" + p.b] = p.c; });
-            const rm = {}; rivals.forEach(o => { rm[o.a + "\u0000" + o.b] = o.c; });
+            const pm = {}; pairs.forEach(p => { pm[p.a + "\u0000" + p.b] = p.xc; });   // 分析の「相性」と同じ値(実際の勝率 − 個人の勝率からの見込み)
+            const rm = {}; rivals.forEach(o => { rm[o.a + "\u0000" + o.b] = o.xc; });
             const inner = t => { let s0 = 0, n = 0; for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) { const [x, y] = pk(t[i], t[j]), c = pm[x + "\u0000" + y]; if (c != null) { s0 += c; n++; } } return { s: n ? s0 / n : 0, n }; };
             const ia = inner(A), ib = inner(B);
             let rs = 0, rn = 0; A.forEach(x => B.forEach(z => { const [a, b] = pk(x, z), c = rm[a + "\u0000" + b]; if (c != null) { rs += a === x ? c : -c; rn++; } }));
@@ -14294,17 +14369,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${ng.map(x => `<div class="stg-row why-row" style="grid-template-columns:1fr;color:var(--ink-3)"><span class="rs-nm why-nm">${escapeHtml(whyCond(x.lb))}</span><span style="font-size:11px">${x.why}${x.n ? `(${x.n}試合)` : ""}</span></div>`).join("")}</div>
                 <details class="rs-help"><summary>?</summary>${WHY_HELP}</details></details>`;
         }
-        // 強さ: 名簿のパラメータ(ベース)を、試合結果で補正したもの。パラメータと同じ 1〜5 のものさしで出す
-        function strengthHtml(from) {
-            const { ind, base, prior } = chemData(from);
-            const guests = new Set(roster.filter(r => r.position === GUEST_POS).map(r => r.name));
-            const rows = Object.keys(ind).filter(n => !guests.has(n) && roster.some(r => r.name === n)).map(n => ({ n, g: ind[n].g, v: 3 + (base[n] || 0) / CHEM_PARAM_W, p: 3 + (prior[n] || 0) / CHEM_PARAM_W })).sort((a, b) => b.v - a.v);
-            if (!rows.length) return "";
-            const top = Math.max(5, ...rows.map(r => Math.max(r.v, r.p))), x = v => Math.max(0, Math.min(100, (v - 1) / (top - 1) * 100)).toFixed(1);
-            return `<details class="note-details chem"${stgOpen ? " open" : ""} ontoggle="stgOpen=this.open"><summary>強さ</summary>
-                <div class="rs-tbl" style="margin-top:8px">${rows.map(r => { const d = r.v - r.p; return `<div class="stg-row"><span class="rs-nm">${escapeHtml(r.n)}</span><span class="stg-bar"><i style="width:${x(r.v)}%"></i><b style="left:${x(r.p)}%"></b></span><span class="stg-v">${r.v.toFixed(1)}</span><span class="stg-d${d > 0.05 ? " up" : ""}">${Math.abs(d) < 0.05 ? "±0" : (d > 0 ? "+" : "−") + Math.abs(d).toFixed(1)}</span></div>`; }).join("")}</div>
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">名簿のパラメータ(縦線)をベースに、試合結果(点差込み)で補正した強さ(1〜5)。右は補正の量。強いチームに入って勝っているだけの人は上がりにくい</div></details></details>`;
-        }
         // ---- 分析のデータと結果の書き出し(ほかの AI などで同じ分析になるか確かめる用) ----
         //   名前は P01, P02 … に置きかえる(対応表はファイルに入れない)。今の期間・ゲーム/試合の設定で書き出す
         async function anaExport() {
@@ -14331,7 +14395,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     "パラメータ": "サーブ・レシーブ・セット・スパイク・機動力(1〜10、昔の記録は 1〜5 のまま)。effective = 機動力の補正後 = 元の値 × (1 − w) + 機動力 × w(w は settings.mobilityWeights)。機動力そのものは元の値。分析は effective を使う",
                     "試合(matches)": "teams = 2チームのメンバー、win = 勝ったチームの番号(0/1)、diff = 点差(勝ったチームから見て。0 = 記録なし)、dayMembers = その日に試合に出た全員(その日の1位・最下位を決めるため)。y = チーム0が勝った度合い(点差込みの勝ち負け: 勝ち側 = 0.5 + 0.5 × (1 − e^(−点差/5))、点差なしの勝ちは 0.8)。unit が game なら1ゲームごと、match なら先取などで決着した1試合ごと(点差は全ゲームの合計)",
                     "強さ(members.strength)": "一人ひとりの強さ s。チーム0が勝つ確率 = sigmoid(Σチーム0の s − Σチーム1の s)。y に合うように決める(ロジスティック回帰・勾配法 200回)。名簿のパラメータ(effective の4項目の平均)から決めた strengthBase に引っぱる(強さ = 3 + s / " + CHEM_PARAM_W + "、引っぱりの強さ = 試合" + CHEM_PULL + "回ぶん)。パラメータと同じものさし",
-                    "相性(chemistry)": "2人の組ごとに、その2人が一緒にいない試合だけで2人の強さを出し直し、一緒にいた試合の (実際の y − 予想) の平均(回数が少ないと0寄り: 合計 ÷ (回数 + 3))。mates = 同じチーム、rivals = 相手チーム(a のいたチームから見て)。3回以上の組だけ",
+                    "相性(chemistry)": "score = 実際の勝ち負けと、2人の個人の勝率から見込んだ勝率の差(アプリの「相性」とチーム分けの予想の相性はこれ)。個人の勝率 personalA = (W + 4 × q) ÷ (G + 4)。q = a の全体の勝率 (勝ち + 2) ÷ (試合 + 4)、G・W = b が出ていない試合での a の試合数・勝ち数(personalB も同じ。2人とも出た試合は使わない)。見込み expected: mates は sigmoid(logit(pa) + logit(pb))、rivals は a から見て sigmoid(logit(pa) − logit(pb))(0.05〜0.95 に収める)。score = (勝ち数 − 回数 × expected) ÷ (回数 + 3)。modelScore = 前の方法: その2人が一緒にいない試合だけで2人の強さを出し直し、一緒にいた試合の (実際の y − 予想) の合計 ÷ (回数 + 3)。mates = 同じチーム、rivals = 相手チーム(a のいたチームから見て)。3回以上の組だけ",
                     "勝ち負けの要因(factors)": "matches.features の各項目の (チーム0 − チーム1) を説明変数、y を目的変数にした、切片なしのロジスティック回帰(L2 正則化 λ = 0.25、ニュートン法)。差がついた試合が5試合未満の項目は使わない。b = 係数、se = 標準誤差(ヘッセ行列の逆行列の対角)、z = b / se、effect = sigmoid(b × 単位) − 0.5(単位 = 1、格差だけ 0.5)。アプリは |z| ≥ 1 をはっきりしている、としている",
                     "ローテ(matches.rotation)": "ローテを記録したゲームだけにある。チームごとに court = 最初のローテの位置1〜6(1 = 後衛右・サーブ、6 = 後衛中央、5 = 後衛左、4 = 前衛左、3 = 前衛中央、2 = 前衛右)の人、bench = 控え(待ち順)、side = 控えの側、fixed = 位置を固定した人(その位置にずっといて、控えにも下がらない)、setter = 最初のローテで位置3 にいる人(セッター = 各ローテの位置3)。固定でない人は、固定の位置をとばして時計回り 2→1→6→5→4→3→2 に回る。控えの出入り: 入る位置 E = L(左前)なら 4、R(右前)なら 1(E が固定なら、輪で次の固定でない位置)。E に進むはずだった人が控えの最後へ下がり、控えの先頭が E に入る。同じ並びに戻るまでのローテを数える。ローテの強さ = (セット + 攻撃 + レシーブ) ÷ 3(effective)。セット = 位置3 の人のセット、攻撃 = 位置4 と 位置2 のスパイクの高いほう、レシーブ = 位置3 以外のコート5人の 0.8 × 平均 + 0.2 × 最小 − となりの減点(低い2人が縦か横にとなり合う組ごとに、チームのレシーブの標準偏差 × 0.5)。score = 点数(あれば diff はこの差)",
                     "特徴(features)の定義": "〇〇の平均 = チームの effective の平均(スパイクの平均だけは専任のセッターを除く。ローテを記録したゲームなら位置3 に固定した人、なければ希望ポジションがセッターの人(複数ならセットが高い人)。どちらもいなければ除かない)/ 機動力の平均 = 元の値の平均 / スパイク1位・セット1位がいる = その日のメンバー(dayMembers)の中で単独1位の人がいれば 1(同率1位の日は null)/ レシーブ最下位がいる = その日の単独最下位 / レシーブ下位2人が同じチーム = その日の低い順2人(2番目と同じ値の人も含む)のうち2人以上がいれば 1 / スパイク・セット上位2人が同じチーム = 同様に上位 / スパイク上位3人・レシーブ上位3人の人数 = その項目の effective が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / セット1位とスパイク1位が同じチーム = 単独のセット1位とスパイク1位が2人とも同じチームにいれば 1 / 総合上位3人の人数 = その日のメンバーで effective の4項目の平均が高い順の3人(3番目と同じ値を含む)のうち、そのチームにいる人数 / チーム内格差あり = メンバーの effective 4項目平均の標準偏差 / セッターの人数 = 名簿の希望ポジションがセッター / 人数 = チームの人数 / 最弱ローテが強い = そのチームのいちばん弱いローテの強さ(ローテを記録したゲームだけ。基準 = その日のメンバーの (セット + スパイク + レシーブ) ÷ 3 の標準偏差 ÷ √5)/ どのローテもレシーブ下位2人が離れている = どのローテでも、レシーブの低い2人(位置3 以外の5人の下位2人、またはチームの平均 − 0.5σ 未満)が縦か横にとなり合っていなければ 1 / どのローテも前衛の左右どちらかにスパイカーがいる = どのローテでも、位置4 か 位置2 にその日のスパイク上位3分の1(人数 ÷ 3 の切り上げ。最後と同じ値の人も含む)がいれば 1"
@@ -14341,7 +14405,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 results: {
                     games: recs.length,
                     factors: wm.rows.map(x => ({ factor: x.lb, gamesWithDiff: x.n, used: !!x.ok, b: r3(x.b), se: r3(x.se), z: r3(x.z), effect: r3(x.eff) })),
-                    chemistry: { mates: cd.pairs.map(o => ({ a: ID(o.a), b: ID(o.b), games: o.g, wins: o.w, score: r3(o.c) })), rivals: cd.rivals.map(o => ({ a: ID(o.a), b: ID(o.b), games: o.g, aWins: o.w, score: r3(o.c) })) }
+                    chemistry: { mates: cd.pairs.map(o => ({ a: ID(o.a), b: ID(o.b), games: o.g, wins: o.w, personalA: r3(o.pa), personalB: r3(o.pb), expected: r3(o.ex), score: r3(o.xc), modelScore: r3(o.c) })), rivals: cd.rivals.map(o => ({ a: ID(o.a), b: ID(o.b), games: o.g, aWins: o.w, personalA: r3(o.pa), personalB: r3(o.pb), expected: r3(o.ex), score: r3(o.xc), modelScore: r3(o.c) })) }
                 }
             };
             await shareJsonFile(`team-analysis-${Date.now()}.json`, data);
@@ -14365,10 +14429,8 @@ const namesBtn = isAdmin() && dates.length > 0
             el.innerHTML = `<div class="rs-top"><span class="rs-seg2">${per}</span>${matchUnitSegHtml()}</div>
                 <button type="button" class="fx-open" onclick="openFormAna()"><i class="ana-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="3"></rect><path d="M16 10.5 21 7.5v9l-5-3"></path></svg></i><span>動画でフォーム分析</span></button>
                 ${proposeNextHtml()}
-                ${strengthHtml(rosterStatsFrom())}
                 ${chemHtml(rosterStatsFrom())}
                 ${whyHtml(rosterStatsFrom())}
-                ${rotAnaHtml(rosterStatsFrom())}
                 <details class="note-details chem"${rtblOpen ? " open" : ""} ontoggle="rtblOpen=this.open"><summary>参加率・回答率・勝率<span class="rs-days">バレー${days}回分</span></summary>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
                 ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c${r.few ? " few" : ""}"${r.few ? ` title="全${matchRateUnit === "match" ? "試合" : "ゲーム"}の半分未満"` : ""}>${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
@@ -16783,7 +16845,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611151410;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611152315;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -16975,7 +17037,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 更新ボタン: 見ていた日付・タブ・位置を保ったまま、最新の共有データで再読み込みする
         // ------- 更新の知らせ・書く画面を開くときの更新 -------
         const shownEl = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
-        function protoAwayNow() { return ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoVbAdd", "savingOv", "rotOv", "fxOv"].some(shownEl) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full"); }
+        function protoAwayNow() { return ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoBell", "protoVbAdd", "savingOv", "rotOv", "fxOv"].some(shownEl) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full"); }
         // 今いる画面(読み直したあとに同じ画面を開き直すため)
         function protoCurKind() {
             if (shownEl("protoSv") || shownEl("surveyOv")) return "survey";
@@ -17040,7 +17102,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (!document.body.classList.contains("proto-on")) return;
                 const shown = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
                 const busy = ["rotOv", "fxOv", "pairOv"].some(shown);
-                const now = ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoVbAdd", "savingOv"].some(shown) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full");
+                const now = ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoBell", "protoVbAdd", "savingOv"].some(shown) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full");
                 if (now) { protoBackWasAway = true; return; }   // まだ別の画面
                 if (!protoBackWasAway) return;   // 別の画面から戻ったときだけ
                 protoBackWasAway = false;
@@ -17230,12 +17292,202 @@ const namesBtn = isAdmin() && dates.length > 0
             });
         }
 
+        // ------- お知らせ(ベル): 人から共有された予定(共有予定・ペア予定。バレーは入れない)の 追加・変更・取り消し -------
+        //   共有データには予定の変更の履歴がないので、この端末で「前に見た共有予定の写し」と今の予定を比べて、違いをお知らせに足す。
+        //   比べるのは起動したとき(共有データの最新は読み直しで入るので、そのたびに比べる)。この端末で自分が保存したときは、比べずに写しだけ取り直す(自分の変更は出さない)。
+        //   写し・お知らせ・既読の時刻は、この端末だけに覚える。だれに見えるか・自分の予定かは、出すときに決める(名前が分かる前に比べても大丈夫なように)
+        var BELL_SNAP_KEY = "pr_bell_snap_v1", BELL_FEED_KEY = "pr_bell_feed_v1", BELL_SEEN_KEY = "pr_bell_seen_v1";
+        var BELL_MAX = 200, BELL_DAYS = 60, BELL_FLOOD = 40, bellPrevSeen = 0, bellReady = false;   // bellReady: 起動の比較が済んだか(それまでの保存では写しを取り直さない)
+        function bellToday() { return formatDateKey(new Date()); }
+        function bellRec(p) {   // お知らせに残す予定の中身(必要なところだけ)
+            const r = { id: p.id, title: p.title || "", startDate: p.startDate, endDate: p.endDate || "", start: p.start || "", end: p.end || "", memo: p.memo || "" };
+            if (p.allDay) r.allDay = true;
+            if (Array.isArray(p.to) && p.to.length) r.to = p.to.slice();
+            if (p.by) r.by = p.by;
+            if (p.owner) r.owner = p.owner;
+            if (p.byId != null) r.byId = p.byId;
+            if (p.pp) r.pp = true;
+            return r;
+        }
+        // 比べる相手: 共有予定・ペア予定(ローカル・Google・休み・消したものは除く)で、終わっていないもの
+        function bellCurrent(list, today) {
+            const m = {};
+            (list || []).forEach(p => {
+                if (!p || p.local || p.gcal || p.holiday || p.deleted || !p.startDate || !planHas(p)) return;
+                if ((p.endDate || p.startDate) < today) return;
+                m[String(p.id)] = bellRec(p);
+            });
+            return m;
+        }
+        function bellLoad(k, def) { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? def : v; } catch (e) { return def; } }
+        function bellPut(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } }
+        function bellFields(o, n) {   // 変わったところ(色・通知・出欠などは数えない)
+            const f = [];
+            if (o.startDate !== n.startDate || (o.endDate || "") !== (n.endDate || "")) f.push("date");
+            if ((o.start || "") !== (n.start || "") || (o.end || "") !== (n.end || "") || !!o.allDay !== !!n.allDay) f.push("time");
+            if ((o.title || "") !== (n.title || "")) f.push("title");
+            if ((o.memo || "") !== (n.memo || "")) f.push("memo");
+            if ((o.to || []).slice().sort().join() !== (n.to || []).slice().sort().join()) f.push("to");
+            return f;
+        }
+        // 写しと今を比べて、お知らせの項目を作る(画面・保存は触らない。node でも試せるように)
+        function bellDiff(prev, cur, today, now) {
+            const out = [];
+            Object.keys(cur).forEach(id => {
+                const n = cur[id], o = prev[id];
+                if (!o) { out.push({ t: now, k: "add", id: n.id, p: n }); return; }
+                const f = bellFields(o, n);
+                if (f.length) out.push({ t: now, k: "chg", id: n.id, p: n, o, f });
+            });
+            Object.keys(prev).forEach(id => {
+                const o = prev[id];
+                if (cur[id] || (o.endDate || o.startDate) < today) return;   // 終わって外れただけの予定は出さない
+                out.push({ t: now, k: "del", id: o.id, p: o });
+            });
+            return out;
+        }
+        // quiet: この端末で保存したとき(写しだけ取り直す)。写しがまだない・空のとき・一度に大量に変わったとき(取り込み直しなど)も、お知らせにしない
+        function bellScan(quiet) {
+            if (quiet && !bellReady) return;   // 起動の比較の前に保存が走っても、写しを上書きしない(共有の変更を取りこぼさない)
+            bellReady = true;
+            try {
+                const today = bellToday(), now = Date.now();
+                const cur = bellCurrent(planList, today);
+                const snap = bellLoad(BELL_SNAP_KEY, null);
+                const prev = snap && snap.m && typeof snap.m === "object" ? snap.m : null;
+                if (!quiet && prev && Object.keys(prev).length) {
+                    const d = bellDiff(prev, cur, today, now);
+                    if (d.length && d.length <= BELL_FLOOD) {
+                        const lim = now - BELL_DAYS * 864e5;
+                        const feed = bellLoad(BELL_FEED_KEY, []).filter(e => e && e.t >= lim).concat(d);
+                        bellPut(BELL_FEED_KEY, feed.slice(-BELL_MAX));
+                    }
+                }
+                bellPut(BELL_SNAP_KEY, { v: 1, at: now, m: cur });
+                if (!quiet) bellBadgeSync();
+            } catch (e) { console.warn("お知らせの確認に失敗しました。", e); }
+        }
+        // ------- 出すとき: 自分に見える予定・自分の予定ではないもの -------
+        function bellVis(r) { return !!r && planVisible({ to: r.to, by: r.by }); }
+        function bellMine(r) { return !!r && planIsMine(r); }
+        function bellWho(r) {
+            if (!r) return "";
+            if (r.byId != null) { const m = roster.find(x => x.id === r.byId); if (m) return m.name; }
+            const k = r.owner || r.by || "";
+            return k.indexOf("n:") === 0 ? k.slice(2) : "";
+        }
+        // 出す項目: { e, kind: "add"|"chg"|"del"|"out", f:[変わったところ] }(新しい順)
+        function bellItems() {
+            const out = [];
+            bellLoad(BELL_FEED_KEY, []).forEach(e => {
+                if (!e || !e.p) return;
+                if (bellMine(e.p) || (e.o && bellMine(e.o))) return;
+                if (e.k === "chg") {
+                    const vo = bellVis(e.o), vn = bellVis(e.p);
+                    if (!vo && !vn) return;
+                    if (!vo) { out.push({ e, kind: "add" }); return; }   // 共有相手に入った = 共有された
+                    if (!vn) { out.push({ e, kind: "out" }); return; }   // 共有相手から外れた
+                    const f = (e.f || []).filter(x => x !== "to");
+                    if (f.length) out.push({ e, kind: "chg", f });
+                    return;
+                }
+                if (bellVis(e.p)) out.push({ e, kind: e.k });
+            });
+            return out.sort((a, b) => b.e.t - a.e.t);
+        }
+        function bellUnreadCount() {
+            try { const seen = +bellLoad(BELL_SEEN_KEY, 0) || 0; return bellItems().filter(x => x.e.t > seen).length; } catch (e) { return 0; }
+        }
+        function bellBadgeHtml() { const n = bellUnreadCount(); return n ? `<i class="bldot" aria-label="新しいお知らせ ${n}件">${n > 99 ? "99+" : n}</i>` : ""; }
+        function bellBadgeSync() {   // 下のメニューのベルの数だけを描き直す
+            document.querySelectorAll('#protoUI .pr-menubar button[data-k="bell"]').forEach(b => {
+                const old = b.querySelector(".bldot"); if (old) old.remove();
+                const h = bellBadgeHtml(); if (h) b.insertAdjacentHTML("beforeend", h);
+                const n = bellUnreadCount(); b.setAttribute("aria-label", n ? `お知らせ(新しい${n}件)` : "お知らせ");
+            });
+        }
+        // ------- お知らせの画面(カレンダーの上に重ねる。変更ログと同じく、日ごとに新しい順) -------
+        function bellOpen() {
+            try { prRadClose(); } catch (e) { /* ignore */ }
+            let el = document.getElementById("protoBell");
+            if (!el) { el = document.createElement("div"); el.id = "protoBell"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "お知らせ(共有された予定)"); document.body.appendChild(el); }
+            bellPrevSeen = +bellLoad(BELL_SEEN_KEY, 0) || 0;   // この画面を開いている間は、開く前に見ていなかったものに印を付ける
+            bellPut(BELL_SEEN_KEY, Date.now());   // 開いたら全部既読
+            el.classList.add("open"); el.scrollTop = 0;
+            bellRender();
+            bellBadgeSync();
+        }
+        function bellClose() { const el = document.getElementById("protoBell"); if (el) el.classList.remove("open"); bellBadgeSync(); }
+        function bellAgo(t) {
+            const s = Math.max(0, (Date.now() - t) / 1000);
+            if (s < 60) return "たった今";
+            if (s < 3600) return Math.floor(s / 60) + "分前";
+            if (s < 86400) return Math.floor(s / 3600) + "時間前";
+            if (s < 86400 * 7) return Math.floor(s / 86400) + "日前";
+            const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`;
+        }
+        function bellDayLabel(t) {
+            const d = new Date(t), k = formatDateKey(d), td = new Date(), y = new Date(td.getFullYear(), td.getMonth(), td.getDate() - 1);
+            if (k === formatDateKey(td)) return "今日";
+            if (k === formatDateKey(y)) return "昨日";
+            return `${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;
+        }
+        function bellChgText(x) {
+            const o = x.e.o || {}, n = x.e.p, md = d => { const [, m, dd] = String(d).slice(0, 10).split("-").map(Number); return `${m}/${dd}`; };
+            const tm = r => planTimed(r) ? (r.start || "") + (r.end ? "–" + r.end : "") : "終日";
+            return (x.f || []).map(f => f === "date" ? `日付 ${md(o.startDate)}${o.endDate ? "〜" + md(o.endDate) : ""} → ${md(n.startDate)}${n.endDate ? "〜" + md(n.endDate) : ""}`
+                : f === "time" ? `時間 ${tm(o)} → ${tm(n)}`
+                : f === "title" ? `題名 「${o.title || "予定"}」→「${n.title || "予定"}」`
+                : f === "memo" ? (n.memo ? "メモを変更" : "メモを削除") : "").filter(Boolean).join(" / ");
+        }
+        function bellRowHtml(x) {
+            const esc = escapeHtml, r = x.e.p, who = bellWho(r), pair = !!r.pp;
+            const live = x.kind !== "del" && x.kind !== "out" && planList.some(p => String(p.id) === String(r.id) && !p.deleted);
+            const head = x.kind === "add" ? (pair ? "ペア予定が共有されました" : "予定が共有されました")
+                : x.kind === "chg" ? (pair ? "ペア予定が変更されました" : "予定が変更されました")
+                : x.kind === "out" ? "共有から外れました" : (pair ? "ペア予定が取り消されました" : "予定が取り消されました");
+            const ic = x.kind === "add" ? '<path d="M12 7v10M7 12h10"></path>' : x.kind === "chg" ? '<path d="M5 19l1-4 9-9 3 3-9 9z"></path><path d="M13.5 7.5l3 3"></path>' : '<path d="M7 7l10 10M17 7 7 17"></path>';
+            const sub = x.kind === "chg" ? bellChgText(x) : "";
+            const tag = `<button type="button" class="bl-row${x.e.t > bellPrevSeen ? " new" : ""}${live ? "" : " gone"}"${live ? ` onclick="bellGo(${JSON.stringify(String(r.id)).replace(/"/g, "&quot;")})"` : " disabled"}>`;
+            return `${tag}<i class="bl-ic ${x.kind}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic}</svg></i>
+                <span class="bl-b"><span class="bl-h">${head}</span><b class="bl-ttl${x.kind === "del" || x.kind === "out" ? " del" : ""}">${esc(r.title || "予定")}</b>
+                <span class="bl-when">${esc(planWhenText(r))}</span>${sub ? `<span class="bl-chg">${esc(sub)}</span>` : ""}
+                <span class="bl-meta">${who ? esc(who) + " · " : ""}${esc(bellAgo(x.e.t))}</span></span>${live ? '<span class="bl-chev" aria-hidden="true"></span>' : ""}</button>`;
+        }
+        function bellRender() {
+            const el = document.getElementById("protoBell"); if (!el || !el.classList.contains("open")) return;
+            const esc = escapeHtml, items = bellItems();
+            const groups = []; items.forEach(x => { const g = bellDayLabel(x.e.t); if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, xs: [] }); groups[groups.length - 1].xs.push(x); });
+            const feed = groups.length ? groups.map(g => `<div class="bl-day">${esc(g.g)}</div><div class="bl-card">${g.xs.map(bellRowHtml).join("")}</div>`).join("")
+                : `<div class="bl-empty">まだお知らせはありません<br><small>人から共有された予定(ペア予定も)が追加・変更・取り消しされると、ここに出ます</small></div>`;
+            const up = (() => { try { return sharedPlanFuture(); } catch (e) { return []; } })();
+            const upHtml = up.length ? `<div class="bl-sec">共有中の予定<span>${up.length}</span></div><div class="bl-card">${up.slice(0, 30).map(p => { const who = bellWho(p); return `<button type="button" class="bl-row up" onclick="bellGo(${JSON.stringify(String(p.id)).replace(/"/g, "&quot;")})"><span class="bl-b"><b class="bl-ttl">${esc(p.title || "予定")}${p.pp ? '<em class="bl-pp">ペア</em>' : ""}</b><span class="bl-when">${esc(planWhenText(p))}</span>${who ? `<span class="bl-meta">${esc(who)}</span>` : ""}</span><span class="bl-chev" aria-hidden="true"></span></button>`; }).join("")}</div>` : "";
+            el.innerHTML = `<div class="bl-wrap">
+                <div class="bl-head"><button type="button" class="bl-back" aria-label="戻る" onclick="bellClose()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></button><span class="bl-title">NOTIFICATIONS</span></div>
+                ${feed}${upHtml}</div>`;
+        }
+        // 押した予定へ: お知らせを閉じて、その日のカレンダーを出し、予定の詳細を開く
+        function bellGo(sid) {
+            const p = planList.find(x => String(x.id) === String(sid) && !x.deleted);
+            if (!p) { bellRender(); return; }
+            bellClose();
+            const today = bellToday(), day = p.startDate >= today ? p.startDate : ((p.endDate || p.startDate) >= today ? today : p.startDate);
+            try {
+                const [y, m] = day.slice(0, 10).split("-").map(Number);
+                protoRowsTop = 0; protoYM = [y, m];
+                if (day !== selectedDate) selectDate(day);
+                renderProto();
+            } catch (e) { console.warn(e); }
+            planDetailId = null;
+            openPlanDetail(p.id);
+        }
         // ------- 初期化 -------
         detectFirebase();
         if (!firebaseAvailable) ptrSyncDone();   // 共有なしで使っているときは、読み直し後のグルグルをすぐ止める
         loadData();
         loadMatches();
         mergePairPlansIntoList();
+        bellScan(false);   // お知らせ: 前に見た共有予定と比べる(共有データの最新は読み直しで入るので、起動のたびに)
         applyPairClass();
         loadDevMode();
         loadRosterSort();
@@ -18941,6 +19193,7 @@ const namesBtn = isAdmin() && dates.length > 0
             survey: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="3"></rect><path d="M9 12.5l2 2 4-4"></path></svg>`,
             roster: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="3"></circle><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"></path><circle cx="16.5" cy="8" r="2.4"></circle><path d="M16 13.2c2.4 0 4 1.4 4.5 4"></path></svg>`,
             ana: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="16" r="2"></circle><circle cx="12" cy="7" r="2"></circle><circle cx="18" cy="14" r="2"></circle><path d="M7.2 14.3 10.8 8.7M13.6 8.3l3.2 4.2M8 16.2l8-1.7"></path></svg>`,
+            bell: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.8H5z"></path><path d="M10 20.5a2.2 2.2 0 0 0 4 0"></path></svg>`,
             settings: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"></path><circle cx="16" cy="8" r="2"></circle><circle cx="8" cy="16" r="2"></circle></svg>`,
             add: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`,
         };
@@ -18949,7 +19202,7 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "cal", label: "カレンダー", run: () => openBulkAdd() },
             { k: "survey", label: "アンケート", run: () => openSurvey() },
             { k: "roster", label: "名簿", adm: true, run: () => protoSolo("roster") },
-            { k: "ana", label: "分析", adm: true, run: () => protoSolo("ana") },
+            { k: "bell", label: "お知らせ", run: () => bellOpen() },   // 人から共有された予定(バレー以外)の追加・変更・取り消し。分析はここから設定の中へ移した
             { k: "google", label: "Google", gcal: true, run: () => gcalTap() },   // 下のメニュー(バー)だけに出す。接続・再接続・最新に更新・オフ
             { k: "settings", label: "設定", run: () => protoSolo("") },
             { k: "today", label: "今日", run: () => protoToday() }
@@ -18977,6 +19230,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function prBarFullOrder() {
             if (prBe) return prBe.full;
             let saved = null; try { saved = JSON.parse(localStorage.getItem(PR_BAR_ORDER_KEY) || "null"); } catch (e) { saved = null; }
+            if (Array.isArray(saved) && !saved.includes("bell")) saved = saved.map(k => k === "ana" ? "bell" : k);   // 前の版の「分析」の場所に、お知らせ(ベル)を入れる
             return prBarMerge(saved, PR_RAD_ITEMS.map(it => it.k));
         }
         // 見えているボタンだけを並べ替えた順を、全部の並び(管理者だけのボタンなど、今は見えないものも入る)に戻す: 見えないボタンの場所はそのまま
@@ -18998,7 +19252,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function prMenuBarHtml() {
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
             if (prBe) setTimeout(prBeAfterRender, 0);   // 並べ替えの途中で描き直したとき: 完了ボタンの位置・ドラッグ中の見た目を合わせ直す
-            return `<div class="pr-menubar${prBe ? " editing" : ""}">${prBarItems().map((it, i) => `<button type="button" data-k="${it.k}" class="${it.k === "add" ? "main" : it.k === "google" ? gcalBarCls() : ""}"${it.k === "google" ? " data-gcal-btn" : ""} onclick="prMenuRun(${i}, this)" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="svdot"></i>` : ""}</button>`).join("")}</div>`;
+            return `<div class="pr-menubar${prBe ? " editing" : ""}">${prBarItems().map((it, i) => `<button type="button" data-k="${it.k}" class="${it.k === "add" ? "main" : it.k === "google" ? gcalBarCls() : ""}"${it.k === "google" ? " data-gcal-btn" : ""} onclick="prMenuRun(${i}, this)" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="svdot"></i>` : ""}${it.k === "bell" ? bellBadgeHtml() : ""}</button>`).join("")}</div>`;
         }
         function prMenuRun(i, btn) {
             const it = prBarItems()[i]; if (!it) return;
@@ -19166,6 +19420,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 設定パネルの一部だけを、単独の画面として開く(""=ふつうの設定 / "roster"=名簿 / "ana"=分析)
         function protoSolo(kind) {
             const panel = document.getElementById("settingsPanel"); if (!panel) return;
+            delete panel.dataset.back;
             if (panel.classList.contains("open")) toggleSettings();
             toggleSettings();
             const h = panel.querySelector(".panel-head h3");
@@ -19229,7 +19484,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const svN = (() => { const o = document.getElementById("surveyBadge"); return o ? (parseInt(o.textContent, 10) || 0) : 0; })();
             ov.innerHTML = `<div class="prr-back" onclick="prRadClose()"></div><i class="prr-center" style="left:${lay.cx}px;top:${lay.cy}px"></i>` + items.map((it, i) => {
                 const [ix, iy] = lay.pts[i];
-                return `<button type="button" class="prr-item${it.k === "add" ? " main" : ""}${it.k === "survey" && svAlert ? " svalert" : ""}" data-i="${i}" style="left:${ix}px;top:${iy}px;--dx:${(lay.cx - ix).toFixed(1)}px;--dy:${(lay.cy - iy).toFixed(1)}px;animation-delay:${i * 18}ms" onclick="prRadClick(${i})" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="prr-badge">${svN || ""}</i>` : ""}${prRad && prRad.tap ? protoHapHtml() : ""}</button>`;   // タップで選ぶときは、iPhone でも触覚(透明スイッチ)
+                return `<button type="button" class="prr-item${it.k === "add" ? " main" : ""}${it.k === "survey" && svAlert ? " svalert" : ""}" data-i="${i}" style="left:${ix}px;top:${iy}px;--dx:${(lay.cx - ix).toFixed(1)}px;--dy:${(lay.cy - iy).toFixed(1)}px;animation-delay:${i * 18}ms" onclick="prRadClick(${i})" aria-label="${it.label}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span>${it.k === "survey" && svAlert ? `<i class="prr-badge">${svN || ""}</i>` : ""}${it.k === "bell" && bellUnreadCount() ? `<i class="prr-badge">${Math.min(99, bellUnreadCount())}</i>` : ""}${prRad && prRad.tap ? protoHapHtml() : ""}</button>`;   // タップで選ぶときは、iPhone でも触覚(透明スイッチ)
             }).join("");
             ov.classList.add("open");
         }
@@ -21113,6 +21368,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 { k: "vbAdd", open: () => cls("protoVbAdd", "open"), back: () => closeVbAdd(), guard: () => typeof vba !== "undefined" && !!vba && !vba.done && vba.rows.length > 0, els: self("protoVbAdd") },
                 { k: "survey", open: () => cls("protoSv", "open"), back: () => closeSurvey(), els: self("protoSv") },
                 { k: "cal", open: () => cls("protoCal", "open"), back: () => protoCloseCal(), els: self("protoCal") },
+                { k: "bell", open: () => cls("protoBell", "open"), back: () => bellClose(), els: self("protoBell") },
                 // バレーの画面・(前のUIの)予定の入力
                 { k: "volley", open: () => document.body.classList.contains("nv-full"), back: () => closeVolleyFull(), els: flow },
                 { k: "planEdit", open: () => document.body.classList.contains("plan-editing"), back: () => closePlanPanel(), els: flow }
