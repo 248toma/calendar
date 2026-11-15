@@ -2519,7 +2519,7 @@
         @media (prefers-reduced-motion: reduce) { .pr-anim { animation: none !important; } }
         #protoCal { display: none; }
         #protoBell { display: none; }
-        body.proto-on #protoBell.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        body.proto-on #protoBell.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }   /* それ自身がスクロールする画面(引っぱって更新は止めてある) */
         body.proto-on #protoCal.open { display: block; position: fixed; inset: 0; z-index: 55; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         #protoCal button { font: inherit; border: none; margin: 0; padding: 0; background: none; color: inherit; cursor: pointer; transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
         #protoCal button:active { transform: scale(.95); }
@@ -3464,6 +3464,16 @@
         #settingsPanel[data-solo="ana"] .rs-bar.w.mid { background: color-mix(in srgb, #3fae6b 30%, var(--sn-bg)) !important; }   /* 勝率 45〜55%: うすい緑 */
         #settingsPanel[data-solo="ana"] .rs-c.few b { opacity: .42; }   /* 全体の半分も出ていない人: 薄い文字 */
         #settingsPanel[data-solo="ana"] .rs-c.few .rs-bar { opacity: .45; }
+        /* 対象(参加率)の外の人: ほとんど目立たない薄い字(押している間は少し濃く。押せるもの(相性の図の名前)はそのまま押せる) */
+        #rosterStats .ana-out { opacity: .28; transition: opacity .15s ease; }
+        #rosterStats .ana-out .ana-out { opacity: 1; }   /* 重ねて薄くしない */
+        #rosterStats .ana-out:active { opacity: .7; }
+        #rosterStats .ana-out text.dim, #rosterStats .rs-row.ana-out .rs-c.few b, #rosterStats .rs-row.ana-out .rs-c.few .rs-bar { opacity: 1; }   /* 対象外の行・名前は、ほかの薄さを重ねない */
+        @media (hover: hover) { #rosterStats .ana-out:hover { opacity: .7; } }
+        #rosterStats .rs-tgt { justify-content: flex-start; }
+        #settingsPanel[data-solo="ana"] #rosterStats .rs-top.rs-tgt { margin-top: -12px; }
+        #rosterStats .rs-tgl { flex: none; display: inline-flex; align-items: baseline; gap: 4px; padding-left: 4px; font: 700 11px var(--sn-en, inherit); color: var(--sn-ink2, var(--ink-2)); }
+        #rosterStats .rs-tgl small { font-size: 9.5px; font-weight: 600; color: var(--sn-ink3, var(--ink-3)); }
         #settingsPanel[data-solo="ana"] .rs-c b { padding-left: 9px; font: 700 10.5px/22px var(--sn-en); color: var(--sn-ink); }
         #settingsPanel[data-solo="ana"] .rs-c b small { font: 500 8.5px var(--sn-en); color: var(--sn-ink3); }
         /* 試合の履歴: 日付は小さな見出し、試合は線で区切った行 */
@@ -12083,6 +12093,16 @@ const namesBtn = isAdmin() && dates.length > 0
         // 終わったバレーの日の出欠から計算する。参加率=「来る」の割合、回答率=○か✖で答えていた割合、
         // 早さ=答えた日(最後に回答を変えた日)がバレーの何日前だったかの平均
         let rstatPeriod = 3, rstatSort = "come";
+        // 分析の「対象」: 期間の参加率がしきい値以上の人。対象外の人は、分析の画面でほとんど目立たない薄い文字にする(計算そのものは全員で)
+        const ANA_TGT_OPTS = [["all", 0, "全員"], ["1/3", 1 / 3, "1/3以上"], ["1/2", 1 / 2, "1/2以上"], ["2/3", 2 / 3, "2/3以上"]], ANA_TGT_KEY = "ana_target_v1";
+        var anaTgt = "1/2";
+        try { const v = localStorage.getItem(ANA_TGT_KEY); if (ANA_TGT_OPTS.some(o => o[0] === v)) anaTgt = v; } catch (e) { /* ignore */ }
+        var anaInSet = null;   // 描いている間だけ: 対象の人の名前(全員のときは null)
+        function anaTgtVal() { return (ANA_TGT_OPTS.find(o => o[0] === anaTgt) || ANA_TGT_OPTS[2])[1]; }
+        function anaTgtSet(k) { if (!ANA_TGT_OPTS.some(o => o[0] === k)) return; anaTgt = k; try { localStorage.setItem(ANA_TGT_KEY, k); } catch (e) { /* ignore */ } renderRosterStats(); }
+        function anaIsIn(r) { const th = anaTgtVal(); return th <= 0 || r.cr >= th - 1e-9; }
+        function anaOut(n) { return !!anaInSet && !anaInSet.has(n); }   // 対象外(ゲスト・名簿にいない人も対象外)
+        function anaNm(n, cls) { const o = anaOut(n), c = [cls, o ? "ana-out" : ""].filter(Boolean).join(" "); return c ? `<span class="${c}">${escapeHtml(n)}</span>` : escapeHtml(n); }
         function rstatStampDate(stamp, dKey) {
             const m = String(stamp || "").match(/(\d+)\/(\d+)/); if (!m) return null;
             const d = new Date(dKey.slice(0, 10) + "T00:00:00"); let c = new Date(d.getFullYear(), +m[1] - 1, +m[2]);
@@ -12246,42 +12266,44 @@ const namesBtn = isAdmin() && dates.length > 0
             const W = 340, cx = W / 2, cy = W / 2, R = W / 2 - 62, N = order.length, pos = {};
             order.forEach((n, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / N; pos[n] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a), a }; });
             const maxG = Math.max(...pairs.map(p => p.g)), f = chemFocus;
+            // 対象(参加率)の外の人が入った組: 図の線にも一覧にも出さない(対象外の人の名前を押したときだけ、その人の組を薄く出す)
+            const fOut = !!f && anaOut(f), pIn = p => fOut || (!anaOut(p.a) && !anaOut(p.b));
             // 線も一覧も、相性(xc = 実際の勝率 − 2人の個人の勝率から見込んだ勝率)で決める(+ = 見込みより勝っている、− = 負けている)
             //   強い人と組んだ組が、それだけで「相性がいい」にならないように
             const CHEM_SHOW = 0.06;   // 全体の図に出すのは、相性が ±6pt 以上の組
             const pt = v => `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(Math.round(v * 100))}pt`;
-            let shown = pairs.filter(p => pos[p.a] && pos[p.b] && (f ? (p.a === f || p.b === f) : Math.abs(p.xc) >= CHEM_SHOW)).sort((x, y) => Math.abs(y.xc) - Math.abs(x.xc) || y.g - x.g);
+            let shown = pairs.filter(p => pos[p.a] && pos[p.b] && pIn(p) && (f ? (p.a === f || p.b === f) : Math.abs(p.xc) >= CHEM_SHOW)).sort((x, y) => Math.abs(y.xc) - Math.abs(x.xc) || y.g - x.g);
             if (!f) shown = shown.slice(0, Math.max(8, Math.round(N * 1.2)));   // 全体表示は、差の大きい組だけ(線だらけにしない)
             shown.reverse();   // 濃い線を上に
-            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], good = p.xc >= 0, op = Math.min(1, 0.3 + Math.abs(p.xc) * 3.2) * (f ? 1 : 0.85), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
+            const lines = shown.map(p => { const A = pos[p.a], B = pos[p.b], good = p.xc >= 0, op = Math.min(1, 0.3 + Math.abs(p.xc) * 3.2) * (f ? 1 : 0.85) * (fOut ? 0.3 : 1), w = 0.8 + 2.6 * Math.sqrt(p.g / maxG);
                 return `<line class="${good ? "good" : "bad"}" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke-width="${(good ? w : Math.max(1, w * 0.7)).toFixed(2)}" opacity="${op.toFixed(2)}"></line>`; }).join("");
             // 人を選んでいるとき: 線の上に、その組の相性(pt)を出す(選んだ人の側から 6割のところ。中心に集まって重ならないように)
             const pcts = !f ? "" : shown.map(p => { const o = p.a === f ? p.b : p.a, A = pos[f], B = pos[o], t = 0.6, x = A.x + (B.x - A.x) * t, y = A.y + (B.y - A.y) * t;
-                return `<text class="pc ${p.xc >= 0 ? "g" : "b"}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle">${pt(p.xc)}</text>`; }).join("");   // 相性(見込みとの差)
+                return `<text class="pc ${p.xc >= 0 ? "g" : "b"}${fOut ? " ana-out" : ""}" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle">${pt(p.xc)}</text>`; }).join("");   // 相性(見込みとの差)
             const linked = new Set(); if (f) shown.forEach(p => { linked.add(p.a); linked.add(p.b); });
             const labels = order.map(n => { const P0 = pos[n], c = Math.cos(P0.a), s = Math.sin(P0.a), lx = cx + (R + 9) * c, ly = cy + (R + 9) * s, anc = Math.abs(c) < 0.25 ? "middle" : c > 0 ? "start" : "end", dy = Math.abs(c) < 0.25 ? (s > 0 ? 9 : -3) : 3.5;
                 const cls = f ? (n === f ? "on" : linked.has(n) ? "" : "dim") : "";
                 const nm = n.length > 6 ? n.slice(0, 6) + "…" : n;
-                return `<g class="chem-nm" data-n="${encodeURIComponent(n)}" style="cursor:pointer"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="16" fill="transparent" style="cursor:pointer"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}" style="cursor:pointer">${escapeHtml(nm)}</text></g>`; }).join("");
+                return `<g class="chem-nm${anaOut(n) ? " ana-out" : ""}" data-n="${encodeURIComponent(n)}" style="cursor:pointer"><circle class="nd${n === f ? " on" : ""}" cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="${n === f ? 4 : 2.6}"></circle><circle cx="${P0.x.toFixed(1)}" cy="${P0.y.toFixed(1)}" r="16" fill="transparent" style="cursor:pointer"></circle><text class="${cls}" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anc}" style="cursor:pointer">${escapeHtml(nm)}</text></g>`; }).join("");
             let list = "";
             if (f) {
-                const mine = pairs.filter(p => p.a === f || p.b === f).map(p => ({ n: p.a === f ? p.b : p.a, xc: p.xc, ex: p.ex, g: p.g, w: p.w }));
+                const mine = pairs.filter(p => (p.a === f || p.b === f) && pIn(p)).map(p => ({ n: p.a === f ? p.b : p.a, xc: p.xc, ex: p.ex, g: p.g, w: p.w }));
                 const best = mine.filter(x => x.xc > 0).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 3), worst = mine.filter(x => x.xc < 0).sort((a, b) => a.xc - b.xc || b.g - a.g).slice(0, 2);
                 // 当たったとき: f から見た勝率と見込み(rivals は a から見た値なので、f が b なら裏返す)
-                const rv = rivals.filter(o => o.a === f || o.b === f).map(o => ({ n: o.a === f ? o.b : o.a, xc: o.a === f ? o.xc : -o.xc, ex: o.a === f ? o.ex : 1 - o.ex, g: o.g, w: o.a === f ? o.w : o.g - o.w }));
+                const rv = rivals.filter(o => (o.a === f || o.b === f) && pIn(o)).map(o => ({ n: o.a === f ? o.b : o.a, xc: o.a === f ? o.xc : -o.xc, ex: o.a === f ? o.ex : 1 - o.ex, g: o.g, w: o.a === f ? o.w : o.g - o.w }));
                 const tough = rv.filter(x => x.xc < 0).sort((a, b) => a.xc - b.xc || b.g - a.g).slice(0, 2), easy = rv.filter(x => x.xc > 0).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 2);
                 const it = (x, cls) => `<div style="grid-column:1/-1"><span>${escapeHtml(x.n)}</span><b class="${cls}">${pt(x.xc)}</b><small>勝率 ${Math.round(x.w / x.g * 100)}%(見込み ${Math.round(x.ex * 100)}%)・${x.w}勝${x.g - x.w}敗</small></div>`;   // 相性・組んだとき(当たったとき)の勝率と見込み
                 const sec = (t, arr, cls) => arr.length ? `<h5>${t}</h5>${arr.map(x => it(x, cls)).join("")}` : "";
                 const gap = (base[f] || 0) - (prior[f] || 0), gl = gap > 0.12 ? "パラメータより強い" : gap < -0.12 ? "パラメータより弱い" : "パラメータどおり";
-                list = `<div class="chem-hint">${escapeHtml(f)}　<b style="color:var(--ink-2)">${gl}</b></div><div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">まだ目立った相性はありません</div>`);
+                list = `<div class="${fOut ? "ana-out" : ""}"><div class="chem-hint">${escapeHtml(f)}${fOut ? "(対象外)" : ""}　<b style="color:var(--ink-2)">${gl}</b></div><div class="chem-list">${sec("組むと強い", best, "g")}${sec("組むと弱い", worst, "b")}${sec("当たると強い", easy, "g")}${sec("当たると弱い", tough, "b")}</div>` + (best.length + worst.length + tough.length + easy.length ? "" : `<div class="chem-hint">${anaInSet && !fOut ? "対象の人どうしでは、" : ""}まだ目立った相性はありません</div>`) + `</div>`;
             } else {
-                const top = pairs.filter(p => p.xc >= CHEM_SHOW).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 4);
+                const top = pairs.filter(p => p.xc >= CHEM_SHOW && pIn(p)).sort((a, b) => b.xc - a.xc || b.g - a.g).slice(0, 4);
                 list = top.length ? `<div class="chem-list"><h5>名コンビ</h5>${top.map(p => `<div style="grid-column:1/-1"><span>${escapeHtml(p.a)} ・ ${escapeHtml(p.b)}</span><b class="g">${pt(p.xc)}</b><small>勝率 ${Math.round(p.w / p.g * 100)}%(見込み ${Math.round(p.ex * 100)}%)・${p.w}勝${p.g - p.w}敗</small></div>`).join("")}</div>` : "";
-                list += `<div class="chem-hint">名前を押すと、その人の相性</div>`;
+                list += `<div class="chem-hint">名前を押すと、その人の相性${anaInSet ? "・対象外の人が入った組は出していません" : ""}</div>`;
             }
             return `<details class="note-details chem"${chemOpen ? " open" : ""} ontoggle="chemOpen=this.open"><summary>相性</summary>
                 <svg class="chem-svg" viewBox="0 0 ${W} ${W}" role="img" aria-label="相性の図">${lines}${pcts}${labels}</svg>${list}
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">相性 = 実際に組んだとき(「当たると」は相手チームにいたとき)の勝率 − 2人の個人の勝率から見込んだ勝率(pt)。強い人と組めば勝率は上がりやすいので、その分を引いた「見込みより勝っているか」で見ます。個人の勝率は、なるべく相手の人が出ていない試合で数えます(2人とも出た試合ばかりのときは、その人の全体の勝率に近くなります)。実線(色)=見込みより勝っている / 赤い点線=見込みより負けている。線の太さ=一緒に出た数。回数が少ないうちは 0 に近く出ます。3回以上の組だけ。全体の図は、相性が ±6pt 以上の組だけ</div></details></details>`;
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">相性 = 実際に組んだとき(「当たると」は相手チームにいたとき)の勝率 − 2人の個人の勝率から見込んだ勝率(pt)。強い人と組めば勝率は上がりやすいので、その分を引いた「見込みより勝っているか」で見ます。個人の勝率は、なるべく相手の人が出ていない試合で数えます(2人とも出た試合ばかりのときは、その人の全体の勝率に近くなります)。実線(色)=見込みより勝っている / 赤い点線=見込みより負けている。線の太さ=一緒に出た数。回数が少ないうちは 0 に近く出ます。3回以上の組だけ。全体の図は、相性が ±6pt 以上の組だけ。対象(いちばん上の切り替え。参加率)の外の人は名前を薄くし、その人が入った組は図にも一覧にも出しません(その人の名前を押すと、その人の相性だけ薄く出ます)。相性の計算そのものは全員の試合で行います</div></details></details>`;
         }
         var chemOpen = false, stgOpen = false, whyOpen = false, propOpen = false, whySort = "rate";
         // 提案の分け方を作る: 「一人ひとりの勝率が5割に近づく」ように分ける
@@ -14059,12 +14081,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const why = [];
             if (rt.some(x => x.g >= 3)) pr.teams.forEach((t, i) => {
                 const hi = rt.filter(x => x.team === i + 1 && x.g >= 3 && x.r >= 0.55).sort((a, b) => b.r - a.r), lo = rt.filter(x => x.team === i + 1 && x.g >= 3 && x.r <= 0.45).sort((a, b) => a.r - b.r);
-                const nm = x => `${escapeHtml(x.n)} ${pc(x.r)}%`;
+                const nm = x => anaOut(x.n) ? `<span class="ana-out">${escapeHtml(x.n)} ${pc(x.r)}%</span>` : `${escapeHtml(x.n)} ${pc(x.r)}%`;
                 why.push(`<li><b>チーム${i + 1}</b>　${escapeHtml(inf.whyUsed || "要因")}の予想 ${qs[i] != null ? pc(qs[i]) + "%" : "—"}${hi.length ? `<small>勝率が高い: ${hi.map(nm).join("・")}</small>` : ""}${lo.length ? `<small>勝率が低い: ${lo.map(nm).join("・")}</small>` : ""}</li>`);
             });
             const avgRows = inf.dev0 != null ? `<div><span>勝率の5割からのずれ(平均)</span><b>今 ${inf.dev0.toFixed(1)}点</b><b>この試合後の見込み ${inf.dev1.toFixed(1)}点</b></div>` : "";
             return `<details class="note-details chem"${propOpen ? " open" : ""} ontoggle="propOpen=this.open"><summary>チーム分けの提案(${mm}/${dd}・${names.length}人)</summary>
-                <div class="prop-teams">${pr.teams.map((t, i) => `<div><h5>チーム${i + 1}</h5>${t.map(n => `<span${km[n] ? ' class="key"' : ""}>${escapeHtml(n)}${km[n] ? `<em>${km[n].map(escapeHtml).join("・")}</em>` : ""}</span>`).join("")}</div>`).join("")}</div>
+                <div class="prop-teams">${pr.teams.map((t, i) => `<div><h5>チーム${i + 1}</h5>${t.map(n => `<span${km[n] || anaOut(n) ? ` class="${[km[n] ? "key" : "", anaOut(n) ? "ana-out" : ""].filter(Boolean).join(" ")}"` : ""}>${escapeHtml(n)}${km[n] ? `<em>${km[n].map(escapeHtml).join("・")}</em>` : ""}</span>`).join("")}</div>`).join("")}</div>
                 ${why.length ? `<div class="prop-why"><h6>勝率が5割に近づく分け方</h6><ul>${why.join("")}</ul>${avgRows ? `<div class="prop-avg">${avgRows}</div>` : ""}</div>` : `<div class="prop-why"><small>勝率が出ている人(3試合以上)がまだいないので、予想がなるべく五分になる分け方です</small></div>`}
                 <div class="prop-info">${inf.win != null ? `<div class="prop-win"><span>予想</span><span class="prop-wbar" aria-hidden="true"><i style="width:${pc(inf.win)}%"></i></span><b>${pc(inf.win)}:${100 - pc(inf.win)}</b></div>` : ""}${inf.fresh ? `<div class="prop-fresh"><span>初めて組む2人</span><b>${inf.fresh}組</b></div>` : ""}</div>
                 <div class="prop-acts"><button type="button" class="st-btn" onclick="propCache=null;renderRosterStats()">別の案</button><button type="button" class="st-btn prop-go" onclick="propUseInTeams()">この分け方でチーム分けへ</button></div>
@@ -14345,12 +14367,12 @@ const namesBtn = isAdmin() && dates.length > 0
             // 対象の人: 日ごとに(その日のメンバーで決まる)
             const tgOf = r => x.P ? whyTargets(x.lb, r.ctx || r.teams[0].concat(r.teams[1]), x.P) : null;
             const byDay = []; items.forEach(it => { const d0 = it.r.d || ""; if (byDay.some(b => b.d === d0)) return; const t = tgOf(it.r); if (t) byDay.push({ d: d0, t }); });
-            const tgHead = byDay.length ? `<div class="why-tgh">${byDay.map(b => `<div><b>${md(b.d)} の対象</b>${b.t.size ? [...b.t].map(n => `<span class="why-tg">${escapeHtml(n)}</span>`).join("・") : "なし(同じ値の人がいて決まらない)"}</div>`).join("")}</div>` : "";
+            const tgHead = byDay.length ? `<div class="why-tgh">${byDay.map(b => `<div><b>${md(b.d)} に当てはまる人</b>${b.t.size ? [...b.t].map(n => anaNm(n, "why-tg")).join("・") : "なし(同じ値の人がいて決まらない)"}</div>`).join("")}</div>` : "";
             return `<div class="why-list">${tgHead}${items.map(it => { const r = it.r, hi = it.d > 0 ? 0 : 1, lb = r.lbs && r.lbs.length === 2 ? r.lbs : ["チーム1", "チーム2"];
-                const tg = tgOf(r), mem = k => (r.teams[k] || []).map(n => tg && tg.has(n) ? `<b class="why-tg">${escapeHtml(n)}</b>` : escapeHtml(n)).join("・");
+                const tg = tgOf(r), mem = k => (r.teams[k] || []).map(n => tg && tg.has(n) ? `<b class="why-tg${anaOut(n) ? " ana-out" : ""}">${escapeHtml(n)}</b>` : anaNm(n)).join("・");
                 return `<div class="why-it${it.used ? "" : " off"}"><div><b>${md(r.d)} ${r.no || ""}${matchRateUnit === "match" ? "試合目" : "ゲーム目"}</b>${r.rot ? ROT_MARK : ""}<span>${escapeHtml(lb[0])} ${fv(it.a)} − ${escapeHtml(lb[1])} ${fv(it.b)}${it.T != null ? `(差 ${Math.abs(it.d).toFixed(2)} / 基準 ${it.T.toFixed(2)})` : ""}</span><em class="${it.used ? (it.ok ? "w" : "l") : ""}">${it.used ? (it.ok ? "◯" : "×") : "差が小さい"}</em></div>
                     <small>${escapeHtml(lb[0])}${r.win === 0 ? "(勝ち)" : ""}: ${mem(0)}<br>${escapeHtml(lb[1])}${r.win === 1 ? "(勝ち)" : ""}: ${mem(1)}</small></div>`; }).join("")}
-                <div class="why-lnote">${byDay.length ? "青字 = 対象の人・" : ""}◯ 勝ち・× 負け・薄い = 差が基準未満</div></div>`;
+                <div class="why-lnote">${byDay.length ? "青字 = その条件に当てはまる人・" : ""}◯ 勝ち・× 負け・薄い = 差が基準未満${anaInSet ? "・名前がほとんど見えない = 対象外(参加率)の人(勝率の計算には入っています)" : ""}</div></div>`;
         }
         function whyHtml(from) {
             const m = whyModel(from); if (m.recs < 5) return "";
@@ -14420,23 +14442,29 @@ const namesBtn = isAdmin() && dates.length > 0
             const { days, rows } = rosterStatsData();
             if (rstatSort === "lead") rstatSort = "come";
             const key = { come: "cr", ans: "ar", win: "wr" }[rstatSort];
-            rows.sort((a, b) => (b[key] - a[key]) || a.name.localeCompare(b.name, "ja"));
+            anaInSet = anaTgtVal() > 0 ? new Set(rows.filter(anaIsIn).map(r => r.name)) : null;
+            const inOf = r => !anaInSet || anaInSet.has(r.name);
+            rows.sort((a, b) => (inOf(b) - inOf(a)) || (b[key] - a[key]) || a.name.localeCompare(b.name, "ja"));   // 対象の人が先(それぞれの中は今の並べ方)
             const pct = v => v < 0 ? "—" : Math.round(v * 100) + "%";
             const bar = (v, cls) => v < 0 ? "" : `<i class="rs-bar ${cls}${cls === "w" ? (wrMid(v) ? " mid" : v < 0.5 ? " lo" : "") : ""}" style="width:${Math.round(v * 100)}%"></i>`;   // 勝率: 45〜55% はうすい緑、50% 未満は赤
             const per = [[3, "3か月"], [6, "6か月"], [0, "全部"]].map(([v, l]) => `<button type="button" class="${rstatPeriod === v ? "on" : ""}" onclick="setRstat('p',${v})">${l}</button>`).join("");
             const hd = (k, l) => `<button type="button" class="rs-h${rstatSort === k ? " on" : ""}" onclick="setRstat('s','${k}')">${l}${rstatSort === k ? " ▾" : ""}</button>`;
             // 上: 期間と勝率の数え方(1行) / 下: 項目ごとに開く(説明は「?」の中)
+            const tgt = ANA_TGT_OPTS.map(([k, , l]) => `<button type="button" class="${anaTgt === k ? "on" : ""}" onclick="anaTgtSet('${k}')">${l}</button>`).join("");
+            try {
             el.innerHTML = `<div class="rs-top"><span class="rs-seg2">${per}</span>${matchUnitSegHtml()}</div>
+                <div class="rs-top rs-tgt"><span class="rs-tgl">対象<small>参加率</small></span><span class="rs-seg2" role="group" aria-label="対象(参加率)">${tgt}</span></div>
                 <button type="button" class="fx-open" onclick="openFormAna()"><i class="ana-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="3"></rect><path d="M16 10.5 21 7.5v9l-5-3"></path></svg></i><span>動画でフォーム分析</span></button>
                 ${proposeNextHtml()}
                 ${chemHtml(rosterStatsFrom())}
                 ${whyHtml(rosterStatsFrom())}
                 <details class="note-details chem"${rtblOpen ? " open" : ""} ontoggle="rtblOpen=this.open"><summary>参加率・回答率・勝率<span class="rs-days">バレー${days}回分</span></summary>
                 <div class="rs-tbl"><div class="rs-row rs-head"><span>名前</span>${hd("come", "参加率")}${hd("ans", "回答率")}${hd("win", "勝率")}</div>
-                ${rows.map(r => `<div class="rs-row"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c${r.few ? " few" : ""}"${r.few ? ` title="全${matchRateUnit === "match" ? "試合" : "ゲーム"}の半分未満"` : ""}>${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
-                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。</div></details></details>
+                ${rows.map(r => `<div class="rs-row${inOf(r) ? "" : " ana-out"}"><span class="rs-nm">${escapeHtml(r.name)}</span><span class="rs-c">${bar(r.cr, "c")}<b>${pct(r.cr)}</b></span><span class="rs-c">${bar(r.ar, "a")}<b>${pct(r.ar)}</b></span><span class="rs-c${r.few ? " few" : ""}"${r.few ? ` title="全${matchRateUnit === "match" ? "試合" : "ゲーム"}の半分未満"` : ""}>${bar(r.wr, "w")}<b>${pct(r.wr)}${r.g ? `<small>(${r.g})</small>` : ""}</b></span></div>`).join("")}</div>
+                <details class="rs-help"><summary>?</summary><div class="acc-desc rs-note">参加率=「来る」だった割合、回答率=○か✖になっていた割合、勝率=記録した試合で勝った割合(「ゲーム」は1ゲームごと、「試合」は先取などで決着した1試合ごと。かっこはその数。少ないうちは当てになりません)。終わった日だけで計算し、「来る」が0人の日とゲストは除きます。管理者が代わりに入れた回答も含みます。勝率の薄い字 = 全${matchRateUnit === "match" ? "試合" : "ゲーム"}の半分も出ていない人。<br><b>対象</b>(いちばん上の切り替え) = 今の期間の参加率が、えらんだ割合以上の人。対象外の人(ゲストも)は、分析の画面のどこでも、ほとんど見えない薄い字で出します(この表では下にまとめます)。相性の図と一覧には、対象外の人が入った組を出しません(その人の名前を押すと、その人の相性は薄く見られます)。数字の計算は、対象に関係なく全員の試合で行います。</div></details></details>
                 <details class="note-details chem"${matchHistOpen ? " open" : ""} ontoggle="matchHistOpen=this.open; if(this.open) renderMatchHistory()"><summary>試合の履歴</summary><div id="matchHistory"></div></details>
                 <div class="rs-export"><button type="button" class="st-btn" onclick="anaExport()">データを書き出す<small>名前は記号に</small></button></div><div class="rs-build">BUILD ${APP_BUILD}</div>`;
+            } finally { anaInSet = null; }   // ほかの画面の名前は薄くしない
             if (matchHistOpen) renderMatchHistory();
             if (sp && spTop) sp.scrollTop = spTop;
             const a1 = ay != null && document.getElementById("matchHistory");
@@ -16845,7 +16873,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611152315;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611152333;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -17003,11 +17031,14 @@ const namesBtn = isAdmin() && dates.length > 0
             let sy = 0, sx = 0, pulling = false, armed = false, active = false;
             // 上に重なる画面(ローテ・フォーム分析・ペアなど)が開いているあいだは、引っぱって更新しない(編集の途中で読み直さない)
             const ptrOverlayOpen = () => editOverlayOpen();   // daySheet などは閉じていても display が残るので入れない(押した場所で別に止めている)
-            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #protoVbAdd, #prFind, #prCal .pr-mhead, #rotOv, #fxOv, #pairOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
+            const blocked = (t) => !!(t.closest && t.closest("input:not(.pr-hap), textarea, select, #daySheet, #surveyOv, #protoSv, #protoCal, #protoVbAdd, #prFind, #prCal .pr-mhead, #rotOv, #fxOv, #pairOv, #protoBell, #bulkAddOv, #icsOv, .dv-ov, .settings-panel.open, .roster-panel.open, #calGrid.list-mode, #calGrid.tw-mode"))
                 || document.body.style.overflow === "hidden";
+            // 指の下の入れ物(お知らせの画面など、それ自身がスクロールする画面)が、すでに下へ送ってあるとき: 上へ戻すスクロールなので、更新にしない
+            //   (ページ全体は動かないので window.scrollY はいつも 0。それだけを見ると、入れ物の中で上へ戻そうとするたびに「更新」が始まって、スクロールが止められていた)
+            const innerScrolled = (t) => { for (let n = t && t.nodeType === 1 ? t : t && t.parentElement; n && n !== document.body && n !== document.documentElement; n = n.parentElement) { if (n.scrollTop > 0) return true; } return false; };
             const setY = (y) => { el.style.opacity = String(Math.min(1, y / TH)); el.style.transform = `translateY(${Math.min(y, TH + 20) - 48}px) rotate(${y * 4}deg)`; };
             document.addEventListener("touchstart", e => {
-                active = e.touches.length === 1 && (window.scrollY || 0) <= 0 && !blocked(e.target) && !ptrOverlayOpen();
+                active = e.touches.length === 1 && (window.scrollY || 0) <= 0 && !blocked(e.target) && !ptrOverlayOpen() && !innerScrolled(e.target) && !(document.getElementById("protoBell") || { classList: { contains: () => false } }).classList.contains("open");
                 pulling = false; armed = false;
                 if (active) { sy = e.touches[0].clientY; sx = e.touches[0].clientX; }
             }, { passive: true });
