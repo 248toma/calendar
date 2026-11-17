@@ -2727,6 +2727,64 @@
         .sv-bar em { font-style: normal; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
         .sv-empty { text-align: center; font-size: 12.5px; color: var(--ink-3); margin: 10px 0; }
 
+        /* ===== 継続記録(見た目は節約と同じ部品を使う) ===== */
+        #kirokuOv { position: fixed; inset: 0; z-index: 9000; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.35); }
+        #kirokuOv .sv-head b { white-space: nowrap; }
+        #kirokuOv .sv-tabs button { padding: 0 11px; }
+        .kr-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--kc, var(--ink-3)); }
+        .kr-chips button { display: inline-flex; align-items: center; gap: 6px; }
+        .kr-chips button.on { background: var(--bg); color: var(--ink); box-shadow: var(--sink), inset 0 0 0 1.5px var(--kc); }
+        .kr-chips.shake { animation: svShake .3s; }
+        .kr-dateln { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .kr-dchips { display: inline-flex; gap: 6px; }
+        .kr-dchips button { height: 30px; padding: 0 11px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 12px; font-weight: 700; }
+        .kr-dchips button.on { color: var(--accent); box-shadow: var(--sink); }
+        .kr-cancel { flex: none; height: 40px; padding: 0 10px; border: none; border-radius: 10px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 12px; font-weight: 700; }
+        .kr-st { display: flex; gap: 12px; margin: 10px 2px 0; font-size: 12px; font-weight: 700; color: var(--ink-3); }
+        .kr-st span:first-child { color: var(--ink-2); }
+        .kr-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 26px; align-items: center; gap: 8px; padding: 7px 10px; margin-top: 4px; border-radius: 10px; background: rgba(128, 128, 128, .08); font-size: 13px; }
+        .kr-row.dated { grid-template-columns: 2.8em auto minmax(0, 1fr) auto 26px; }
+        .kr-row.on { box-shadow: inset 0 0 0 2px var(--accent); }
+        .kr-row button { width: 26px; height: 26px; border: none; background: none; color: var(--ink-3); font-size: 13px; }
+        .kr-nm { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--ink-2); white-space: nowrap; max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+        .kr-go { margin-top: 10px; height: 34px; padding: 0 16px; border: none; border-radius: 17px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; }
+        .kr-card { margin-top: 10px; padding: 10px 12px 11px; border-radius: 14px; background: var(--bg); box-shadow: var(--raise-xs); }
+        .kr-ch { display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--ink); }
+        .kr-ch b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .kr-ch em { margin-left: auto; flex: none; font-style: normal; font-size: 11.5px; font-weight: 800; color: var(--ink-3); }
+        .kr-card.done .kr-ch em { color: var(--kc); }
+        .kr-card.lazy .kr-ch em { color: #c27b74; }
+        .kr-card.lazy { box-shadow: var(--raise-xs), inset 3px 0 0 rgba(194, 123, 116, .35); }
+        .kr-nums { display: flex; gap: 12px; margin: 5px 0 7px; font-size: 11px; color: var(--ink-3); }
+        .kr-nums b { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; margin-right: 1px; }
+        .kr-strip { display: flex; gap: 2px; }
+        .kr-strip i { flex: 1; min-width: 0; height: 10px; border-radius: 2.5px; background: rgba(128, 128, 128, .13); }
+        .kr-strip i.w { margin-left: 3px; }
+        .kr-strip i.t { box-shadow: 0 0 0 1px rgba(128, 128, 128, .45); }
+        .kr-newln { margin-bottom: 12px; }
+        .kr-items { display: flex; flex-direction: column; gap: 6px; }
+        .kr-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 12px; background: rgba(128, 128, 128, .08); }
+        .sv-day .kr-item { margin-top: 4px; }
+        .kr-item.ro { opacity: .8; }
+        .kr-sw { flex: none; width: 22px; height: 22px; border: none; border-radius: 50%; box-shadow: inset 1px 1px 2px rgba(0,0,0,.18); padding: 0; }
+        i.kr-sw { width: 14px; height: 14px; margin: 0 4px; }
+        .kr-iname { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; border: none; background: none; padding: 4px 2px; text-align: left; color: var(--ink); font-size: 14px; font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: inherit; }
+        .kr-iname small { font-size: 10.5px; font-weight: 600; color: var(--ink-3); }
+        .kr-ib { flex: none; width: 30px; height: 30px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 13px; padding: 0; }
+        .kr-ib.wide { width: auto; padding: 0 10px; font-size: 12px; font-weight: 700; }
+        .kr-ib:disabled { opacity: .35; box-shadow: none; }
+        .kr-ib .ic { width: 15px; height: 15px; }
+        .kr-share.on { background: var(--accent); color: #fff; box-shadow: none; }
+        .kr-pal { display: flex; gap: 10px; padding: 8px 10px 4px 38px; }
+        .kr-pal button { width: 24px; height: 24px; border: none; border-radius: 50%; padding: 0; box-shadow: var(--raise-xs); }
+        .kr-pal button.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink-3); }
+        .kr-note { margin: 12px 2px 0; font-size: 11px; line-height: 1.6; color: var(--ink-3); }
+        .kr-note .ic { width: 12px; height: 12px; vertical-align: -2px; }
+        /* カレンダーのマスの左上: その日に記録した項目の色の小さな点(目立たないように) */
+        #protoUI .pr-kr { position: absolute; top: 3px; left: 3px; display: grid; grid-template-columns: repeat(2, 3.5px); gap: 1.5px; pointer-events: none; opacity: .6; }
+        #protoUI .pr-kr i { display: block; width: 3.5px; height: 3.5px; border-radius: 50%; }
+        #protoUI .pr-kr i.more { box-sizing: border-box; border: .8px solid var(--pr-ink3, #8a92a0); }
+
         /* 試作UI: カレンダーのマスに予定の題名 */
         #protoUI .pr-lts { display: flex; flex-direction: column; gap: 0; width: 100%; margin-top: -2px; }   /* 3本目まで、マスの高さに収める */
         #protoUI .pr-lt { position: relative; display: flex; justify-content: center; align-items: center; height: 9px; min-width: 0; }
@@ -7031,6 +7089,309 @@ await main();
                     ${Object.keys(byMonth).map(k => `<div class="sv-day"><div class="sv-dh"><span>${+k.slice(5)}月</span><b>${svYen(byMonth[k].reduce((t, r) => t + r.amount, 0))}</b></div>${byMonth[k].map(r => savingRowHtml(r).replace('<span class="sv-cat">', `<span class="sv-d">${md(r.date)}</span><span class="sv-cat">`)).join("")}</div>`).join("")}`;
             }
             ov.innerHTML = `<div class="sv-box" role="dialog" aria-label="節約"><div class="sv-head"><b>節約</b>${tabs}<button type="button" class="sv-x" onclick="closeSaving()" aria-label="閉じる">✕</button></div>${body}</div>`;
+        }
+
+        // ======================================================================
+        // 継続記録(管理者だけ。バレーとは関係ない)
+        //   ＋ →「記録」: 自分で作った項目(はじめは空)に、日付とメモで「やった」を記録。続いているか・サボっているかを見る
+        //   カレンダーの日付の左上に、その日に記録した項目の色の小さな点(目立たないように)
+        //   共有は項目ごとに選ぶ(はじめは共有しない)。共有の相手は節約と同じ、ペアモードの相手(管理者モードのときだけ見える)
+        //   共有しない項目とその記録は、この端末だけ(KIROKU_LOCAL_KEY。共有データには入れない)。共有する項目とその記録だけ共有データ(KIROKU_KEY)へ
+        //   共有データ: { i: [{ id, n: 名前, c: 色の番号, o: 持ち主, t: [名簿id…], s: 並び順 }], r: [{ id, i: 項目id, d: "YYYY-MM-DD", m: メモ }] }
+        //   しまった項目(記録は残して項目を消したもの)は x: 1。共有はやめて、この端末だけに置く
+        // ======================================================================
+        const KIROKU_KEY = "attendance_kiroku_v1";
+        const KIROKU_LOCAL_KEY = "kiroku_local_v1";
+        // くすんだ色(凹凸の画面になじむ、明るい画面でも暗い画面でも見える色)。項目には番号で入る
+        const KR_COLORS = ["#7f9cc4", "#86b096", "#d3a26b", "#c98a8a", "#a493c4", "#72aeb0", "#bfae6f", "#9aa2ad"];
+        const KR_MEMO_MAX = 200, KR_NAME_MAX = 20;
+        const KR_SHARED_BUDGET = 80000;   // 1人ぶんの「共有する記録」の上限(UTF-8のバイト)。超えた古い記録は共有データに入れず、この端末にだけ残す(共有データは1MiBまで)
+        const krRead = key => {
+            try {
+                const v = JSON.parse(localStorage.getItem(key) || "null") || {};
+                return { i: Array.isArray(v.i) ? v.i.filter(x => x && x.id != null && typeof x.n === "string") : [], r: Array.isArray(v.r) ? v.r.filter(x => x && x.id != null && x.i != null && /^\d{4}-\d{2}-\d{2}$/.test(x.d || "")) : [] };
+            } catch (e) { return { i: [], r: [] }; }
+        };
+        function krAll() {
+            const sh = krRead(KIROKU_KEY), lo = krRead(KIROKU_LOCAL_KEY);
+            const u = (a, b) => { const ids = new Set(a.map(x => x.id)); return a.concat(b.filter(x => !ids.has(x.id))); };
+            return { i: u(lo.i, sh.i), r: u(lo.r, sh.r) };
+        }
+        const krMine = it => !!it && it.o === planAuthorKey();
+        const krShared = it => !!it && !it.x && (it.t || []).length > 0;
+        const krCol = it => KR_COLORS[(+(it && it.c) || 0) % KR_COLORS.length];
+        function krSaveAll(d) {
+            const me = planAuthorKey(), byId = new Map(d.i.map(x => [x.id, x]));
+            const inShared = it => it.o !== me || krShared(it);   // ほかの人の項目は、共有データにしかない
+            const li = d.i.filter(it => !inShared(it)), si = d.i.filter(inShared), lr = [], sr = [];
+            const enc = typeof TextEncoder !== "undefined" ? new TextEncoder() : null;
+            let used = 0;
+            d.r.filter(r => byId.has(r.i)).sort((a, b) => b.d.localeCompare(a.d) || (b.id > a.id ? 1 : b.id < a.id ? -1 : 0)).forEach(r => {   // 新しい順(上限を超えたら古いほうを端末に残す)
+                const it = byId.get(r.i);
+                if (!inShared(it)) { lr.push(r); return; }
+                if (it.o !== me) { sr.push(r); return; }
+                const s = JSON.stringify(r); used += (enc ? enc.encode(s).length : s.length * 3) + 1;
+                (used <= KR_SHARED_BUDGET ? sr : lr).push(r);
+            });
+            try {
+                localStorage.setItem(KIROKU_LOCAL_KEY, JSON.stringify({ i: li, r: lr }));
+                const before = localStorage.getItem(KIROKU_KEY), next = JSON.stringify({ i: si, r: sr });
+                if (before !== next && !(before == null && !si.length && !sr.length)) localStorage.setItem(KIROKU_KEY, next);   // 共有データは変わったときだけ書く
+            } catch (e) { console.warn(e); }
+        }
+        // 見える項目: 自分の項目 / ペアの相手から共有された項目(管理者モードのときだけ)。しまった項目は出さない
+        function krVisible(it) {
+            if (!isAdmin() || !it || it.x) return false;
+            if (krMine(it)) return true;
+            const me = myRosterId(); return me != null && krShared(it) && it.t.includes(me);
+        }
+        const krOrd = (a, b) => (krMine(a) ? 0 : 1) - (krMine(b) ? 0 : 1) || (+a.s || 0) - (+b.s || 0) || (a.id > b.id ? 1 : a.id < b.id ? -1 : 0);
+        // ---- 日付の計算 ----
+        const krShift = (k, n) => { const [y, m, d] = k.split("-").map(Number); return formatDateKey(new Date(y, m - 1, d + n)); };
+        const krDiff = (a, b) => { const p = k => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d); }; return Math.round((p(a) - p(b)) / 864e5); };
+        // 続き具合: last=最後に記録した日, gap=今日から何日前か(0=今日), streak=今の連続日数(今日か昨日までつながっていれば), slack=サボった日数(今日は数えない)
+        function krStats(dates, today) {
+            const ks = [...dates].filter(k => k <= today).sort(), set = new Set(ks);
+            const last = ks.length ? ks[ks.length - 1] : null, gap = last ? krDiff(today, last) : null;
+            let streak = 0;
+            if (gap != null && gap <= 1) { let k = last; while (set.has(k)) { streak++; k = krShift(k, -1); } }
+            let best = 0, run = 0, prev = null;
+            ks.forEach(k => { run = prev && krDiff(k, prev) === 1 ? run + 1 : 1; if (run > best) best = run; prev = k; });
+            const n7 = ks.filter(k => krDiff(today, k) < 7).length, n30 = ks.filter(k => krDiff(today, k) < 30).length;
+            return { last, gap, streak, best, n7, n30, days: ks.length, slack: gap == null ? null : Math.max(0, gap - 1) };
+        }
+        function krStatusText(st) {
+            if (st.gap == null) return "まだ記録なし";
+            if (st.gap === 0) return "今日 ✓";
+            if (st.gap === 1) return "今日まだ";
+            return `${st.slack}日サボり`;
+        }
+        // ---- カレンダーの点(日付 → その日に記録した項目の色。項目の並び順) ----
+        var krDayCache = null;
+        function krDayColors() {
+            if (!isAdmin()) return null;
+            const a = localStorage.getItem(KIROKU_KEY), b = localStorage.getItem(KIROKU_LOCAL_KEY);
+            if (a == null && b == null) return null;
+            const me = planAuthorKey(), rid = myRosterId(), c = krDayCache;
+            if (c && c.a === a && c.b === b && c.me === me && c.rid === rid) return c.m;
+            const d = krAll(), vis = d.i.filter(krVisible).sort(krOrd), idx = new Map(vis.map((it, n) => [it.id, n])), m = new Map();
+            d.r.forEach(r => { if (!idx.has(r.i)) return; let x = m.get(r.d); if (!x) m.set(r.d, x = []); if (!x.includes(r.i)) x.push(r.i); });
+            m.forEach((x, k) => m.set(k, x.sort((p, q) => idx.get(p) - idx.get(q)).map(id => krCol(vis[idx.get(id)]))));
+            krDayCache = { a, b, me, rid, m };
+            return m;
+        }
+        // マスの左上: 2列で4つまで(5つ以上は3つと小さな輪)
+        function krCellDots(map, k, dim) {
+            const cs = map && map.get(k); if (!cs || !cs.length) return "";
+            const show = cs.length > 4 ? cs.slice(0, 3) : cs;
+            return `<span class="pr-kr" aria-hidden="true"${dim ? ` style="opacity:.22"` : ""}>${show.map(c => `<i style="background:${c}"></i>`).join("")}${cs.length > 4 ? `<i class="more"></i>` : ""}</span>`;
+        }
+        // ---- 画面 ----
+        var krForm = null;   // { tab: "add" | "list" | "items", id: 直している記録, item, date, memo, colorFor, newName }
+        var krLastItem = null, krLastId = 0;
+        const krNewId = () => { let n = Date.now(); if (n <= krLastId) n = krLastId + 1; krLastId = n; return n; };
+        function openKiroku(tab) {
+            closeAddChooser();
+            if (!isAdmin()) return;
+            const today = formatDateKey(new Date());
+            const mine = krAll().i.filter(it => krVisible(it) && krMine(it));
+            krForm = { tab: tab || (mine.length ? "add" : "items"), id: null, item: mine.some(it => it.id === krLastItem) ? krLastItem : (mine.length === 1 ? mine[0].id : null), date: today, memo: "", colorFor: null, newName: "" };
+            let ov = document.getElementById("kirokuOv");
+            if (!ov) { ov = document.createElement("div"); ov.id = "kirokuOv"; ov.onclick = (e) => { if (e.target === ov) closeKiroku(); }; document.body.appendChild(ov); }
+            renderKiroku(); ov.style.display = "flex";
+            if (krForm.tab === "items" && !mine.length) setTimeout(() => { const a = document.getElementById("krNew"); if (a) a.focus(); }, 60);
+        }
+        function closeKiroku() { const ov = document.getElementById("kirokuOv"); if (ov) ov.style.display = "none"; krForm = null; }
+        function krReadForm() {
+            const f = krForm; if (!f) return;
+            const m = document.getElementById("krMemo"), d = document.getElementById("krDate"), n = document.getElementById("krNew");
+            if (m) f.memo = m.value;
+            if (d && d.value) f.date = d.value;
+            if (n) f.newName = n.value;
+        }
+        function krSet(k, v) {
+            krReadForm(); if (!krForm) return;
+            if (k === "date" && !v) return renderKiroku();   // 日付を空にしたときは、前の日付のまま
+            if (k === "colorFor" && krForm.colorFor === v) v = null;
+            if (k === "tab" && v !== "add") krForm.id = null;
+            krForm[k] = v;
+            if (k === "item") krLastItem = v;
+            renderKiroku();
+        }
+        function krAfter() { krDayCache = null; renderKiroku(); try { renderProto(); } catch (e) { /* ignore */ } }
+        function krShake(sel) { const c = document.querySelector("#kirokuOv " + sel); if (c) { c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); } }
+        function krSubmit() {
+            krReadForm();
+            const f = krForm; if (!f) return;
+            const d = krAll(), it = d.i.find(x => x.id === f.item);
+            if (!it || !krMine(it) || it.x) { krShake(".kr-chips"); return; }
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || "")) return;
+            const memo = (f.memo || "").trim().slice(0, KR_MEMO_MAX);
+            const rec = { id: f.id || krNewId(), i: it.id, d: f.date };
+            if (memo) rec.m = memo;
+            const i = d.r.findIndex(x => x.id === rec.id);
+            if (i >= 0) { const old = d.i.find(x => x.id === d.r[i].i); if (!krMine(old)) return; d.r[i] = rec; } else d.r.push(rec);
+            krSaveAll(d);
+            krLastItem = it.id;
+            Object.assign(f, { id: null, memo: "" });
+            krAfter();
+        }
+        function krEdit(id) {
+            const d = krAll(), r = d.r.find(x => x.id === id), it = r && d.i.find(x => x.id === r.i);
+            if (!r || !krMine(it) || !krForm) return;
+            Object.assign(krForm, { tab: "add", id: r.id, item: r.i, date: r.d, memo: r.m || "" });
+            renderKiroku();
+        }
+        function krCancelEdit() { if (krForm) { krForm.id = null; krForm.memo = ""; renderKiroku(); } }
+        function krDeleteRec(id) {
+            const d = krAll(), r = d.r.find(x => x.id === id), it = r && d.i.find(x => x.id === r.i);
+            if (!r || !krMine(it)) return;
+            if (!confirm(`${+r.d.slice(5, 7)}/${+r.d.slice(8)} の「${it.n}」の記録を消しますか？`)) return;
+            d.r = d.r.filter(x => x.id !== id);
+            krSaveAll(d);
+            if (krForm && krForm.id === id) { krForm.id = null; krForm.memo = ""; }
+            krAfter();
+        }
+        // ---- 項目 ----
+        function krAddItem() {
+            krReadForm();
+            const f = krForm; if (!f) return;
+            const name = (f.newName || "").trim().slice(0, KR_NAME_MAX);
+            if (!name) { const a = document.getElementById("krNew"); if (a) a.focus(); return; }
+            const d = krAll(), mine = d.i.filter(it => krMine(it) && !it.x);
+            if (mine.some(it => it.n === name)) { alert(`「${name}」はもうあります`); return; }
+            const used = KR_COLORS.map((_, c) => mine.filter(it => (+it.c || 0) === c).length), min = Math.min(...used);   // 使っていない色(なければ、いちばん使っていない色)
+            const it = { id: krNewId(), n: name, c: used.indexOf(min), o: planAuthorKey(), t: [], s: mine.reduce((a, x) => Math.max(a, +x.s || 0), 0) + 1 };   // 共有は、押したときだけ
+            d.i.push(it);
+            krSaveAll(d);
+            f.newName = "";
+            if (f.item == null) { f.item = it.id; krLastItem = it.id; }
+            krAfter();
+            setTimeout(() => { const a = document.getElementById("krNew"); if (a) a.focus(); }, 30);
+        }
+        function krEditItem(id, fn) {
+            krReadForm();
+            const d = krAll(), it = d.i.find(x => x.id === id); if (!it || !krMine(it)) return;
+            if (fn(it, d) === false) return;
+            krSaveAll(d); krAfter();
+        }
+        function krRename(id) {
+            krEditItem(id, (it, d) => {
+                const v = prompt("項目の名前", it.n); if (v == null) return false;
+                const name = v.trim().slice(0, KR_NAME_MAX); if (!name || name === it.n) return false;
+                if (d.i.some(x => x !== it && krMine(x) && !x.x && x.n === name)) { alert(`「${name}」はもうあります`); return false; }
+                it.n = name;
+            });
+        }
+        function krSetColor(id, c) { krEditItem(id, it => { it.c = c; }); if (krForm) { krForm.colorFor = null; renderKiroku(); } }
+        function krToggleShare(id) {
+            krEditItem(id, it => {
+                if (krShared(it)) { if (!confirm(`「${it.n}」の共有をやめますか？\n(記録はこの端末に残ります)`)) return false; it.t = []; return; }
+                const ids = pairIds();
+                if (!ids.length) { alert("共有の相手は、ペアモードで選んだ人です。\n先にペアモードで相手を選んでください。"); return false; }
+                const names = ids.map(i => (roster.find(r => r.id === i) || {}).name).filter(Boolean);
+                if (!confirm(`「${it.n}」とその記録を ${names.join("・")} に共有しますか？`)) return false;
+                it.t = ids.slice();
+            });
+        }
+        function krMove(id, dir) {
+            krEditItem(id, (it, d) => {
+                const mine = d.i.filter(x => krMine(x) && !x.x).sort(krOrd), i = mine.indexOf(it), j = i + dir;
+                if (i < 0 || j < 0 || j >= mine.length) return false;
+                [mine[i], mine[j]] = [mine[j], mine[i]];
+                mine.forEach((x, n) => { x.s = n + 1; });
+            });
+        }
+        function krDeleteItem(id) {
+            const d0 = krAll(), it0 = d0.i.find(x => x.id === id); if (!it0 || !krMine(it0)) return;
+            const n = d0.r.filter(r => r.i === id).length;
+            if (!confirm(`「${it0.n}」を消しますか？`)) return;
+            const withRecs = !n || confirm(`「${it0.n}」の記録(${n}件)も消しますか？\n\nキャンセル: 記録は残して、項目をしまいます(項目の画面の下から戻せます)`);
+            krEditItem(id, (it, d) => {
+                if (withRecs) { d.i = d.i.filter(x => x !== it); d.r = d.r.filter(r => r.i !== id); }
+                else { it.x = 1; it.t = []; }   // しまう: カレンダー・一覧・記録の項目には出さない。共有もやめる
+            });
+            if (krForm && krForm.item === id) krForm.item = null;
+            if (krLastItem === id) krLastItem = null;
+            renderKiroku();
+        }
+        function krRestore(id) { krEditItem(id, (it, d) => { delete it.x; it.s = d.i.filter(x => krMine(x) && !x.x).reduce((a, x) => Math.max(a, +x.s || 0), 0) + 1; }); }
+        // ---- 描く ----
+        function krRowHtml(r, it, dated) {
+            const mine = krMine(it), md = `${+r.d.slice(5, 7)}/${+r.d.slice(8)}`;
+            const who = mine ? (krShared(it) ? `<span class="sv-to" title="共有">${IC("users")}</span>` : "<i></i>") : `<span class="sv-from">共有</span>`;
+            return `<div class="kr-row${dated ? " dated" : ""}${krForm && krForm.id === r.id ? " on" : ""}"${mine ? ` role="button" tabindex="0" onclick="krEdit(${r.id})"` : ""}>${dated ? `<span class="sv-d">${md}</span>` : ""}<span class="kr-nm"><i class="kr-dot" style="background:${krCol(it)}"></i>${escapeHtml(it.n)}</span><span class="sv-memo">${escapeHtml(r.m || "")}</span>${who}${mine ? `<button type="button" onclick="event.stopPropagation();krDeleteRec(${r.id})" aria-label="消す">✕</button>` : `<i></i>`}</div>`;
+        }
+        function krStripHtml(set, today, col) {
+            let h = "";
+            for (let n = 34; n >= 0; n--) {
+                const k = krShift(today, -n), on = set.has(k), wk = new Date(k + "T00:00:00").getDay() === (typeof weekStartDay !== "undefined" ? weekStartDay : 0);
+                h += `<i class="${wk && n < 34 ? "w" : ""}${n === 0 ? " t" : ""}"${on ? ` style="background:${col}"` : ""} title="${+k.slice(5, 7)}/${+k.slice(8)}"></i>`;
+            }
+            return `<div class="kr-strip">${h}</div>`;
+        }
+        function renderKiroku() {
+            const ov = document.getElementById("kirokuOv"), f = krForm; if (!ov || !f) return;
+            const today = formatDateKey(new Date()), d = krAll(), byId = new Map(d.i.map(x => [x.id, x]));
+            const vis = d.i.filter(krVisible).sort(krOrd), mine = vis.filter(krMine);
+            const visRecs = d.r.filter(r => krVisible(byId.get(r.i)));
+            const dateSet = id => new Set(visRecs.filter(r => r.i === id).map(r => r.d));
+            const tabs = `<div class="sv-tabs">${[["add", "記録"], ["list", "一覧"], ["items", "項目"]].map(([k, l]) => `<button type="button" class="${f.tab === k ? "on" : ""}" onclick="krSet('tab','${k}')">${l}</button>`).join("")}</div>`;
+            let body = "";
+            if (f.tab === "add") {
+                if (!mine.length) body = `<div class="sv-empty">まず項目を作ってください<br><button type="button" class="kr-go" onclick="krSet('tab','items')">項目を作る</button></div>`;
+                else {
+                    if (f.item != null && !mine.some(it => it.id === f.item)) f.item = null;
+                    const sel = mine.find(it => it.id === f.item), yest = krShift(today, -1), sd = String(selectedDate || "").slice(0, 10);
+                    const dchip = (k, l) => `<button type="button" class="${f.date === k ? "on" : ""}" onclick="krSet('date','${k}')">${l}</button>`;
+                    const st = sel ? krStats(dateSet(sel.id), today) : null;
+                    const day = visRecs.filter(r => r.d === f.date).sort((a, b) => krOrd(byId.get(a.i), byId.get(b.i)) || (a.id > b.id ? 1 : -1));
+                    body = `<div class="sv-cats kr-chips">${mine.map(it => `<button type="button" class="${f.item === it.id ? "on" : ""}" style="--kc:${krCol(it)}" onclick="krSet('item', ${it.id})"><i class="kr-dot"></i>${escapeHtml(it.n)}</button>`).join("")}</div>
+                        <div class="kr-dateln sv-date"><input type="date" id="krDate" value="${f.date}" onchange="krSet('date', this.value)"><span class="kr-dchips">${dchip(today, "今日")}${dchip(yest, "昨日")}${/^\d{4}-\d{2}-\d{2}$/.test(sd) && sd !== today && sd !== yest ? dchip(sd, `${+sd.slice(5, 7)}/${+sd.slice(8)}`) : ""}</span></div>
+                        <div class="sv-line"><input type="text" id="krMemo" placeholder="メモ(なくてもOK)" maxlength="${KR_MEMO_MAX}" value="${escapeHtml(f.memo)}" onkeydown="if(event.key==='Enter'){event.preventDefault();krSubmit();}">${f.id ? `<button type="button" class="kr-cancel" onclick="krCancelEdit()">やめる</button>` : ""}<button type="button" class="sv-ok" onclick="krSubmit()" aria-label="${f.id ? "直す" : "記録"}">✓</button></div>
+                        ${st ? `<div class="kr-st"><span>${krStatusText(st)}</span>${st.streak ? `<span>${st.streak}日連続</span>` : ""}<span>7日で${st.n7}回</span></div>` : ""}
+                        ${day.length ? `<div class="sv-day"><div class="sv-dh"><span>${+f.date.slice(5, 7)}/${+f.date.slice(8)}</span><b>${day.length}件</b></div>${day.map(r => krRowHtml(r, byId.get(r.i), false)).join("")}</div>` : ""}`;
+                }
+            } else if (f.tab === "list") {
+                if (!vis.length) body = `<div class="sv-empty">まだ項目はありません<br><button type="button" class="kr-go" onclick="krSet('tab','items')">項目を作る</button></div>`;
+                else {
+                    // サボっている項目を上に(長くサボっている順)。ほかは項目の並び順
+                    const cards = vis.map(it => { const set = dateSet(it.id); return { it, set, st: krStats(set, today) }; });
+                    const lazy = c => c.st.gap != null && c.st.gap >= 2;
+                    cards.sort((a, b) => (lazy(b) ? 1 : 0) - (lazy(a) ? 1 : 0) || (lazy(a) ? b.st.gap - a.st.gap : 0) || krOrd(a.it, b.it));
+                    const recent = visRecs.filter(r => r.d <= today).sort((a, b) => b.d.localeCompare(a.d) || (b.id > a.id ? 1 : -1)).slice(0, 20);
+                    body = cards.map(({ it, set, st }) => `<div class="kr-card${lazy({ st }) ? " lazy" : st.gap === 0 ? " done" : ""}" style="--kc:${krCol(it)}">
+                            <div class="kr-ch"><i class="kr-dot"></i><b>${escapeHtml(it.n)}</b>${krMine(it) ? (krShared(it) ? `<span class="sv-to" title="共有">${IC("users")}</span>` : "") : `<span class="sv-from">共有</span>`}<em>${krStatusText(st)}</em></div>
+                            <div class="kr-nums"><span><b>${st.streak}</b>日連続</span><span>7日 <b>${st.n7}</b></span><span>30日 <b>${st.n30}</b></span><span>最長 <b>${st.best}</b></span></div>
+                            ${krStripHtml(set, today, krCol(it))}</div>`).join("")
+                        + (recent.length ? `<div class="sv-day"><div class="sv-dh"><span>最近の記録</span></div>${recent.map(r => krRowHtml(r, byId.get(r.i), true)).join("")}</div>` : "");
+                }
+            } else {
+                const pairNames = pairIds().map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
+                const nameOf = ids => (ids || []).map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean).join("・");
+                const cnt = id => d.r.filter(r => r.i === id).length;
+                const row = (it, i, n) => `<div class="kr-item">
+                        <button type="button" class="kr-sw" style="background:${krCol(it)}" onclick="krSet('colorFor', ${it.id})" aria-label="色"></button>
+                        <button type="button" class="kr-iname" onclick="krRename(${it.id})">${escapeHtml(it.n)}<small>${cnt(it.id)}件</small></button>
+                        <button type="button" class="kr-ib kr-share${krShared(it) ? " on" : ""}" onclick="krToggleShare(${it.id})" title="${krShared(it) ? `共有中: ${escapeHtml(nameOf(it.t))}` : pairNames.length ? `ペアの相手(${escapeHtml(pairNames.join("・"))})に共有` : "共有(ペアモードの相手)"}" aria-pressed="${krShared(it)}">${IC("users")}</button>
+                        <button type="button" class="kr-ib" onclick="krMove(${it.id}, -1)" aria-label="上へ"${i === 0 ? " disabled" : ""}>↑</button>
+                        <button type="button" class="kr-ib" onclick="krMove(${it.id}, 1)" aria-label="下へ"${i === n - 1 ? " disabled" : ""}>↓</button>
+                        <button type="button" class="kr-ib" onclick="krDeleteItem(${it.id})" aria-label="消す">✕</button></div>
+                        ${f.colorFor === it.id ? `<div class="kr-pal">${KR_COLORS.map((c, ci) => `<button type="button" class="${(+it.c || 0) === ci ? "on" : ""}" style="background:${c}" onclick="krSetColor(${it.id}, ${ci})" aria-label="色${ci + 1}"></button>`).join("")}</div>` : ""}`;
+                const others = vis.filter(it => !krMine(it)), gone = d.i.filter(it => krMine(it) && it.x);
+                body = `<div class="sv-line kr-newln"><input type="text" id="krNew" placeholder="新しい項目(例: 節約・筋トレ・早起き)" maxlength="${KR_NAME_MAX}" value="${escapeHtml(f.newName)}" onkeydown="if(event.key==='Enter'){event.preventDefault();krAddItem();}"><button type="button" class="sv-ok" onclick="krAddItem()" aria-label="項目を足す">＋</button></div>
+                    ${mine.length ? `<div class="kr-items">${mine.map((it, i) => row(it, i, mine.length)).join("")}</div>` : `<div class="sv-empty">項目はまだありません</div>`}
+                    <div class="kr-note">色の丸で色を、名前で名前を変えられます。${IC("users")} を押すと、その項目と記録をペアモードの相手に共有します(はじめは共有しません。共有しない記録はこの端末だけに保存)。</div>
+                    ${others.length ? `<div class="sv-day"><div class="sv-dh"><span>共有されている項目</span></div>${others.map(it => `<div class="kr-item ro"><i class="kr-sw" style="background:${krCol(it)}"></i><span class="kr-iname">${escapeHtml(it.n)}<small>${cnt(it.id)}件</small></span></div>`).join("")}</div>` : ""}
+                    ${gone.length ? `<div class="sv-day"><div class="sv-dh"><span>しまった項目</span></div>${gone.map(it => `<div class="kr-item ro"><i class="kr-sw" style="background:${krCol(it)}"></i><span class="kr-iname">${escapeHtml(it.n)}<small>${cnt(it.id)}件</small></span><button type="button" class="kr-ib wide" onclick="krRestore(${it.id})">戻す</button><button type="button" class="kr-ib" onclick="krDeleteItem2(${it.id})" aria-label="消す">✕</button></div>`).join("")}</div>` : ""}`;
+            }
+            ov.innerHTML = `<div class="sv-box" role="dialog" aria-label="継続記録"><div class="sv-head"><b>継続記録</b>${tabs}<button type="button" class="sv-x" onclick="closeKiroku()" aria-label="閉じる">✕</button></div>${body}</div>`;
+        }
+        // しまった項目を、記録ごと消す
+        function krDeleteItem2(id) {
+            const d0 = krAll(), it0 = d0.i.find(x => x.id === id); if (!it0 || !krMine(it0)) return;
+            if (!confirm(`「${it0.n}」と記録(${d0.r.filter(r => r.i === id).length}件)を消しますか？`)) return;
+            krEditItem(id, (it, d) => { d.i = d.i.filter(x => x !== it); d.r = d.r.filter(r => r.i !== id); });
         }
 
         function addChoosePlan() { closeAddChooser(); planDetailId = null; protoOpenInput(null); }
@@ -16924,7 +17285,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611160217;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611171346;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -17119,7 +17480,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 更新ボタン: 見ていた日付・タブ・位置を保ったまま、最新の共有データで再読み込みする
         // ------- 更新の知らせ・書く画面を開くときの更新 -------
         const shownEl = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
-        function protoAwayNow() { return ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoBell", "protoVbAdd", "savingOv", "rotOv", "fxOv"].some(shownEl) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full"); }
+        function protoAwayNow() { return ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoBell", "protoVbAdd", "savingOv", "kirokuOv", "rotOv", "fxOv"].some(shownEl) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full"); }
         // 今いる画面(読み直したあとに同じ画面を開き直すため)
         function protoCurKind() {
             if (shownEl("protoSv") || shownEl("surveyOv")) return "survey";
@@ -17184,7 +17545,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (!document.body.classList.contains("proto-on")) return;
                 const shown = id => { const el = document.getElementById(id); return !!el && (el.classList.contains("open") || el.classList.contains("show") || (el.style.display && el.style.display !== "none")); };
                 const busy = ["rotOv", "fxOv", "pairOv"].some(shown);
-                const now = ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoBell", "protoVbAdd", "savingOv"].some(shown) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full");
+                const now = ["settingsPanel", "surveyOv", "protoSv", "bulkAddOv", "protoCal", "protoBell", "protoVbAdd", "savingOv", "kirokuOv"].some(shown) || document.body.classList.contains("proto-panel") || document.body.classList.contains("nv-full");
                 if (now) { protoBackWasAway = true; return; }   // まだ別の画面
                 if (!protoBackWasAway) return;   // 別の画面から戻ったときだけ
                 protoBackWasAway = false;
@@ -18797,6 +19158,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const popEl = Date.now() - protoPressAt, popAn = popEl < 480 ? popEl : null;
             const markEl = Date.now() - protoMarkAt, markAn = !protoCapMode && protoMarkDir && markEl < 520 ? markEl : null;   // めくって来た側から、予定の印が順に出る
             const NR = 6;   // いつも6行(月ごとにマスの大きさが変わらないように)
+            let krMap = null; try { krMap = krDayColors(); } catch (e) { /* ignore */ }   // 継続記録: 日付の左上の小さな点(管理者だけ)
             // 入力を下に出しているとき(キーボードの上)は、入れる日の週だけ出す(6行を押しこむと文字が重なるため)。何日も続くときは終わりの週まで(2週まで)
             let rowLo = 0, rowHi = NR - 1;
             // 入力中(上でも下でも)は、入れる日の週から3週間だけ出す(6行を押しこむと文字がつぶれるため)
@@ -18858,7 +19220,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
-                cellsHtml += `<button type="button" class="pr-cell" data-k="${k}" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
+                cellsHtml += `<button type="button" class="pr-cell" data-k="${k}" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">${krMap ? krCellDots(krMap, k, !inM) : ""}
                     <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? (items.length || isSel || isToday ? 1 : 0.26) : (items.length ? 0.3 : 0.14)};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : inM && items.length ? 600 : 400};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${volMark}${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
                     <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${inM ? "" : "opacity:.38;"}${markAn != null ? `animation:prMarkIn .3s ease-out both;animation-delay:${(protoMarkDir > 0 ? col7 : 6 - col7) * 28 + Math.floor(i / 7) * 4 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
             }
@@ -19280,7 +19642,7 @@ const namesBtn = isAdmin() && dates.length > 0
             add: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`,
         };
         const PR_RAD_ITEMS = [
-            { k: "add", label: "追加", run: () => { if (!isAdmin()) { protoAdd(); return; } prRadSub(); } },   // 管理者は、その場で「Volley / 予定 / 節約」を出す
+            { k: "add", label: "追加", run: () => { if (!isAdmin()) { protoAdd(); return; } prRadSub(); } },   // 管理者は、その場で「Volley / 予定 / 節約 / 記録」を出す
             { k: "cal", label: "カレンダー", run: () => openBulkAdd() },
             { k: "survey", label: "アンケート", run: () => openSurvey() },
             { k: "roster", label: "名簿", adm: true, run: () => protoSolo("roster") },
@@ -19340,7 +19702,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const it = prBarItems()[i]; if (!it) return;
             if (prBe || Date.now() < prBeBlockClick) return;   // 並べ替え中(と長押しで入った直後)は、押しても実行しない
             protoHaptic && protoHaptic();
-            if (it.k === "add" && isAdmin()) { const r = btn.getBoundingClientRect(); prRadLast = [r.left + r.width / 2, r.top]; prRadSub(); return; }   // 追加は、その場で「Volley / 予定 / 節約」を出す
+            if (it.k === "add" && isAdmin()) { const r = btn.getBoundingClientRect(); prRadLast = [r.left + r.width / 2, r.top]; prRadSub(); return; }   // 追加は、その場で「Volley / 予定 / 節約 / 記録」を出す
             it.run();
         }
         const PR_BE_HOLD = 500;
@@ -19519,6 +19881,7 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "volley", label: "Volley", run: () => addChooseVolley() },
             { k: "plan", label: "予定", run: () => addChoosePlan() },
             { k: "saving", label: "節約", run: () => openSaving() },
+            { k: "kiroku", label: "記録", run: () => openKiroku() },   // 継続記録(管理者だけ)
             { k: "vbulk", label: "まとめて", run: () => openVbAdd() }   // バレー予定の一括追加(管理者だけ。この中身は管理者にしか出さない)
         ];
         PR_RAD_ICONS.volley = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5c-1.5 4 .5 8 5.5 9.5M5 7.5c3.5 2.5 8 2 10.5-2.5M5.5 16.5c2-3.5 6.5-5 10-3.5"></path></svg>`;
@@ -19526,6 +19889,7 @@ const namesBtn = isAdmin() && dates.length > 0
         PR_RAD_ICONS.google = `<b style="font-size:18px;font-weight:800;line-height:1;font-family:'Montserrat',system-ui,sans-serif">G</b>`;
         PR_RAD_ICONS.vbulk = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="13" height="13" rx="3"></rect><path d="M3.5 9.5h13M7.5 3.5v3.5M12.5 3.5v3.5"></path><path d="M19.5 9v8M15.5 13h8" stroke-width="1.9"></path></svg>`;
         PR_RAD_ICONS.saving = `<b style="font-size:17px;font-weight:800;line-height:1">¥</b>`;
+        PR_RAD_ICONS.kiroku = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="7" r="1.6"></circle><circle cx="12" cy="7" r="1.6"></circle><circle cx="18" cy="7" r="1.6"></circle><circle cx="6" cy="13" r="1.6"></circle><path d="M10.5 16.5l2.5 2.5 5-5.5"></path></svg>`;
         const PR_RAD_HOLD = 300;
         var prRad = null;   // { x, y, sx, sy, timer, open, sel, tap }
         function prRadAllowed(t) {
@@ -19578,7 +19942,7 @@ const namesBtn = isAdmin() && dates.length > 0
             prRadRender(prRadItems(), x, y);
             try { if (hapOn && navigator.vibrate) navigator.vibrate(10); } catch (e) { /* ignore */ }
         }
-        // 「追加」の中身(Volley / 予定 / 節約)を、同じ場所に出す(タップで選ぶ)
+        // 「追加」の中身(Volley / 予定 / 節約 / 記録)を、同じ場所に出す(タップで選ぶ)
         function prRadSub() {
             const x = prRad ? prRad.cx : (prRadLast ? prRadLast[0] : innerWidth / 2), y = prRad ? prRad.cy : (prRadLast ? prRadLast[1] : innerHeight / 2);
             prRad = { open: true, tap: true, sel: -1 };
@@ -21442,6 +21806,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 設定・名簿・分析(同じパネル)
                 { k: "settings", open: () => cls("settingsPanel", "open"), back: () => toggleSettings(), els: self("settingsPanel") },
                 { k: "saving", open: () => vis($("savingOv")), back: () => closeSaving(), els: self("savingOv") },
+                { k: "kiroku", open: () => vis($("kirokuOv")), back: () => closeKiroku(), els: self("kirokuOv") },
                 { k: "bulkAdd", open: () => cls("bulkAddOv", "open"), back: () => { const x = document.querySelector("#bulkAddOv .ba-x"); if (x) x.click(); else $("bulkAddOv").classList.remove("open"); }, els: self("bulkAddOv") },
                 { k: "guide", open: () => vis($("guideOv")), back: () => closeGuide(), els: self("guideOv") },
                 { k: "surveyOld", open: () => vis($("surveyOv")), back: () => closeSurvey(), els: self("surveyOv") },
