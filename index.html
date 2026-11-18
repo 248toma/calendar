@@ -1663,14 +1663,6 @@
         .settings-btn.survey-btn.alert.later .sv-badge2 { top: 0; right: -8px; color: transparent; box-shadow: 0 0 0 1.5px var(--bg); }   /* 赤い数字の後ろから、右に少しだけ覗かせる */
         @keyframes svPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .5); } 50% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); } }
         @media (prefers-reduced-motion: reduce) { .settings-btn.survey-btn.alert.pulse, .settings-btn.survey-btn.alert.urgent { animation: none; box-shadow: 0 0 0 2px #e5484d; } }
-        .svrel-ov { position: fixed; inset: 0; z-index: 9998; background: rgba(0, 0, 0, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
-        .svrel-box { background: var(--bg); color: var(--ink); border-radius: 18px; padding: 20px 18px 16px; width: 100%; max-width: 340px; box-shadow: var(--raise-sm); text-align: center; }
-        .svrel-t { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
-        .svrel-s { font-size: 13px; color: var(--ink-2); line-height: 1.6; }
-        .svrel-n { margin: 12px 0 14px; font-size: 13px; font-weight: 800; color: #e5484d; }
-        .svrel-btns { display: flex; gap: 10px; }
-        .svrel-btns button { flex: 1; height: 42px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; background: var(--bg); color: var(--ink-2); box-shadow: var(--raise-xs); }
-        .svrel-btns .svrel-go { background: var(--accent); color: #fff; }
         .settings-btn.mode-select { -webkit-appearance: none; appearance: none; font: inherit; font-size: 13px; color: var(--ink-3); background-color: transparent; border: none;
             padding: 0 16px 0 6px; min-height: 38px; cursor: pointer;
             background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
@@ -2727,29 +2719,10 @@
         .mt-tmem { padding: 6px 8px 2px; }
         .mt-tdet[open] > summary { background: rgba(128, 128, 128, .14); }
 
-        /* ===== 通知を受け取るか、1回だけ聞く(設定・お知らせと同じ、やわらかい凹凸。下から浮かぶカード) ===== */
-        #pushAskOv { position: fixed; inset: 0; z-index: 9800; display: flex; align-items: flex-end; justify-content: center; background: rgba(12, 16, 24, .32); animation: paFade .22s ease both; -webkit-tap-highlight-color: transparent; }
-        body.dark #pushAskOv { background: rgba(0, 0, 0, .5); }
-        #pushAskOv .pa-box { position: relative; box-sizing: border-box; width: calc(100% - 20px); max-width: 460px; margin: 0 10px calc(14px + env(safe-area-inset-bottom)); padding: 22px 20px 20px; border-radius: 28px; background: var(--sn-dome); box-shadow: 0 14px 40px rgba(10, 14, 24, .28), 0 2px 8px rgba(10, 14, 24, .10), inset 1px 1px 0 var(--sn-eh), inset -1px -1px 0 var(--sn-el); color: var(--sn-ink); font-family: 'Noto Sans JP', system-ui, sans-serif; animation: paUp .38s cubic-bezier(.16, 1, .3, 1) both; }
-        body.dark #pushAskOv .pa-box { box-shadow: 0 14px 40px rgba(0, 0, 0, .55), inset 1px 1px 0 var(--sn-eh), inset -1px -1px 0 var(--sn-el); }
-        #pushAskOv .pa-head { display: flex; align-items: center; gap: 16px; }
-        #pushAskOv .pa-ic { flex: none; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-acc); }
-        #pushAskOv .pa-ic svg { width: 22px; height: 22px; }
-        #pushAskOv .pa-ht { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-        #pushAskOv .pa-eye { font: 700 10px/1 var(--sn-en); letter-spacing: .16em; color: var(--sn-ink3); }
-        #pushAskOv .pa-ttl { margin: 0; font-size: 16.5px; font-weight: 700; line-height: 1.35; color: var(--sn-ink); }
-        #pushAskOv .pa-msg { margin: 16px 2px 0; font-size: 13px; line-height: 1.7; color: var(--sn-ink2); text-wrap: pretty; }
-        #pushAskOv .pa-msg b { color: var(--sn-ink); font-weight: 700; }
-        #pushAskOv .pa-acts { display: flex; gap: 14px; margin-top: 20px; }
-        #pushAskOv .pa-b { flex: 1; height: 48px; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 0 14px; border: none; border-radius: 24px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); font: 700 14px 'Noto Sans JP', system-ui, sans-serif; cursor: pointer; transition: box-shadow .15s ease; }
-        #pushAskOv .pa-b.pri { flex: 1.35; color: var(--sn-acc); font-weight: 800; }
-        #pushAskOv .pa-b svg { width: 16px; height: 16px; flex: none; }
-        #pushAskOv .pa-b:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
-        #pushAskOv .pa-b:focus-visible { outline: 2px solid color-mix(in srgb, var(--sn-acc) 55%, transparent); outline-offset: 3px; }
-        @keyframes paFade { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes paUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
-        @media (prefers-reduced-motion: reduce) { #pushAskOv, #pushAskOv .pa-box { animation: none; } }
-        body.pr-noanim #pushAskOv, body.pr-noanim #pushAskOv .pa-box { animation: none; }
+        /* ===== 上の板のお知らせ(アンケートの来月分・通知を受け取るか): 板の中身をしばらく入れかえる。入ってくる動きは回の切り替えと同じ ===== */
+        #protoUI .pr-hn-in { animation: prSlideL .42s cubic-bezier(.16,1,.3,1) both; }
+        #protoUI .pr-hn-x:active { transform: scale(.88); }
+        @media (prefers-reduced-motion: reduce) { #protoUI .pr-headrow { animation: none !important; } }
         /* ===== 節約の記録 ===== */
         .sv-total-host:empty { display: none; }
         .sv-total { margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
@@ -2930,7 +2903,12 @@
         @keyframes prHint { 0% { opacity: 0; transform: translate(-50%, 8px); } 10%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
         /* 予定の入力を下に出すとき: カレンダーが上、入力が下 */
         #protoUI .pr-wrap.pin-bottom { gap: 12px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); }   /* 画面の角の丸みにかからないよう、少し浮かせる */
-        #protoUI.kb-open .pr-wrap.pin-bottom { padding-bottom: 12px; }   /* キーボードが出ているときは、そのすぐ上 */
+        #protoUI.kb-open .pr-wrap.pin-bottom { padding-bottom: 12px; }
+        /* お知らせを下に出すとき: カレンダーが上、お知らせが下(下のメニューがあるときは、その上) */
+        #protoUI .pr-wrap.note-bottom { gap: 12px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); }
+        #protoUI .pr-wrap.note-bottom > .pr-cal { padding-bottom: 0 !important; }
+        body.proto-on #protoUI .pr-wrap.note-bottom.has-bar { padding-bottom: calc(var(--mb-d) + 76px); }
+        body.proto-on #protoUI .pr-wrap.note-bottom.has-bar > .pr-cal { padding-bottom: 0 !important; }   /* キーボードが出ているときは、そのすぐ上 */
         #protoUI .pr-wrap.pin-bottom > .pr-cal { padding-bottom: 0 !important; }
 
         /* ===== 設定・名簿・分析: 見た目をそろえる(グループごとの1枚のカードに、行を並べる) ===== */
@@ -3295,7 +3273,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail, #icsOv, #protoBell, #pushAskOv, #tutOv {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail, #icsOv, #protoBell, #tutOv {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3309,7 +3287,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed, body.dark #icsOv, body.dark #protoBell, body.dark #pushAskOv, body.dark #tutOv {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed, body.dark #icsOv, body.dark #protoBell, body.dark #tutOv {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -7933,24 +7911,13 @@ await main();
         const PUSH_ASKED_KEY = "push_asked_v1";
         function pushAskOnce() {
             try {
-                if (localStorage.getItem(PUSH_ASKED_KEY) || tutOpen || document.getElementById("pushAskOv")) return;
+                if (localStorage.getItem(PUSH_ASKED_KEY) || tutOpen || protoNoteHas("push")) return;
                 if (!firebaseAvailable || !authUid || !PUSH_VAPID_KEY || pushUnsupported() || pushMine()) return;
                 if (Notification.permission === "denied") return;
                 if (myRosterId() == null && !realAdmin()) return;
             } catch (e) { return; }
-            // 見た目は設定・お知らせと同じ(--sn-* の色と影。#pushAskOv に付けてある)。下から浮かぶカードに、出っぱった丸の中のベル・2つの出っぱったボタン
-            const ov = document.createElement("div"); ov.id = "pushAskOv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-labelledby", "pushAskTtl");
-            ov.innerHTML = `<div class="pa-box">
-                <div class="pa-head"><span class="pa-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></span>
-                  <div class="pa-ht"><span class="pa-eye">NOTIFICATIONS</span><h2 class="pa-ttl" id="pushAskTtl">スマホに通知を受け取りますか?</h2></div></div>
-                <p class="pa-msg">バレーの日時や回答のお願い、自分の予定のお知らせが届きます。<br>あとから設定の<b>「通知」</b>でも変えられます。</p>
-                <div class="pa-acts"><button type="button" class="pa-b" id="pushAskLater">あとで</button>
-                  <button type="button" class="pa-b pri" id="pushAskYes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>受け取る</button></div></div>`;
-            document.body.appendChild(ov);
-            const done = () => { try { localStorage.setItem(PUSH_ASKED_KEY, "1"); } catch (e) { /* ignore */ } ov.remove(); };
-            document.getElementById("pushAskYes").onclick = () => { done(); try { pushEnable(); pushTileSync(); } catch (e) { console.warn(e); } };   // タップの中でそのまま許可を求める
-            document.getElementById("pushAskLater").onclick = done;
-            ov.onclick = e => { if (e.target === ov) done(); };
+            // 上の板(カレンダーのヘッダー)の中に、ベルのリングと「あとで | 受け取る」で出す(押したときの処理は protoNoteAct)
+            protoNoteShow({ kind: "push" });
         }
         async function pushAutoRefresh() {
             try {
@@ -13005,6 +12972,8 @@ await main();
         function svRelState() { try { const v = JSON.parse(localStorage.getItem(SV_REL_KEY) || "null"); return v && v.ym === svNextYm() ? v : { ym: svNextYm() }; } catch (e) { return { ym: svNextYm() }; } }
         function svRelSave(v) { try { localStorage.setItem(SV_REL_KEY, JSON.stringify(v)); } catch (e) { /* ignore */ } }
         // 自分が答えていない来月のバレー(14日以降に表示されている分)
+        // 来月のバレー(14日以降に表示されている分)のうち、自分が名簿に入っている回(上の板のお知らせのリングのマス)
+        function svNextAll(name) { const ym = svNextYm(); return surveyDatesShown().filter(d => d.slice(0, 7) === ym && (attendanceByDate[d] || []).some(m => m.name === name)); }
         function svNextUnans(name) { const ym = svNextYm(); return surveyDatesShown().filter(d => d.slice(0, 7) === ym && svUnans(name, d)); }
         function surveyLevel() {
             const name = surveyWho(); if (!name) return 0;
@@ -13027,20 +12996,15 @@ await main();
         }
         // 14日以降、来月分に未回答があれば、その日初めて開いたときにお知らせを出す(1日1回)
         function surveyReleasePrompt() {
-            const name = surveyWho(); if (!name || surveyOpen || document.getElementById("svRelOv")) return;
+            const name = surveyWho(); if (!name || surveyOpen || protoNoteHas("survey")) return;
             if (firebaseAvailable && !firestoreSyncActive) return;   // 共有データを読み込んでから
             if (new Date().getDate() < 14) return;
             const next = svNextUnans(name); if (!next.length) return;
             const st = svRelState(), today = formatDateKey(new Date());
             if (st.poppedOn === today) return;   // 1日1回まで(来月分に答えるまで毎日)
             st.poppedOn = today; if (!st.seen) st.seen = today; svRelSave(st);
-            const m = +svNextYm().slice(5, 7);
-            const ov = document.createElement("div");
-            ov.id = "svRelOv"; ov.className = "svrel-ov";
-            ov.innerHTML = `<div class="svrel-box"><div class="svrel-t">${m}月のバレーの日程が出ました</div><div class="svrel-s">分かる日だけでも、早めに答えてください。<br>まだ分からない日は、あとで大丈夫です。</div><div class="svrel-n">未回答 ${next.length}日</div><div class="svrel-btns"><button type="button" class="svrel-later">あとで</button><button type="button" class="svrel-go">アンケートを開く</button></div></div>`;
-            ov.querySelector(".svrel-later").onclick = () => ov.remove();
-            ov.querySelector(".svrel-go").onclick = () => { ov.remove(); openSurvey(); };
-            document.body.appendChild(ov);
+            // 上の板(カレンダーのヘッダー)の中に、来月の回のリング(答えた回=緑 / まだの回=赤み)と「あとで | 回答する」で出す
+            protoNoteShow({ kind: "survey" });
         }
         function surveyUnansweredCount() {
             const name = surveyWho();
@@ -18140,7 +18104,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611190020;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611190105;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -19711,6 +19675,52 @@ const namesBtn = isAdmin() && dates.length > 0
             const LV = dark ? { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } : { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" };
             return { dark, P, C, LV };
         }
+        // ------- 上の板のお知らせ(来月のアンケート・通知を受け取るか) -------
+        //   板の中身(リング+日付の列)を、しばらく同じ形のお知らせに入れかえる。ほかの画面・予定の入力中・チュートリアル中は、終わるまで待つ。
+        //   2つ重なったら1つずつ(アンケートが先)。「あとで」「×」「回答する / 受け取る」で、いつもの中身が左から戻ってくる(回の切り替えと同じ動き)
+        var protoNote = null, protoNoteQ = [], protoNoteT = 0;
+        function protoNoteHas(kind) { return (protoNote && protoNote.kind === kind) || protoNoteQ.some(n => n.kind === kind); }
+        function protoNoteShow(n) {
+            if (protoNoteHas(n.kind)) return;
+            if (n.kind === "survey") protoNoteQ.unshift(n); else protoNoteQ.push(n);
+            protoNoteTry();
+        }
+        function protoNoteBlocked() {
+            if (!document.body.classList.contains("proto-on") || pinOpen || protoCapMode) return true;
+            try { if (tutOpen || protoAwayNow()) return true; } catch (e) { /* ignore */ }
+            try { if (edgeBackTop()) return true; } catch (e) { /* ignore */ }
+            return false;
+        }
+        function protoNoteTry() {
+            clearTimeout(protoNoteT);
+            if (protoNote || !protoNoteQ.length) return;
+            if (protoNoteBlocked()) { protoNoteT = setTimeout(protoNoteTry, 1500); return; }
+            protoNote = protoNoteQ.shift(); protoNote.anim = true;
+            renderProto();
+        }
+        // 今出すお知らせ(アンケートは描くたびに数え直す。全部答えたら消す)
+        function protoNoteCur() {
+            const n = protoNote; if (!n) return null;
+            if (n.kind === "survey") {
+                const name = surveyWho(); if (!name) { protoNote = null; return null; }
+                const all = svNextAll(name), un = svNextUnans(name), ds = [...new Set(all.concat(un))].sort();
+                if (!un.length) { protoNote = null; setTimeout(protoNoteTry, 900); return null; }
+                return { kind: "survey", m: +svNextYm().slice(5, 7), ds: ds.map(d => ({ d, un: un.includes(d) })), un: un.length, anim: n.anim };
+            }
+            return n;
+        }
+        function protoNoteAct(go) {   // go: 回答する / 受け取る(押した指の中でそのまま許可を求める)
+            const n = protoNote; if (!n) return;
+            protoNote = null; protoHeadSlide = -1;
+            if (n.kind === "push") {
+                try { localStorage.setItem(PUSH_ASKED_KEY, "1"); } catch (e) { /* ignore */ }
+                if (go) { try { pushEnable(); pushTileSync(); } catch (e) { console.warn(e); } }
+            }
+            try { protoHaptic(); } catch (e) { /* ignore */ }
+            renderProto();
+            if (n.kind === "survey" && go) openSurvey();
+            clearTimeout(protoNoteT); protoNoteT = setTimeout(protoNoteTry, 1200);   // 次のお知らせ(あれば)
+        }
         // ------- ヘッダーの回(2回以上ある日): 横にスライドして回を切り替える。日ごとに選んだ回を覚えておく -------
         var protoHdrSess = {}, protoHeadSlide = 0, protoHDrag = null, protoHSkip = 0;
         function protoHdrKeys(d) {   // ヘッダーでめくれる回(時刻の順)。閲覧者は確定の回だけ(開いている回はそのまま入れる)
@@ -20123,6 +20133,46 @@ const namesBtn = isAdmin() && dates.length > 0
                 </div>
                 ${hDots}
               </div>`;
+            // ---------- 上の板のお知らせ(来月のアンケート・通知): いつもの中身と同じ形(リング+日付の列+○✖△と同じ2つの切り替え) ----------
+            const hn = !pin && !protoCapMode ? protoNoteCur() : null;
+            let noteHtml = "";
+            if (hn) {
+                // n マスのリング(マスの色は1つずつ)。区切りは、いつものリングと同じく面の色で平らにのせる
+                const segN = (cols) => { const n = cols.length, w = 360 / n, st = cols.map((c, i) => `${c} ${i * w}deg ${(i + 1) * w}deg`), mk = maskOf(DTH);
+                    return `${ringBox(DSZ)}background:conic-gradient(${st.join(", ")});-webkit-mask:${mk};mask:${mk}`; };
+                const sepN = (n) => { const w = 360 / n, st = []; for (let i = 0; i < n; i++) st.push(`${sepC} ${i * w}deg ${i * w + GAP}deg`, `transparent ${i * w + GAP}deg ${(i + 1) * w}deg`); const mk = maskOf(DTH);
+                    return `${ringBox(DSZ)}background:conic-gradient(from -${GAP / 2}deg, ${st.join(", ")});-webkit-mask:${mk};mask:${mk}`; };
+                const sv = hn.kind === "survey";
+                const okC = `color-mix(in srgb, ${LV.sufficient} 55%, ${P.bg})`, unC = `color-mix(in srgb, ${LV.danger} 26%, ${P.bot})`;
+                const ring = sv ? groove(DSZ, DTH, 2, P.bot, [segN(hn.ds.map(x => x.un ? unC : okC)), sepN(hn.ds.length)], [])
+                    : groove(DSZ, DTH, 2, P.bot, [sepN(12)], []);
+                const bell = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg>`;
+                const mid = sv
+                    ? `<span style="font-family:${en};font-size:22px;font-weight:600;color:${LV.danger}">${hn.un}</span><span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">/ ${hn.ds.length}日</span>`
+                    : `<span style="display:flex;color:${P.acc};margin-bottom:2px">${bell}</span><span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.12em;color:${P.ink3}">OFF</span>`;
+                const goC = sv ? LV.sufficient : P.acc;
+                const seg2 = (a, b) => `<div role="group" aria-label="${sv ? "アンケート" : "通知"}" style="position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:4px;border-radius:21px;max-width:168px;box-sizing:border-box;${insetS}">
+                    ${L(`position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 2);width:calc((100% - 8px) / 2);border-radius:15px;${raiseS}`)}
+                    <button type="button" onclick="protoNoteAct(false)" style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:${P.ink3}">${a}</button>
+                    <button type="button" onclick="protoNoteAct(true)" style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:${goC}">${b}</button></div>`;
+                noteHtml = `
+              <div class="pr-head pr-note" role="region" aria-label="${sv ? "アンケートのお知らせ" : "通知のお知らせ"}" style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;overflow:hidden;${raise}">
+                <div class="pr-headrow${hn.anim ? " pr-hn-in" : ""}" style="display:flex;align-items:center;gap:20px;height:158px">
+                  <div class="pr-dial" role="button" tabindex="0" aria-label="${sv ? "アンケートを開く" : "通知を受け取る"}" onclick="protoNoteAct(true)" style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;${raiseS}">
+                    ${ring.map(L).join("")}
+                    <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">${mid}</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
+                    <span style="font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.12em;color:${P.ink3};white-space:nowrap">${sv ? `SURVEY <span style="margin-left:4px;letter-spacing:.04em;font-weight:600">${hn.m}月</span>` : "NOTIFICATIONS"}</span>
+                    <span style="font-size:14.5px;font-weight:700;line-height:1.35;letter-spacing:.01em">${sv ? `${hn.m}月の日程が出ました` : "スマホに通知を<br>受け取る?"}</span>
+                    <span style="font-size:10.5px;font-weight:500;line-height:1.5;color:${P.ink3}">${sv ? "分かる日だけ、早めに回答を" : "バレーの日時や<br>回答のお願いが届きます"}</span>
+                    ${sv ? seg2("あとで", "回答する") : seg2("あとで", "受け取る")}
+                  </div>
+                </div>
+                <button type="button" class="pr-hn-x" aria-label="閉じる" onclick="protoNoteAct(false)" style="position:absolute;top:12px;right:14px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:14px;color:${P.ink3};opacity:.75"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+              </div>`;
+                if (protoNote) protoNote.anim = false;   // 入ってくる動きは最初の1回だけ
+            }
             const calHtml = `
               <div class="pr-cal" id="prCal" ontouchstart="protoTS(event)" ontouchmove="protoTM(event)" ontouchend="protoTE(event)" ontouchcancel="protoTC()" onpointerdown="protoPD(event)" onpointerup="protoPU(event)" style="flex:1;min-height:0;display:flex;flex-direction:column;${compact && protoPinBottom ? "justify-content:flex-end;" : ""}padding-bottom:96px;touch-action:pan-y;${protoAnim}">
                 <div class="pr-mhead" style="display:flex;align-items:center;justify-content:center;padding:6px 2px 8px">
@@ -20262,7 +20312,9 @@ const namesBtn = isAdmin() && dates.length > 0
             root.style.setProperty("--pr-ink2", P.ink2);
             root.style.setProperty("--pr-ink3", P.ink3);   // カレンダーの線の上の文字の下地
             const pinBottom = pin && protoPinBottom;   // 予定の入力を下に出す(長押しメニューを下半分で使ったとき)
-            root.innerHTML = `<div class="pr-wrap${pinBottom ? " pin-bottom" : ""}${!pin && prMenuMode() === "bar" ? " has-bar" : ""}" style="background:${P.bg};color:${P.ink}">${pinBottom ? calHtml + headPin : (pin ? headPin : headHtml) + calHtml}${dockHtml}</div>`;
+            // お知らせ(ヘッダーの中に出すもの)は、設定の「入力画面 上/下」と同じ場所に出す。横画面は上のまま
+            const noteBottom = !pin && !!noteHtml && prPinPos() === "bottom" && !(window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches);
+            root.innerHTML = `<div class="pr-wrap${pinBottom ? " pin-bottom" : ""}${noteBottom ? " note-bottom" : ""}${!pin && prMenuMode() === "bar" ? " has-bar" : ""}" style="background:${P.bg};color:${P.ink}">${pinBottom ? calHtml + headPin : noteBottom ? calHtml + noteHtml : (pin ? headPin : noteHtml || headHtml) + calHtml}${dockHtml}</div>`;
             { const hdEl = !pin && hks.length > 1 ? root.querySelector(".pr-head[data-sess]") : null; if (hdEl) hdEl.addEventListener("click", e => { if (Date.now() - protoHSkip < 400) { e.stopPropagation(); e.preventDefault(); } }, true); }   // スライドで回を切り替えたあとの指(マウス)を離した押し方は、ボタンを押したことにしない
             protoVV();
             protoLandFit();
@@ -20553,6 +20605,7 @@ const namesBtn = isAdmin() && dates.length > 0
             try { localStorage.setItem(PR_PIN_POS_KEY, v === "top" ? "top" : "bottom"); } catch (e) { /* ignore */ }
             applyPinPosSeg();
             try { if (typeof syncSetTop === "function") syncSetTop(true); } catch (e) { /* ignore */ }
+            try { renderProto(); } catch (e) { /* ignore */ }   // 出ているお知らせの場所も変える
         }
         function applyPinPosSeg() { const m = prPinPos(); document.querySelectorAll("#pinPosSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); }
         function prMenuBarHtml() {
@@ -22328,7 +22381,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 { id: "menu", target: "menusv", tap: true, screen: "main" },
                 { id: "ans", target: "seg", tap: true, screen: "survey" },
                 { id: "set", target: "menuset", tap: true, screen: "main" },
-                { id: "push", target: "push", tap: true, screen: "settings" },
+                { id: "push", target: "push", screen: "settings" },   // 見せるだけ(押させない。見本でオンにすると、本当にオンになったと思われやすい)
                 { id: "login", center: true, screen: "settings" }
             ];
         }
@@ -22488,32 +22541,31 @@ const namesBtn = isAdmin() && dates.length > 0
         // 吹き出しの文
         function tutCopy() {
             const id = TUT_STEPS[tutIdx].id;
-            if (id === "intro") return { ttl: "ようこそ!", msg: "<b>バレーの日程</b>の見かた・<b>アンケート</b>の答えかた・<b>通知</b>のオンを、実際に押しながら<b>30秒</b>で体験しましょう。ここから先は<b>見本の画面</b>です(本物のデータは使いません)。", btn: "はじめる" };
-            if (id === "day") return { ttl: "① バレーの日をタップ", msg: "カレンダーで<b>「バレー」</b>と書いてある日が、バレーのある日です。光っている日をタップしてみましょう。" };
-            if (id === "head") return { ttl: "② 人数・時間・場所が見られる", msg: "上のリングは<b>「来る」と答えた人数</b>です。マスが埋まるほど集まっています。時間と場所もここに出ます。", btn: "次へ" };
-            if (id === "ring") return { ttl: "③ リングを押すとバレーの画面", msg: "上の<b>リング</b>を押すと、バレーの画面が開きます。来る人の一覧のほか、その日の<b>試合の動画のリンク</b>もここから見られます。", btn: "次へ" };
-            if (id === "hold") return { ttl: "画面を長押ししてみよう", msg: "ボタンは普段は隠れています。画面を<b>指で押したまま、少し待つ</b>と、まわりに<b>メニュー</b>が開きます(画面のどこでもOK)。光っている所を<b>長押し</b>してみましょう。" };
-            if (id === "menu") return { ttl: "④ 「アンケート」を選ぶ", msg: "画面の下に、いつもメニューが出ています。出欠の回答は、メニューの<b>アンケート</b>から。赤い点がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
+            if (id === "intro") return { ttl: "ようこそ!", msg: "日程の見かた・アンケート・通知を<b>30秒</b>で。ここからは<b>見本の画面</b>です。", btn: "はじめる" };
+            if (id === "day") return { ttl: "① バレーの日をタップ", msg: "<b>「バレー」</b>の日が練習日。光っている日をタップ。" };
+            if (id === "head") return { ttl: "② 人数・時間・場所が見られる", msg: "リングは<b>「来る」人数</b>。時間と場所もここに出ます。", btn: "次へ" };
+            if (id === "ring") return { ttl: "③ リングを押すとバレーの画面", msg: "<b>リング</b>を押すとバレーの画面。来る人や<b>試合の動画</b>が見られます。", btn: "次へ" };
+            if (id === "hold") return { ttl: "画面を長押ししてみよう", msg: "画面を<b>長押し</b>するとメニューが開きます。光っている所で試してみましょう。" };
+            if (id === "menu") return { ttl: "④ 「アンケート」を選ぶ", msg: "回答は下のメニューの<b>アンケート</b>から。<b>赤い点</b>は未回答のサインです。" };
             if (id === "ans") return tutS.ans
-                ? { ttl: "回答できました!", msg: "答えはすぐにみんなへ共有されます。あとから何度でも変えられます。", btn: "次へ" }
-                : { ttl: "⑤ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
-            if (id === "set") return { ttl: "⑥ 「設定」を開く", msg: `次は<b>通知</b>です。バレーの日時や<b>回答のお願い</b>を、スマホに届くようにできます。下のメニューの<b>設定</b>(<span style="display:inline-flex;width:15px;height:15px;vertical-align:-3px">${(PR_RAD_ICONS.settings || "").replace(/width="20" height="20"/, 'width="15" height="15"')}</span>)を押してみましょう。` };
+                ? { ttl: "回答できました!", msg: "すぐみんなに共有されます。あとから何度でも変えられます。", btn: "次へ" }
+                : { ttl: "⑤ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定。光っているボタンをタップ。" };
+            if (id === "set") return { ttl: "⑥ 「設定」を開く", msg: `次は<b>通知</b>。下のメニューの<b>設定</b>(<span style="display:inline-flex;width:15px;height:15px;vertical-align:-3px">${(PR_RAD_ICONS.settings || "").replace(/width="20" height="20"/, 'width="15" height="15"')}</span>)を押します。` };
             if (id === "push") {
-                if (!tutS.push) return { ttl: "⑦ 「通知」をオンに", msg: "設定のいちばん上の丸いボタンが、オン・オフの切り替えです。<b>へこんで青くなったらオン</b>。光っている<b>通知</b>を押してみましょう。" };
                 const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
                 const sh = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 15V3M8 7l4-4 4 4"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>`;
-                return { ttl: "オンになりました!", msg: "本物は、ログインして<b>名前を選んだあと</b>に、設定のこのボタンで。"
-                    + (ios && !tutStandalone() ? `<br>iPhoneは<b>ホーム画面のアプリ</b>から(Safariの${sh}<b>共有</b> → <b>ホーム画面に追加</b>)。` : ""), btn: "次へ" };
+                return { ttl: "⑦ 通知はこのボタンで", msg: "<b>ログイン後</b>、本物の設定で押すとオン。"
+                    + (ios && !tutStandalone() ? `<br>iPhoneは${sh}共有→<b>ホーム画面に追加</b>したアプリで。` : ""), btn: "次へ" };
             }
-            return { ttl: "最後に、ログインしましょう", msg: "出欠への回答は、<b>ログインした人</b>ができます。どちらかを選んでください。" };
+            return { ttl: "最後に、ログインしましょう", msg: "回答は<b>ログインした人</b>ができます。どちらかを選んでください。" };
         }
         function tutTip() {
             const st = TUT_STEPS[tutIdx], c = tutCopy(), tip = document.getElementById("tutTip"), q = id => document.getElementById(id);
             const dots = TUT_STEPS.map((_, k) => `<i class="${k === tutIdx ? "on" : ""}"></i>`).join("");
             tip.innerHTML = `<i class="tut-arrow" id="tutArrow"></i><div class="tut-dots">${dots}</div><div class="tut-ttl">${c.ttl}</div><div class="tut-msg">${c.msg}</div>`
                 + (st.id === "login"
-                    ? `<div class="tut-login"><button type="button" class="tut-b pri" id="tutGuest">ゲストでログイン(おすすめ)</button><small>名簿から自分の名前を選ぶだけで、すぐ使えます</small>
-                        <button type="button" class="tut-b sec" id="tutGoogle">Googleでサインイン</button><small>使う前に、管理者(ゆうご・にしば)へ自分のGoogleアカウント(Gmail)を教えて、名簿に登録してもらう必要があります</small>
+                    ? `<div class="tut-login"><button type="button" class="tut-b pri" id="tutGuest">ゲストでログイン(おすすめ)</button><small>名簿から名前を選ぶだけ</small>
+                        <button type="button" class="tut-b sec" id="tutGoogle">Googleでサインイン</button><small>先に管理者(ゆうご・にしば)へGmailを伝えて登録</small>
                         <button type="button" class="tut-later" id="tutLater">あとで</button></div>`
                     : c.btn ? `<div class="tut-acts"><button type="button" class="tut-next" id="tutNext">${c.btn}</button></div>` : "");
             if (q("tutNext")) q("tutNext").onclick = () => tutShow(tutIdx + 1);
@@ -22654,7 +22706,6 @@ const namesBtn = isAdmin() && dates.length > 0
                 { k: "devAsk", open: () => cls("devAskOv", "open"), block: true },
                 { k: "guestPick", open: () => !!$("guestPickOv"), block: true },
                 // 自分の閉じるがある窓・シート
-                { k: "svRel", open: () => !!$("svRelOv"), back: () => { const b = document.querySelector("#svRelOv .svrel-later"); if (b) b.click(); else $("svRelOv").remove(); }, els: self("svRelOv") },
                 { k: "ntf", open: () => cls("ntfModal", "show"), back: () => closeNtfModal(), els: () => [document.querySelector("#ntfModal .nm-box")] },
                 { k: "ics", open: () => cls("icsOv", "open"), back: () => icsClose(), els: self("icsOv") },
                 { k: "rot", open: () => vis($("rotOv")), back: () => rotClose(), els: self("rotOv") },
