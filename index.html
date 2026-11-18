@@ -2177,6 +2177,8 @@
         .push-st.on { color: #0a8f6a; }
         .push-st.ng { color: #b2475a; }
         #pushSettings .st-btn[disabled] { opacity: .45; cursor: default; }
+        #pushSettings .st-seg button[disabled], #pushAdmSettings .st-seg button[disabled] { opacity: .45; cursor: default; }
+        #opPush.show { flex-wrap: wrap; }
         /* ===== LINE通知 ===== */
         :root { --i-bell:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4'/%3E%3C/svg%3E"); --i-belloff:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4M4%204l16%2016'/%3E%3C/svg%3E"); }
         .ic-bell{-webkit-mask-image:var(--i-bell);mask-image:var(--i-bell);}.ic-belloff{-webkit-mask-image:var(--i-belloff);mask-image:var(--i-belloff);}
@@ -2367,6 +2369,7 @@
         .op-ntf-btn .ic { width: 14px; height: 14px; flex: none; }
         .op-ntf-btn.off { color: var(--ink-3); }
         .op-ntf-btn:active { box-shadow: var(--sink); }
+        .op-push-note { font-size: 11px; color: var(--ink-3); line-height: 1.4; }
         .pd-ntf { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); margin: 2px 0 6px; }
         .pd-ntf .ic { width: 13px; height: 13px; }
         /* バレーの日の「通知」(日付の横、削除の左) */
@@ -4638,6 +4641,17 @@ await main();
             <!-- 管理者でない人だけ: 自分の端末の予定として .ics を取り込む(管理者は「まとめて追加」の画面から) -->
             <button type="button" class="st-link ics-nonadmin" onclick="icsPick()">カレンダーのファイル(.ics)を取り込む<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
             <input type="file" id="icsFile" accept=".ics,text/calendar" hidden onchange="icsFileChosen(this)">
+            <!-- 通知(この端末): 誰でも。この端末でアプリの通知を受け取るか・自分あての予定の通知のタイミング -->
+            <div class="st-card st-group" id="setPushCard">
+                <details class="acc" id="pushAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
+                    <summary>通知(この端末)</summary>
+                    <div class="acc-body">
+                        <div class="acc-desc">オンにすると、この端末にアプリの通知が届きます: バレーのお知らせ(○の人は日時・場所、△・？の人は回答のお願い。✖の人には届きません)と、自分が入っている共有予定・ペア予定、通知をオンにした自分のLocal予定。iPhoneはホーム画面に追加したアプリ(iOS 16.4以降)から設定してください。</div>
+                        <div id="pushSettings"></div>
+                        <div id="pushMyPlan"></div>
+                    </div>
+                </details>
+            </div>
             <!-- 使い方: 出っぱった細長い行 -->
             <button type="button" class="st-link" onclick="openGuide('home')">ホーム画面に追加<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
             <button type="button" class="st-link" onclick="openGuide('widget')">ホームウィジェット<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -4857,17 +4871,24 @@ await main();
                 </div>
             </details>
         </div>
-        <div class="panel-group-label">LINE通知</div>
+        <div class="panel-group-label">通知</div>
         <div class="st-card st-group">
+            <details class="acc" id="notifyChAcc">
+                <summary>LINE・アプリ(届け方)</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">お知らせを LINE(公式アカウントのボット)で送るか、アプリ(スマホの通知)で送るかを、それぞれオン・オフします。タイミングはどちらも同じです。アプリの通知は、各自が設定の「通知(この端末)」で受け取りをオンにした端末に届きます。</div>
+                    <div id="ntfChannels"></div>
+                </div>
+            </details>
             <details class="acc" id="notifyAcc">
                 <summary>通知のタイミング</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">LINEのボットがお知らせを送るタイミングです。予定ごとの設定(予定の「通知」・バレーの日の「通知」)があれば、そちらが優先されます。</div>
+                    <div class="acc-desc">バレーのお知らせを送るタイミングです(LINE・アプリ共通)。バレーの日ごとの設定(バレーの日の「通知」)があれば、そちらが優先されます。その他の予定は、各自が「通知(この端末)」で決めます。</div>
                     <div id="ntfSettings"></div>
                 </div>
             </details>
             <details class="acc" id="notifyTextAcc">
-                <summary>通知の文章</summary>
+                <summary>LINEの文章</summary>
                 <div class="acc-body">
                     <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
                     <div id="ntfText"></div>
@@ -4876,20 +4897,17 @@ await main();
             <details class="acc" id="notifyExAcc">
                 <summary>通知に載せない人</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
+                    <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知(LINE・アプリとも)も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
                     <div class="ntf-chips" id="ntfExclude"></div>
                     <div class="acc-desc ntf-guest-note">点線で「ゲスト」と付いている人は、名簿の希望ポジションがゲストの人です。ここでは選べず、自動で「来る」のときだけ載ります。</div>
                 </div>
             </details>
-        </div>
-        <!-- スマホに通知(Web Push): 管理者の端末だけ。今週のロスターが変わったら、GAS(push-notify.gs)が送る -->
-        <div class="panel-group-label admin-only real-admin-only">スマホに通知</div>
-        <div class="st-card st-group admin-only real-admin-only">
-            <details class="acc" id="pushAcc" ontoggle="if(this.open) renderPushSettings()">
-                <summary>スマホに通知(ロスターの変更)</summary>
+            <!-- ロスターの変更(管理者の端末だけ)。今週のロスターが変わったら、GAS(push-notify.gs)が送る -->
+            <details class="acc real-admin-only" id="pushAdmAcc" ontoggle="if(this.open) renderPushSettings()">
+                <summary>ロスターの変更(管理者)</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">今週のバレーの出欠(○✖△)が変わったら、この端末にお知らせを出します(LINEは使いません)。受け取るのは、ここで「受け取る」を押した管理者の端末だけです。iPhoneはホーム画面に追加したアプリ(iOS 16.4以降)から設定してください。</div>
-                    <div id="pushSettings"></div>
+                    <div class="acc-desc">今週のバレーの出欠(○✖△)が変わったら、管理者の端末にアプリの通知を出します(LINEは使いません)。届くのは、「通知(この端末)」で受け取りをオンにした管理者の端末のうち、ここでオンにした端末だけです。</div>
+                    <div id="pushAdmSettings"></div>
                 </div>
             </details>
         </div>
@@ -4951,7 +4969,7 @@ await main();
     <div class="day-bar">
         <div class="selected-date-label" id="selectedDateLabel"></div>
         <button type="button" class="vb-del admin-only" id="vbDelBtn" onclick="deleteVolleyDay()" aria-label="この日のバレーを削除" title="この日のバレーを削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4.5h6V7"></path><path d="M6.5 7l1 12.5h9l1-12.5"></path><path d="M10 11v5.5M14 11v5.5"></path></svg></button>
-        <button type="button" class="vb-ntf admin-only" id="vbNtfBtn" onclick="openVolleyNtf()" aria-label="この日のLINE通知"><i class="ic ic-bell"></i><span>通知</span></button>
+        <button type="button" class="vb-ntf admin-only" id="vbNtfBtn" onclick="openVolleyNtf()" aria-label="この日の通知(LINE・アプリ)"><i class="ic ic-bell"></i><span>通知</span></button>
         <span class="st-seg vb-tent admin-only" id="vbTentSeg" role="group" aria-label="未定 / 確定(未定は管理者だけに見えます)"><button type="button" data-v="1" onclick="setVolleyTent(true)" title="未定: 管理者だけの仮の予定(閲覧者には見えません。アンケート・チーム分け・精算・通知なし)">未定</button><button type="button" data-v="0" onclick="setVolleyTent(false)" title="確定: みんなに共有するバレー">確定</button></span>
         <div class="day-toggles">
             <div class="event-toggle plan-toggle">
@@ -5008,6 +5026,10 @@ await main();
         </div>
         <div class="op-ntf" id="opNtf">
             <button type="button" class="op-ntf-btn" id="opNtfBtn" onclick="openPlanNtf()"></button>
+        </div>
+        <div class="op-ntf op-push" id="opPush">
+            <button type="button" class="op-sc" id="opPushBtn" aria-pressed="false" onclick="setPlanPush(!planPush)">アプリ通知</button>
+            <span class="op-push-note" id="opPushNote"></span>
         </div>
         <div class="op-actions">
             <button type="button" class="op-delbtn" id="opDelBtn" onclick="deleteOtherPlan(planEditId)">削除</button>
@@ -7458,13 +7480,18 @@ await main();
         function ntfVdayDrop(ks) {   // 消した回の、通知の個別設定を消す(まとめて1回で保存)
             try { const cfg = notifyCfg(); let ch = false; (ks || []).forEach(k => { if (cfg.vday[k]) { delete cfg.vday[k]; ch = true; } }); if (ch) saveNotify(cfg); } catch (e) { console.warn(e); }
         }
-        // ------- スマホに通知(Web Push / Firebase Cloud Messaging)。管理者の端末だけ -------
-        //   「この端末で受け取る」を押すと、この端末の宛先(FCMのトークン)を共有データ attendance_push_v1 に入れる:
-        //     { [端末ID]: { t: トークン, n: 管理者の名前, os: "iOS"/"Android"/"PC", at: 登録・更新した時刻(ISO), on: true } }
-        //   送るのは別に動かす Google Apps Script(push-notify.gs)。数分ごとに今週のロスターを見て、変わっていたらこの宛先に送る。
+        // ------- アプリの通知(Web Push / Firebase Cloud Messaging)。誰でも、この端末で受け取れる -------
+        //   「受け取る」を押すと、この端末の宛先(FCMのトークン)を共有データに入れる。送るのは別に動かす Google Apps Script(push-notify.gs)。
+        //   ・管理者の端末: 共有データ attendance_push_v1 (管理者だけが書ける)
+        //       { [端末ID]: { t: トークン, n: 名前, m: 名簿ID, a: 1(管理者), r: 0(ロスターの変更を受け取らない。無ければ受け取る), os, at: 登録・更新した時刻(ISO), on: true } }
+        //   ・管理者でない人の端末: 出欠データ(attendance_bydate_v4)の "pushm"(閲覧者が書けるのは出欠データだけなので)
+        //       [{ who: 名簿ID, n: 名前, ts, d: { [端末ID]: { t, os, at } }, s: 自分あての予定の通知 {on,days,hour,everyone}, l: 通知をオンにしたLocal予定 [...] }]
+        //       (管理者も Local予定の通知用の写し l は ここに入れる。管理者の s は通知の設定 attendance_notify_v1 の personal を使う)
+        //   GAS は、バレーのお知らせ・予定のお知らせを本人の端末(名簿ID)に、ロスターの変更を管理者の端末(a:1)に送る。
         //   Service Worker は firebase-messaging-sw.js(index.html と同じ場所に置く。キャッシュはしない)
         var PUSH_VAPID_KEY = "BKX9fG44yysA6Q352DtmZXnJCIgSuaMF8FcFHgZ6pNIOOO3bBL3gPFoscJU6Ajdie2QL3mPGcMKzIqU8ajMEiN4";   // Firebaseコンソール → プロジェクトの設定 → Cloud Messaging → ウェブプッシュ証明書 の「鍵ペア」(公開鍵)。空のあいだは「準備中」
         var PUSH_KEY = "attendance_push_v1";
+        var PUSH_M = "pushm";   // 出欠データの中の、メンバーごとのアプリ通知の記録
         var PUSH_DEV_KEY = "vb_push_device_v1";   // この端末のID(attendance_ で始めないので共有しない)
         var PUSH_SW_URL = "./firebase-messaging-sw.js";
         var PUSH_SDK_URL = "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js";
@@ -7481,7 +7508,15 @@ await main();
         }
         function pushParse(s) { try { const v = JSON.parse(s || "null"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
         function pushList() { let s = null; try { s = localStorage.getItem(PUSH_KEY); } catch (e) { s = null; } return pushParse(s); }
-        function pushMine() { const id = pushDeviceId(false); return id ? (pushList()[id] || null) : null; }
+        function pushMStore() { const a = attendanceByDate[PUSH_M]; return Array.isArray(a) ? a.filter(x => x && x.who != null) : []; }
+        function pushMRec(who) { return who == null ? null : pushMStore().find(x => String(x.who) === String(who)) || null; }
+        // この端末の宛先(管理者は attendance_push_v1、ほかの人は pushm の自分の記録の中)
+        function pushMine() {
+            const id = pushDeviceId(false); if (!id) return null;
+            if (realAdmin()) return pushList()[id] || null;
+            const r = pushMRec(myRosterId());
+            return r && r.d && r.d[id] ? r.d[id] : null;
+        }
         function pushIsIOS() { const ua = navigator.userAgent || ""; return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); }
         function pushOS() { return pushIsIOS() ? "iOS" : /Android/i.test(navigator.userAgent || "") ? "Android" : "PC"; }
         // 使えないときは理由(使えるときは "")
@@ -7524,17 +7559,60 @@ await main();
                 pushFgOn = true;
                 try {
                     m.onMessage(p => {
-                        const n = (p && p.notification) || {};
-                        try { reg.showNotification(n.title || "お知らせ", { body: n.body || "", tag: "roster", icon: n.icon || undefined, data: { link: ((p && p.fcmOptions) || {}).link || "./" } }); } catch (e) { /* ignore */ }
+                        const n = (p && p.notification) || {}, d = (p && p.data) || {};
+                        try { reg.showNotification(n.title || "お知らせ", { body: n.body || "", tag: d.tag || "roster", icon: n.icon || undefined, data: { link: ((p && p.fcmOptions) || {}).link || d.link || "./" } }); } catch (e) { /* ignore */ }
                     });
                 } catch (e) { /* ignore */ }
             }
             return m;
         }
         function pushToken(m, reg) { return m.getToken({ vapidKey: PUSH_VAPID_KEY, serviceWorkerRegistration: reg }); }
+        // pushm の自分の記録を、共有データの最新に入れ替えて保存する(change(記録の写し) が null を返したら消す・false なら変えない)
+        function pushMCanWrite() { return !!(firebaseAvailable && firestoreRef && firestoreSyncActive && authUid && myRosterId() != null); }
+        function pushMPut(change) {
+            if (!pushMCanWrite()) return Promise.reject(new Error("共有データに保存できません(ログインして名前を選び、少し待ってから押してください)"));
+            const who = myRosterId(), name = (myMemberName() || "").slice(0, 20);
+            return firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const data = JSON.parse(values[BYDATE_KEY] || "{}");
+                const lim = Date.now() - PUSH_KEEP_DAYS * 864e5;
+                const store = (Array.isArray(data[PUSH_M]) ? data[PUSH_M] : []).filter(x => x && x.who != null);
+                const cur = store.find(x => String(x.who) === String(who)) || null;
+                const base = cur ? JSON.parse(JSON.stringify(cur)) : { who };
+                if (base.d) Object.keys(base.d).forEach(k => { const x = base.d[k]; if (!x || !x.t || !(Date.parse(x.at) > lim)) delete base.d[k]; });   // 古い宛先は消す
+                let next = change(base);
+                if (next === false) return null;
+                if (next) {
+                    next.who = who; next.n = name;
+                    if (next.d && !Object.keys(next.d).length) delete next.d;
+                    if (next.l && !next.l.length) delete next.l;
+                    if (!next.d && !next.l && !next.s) next = null;   // 中身が無ければ記録ごと消す
+                }
+                const strip = (x) => { if (!x) return ""; const o = { ...x }; delete o.ts; return JSON.stringify(o); };
+                if (strip(cur) === strip(next)) return null;   // 変わっていない
+                if (next) next.ts = Date.now();
+                data[PUSH_M] = store.filter(x => String(x.who) !== String(who)).concat(next ? [next] : []);
+                tx.update(firestoreRef, { ["values." + BYDATE_KEY]: JSON.stringify(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                return data[PUSH_M];
+            }).then(arr => {
+                if (!arr) return;
+                attendanceByDate[PUSH_M] = arr;
+                setLocalQuiet(BYDATE_KEY, JSON.stringify(attendanceByDate));
+            });
+        }
         // この端末の宛先を、共有データの最新に重ねて保存する(entry = null で消す)。通知の設定と同じく、共有データ全体の保存は使わない
         function pushSaveEntry(id, entry) {
-            if (!realAdmin() || !sharedTxReady()) return Promise.reject(new Error("共有データに保存できません(管理者でログインして、少し待ってから押してください)"));
+            if (!realAdmin()) {   // 管理者でない人: 出欠データの pushm の自分の記録に入れる
+                if (myRosterId() == null) return Promise.reject(new Error("先に自分の名前を選んでください"));
+                return pushMPut(rec => {
+                    rec.d = rec.d || {};
+                    if (entry) rec.d[id] = { t: entry.t, os: entry.os, at: entry.at }; else delete rec.d[id];
+                    return rec;
+                });
+            }
+            if (!sharedTxReady()) return Promise.reject(new Error("共有データに保存できません(管理者でログインして、少し待ってから押してください)"));
             return firebase.firestore().runTransaction(async tx => {
                 const snap = await tx.get(firestoreRef);
                 if (!snap.exists) throw new Error("no-doc");
@@ -7547,37 +7625,71 @@ await main();
                 return s;
             }).then(s => { setLocalQuiet(PUSH_KEY, s); return s; });
         }
-        function pushEntry(token) { return { t: token, n: (myMemberName() || "管理者").slice(0, 20), os: pushOS(), at: new Date().toISOString(), on: true }; }
+        function pushEntry(token, prev) {
+            const e = { t: token, n: (myMemberName() || (realAdmin() ? "管理者" : "")).slice(0, 20), os: pushOS(), at: new Date().toISOString(), on: true };
+            if (realAdmin()) {
+                e.a = 1;
+                const me = myRosterId(); if (me != null) e.m = me;
+                if (prev && prev.r === 0) e.r = 0;   // ロスターの変更を受け取らない(前の設定のまま)
+            }
+            return e;
+        }
         function pushStatus() {
             const why = pushUnsupported();
             if (why) return { cls: "na", text: "この端末は未対応(" + why + ")" };
             if (!PUSH_VAPID_KEY) return { cls: "na", text: "準備中(VAPIDキー未設定)" };
             if (Notification.permission === "denied") return { cls: "ng", text: "許可されていません(端末の設定で、このアプリの通知を許可してください)" };
             if (pushMine() && Notification.permission === "granted") return { cls: "on", text: "この端末で受け取り中" };
-            return { cls: "", text: "未設定" };
+            return { cls: "", text: "受け取らない" };
         }
         function renderPushSettings() {
             const box = document.getElementById("pushSettings");
-            if (!box) return;
-            if (!realAdmin()) { box.innerHTML = ""; return; }   // 閲覧者には出さない
-            const st = pushStatus(), mine = pushMine(), list = pushList();
-            const can = !pushUnsupported() && !!PUSH_VAPID_KEY && Notification.permission !== "denied";
-            const devs = Object.keys(list).filter(k => list[k] && list[k].on !== false && list[k].t).map(k => escapeHtml(`${list[k].n || "?"}(${list[k].os || "?"})`) + (k === pushDeviceId(false) ? "←この端末" : ""));
-            box.innerHTML = `<div class="ntf-row"><span>この端末</span><b class="push-st ${st.cls}">${escapeHtml(st.text)}</b></div>
-                <div class="ntf-row" style="gap:8px;flex-wrap:wrap;justify-content:flex-start">
-                    <button type="button" class="st-btn" onclick="pushEnable()"${can && !pushBusy ? "" : " disabled"}>${mine && st.cls === "on" ? "もう一度登録する" : "この端末で受け取る"}</button>
-                    ${mine ? `<button type="button" class="st-btn" onclick="pushDisable()"${pushBusy ? " disabled" : ""}>受け取りをやめる</button>` : ""}
-                </div>
-                ${pushNote ? `<div class="acc-desc">${escapeHtml(pushNote)}</div>` : ""}
-                <div class="acc-desc">受け取り中の端末: ${devs.length ? devs.join("、") : "なし"}</div>`;
+            if (box) {
+                const st = pushStatus(), mine = pushMine(), me = myRosterId();
+                const can = !pushUnsupported() && !!PUSH_VAPID_KEY && Notification.permission !== "denied";
+                const cfg = notifyCfg();
+                const needName = me == null && !realAdmin();
+                const on = !!mine && st.cls === "on";
+                const seg = `<span class="st-seg"><button type="button" class="${on ? "on" : ""}" onclick="pushEnable()"${can && !pushBusy && !needName ? "" : " disabled"}>オン</button><button type="button" class="${on ? "" : "on"}" onclick="pushDisable()"${mine && !pushBusy ? "" : " disabled"}>オフ</button></span>`;
+                box.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${seg}</div>
+                    <div class="ntf-row"><span>状態</span><b class="push-st ${st.cls}">${escapeHtml(st.text)}</b></div>
+                    ${needName ? `<div class="acc-desc">誰あての通知か分かるように、先に自分の名前を選んでください。${authIsGuest ? `<button type="button" class="st-btn" style="margin-left:6px" onclick="openGuestNamePicker()">名前を選ぶ</button>` : "(Googleアカウントでログインしている人は、管理者に名簿との紐付けを頼んでください)"}</div>` : ""}
+                    ${me == null && realAdmin() ? `<div class="acc-desc">名簿の名前とひもづいていないので、この端末に届くのはロスターの変更だけです。</div>` : ""}
+                    ${on && mine.t && Notification.permission === "granted" ? `<div class="ntf-row" style="justify-content:flex-start"><button type="button" class="st-btn" onclick="pushEnable()"${can && !pushBusy ? "" : " disabled"}>もう一度登録する</button></div>` : ""}
+                    ${!cfg.ch.push ? `<div class="acc-desc" style="color:var(--notcome-ink,#c0392b)">いまは管理者の設定で、アプリの通知は止まっています。</div>` : ""}
+                    ${pushNote ? `<div class="acc-desc">${escapeHtml(pushNote)}</div>` : ""}`;
+            }
+            const my = document.getElementById("pushMyPlan");
+            if (my) my.innerHTML = myNtfBlock(notifyCfg());
+            const adm = document.getElementById("pushAdmSettings");
+            if (adm) {
+                if (!realAdmin()) { adm.innerHTML = ""; return; }   // 閲覧者には出さない
+                const list = pushList(), mine = pushMine(), myId = pushDeviceId(false);
+                const devs = Object.keys(list).filter(k => list[k] && list[k].on !== false && list[k].t).map(k => escapeHtml(`${list[k].n || "?"}(${list[k].os || "?"})`) + (list[k].r === 0 ? "・ロスターなし" : "") + (k === myId ? "←この端末" : ""));
+                const mem = pushMStore().filter(r => r.d && Object.keys(r.d).length).map(r => escapeHtml(`${r.n || "?"}(${Object.keys(r.d).length}台)`));
+                const rOn = !!(mine && mine.r !== 0);
+                adm.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${mine ? `<span class="st-seg"><button type="button" class="${rOn ? "on" : ""}" onclick="pushSetRoster(true)"${pushBusy ? " disabled" : ""}>オン</button><button type="button" class="${rOn ? "" : "on"}" onclick="pushSetRoster(false)"${pushBusy ? " disabled" : ""}>オフ</button></span>` : `<b class="push-st">「通知(この端末)」で受け取りをオンにしてください</b>`}</div>
+                    <div class="acc-desc">受け取り中の管理者の端末: ${devs.length ? devs.join("、") : "なし"}</div>
+                    <div class="acc-desc">受け取り中のメンバー: ${mem.length ? mem.join("、") : "なし"}</div>`;
+            }
         }
         function pushSetNote(t) { pushNote = t || ""; renderPushSettings(); }
-        // 「この端末で受け取る」。通知の許可は、押したその場で聞く(iPhoneは、押した直後でないと聞けない)
+        // 管理者の端末: ロスターの変更を受け取るか(r: 0 = 受け取らない)
+        function pushSetRoster(on) {
+            const id = pushDeviceId(false), mine = pushMine();
+            if (!realAdmin() || !id || !mine || pushBusy) return;
+            const e = { ...mine }; if (on) delete e.r; else e.r = 0;
+            pushBusy = true;
+            pushSaveEntry(id, e).then(() => { pushBusy = false; renderPushSettings(); setSavedMsg("保存しました ✓"); })
+                .catch(err => { pushBusy = false; pushSetNote("保存できませんでした: " + ((err && err.message) || err)); });
+        }
+        // 「受け取る(オン)」。通知の許可は、押したその場で聞く(iPhoneは、押した直後でないと聞けない)
         function pushEnable() {
-            if (!realAdmin() || pushBusy) return;
+            if (pushBusy) return;
             const why = pushUnsupported();
             if (why) { pushSetNote(why); return; }
             if (!PUSH_VAPID_KEY) { pushSetNote("準備中(VAPIDキー未設定)"); return; }
+            if (!realAdmin() && myRosterId() == null) { pushSetNote("先に自分の名前を選んでください"); if (authIsGuest) openGuestNamePicker(); return; }
             let perm;
             try { perm = Notification.requestPermission(); } catch (e) { perm = null; }
             pushBusy = true; pushSetNote("設定中…");
@@ -7589,14 +7701,14 @@ await main();
                 const m = await pushMessaging(reg);
                 const token = await pushToken(m, reg);
                 if (!token) throw new Error("宛先(トークン)を作れませんでした");
-                await pushSaveEntry(pushDeviceId(true), pushEntry(token));
-                return "この端末で受け取ります。今週のロスターが変わると通知が届きます。";
+                await pushSaveEntry(pushDeviceId(true), pushEntry(token, pushMine()));
+                return "この端末で受け取ります。";
             }).then(msg => { pushBusy = false; pushSetNote(msg); setSavedMsg("保存しました ✓"); })
               .catch(err => { pushBusy = false; console.warn("通知の設定に失敗しました。", err); pushSetNote("設定できませんでした: " + ((err && err.message) || err)); });
         }
-        // 「受け取りをやめる」: トークンを消して、共有データからこの端末を外す
+        // 「受け取らない(オフ)」: トークンを消して、共有データからこの端末を外す
         function pushDisable() {
-            if (!realAdmin() || pushBusy) return;
+            if (pushBusy) return;
             const id = pushDeviceId(false);
             pushBusy = true; pushSetNote("解除中…");
             (async () => {
@@ -7612,29 +7724,34 @@ await main();
             })().then(() => { pushBusy = false; pushSetNote("受け取りをやめました。"); setSavedMsg("保存しました ✓"); })
                 .catch(err => { pushBusy = false; pushSetNote("解除できませんでした: " + ((err && err.message) || err)); });
         }
-        // 起動したあと: 受け取り中の管理者の端末なら、トークンが変わっていないか確かめる(変わっていたら・30日たったら保存し直す)
+        // 起動したあと: 受け取り中の端末なら、トークンが変わっていないか確かめる(変わっていたら・30日たったら・名前が変わったら保存し直す)
         var pushRefreshTries = 0;
         async function pushAutoRefresh() {
             try {
-                if (!realAdmin() || !firebaseAvailable || !PUSH_VAPID_KEY || pushUnsupported()) return;
+                if (!firebaseAvailable || !PUSH_VAPID_KEY || pushUnsupported()) return;
                 if (Notification.permission !== "granted") return;
                 const id = pushDeviceId(false), mine = pushMine();
                 if (!id || !mine || !mine.t) return;
                 const reg = await navigator.serviceWorker.getRegistration("./");
                 if (!reg || !reg.active) return;   // Service Worker がないときは何もしない(「受け取る」を押し直す)
-                if (!sharedTxReady()) { if (++pushRefreshTries < 4) setTimeout(pushAutoRefresh, 5000); return; }
+                if (!(realAdmin() ? sharedTxReady() : pushMCanWrite())) { if (++pushRefreshTries < 4) setTimeout(pushAutoRefresh, 5000); return; }
                 const m = await pushMessaging(reg);
                 const token = await pushToken(m, reg);
-                const name = (myMemberName() || "管理者").slice(0, 20);
                 const stale = !(Date.parse(mine.at) > Date.now() - 30 * 864e5);
-                if (token && (token !== mine.t || stale || mine.n !== name || mine.on === false)) await pushSaveEntry(id, pushEntry(token));
+                const e = pushEntry(token, mine);
+                const moved = realAdmin() && (mine.n !== e.n || String(mine.m == null ? "" : mine.m) !== String(e.m == null ? "" : e.m) || mine.a !== 1 || mine.on === false);
+                if (token && (token !== mine.t || stale || moved)) await pushSaveEntry(id, e);
             } catch (e) { console.warn("通知のトークンを確かめられませんでした。", e); }
         }
 
         // ------- LINE通知の設定(共有データに保存。LINEのボット(GAS)が毎時これを読んで送る) -------
         var NOTIFY_KEY = "attendance_notify_v1";
         var NTF_DAY_OPTS = [14, 10, 7, 5, 3, 2, 1, 0];
-        var NTF_DEFAULT = { volley: { on: true, days: [7], hour: 20 }, plan: { on: true, days: [1], hour: 20, everyone: false }, exclude: [], vday: {} };
+        var NTF_DEFAULT = { volley: { on: true, days: [7], hour: 20 }, plan: { on: true, days: [1], hour: 20, everyone: false }, exclude: [], vday: {}, ch: { line: true, push: true } };
+        // 届け方(ch): LINE(ボット) と アプリ(Web Push・push-notify.gs)。タイミングは共通。
+        //   LINEのボットは ch を知らないので、LINEをオフにしている間は、ボットが読む volley.on / plan.on / personal[id].on を false にして保存し、
+        //   本当の値は sched に入れておく(アプリと push-notify.gs は sched の方を読む)。LINEをオンに戻すと sched の値を元の場所へ戻す。
+        //   → 端末・共有データの中は「保存の形」(ntfStored)。notifyCfg() / notifyCfgFrom() が返すのは本当の値。
         // 名前一覧の区分: [キー, 記号, 人数を出すか, 名前]
         var NTF_GROUPS = [["come", "○", true, "来る"], ["no", "✖︎", false, "来ない"], ["pend", "△", false, "未定"], ["un", "？", false, "未確認"]];
         var NTF_SYM_PRESETS = { plain: ["○", "✖︎", "△", "？"], color: ["🟢来る", "🔴来ない", "🟠未定", "⚪️未確認"] };
@@ -7680,7 +7797,27 @@ await main();
                 const x = v.personal[id] || {}, days = ntfDaysOk(x.days);
                 personal[id] = { on: x.on !== false, days: days && days.length ? days : null, hour: Number.isInteger(x.hour) && x.hour >= 0 && x.hour <= 23 ? x.hour : null, everyone: !!x.everyone };
             });
-            return { volley: part("volley"), plan: part("plan"), personal, admins: Array.isArray(v.admins) ? v.admins.slice() : [], exclude: Array.isArray(v.exclude) ? v.exclude.slice() : [], vday: v.vday && typeof v.vday === "object" ? { ...v.vday } : {}, text };
+            const ch = { line: !(v.ch && v.ch.line === false), push: !(v.ch && v.ch.push === false) };
+            const out = { volley: part("volley"), plan: part("plan"), personal, admins: Array.isArray(v.admins) ? v.admins.slice() : [], exclude: Array.isArray(v.exclude) ? v.exclude.slice() : [], vday: v.vday && typeof v.vday === "object" ? { ...v.vday } : {}, text, ch };
+            if (!ch.line) {   // LINEがオフの間: ボット用に false にしてある所を、sched に入れた本当の値に戻す(sched が無ければオン)
+                const sc = v.sched && typeof v.sched === "object" ? v.sched : {}, po = sc.personalOn && typeof sc.personalOn === "object" ? sc.personalOn : {};
+                out.volley.on = sc.volleyOn !== false;
+                out.plan.on = sc.planOn !== false;
+                Object.keys(out.personal).forEach(id => { out.personal[id].on = po[id] !== false; });
+            }
+            return out;
+        }
+        // 共有データ・端末に入れる形(LINEがオフなら、ボットが読む所をオフにして本当の値は sched へ)
+        function ntfStored(cfg) {
+            const o = JSON.parse(JSON.stringify(cfg));
+            delete o.sched;
+            if (o.ch && o.ch.line === false) {
+                const po = {};
+                Object.keys(o.personal || {}).forEach(id => { po[id] = o.personal[id].on !== false; o.personal[id].on = false; });
+                o.sched = { volleyOn: o.volley.on !== false, planOn: o.plan.on !== false, personalOn: po };
+                o.volley.on = false; o.plan.on = false;
+            }
+            return o;
         }
         function saveNotify(cfg) {
             if (!isAdmin()) return;
@@ -7694,14 +7831,14 @@ await main();
             const today = formatDateKey(new Date());
             Object.keys(cfg.vday).forEach(k => { if (k < today) delete cfg.vday[k]; });
             const prev = notifyCfg();
-            if (!sharedTxReady()) { try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(cfg)); } catch (e) { console.warn("通知設定の保存に失敗しました。", e); } return; }
-            setLocalQuiet(NOTIFY_KEY, JSON.stringify(cfg));   // 画面はすぐ変える
+            if (!sharedTxReady()) { try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(ntfStored(cfg))); } catch (e) { console.warn("通知設定の保存に失敗しました。", e); } return; }
+            setLocalQuiet(NOTIFY_KEY, JSON.stringify(ntfStored(cfg)));   // 画面はすぐ変える
             firebase.firestore().runTransaction(async tx => {
                 const snap = await tx.get(firestoreRef);
                 if (!snap.exists) throw new Error("no-doc");
                 const values = (snap.data() && snap.data().values) || {};
                 let remote = null; try { remote = JSON.parse(values[NOTIFY_KEY] || "null"); } catch (e) { remote = null; }
-                const merged = mergeNotify(prev, cfg, notifyCfgFrom(remote));
+                const merged = ntfStored(mergeNotify(prev, cfg, notifyCfgFrom(remote)));
                 tx.update(firestoreRef, { ["values." + NOTIFY_KEY]: JSON.stringify(merged), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                 return merged;
             }).then(merged => { setLocalQuiet(NOTIFY_KEY, JSON.stringify(merged)); if (document.getElementById("settingsPanel").classList.contains("open") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#ntfText"))) renderNotifySettings(); })   // 文章を入力している途中は作り直さない(入力中の文字が消える)
@@ -7781,23 +7918,46 @@ await main();
                 <div class="ntf-row"><span>通知</span>${seg(k, cfg[k].on)}</div>
                 <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span>${days(k, cfg[k].days)}</div>
                 <div class="ntf-row ntf-dep"><span>時間</span>${hourSel(k, cfg[k].hour)}</div>${extra || ""}</div>`;
-            box.innerHTML = blk("volley", "バレー", "LINEのグループに、出欠の一覧を送ります。");
-            box.innerHTML += myNtfBlock(cfg);
+            const chTxt = cfg.ch.line && cfg.ch.push ? "LINEのグループに出欠の一覧を送り、アプリの通知を各自に送ります(○の人は日時・場所、△・？の人は回答のお願い)。" : cfg.ch.line ? "LINEのグループに、出欠の一覧を送ります(アプリの通知はオフ)。" : cfg.ch.push ? "アプリの通知を各自に送ります(LINEはオフ)。" : "LINE・アプリとも、オフになっています(届け方の設定)。";
+            box.innerHTML = blk("volley", "バレー", chTxt);
+            renderNtfChannels(cfg);
             renderNotifyText(cfg);
             const names = sortedRosterForNtf();
             ex.innerHTML = names.length ? names.map(r => r.position === GUEST_POS ? `<button type="button" class="ntf-chip ex guest" disabled title="希望ポジションがゲストなので選べません(自動で「来る」のときだけ載ります)">${escapeHtml(r.name)}<small>ゲスト</small></button>` : `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
         }
-        // その他の予定の通知は、管理者ごとの「自分あて」の設定だけ(全体の設定はない)
+        // 届け方(LINE / アプリ)のオン・オフ(管理者)
+        function renderNtfChannels(cfg) {
+            const el = document.getElementById("ntfChannels"); if (!el) return;
+            cfg = cfg || notifyCfg();
+            const seg = (k, on) => `<span class="st-seg"><button type="button" class="${on ? "on" : ""}" onclick="ntfSetCh('${k}',true)">オン</button><button type="button" class="${on ? "" : "on"}" onclick="ntfSetCh('${k}',false)">オフ</button></span>`;
+            el.innerHTML = `<div class="ntf-blk"><div class="ntf-row"><span>LINE通知</span>${seg("line", cfg.ch.line)}</div>
+                <div class="ntf-sub">グループへのバレーのお知らせと、管理者の個人LINEへの予定のお知らせ。オフの間は、ボットには「通知しない」と伝えます(タイミングなどの設定は消えません)。</div>
+                <div class="ntf-row"><span>アプリ通知</span>${seg("push", cfg.ch.push)}</div>
+                <div class="ntf-sub">各自の端末へのバレー・予定のお知らせ(push-notify.gs が送ります)。ロスターの変更の通知は、この設定とは別です。</div></div>`;
+        }
+        function ntfSetCh(k, on) {
+            const cfg = notifyCfg();
+            cfg.ch[k] = !!on;
+            saveNotifyRaw(cfg); renderNotifySettings(); renderPushSettings(); updateVbNtf(); setSavedMsg("保存しました ✓");
+        }
+        // 自分あての予定の通知(タイミングは LINE・アプリ共通)。管理者は通知の設定の personal、ほかの人は出欠データの pushm の s
+        function myPlanTiming(cfg, me) {
+            if (me === undefined) me = myRosterId();
+            const b = planBaseFor(cfg, me), r = !realAdmin() ? pushMRec(me) : null, x = r && r.s && typeof r.s === "object" ? r.s : null;
+            if (!x) return { on: !b.offMine, days: b.days.slice(), hour: b.hour, everyone: b.everyone };
+            const days = ntfDaysOk(x.days);
+            return { on: x.on !== false, days: days && days.length ? days : b.days.slice(), hour: Number.isInteger(x.hour) && x.hour >= 0 && x.hour <= 23 ? x.hour : b.hour, everyone: !!x.everyone };
+        }
         function myNtfBlock(cfg) {
             const me = myRosterId();
-            const head = `<div class="ntf-h">その他の予定(自分あて)</div>`;
+            const head = `<div class="ntf-h">自分あての予定の通知</div>`;
             if (me == null) return `<div class="ntf-blk">${head}<div class="ntf-sub">名簿の名前とひもづいていないので、自分あての通知は届きません。</div></div>`;
-            const b = planBaseFor(cfg, me), on = !b.offMine;
+            const b = myPlanTiming(cfg, me), on = b.on;
             const name = (roster.find(r => r.id === me) || {}).name || "";
-            const others = cfg.admins.filter(id => id !== me).map(id => (roster.find(r => r.id === id) || {}).name).filter(Boolean);
             const seg = (field, val, a, bLabel) => `<span class="st-seg"><button type="button" class="${val ? "on" : ""}" onclick="ntfMySet('${field}',true)">${a}</button><button type="button" class="${val ? "" : "on"}" onclick="ntfMySet('${field}',false)">${bLabel}</button></span>`;
+            const where = realAdmin() ? "個人LINE(ボットとの連携が必要)と、受け取りをオンにしたこの端末など" : "受け取りをオンにした端末";
             return `<div class="ntf-blk${on ? "" : " ntf-off"}">${head}
-                <div class="ntf-sub">${escapeHtml(name)}さんの個人LINEに届く設定です(ボットとの連携が必要)。自分が共有相手に入っている予定と、自分のLocal予定が対象です。ほかの管理者${others.length ? `(${escapeHtml(others.join("・"))})` : ""}はそれぞれ自分で設定します。</div>
+                <div class="ntf-sub">${escapeHtml(name)}さんの${where}に届きます。自分が共有相手に入っている予定・ペア予定と、通知をオンにした自分のLocal予定が対象です。予定ごとの設定があれば、そちらが優先されます。</div>
                 <div class="ntf-row"><span>受け取る</span>${seg("on", on, "受け取る", "受け取らない")}</div>
                 <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span><div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${b.days.includes(n) ? " on" : ""}" onclick="ntfMyDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div></div>
                 <div class="ntf-row ntf-dep"><span>時間</span><select class="ntf-sel" onchange="ntfMySet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${b.hour === i ? " selected" : ""}>${i}時台</option>`).join("")}</select></div>
@@ -7805,20 +7965,31 @@ await main();
         }
         function myPersonal(cfg) {
             const me = myRosterId(); if (me == null) return null;
-            const b = planBaseFor(cfg, me);
-            return cfg.personal[me] = { on: !b.offMine, days: b.days.slice(), hour: b.hour, everyone: b.everyone };
+            const b = myPlanTiming(cfg, me);
+            return cfg.personal[me] = { on: b.on, days: b.days.slice(), hour: b.hour, everyone: b.everyone };
+        }
+        // 自分あての設定を保存(管理者: 通知の設定の personal / ほかの人: pushm の s)
+        function ntfMySave(cfg, x) {
+            if (realAdmin()) {
+                saveNotifyRaw(cfg);
+                const r = pushMRec(myRosterId());
+                if (r && r.s && pushMCanWrite()) pushMPut(rec => { delete rec.s; return rec; }).catch(e => console.warn(e));   // 前に管理者でなかったときの分は消す(personal を使う)
+            } else {
+                pushMPut(rec => { rec.s = { on: x.on, days: x.days.slice(), hour: x.hour, everyone: x.everyone }; return rec; })
+                    .then(() => renderPushSettings()).catch(err => { console.warn(err); setSavedMsg("保存できませんでした", true); });
+            }
         }
         function ntfMySet(field, val) {
             const cfg = notifyCfg(), x = myPersonal(cfg); if (!x) return;
             x[field] = val;
-            saveNotify(cfg); renderNotifySettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
+            ntfMySave(cfg, x); renderPushSettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
         }
         function ntfMyDay(n) {
             const cfg = notifyCfg(), x = myPersonal(cfg); if (!x) return;
             const next = x.days.includes(n) ? x.days.filter(d => d !== n) : x.days.concat(n);
             if (!next.length) { setSavedMsg("1つ以上えらんでください", true); return; }
             x.days = ntfDaysOk(next);
-            saveNotify(cfg); renderNotifySettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
+            ntfMySave(cfg, x); renderPushSettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
         }
         function sortedRosterForNtf() { return roster.slice().sort((a, b) => String(a.reading || a.name).localeCompare(String(b.reading || b.name), "ja")); }
         function ntfSet(k, field, val) {
@@ -7950,7 +8121,7 @@ await main();
         var APP_LINK_FOR_NTF = "https://248toma.github.io/calendar/";
         // 予定ごと・バレーの日ごとの設定(小さな画面)
         var ntfEdit = null;   // { kind: "plan" | "vday", date, off, custom, days }
-        function ntfModalBase(kind) { const cfg = notifyCfg(); return kind === "vday" ? cfg.volley : planBaseFor(cfg); }
+        function ntfModalBase(kind) { const cfg = notifyCfg(); return kind === "vday" ? ntfVolleyBase(cfg) : planBaseFor(cfg); }
         function openNtfModal(kind, entry, title, sub) {
             const base = ntfModalBase(kind);
             const own = entry && ntfDaysOk(entry.days) && ntfDaysOk(entry.days).length ? ntfDaysOk(entry.days) : null;
@@ -8003,7 +8174,22 @@ await main();
 
         // 予定の入力欄
         var planNtf = null;   // 入力欄の通知設定(null=いつもの)
+        // Local予定の「アプリ通知」(初めはオフ)。オンにした予定だけ、通知用に共有データ(出欠データの pushm)へ写す
+        var planPush = false;
+        function setPlanPush(on) { planPush = !!on; renderPlanPush(); }
+        function planPushAvail() { return !((isAdmin() || pairActive()) && planScope === "shared") && myRosterId() != null && firebaseAvailable; }
+        function renderPlanPush() {
+            const row = document.getElementById("opPush"), b = document.getElementById("opPushBtn"), nt = document.getElementById("opPushNote");
+            if (!row || !b) return;
+            const show = planPushAvail();
+            row.classList.toggle("show", show);
+            if (!show) return;
+            b.classList.toggle("on", planPush); b.setAttribute("aria-pressed", String(planPush));
+            b.innerHTML = `<i class="ic ${planPush ? "ic-bell" : "ic-belloff"}"></i> アプリ通知`;
+            if (nt) nt.textContent = planPush ? "題名・日時・メモが、通知のために共有データに入ります(自分にだけ届きます。タイミングは「通知(この端末)」の設定)" : "オンにすると、この予定の通知が自分のアプリに届きます";
+        }
         function renderPlanNtf() {
+            try { renderPlanPush(); } catch (e) { /* ignore */ }
             const row = document.getElementById("opNtf"), btn = document.getElementById("opNtfBtn");
             if (!row || !btn) return;
             const local = !((isAdmin() || pairActive()) && planScope === "shared");
@@ -8018,13 +8204,13 @@ await main();
         function openPlanNtf() {
             const t = ($op("opTitle").value || "").trim() || "予定";
             const local = !((isAdmin() || pairActive()) && planScope === "shared");
-            openNtfModal("plan", planNtf, `「${t}」の通知`, local ? "あなたの個人LINEに届きます(ボットとの連携が必要)" : "あなたへの通知だけが変わります(ほかの管理者はそれぞれの設定)");
+            openNtfModal("plan", planNtf, `「${t}」の通知`, local ? "あなたの個人LINEに届きます(ボットとの連携が必要)。アプリの通知は、予定の「アプリ通知」をオンにしたときだけ" : "あなたへの通知だけが変わります(LINE・アプリ共通。ほかの人はそれぞれの設定)");
         }
         function planNtfLine(p) {
             if (!isAdmin()) return "";   // 通知は今は管理者だけ
             const base = planBaseFor(notifyCfg());
             const sm = ntfSummary(myPlanEntry(p), base, { noTarget: planTargetNote(!!p.local, p.to, base.everyone) });
-            return `<div class="pd-ntf">${IC(sm.off ? "belloff" : "bell")}<span>LINE通知: ${escapeHtml(sm.text)}</span></div>`;
+            return `<div class="pd-ntf">${IC(sm.off ? "belloff" : "bell")}<span>通知: ${escapeHtml(sm.text)}</span></div>`;
         }
 
         // この端末だけの予定(Local)は共有データに無いので、通知に使う分だけを出欠データの "localntf" に写す。
@@ -8040,6 +8226,7 @@ await main();
         // 管理者でない人のLocal予定はこれまでどおり端末の中だけ(共有しない)
         function syncLocalNtf() {
             try { syncWidgetLocal(); } catch (e) { console.warn(e); }   // ウィジェット用のLocal予定の写し(オンにした人だけ)
+            try { syncPushLocal(); } catch (e) { console.warn(e); }   // アプリ通知をオンにしたLocal予定の写し(誰でも)
             if (!realAdmin()) return;
             const owner = planAuthorKey(), who = myRosterId();
             if (who != null) {   // 届く人に登録(共有データの最新に足すだけ。ほかの管理者は消さない)
@@ -8072,21 +8259,51 @@ await main();
                 setLocalQuiet(BYDATE_KEY, JSON.stringify(attendanceByDate));
             }).catch(err => console.error("通知用の予定を共有データに反映できませんでした。", err));
         }
+        // アプリ通知をオンにしたLocal予定(p.push)を、出欠データの pushm の自分の記録 l に写す(GAS が本人の端末へ送る)。
+        //   l: [{ id, dv: 端末, title, startDate, start, end, endDate, allDay, memo, ntf }]。端末ごとに自分の分だけ入れ替える。過ぎた予定は入れない
+        function pushLocalList(dv) {
+            const today = formatDateKey(new Date());
+            return planList.filter(p => p && p.local && p.push && p.startDate && p.startDate >= today)
+                .map(p => { const o = { id: p.id, dv, title: String(p.title || "").slice(0, 40), startDate: p.startDate }; ["start", "end", "endDate", "memo"].forEach(k => { if (p[k]) o[k] = String(p[k]).slice(0, 200); }); if (p.allDay) o.allDay = true; if (p.ntf && Array.isArray(p.ntf.days) && p.ntf.days.length) o.ntf = { days: p.ntf.days.slice() }; return o; })
+                .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0)).slice(0, 60);
+        }
+        function syncPushLocal() {
+            if (!pushMCanWrite()) return;
+            const me = myRosterId(), today = formatDateKey(new Date());
+            const has = planList.some(p => p && p.local && p.push);
+            const cur = pushMRec(me), curL = cur && Array.isArray(cur.l) ? cur.l : [];
+            const dv = has || curL.length ? pushDeviceId(true) : pushDeviceId(false);
+            if (!dv) return;
+            const list = pushLocalList(dv);
+            const mineNow = curL.filter(x => x && x.dv === dv);
+            const stale = curL.some(x => !x || !x.startDate || x.startDate < today);
+            if (JSON.stringify(mineNow) === JSON.stringify(list) && !stale) return;   // 変わっていない
+            pushMPut(rec => {
+                const l = (Array.isArray(rec.l) ? rec.l : []).filter(x => x && x.dv !== dv && x.startDate && x.startDate >= today).concat(list);
+                if (l.length) rec.l = l; else delete rec.l;
+                return rec;
+            }).catch(err => console.warn("通知用のLocal予定を共有データに反映できませんでした。", err));
+        }
         // バレーの日
         function updateVbNtf() {
             const b = document.getElementById("vbNtfBtn");
             if (!b) return;
-            const cfg = notifyCfg(), sm = ntfSummary(cfg.vday[selectedDate], cfg.volley);
+            const cfg = notifyCfg(), sm = ntfSummary(cfg.vday[selectedDate], ntfVolleyBase(cfg));
             b.classList.toggle("off", sm.off);
             const own = cfg.vday[selectedDate] && !cfg.vday[selectedDate].off;
             b.classList.toggle("has-txt", !sm.off && !!own);   // この日だけの設定があるときだけ文字も出す(ほかはアイコンだけ)
             b.innerHTML = `<i class="ic ${sm.off ? "ic-belloff" : "ic-bell"}"></i><span>${sm.off ? "通知なし" : own ? ntfShortDays(cfg.vday[selectedDate].days) : "通知"}</span>`;
-            b.title = `LINE通知: ${sm.text}`; b.setAttribute("aria-label", `この日のLINE通知: ${sm.text}`);
+            b.title = `通知(${ntfChLabel(cfg)}): ${sm.text}`; b.setAttribute("aria-label", `この日の通知(${ntfChLabel(cfg)}): ${sm.text}`);
         }
+        // バレーの通知の全体設定(LINE・アプリの両方がオフなら、オフと同じ)
+        function ntfVolleyBase(cfg) { return { ...cfg.volley, on: cfg.volley.on && (cfg.ch.line || cfg.ch.push) }; }
+        function ntfChLabel(cfg) { return cfg.ch.line && cfg.ch.push ? "LINE・アプリ" : cfg.ch.line ? "LINE" : cfg.ch.push ? "アプリ" : "LINE・アプリともオフ"; }
         function openVolleyNtf() {
             if (!isAdmin() || !volOk(selectedDate)) return;   // 未定の回は通知しない
             const [, m, d] = selectedDate.slice(0, 10).split("-").map(Number);
-            openNtfModal("vday", notifyCfg().vday[selectedDate], `${m}/${d} バレーの通知`, "LINEのグループに届きます");
+            const cfg = notifyCfg();
+            const sub = cfg.ch.line && cfg.ch.push ? "LINEのグループと、メンバーのアプリ(受け取りをオンにした端末)に届きます" : cfg.ch.line ? "LINEのグループに届きます(アプリの通知はオフ)" : cfg.ch.push ? "メンバーのアプリ(受け取りをオンにした端末)に届きます(LINEはオフ)" : "LINE・アプリとも、届け方の設定でオフになっています";
+            openNtfModal("vday", cfg.vday[selectedDate], `${m}/${d} バレーの通知`, sub);
         }
         function addChooseVolley() {
             closeAddChooser();
@@ -9494,7 +9711,7 @@ await main();
         function planHolidayOn(key) { return plansOn(key).some(({ p }) => p.holiday); }
         const $op = (id) => document.getElementById(id);
         function resetPlanForm() {
-            planEditId = null; planFormDate = selectedDate; setPlanColor(9); planShare = []; planShareOpen = false; planNoRsvp = []; planNoRsvpOpen = false; planRsvp = false; planNtf = null; planScope = "local"; setPlanScope(defaultPlanScope());
+            planEditId = null; planFormDate = selectedDate; setPlanColor(9); planShare = []; planShareOpen = false; planNoRsvp = []; planNoRsvpOpen = false; planRsvp = false; planNtf = null; planPush = false; planScope = "local"; setPlanScope(defaultPlanScope());
             $op("opTitle").value = ""; $op("opMemo").value = ""; setPlanHoliday(false);
             $op("opStartDate").value = selectedDate; $op("opStart").value = "";
             $op("opEndDate").value = ""; $op("opEnd").value = "";
@@ -9526,7 +9743,7 @@ await main();
             planDetailId = null;
             planPanel = { date: selectedDate, open: true };
             planEditId = id; planFormDate = selectedDate;
-            setPlanColor(+p.color || 0); planShare = Array.isArray(p.to) ? p.to.slice() : []; planShareOpen = false; planNoRsvp = Array.isArray(p.noRsvp) ? p.noRsvp.slice() : []; planNoRsvpOpen = false; planRsvp = !!p.rsvp; planScope = p.local ? "local" : "shared"; planNtf = myPlanEntry(p) ? { ...myPlanEntry(p) } : null; setPlanScope(p.local ? "local" : "shared");
+            setPlanColor(+p.color || 0); planShare = Array.isArray(p.to) ? p.to.slice() : []; planShareOpen = false; planNoRsvp = Array.isArray(p.noRsvp) ? p.noRsvp.slice() : []; planNoRsvpOpen = false; planRsvp = !!p.rsvp; planScope = p.local ? "local" : "shared"; planPush = !!(p.local && p.push); planNtf = myPlanEntry(p) ? { ...myPlanEntry(p) } : null; setPlanScope(p.local ? "local" : "shared");
             $op("opTitle").value = p.title || ""; $op("opMemo").value = p.memo || "";
             $op("opStartDate").value = p.startDate; $op("opStart").value = p.start || "";
             $op("opEndDate").value = p.endDate || ""; $op("opEnd").value = p.end || "";
@@ -9555,7 +9772,7 @@ await main();
             const toLocal = (isAdmin() || pairActive()) ? planScope === "local" : true;
             const prev = planEditId != null ? planList.find(x => x.id === planEditId) : null;
             const keepNormal = editingNormalShared();   // 普通の共有予定を直す時は、ペアの相手を足したりペア予定にしない
-            if (toLocal) { p.local = true; if (planNtf && isAdmin()) p.ntf = planNtf; }
+            if (toLocal) { p.local = true; if (planNtf && isAdmin()) p.ntf = planNtf; if (planPush && myRosterId() != null) p.push = true; }
             else {
                 const pids = pairActive() ? pairIds() : [];
                 let to = isAdmin() ? planShare.slice() : planShare.filter(id => pids.includes(id));   // 閲覧者はペアの相手とだけ
@@ -17049,6 +17266,11 @@ const namesBtn = isAdmin() && dates.length > 0
                         (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.dev === rp.dev); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
                         return;
                     }
+                    if (date === PUSH_M) {   // アプリ通知の記録(端末・自分あての設定・Local予定の写し): 人ごとに新しい方。書くのは本人だけなので、共有データ側に無い人は消えた人
+                        const R = Array.isArray(rem[date]) ? rem[date] : [], L = Array.isArray(loc[date]) ? loc[date] : [];
+                        loc[date] = R.map(rp => { const lp = L.find(x => x && rp && String(x.who) === String(rp.who)); return lp && (lp.ts || 0) > (rp.ts || 0) ? lp : rp; });
+                        return;
+                    }
                     if (date === LOCAL_NTF) {   // ローカル予定の通知用コピー: 持ち主ごとに新しい方
                         const L = Array.isArray(loc[date]) ? loc[date] : (loc[date] = []);
                         (Array.isArray(rem[date]) ? rem[date] : []).forEach(rp => { const i = L.findIndex(x => x.owner === rp.owner); if (i < 0) L.push(rp); else if ((rp.ts || 0) > (L[i].ts || 0)) L[i] = rp; });
@@ -17490,7 +17712,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611180914;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181005;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -17938,7 +18160,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 refreshMyMember().then(() => {
                     applyRole();
                     setTimeout(syncLocalNtf, 1500);
-                    if (firestoreEditor) setTimeout(pushAutoRefresh, 4000);   // スマホ通知: トークンが変わっていたら保存し直す(受け取り中の管理者の端末だけ)
+                    setTimeout(pushAutoRefresh, 4000);   // アプリの通知: トークンが変わっていたら保存し直す(受け取り中の端末だけ)
                     setTimeout(() => syncGuestExclude(), 2000);   // 前の版で除外リストに入れたゲストを外す
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
@@ -19540,7 +19762,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     flag: '<path d="M6.5 20.5V4.5"></path><path d="M6.5 5h10.5l-2.2 3.6L17 12.2H6.5"></path>',
                     rsvp: '<circle cx="12" cy="12" r="8"></circle><path d="M8.6 12.3l2.3 2.3 4.6-4.7"></path>',
                     bell: '<path d="M6.5 16v-4.8a5.5 5.5 0 0 1 11 0V16l1.4 1.8H5.1z"></path><path d="M10.2 20.4h3.6"></path>',
-                    trash: '<path d="M5 7h14"></path><path d="M10 7V5h4v2"></path><path d="M7 7l.9 12.5h8.2L17 7"></path>'
+                    trash: '<path d="M5 7h14"></path><path d="M10 7V5h4v2"></path><path d="M7 7l.9 12.5h8.2L17 7"></path>',
+                    push: '<rect x="6.5" y="4" width="9" height="16" rx="2.2"></rect><path d="M10 17h2"></path><circle cx="17.5" cy="6.5" r="2.4"></circle>'
                 };
                 const ib = (ico, on, label, onclick, col, badge) => `<button type="button" aria-label="${label}" title="${label}" aria-pressed="${on}" onclick="${onclick}" style="position:relative;width:32px;height:32px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;color:${on ? col || P.acc : P.ink3};${on ? insetS : raiseS}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[ico]}</svg>${badge ? `<b style="position:absolute;top:-3px;right:-3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;font-family:${en};font-size:8.5px;line-height:14px;text-align:center;color:#fff;background:${P.acc}">${badge}</b>` : ""}</button>`;
                 const canShare = isAdmin() || pairActive(), op = [];
@@ -19561,6 +19784,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     op.push(ib("flag", planHoliday, "休日にする", "setPlanHoliday(!planHoliday);renderProto()", P.red));
                     if (isAdmin() && planScope === "shared") op.push(ib("rsvp", planRsvp, "出欠をとる", "togglePlanRsvp();renderProto()"));
                     if (isAdmin()) op.push(ib("bell", !!planNtf && !planNtf.off, "通知", "openPlanNtf()"));
+                    if (planPushAvail()) op.push(ib("push", planPush, planPush ? "アプリ通知: オン(題名・日時・メモが通知のために共有データに入ります)" : "アプリ通知: オフ(押すと自分の端末に届くようにする)", "setPlanPush(!planPush);renderProto()"));
                     if (planEditId != null) op.push(ib("trash", false, "削除", "pinDelete()"));
                 }
                 pinCols = dots.replace(/width:24px;height:24px;border-radius:12px/g, "width:32px;height:32px;border-radius:16px").replace(/width:(10|12)px;height:(10|12)px/g, (m0, a1) => a1 === "10" ? "width:12px;height:12px" : "width:15px;height:15px");   // 色はいつも1段目に
