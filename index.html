@@ -2727,7 +2727,7 @@
         .sv-total { margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
         #protoUI .sv-total { margin-left: -4px; font-size: 11px; }
         #savingOv { position: fixed; inset: 0; z-index: 9000; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.35); }
-        .sv-box { width: 100%; max-width: 520px; max-height: 86vh; overflow-y: auto; padding: 16px 18px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.25); color: var(--ink); }
+        .sv-box { width: calc(100% - 20px); max-width: 520px; max-height: calc(86vh - env(safe-area-inset-bottom)); overflow-y: auto; margin: 0 10px calc(14px + env(safe-area-inset-bottom)); padding: 16px 18px 18px; background: var(--bg); border-radius: 28px; box-shadow: 0 -6px 24px rgba(0,0,0,.25); color: var(--ink); }
         .sv-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 16px; }
         .sv-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--bg); box-shadow: var(--sink); }
         .sv-tabs button { height: 28px; padding: 0 14px; border: none; border-radius: 9px; background: transparent; color: var(--ink-3); font-size: 12.5px; font-weight: 700; }
@@ -2901,7 +2901,8 @@
         .pr-hint { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); transform: translateX(-50%); z-index: 65; padding: 8px 14px; border-radius: 16px; background: rgba(31, 33, 36, .82); color: #fff; font-size: 12px; font-weight: 700; pointer-events: none; animation: prHint 3.6s ease both; }
         @keyframes prHint { 0% { opacity: 0; transform: translate(-50%, 8px); } 10%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
         /* 予定の入力を下に出すとき: カレンダーが上、入力が下 */
-        #protoUI .pr-wrap.pin-bottom { gap: 12px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+        #protoUI .pr-wrap.pin-bottom { gap: 12px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); }   /* 画面の角の丸みにかからないよう、少し浮かせる */
+        #protoUI.kb-open .pr-wrap.pin-bottom { padding-bottom: 12px; }   /* キーボードが出ているときは、そのすぐ上 */
         #protoUI .pr-wrap.pin-bottom > .pr-cal { padding-bottom: 0 !important; }
 
         /* ===== 設定・名簿・分析: 見た目をそろえる(グループごとの1枚のカードに、行を並べる) ===== */
@@ -17963,7 +17964,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181925;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181958;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -21011,6 +21012,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoPinBottom = false;
         function protoVV() {
             const root = document.getElementById("protoUI"), vv = window.visualViewport; if (!root) return;
+            root.classList.toggle("kb-open", !!(vv && vv.height < window.innerHeight - 120));   // キーボードが出ているか(下の入力の余白を変える)
             if (pinOpen && protoPinBottom && vv) { root.style.top = vv.offsetTop + "px"; root.style.height = vv.height + "px"; root.style.bottom = "auto"; }
             else { root.style.top = ""; root.style.height = ""; root.style.bottom = ""; }
         }
