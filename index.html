@@ -4889,7 +4889,7 @@ await main();
             <details class="acc" id="pushAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
                 <summary>この端末の登録</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">オンにすると、この端末にアプリの通知が届きます: バレーのお知らせ(○の人は日時・場所、△・？の人は回答のお願い。✖の人には届きません)と、下の「自分の予定の通知」。iPhoneはホーム画面に追加したアプリ(iOS 16.4以降)から設定してください。</div>
+                    <div class="acc-desc">オンにすると、この端末にバレーと予定の通知が届きます。iPhoneはホーム画面のアプリから(iOS 16.4以降)。</div>
                     <div id="pushSettings"></div>
                 </div>
             </details>
@@ -4897,7 +4897,7 @@ await main();
             <details class="acc" id="pushVolAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
                 <summary>バレーの通知</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">管理者が決めたタイミングで届くバレーのお知らせを、自分が受け取るかを選べます(アプリの通知だけ。LINEのグループへのお知らせは変わりません)。</div>
+                    <div class="acc-desc">自分がバレーのお知らせを受け取るか選びます(アプリの通知だけ)。</div>
                     <div id="pushVol"></div>
                 </div>
             </details>
@@ -4905,7 +4905,7 @@ await main();
             <details class="acc" id="pushMyAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
                 <summary>自分の予定の通知</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">自分あての予定の通知をいつ受け取るかを決めます。対象は、自分が入っている共有予定・ペア予定と、通知をオンにしたローカル予定です。予定ごとの設定があれば、そちらが優先されます。</div>
+                    <div class="acc-desc">共有予定・ペア予定・通知オンのローカル予定のお知らせ。予定ごとの設定があればそちらが優先。</div>
                     <div id="pushMyPlan"></div>
                 </div>
             </details>
@@ -4917,22 +4917,22 @@ await main();
                 <summary>バレーの通知</summary>
                 <div class="acc-body">
                     <div class="ntf-h">届け方</div>
-                    <div class="acc-desc">お知らせを LINE(公式アカウントのボット)で送るか、アプリ(スマホの通知)で送るかを、それぞれオン・オフします。タイミングはどちらも同じです。アプリの通知は、各自が「この端末の登録」で受け取りをオンにした端末に届きます。</div>
+                    <div class="acc-desc">LINEとアプリ、それぞれオン・オフできます(タイミングは共通)。</div>
                     <div id="ntfChannels"></div>
                     <div class="ntf-h ntf-h-sep">タイミング</div>
-                    <div class="acc-desc">バレーのお知らせを送るタイミングです(LINE・アプリ共通)。バレーの日ごとの設定(バレーの日の「通知」)があれば、そちらが優先されます。その他の予定は、各自が「自分の予定の通知」で決めます。</div>
+                    <div class="acc-desc">LINE・アプリ共通。バレーの日ごとの設定があればそちらが優先。</div>
                     <div id="ntfSettings"></div>
                     <div class="ntf-h ntf-h-sep">通知に載せない人</div>
-                    <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知(LINE・アプリとも)も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
+                    <div class="acc-desc">選んだ人は、LINEの名前一覧に出ず(来るときは出ます)、個人あての通知も届きません。</div>
                     <div class="ntf-chips" id="ntfExclude"></div>
-                    <div class="acc-desc ntf-guest-note">点線で「ゲスト」と付いている人は、名簿の希望ポジションがゲストの人です。ここでは選べず、自動で「来る」のときだけ載ります。</div>
+                    <div class="acc-desc ntf-guest-note">「ゲスト」の人は自動で同じ扱いです。</div>
                 </div>
             </details>
             <!-- ロスター変更の通知(管理者の端末だけ)。今週のロスターが変わったら、GAS(push-notify.gs)が送る -->
             <details class="acc" id="pushAdmAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
                 <summary>ロスター変更の通知</summary>
                 <div class="acc-body">
-                    <div class="acc-desc"><b>管理者の端末にだけ届きます。</b>今週のバレーの出欠(○✖△？)が変わったら、アプリの通知を出します(LINEは使いません)。届くのは、「この端末の登録」で受け取りをオンにした管理者の端末のうち、ここでオンにした端末だけです。</div>
+                    <div class="acc-desc">今週のバレーの出欠が変わったら、管理者の端末に通知します。</div>
                     <div id="pushAdmSettings"></div>
                 </div>
             </details>
@@ -4941,10 +4941,10 @@ await main();
                 <summary>LINEの設定</summary>
                 <div class="acc-body">
                     <div class="ntf-h">文章</div>
-                    <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
+                    <div class="acc-desc">{いつ}は「明日」など、{日付}は「10/30(金)」に置き換わります。名前一覧とURLは自動。</div>
                     <div id="ntfText"></div>
                     <div class="ntf-h" style="margin-top:14px">個人LINEに予定が届く管理者</div>
-                    <div class="acc-desc">管理者がアプリを開くと、自動でここに入ります(ボットはこの一覧の人に、個人LINEで予定のお知らせを送ります)。もう管理者でない人は × で外してください。その人の端末がまだ管理者のままなら、開いたときにまた入ります。</div>
+                    <div class="acc-desc">管理者がアプリを開くと自動で入ります。管理者でなくなった人は × で外してください。</div>
                     <div class="ntf-chips" id="ntfAdmins"></div>
                 </div>
             </details>
@@ -7691,8 +7691,8 @@ await main();
                 const seg = `<span class="st-seg"><button type="button" class="${on ? "on" : ""}" onclick="pushEnable()"${can && !pushBusy && !needName ? "" : " disabled"}>オン</button><button type="button" class="${on ? "" : "on"}" onclick="pushDisable()"${mine && !pushBusy ? "" : " disabled"}>オフ</button></span>`;
                 box.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${seg}</div>
                     <div class="ntf-row"><span>状態</span><b class="push-st ${st.cls}">${escapeHtml(st.text)}</b></div>
-                    ${needName ? `<div class="acc-desc">誰あての通知か分かるように、先に自分の名前を選んでください。${authIsGuest ? `<button type="button" class="st-btn" style="margin-left:6px" onclick="openGuestNamePicker()">名前を選ぶ</button>` : "(Googleアカウントでログインしている人は、管理者に名簿との紐付けを頼んでください)"}</div>` : ""}
-                    ${me == null && realAdmin() ? `<div class="acc-desc">名簿の名前とひもづいていないので、この端末に届くのはロスターの変更だけです。</div>` : ""}
+                    ${needName ? `<div class="acc-desc">先に自分の名前を選んでください。${authIsGuest ? `<button type="button" class="st-btn" style="margin-left:6px" onclick="openGuestNamePicker()">名前を選ぶ</button>` : "(Googleアカウントでログインしている人は、管理者に名簿との紐付けを頼んでください)"}</div>` : ""}
+                    ${me == null && realAdmin() ? `<div class="acc-desc">名簿とひもづいていないので、届くのはロスター変更だけです。</div>` : ""}
                     ${on && mine.t && Notification.permission === "granted" ? `<div class="ntf-row" style="justify-content:flex-start"><button type="button" class="st-btn" onclick="pushEnable()"${can && !pushBusy ? "" : " disabled"}>もう一度登録する</button></div>` : ""}
                     ${!cfg.ch.push ? `<div class="acc-desc" style="color:var(--notcome-ink,#c0392b)">いまは管理者の設定で、アプリの通知は止まっています。</div>` : ""}
                     ${pushNote ? `<div class="acc-desc">${escapeHtml(pushNote)}</div>` : ""}`;
@@ -7716,11 +7716,11 @@ await main();
                 adm.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${mine ? `<span class="st-seg"><button type="button" class="${rOn ? "on" : ""}" onclick="pushSetRoster(true)"${pushBusy ? " disabled" : ""}>オン</button><button type="button" class="${rOn ? "" : "on"}" onclick="pushSetRoster(false)"${pushBusy ? " disabled" : ""}>オフ</button></span>` : `<b class="push-st">「この端末の登録」で受け取りをオンにしてください</b>`}</div>
                     <div class="ntf-row"><span>タイミング</span>${tSeg}</div>
                     ${daily ? `<div class="ntf-row"><span>時間</span>${hSel}</div>` : ""}
-                    <div class="ntf-sub">${daily ? `毎日${rc.hour}時台に1回、前の日のその時からの変更をまとめて送ります(元に戻った変更・知らせる変更がない日は送りません)。` : "変わるたびに送ります(5分ごとに確認。23時〜7時の間の変更は、7時台にまとめて送ります)。"}管理者みんなで共通の設定です。</div>
+                    <div class="ntf-sub">${daily ? `毎日${rc.hour}時台に、その日の変更をまとめて1回。` : "変わるたびに送ります(23〜7時の分は7時にまとめて)。"}管理者で共通。</div>
                     <div class="ntf-row col"><span>知らせる変更(✓のマスだけ届きます)</span>${fChips}</div>
-                    <div class="ntf-sub">縦が前の状態、横が変わったあと。「外れた」はその回の名簿から外れたとき。名簿に足されたばかりの人は「？から」として扱います。</div>
-                    <div class="acc-desc">受け取り中の管理者の端末: ${devs.length ? devs.join("、") : "なし"}<br><small>端末を登録して、ロスター変更の通知をオンにしている管理者の端末(「ロスターなし」はオフの端末)</small></div>
-                    <div class="acc-desc">通知を受け取れるメンバー(端末を登録した人): ${mem.length ? mem.join("、") : "なし"}<br><small>メンバーにはロスター変更は届きません(バレー・予定の通知だけ)</small></div>`;
+                    <div class="ntf-sub">縦が前、横が後。「外れた」は名簿から外れたとき。</div>
+                    <div class="acc-desc">受け取り中の管理者の端末: ${devs.length ? devs.join("、") : "なし"}<br><small>「ロスターなし」はこの通知をオフにした端末</small></div>
+                    <div class="acc-desc">端末を登録したメンバー: ${mem.length ? mem.join("、") : "なし"}<br><small>メンバーにはロスター変更は届きません</small></div>`;
             }
         }
         function pushSetNote(t) { pushNote = t || ""; renderPushSettings(); }
@@ -7824,7 +7824,7 @@ await main();
         var ntfMinsOk = (a) => Array.isArray(a) ? [...new Set(a.map(Number).filter(n => NTF_MIN_OPTS.includes(n)))].sort((x, y) => y - x) : null;
         var ntfMinLabel = (m) => m >= 60 && m % 60 === 0 ? `${m / 60}時間前` : `${m}分前`;
         function ntfMinChips(arr, fn) { return `<div class="ntf-chips">${NTF_MIN_OPTS.map(m => `<button type="button" class="ntf-chip${arr.includes(m) ? " on" : ""}" onclick="${fn}(${m})">${ntfMinLabel(m)}</button>`).join("")}</div>`; }
-        var NTF_MIN_NOTE = "時間が決まっている予定だけ(終日の予定には届きません)・アプリの通知だけ(LINEには届きません)・5分ごとに確認するので数分ずれることがあります";
+        var NTF_MIN_NOTE = "時間のある予定だけ・アプリの通知だけ。数分ずれることがあります";
         var NTF_DEFAULT = { volley: { on: true, days: [7], hour: 20 }, plan: { on: true, days: [1], hour: 20, everyone: false }, exclude: [], vday: {}, ch: { line: true, push: true } };
         // 届け方(ch): LINE(ボット) と アプリ(Web Push・push-notify.gs)。タイミングは共通。
         //   LINEのボットは ch を知らないので、LINEをオフにしている間は、ボットが読む volley.on / plan.on / personal[id].on を false にして保存し、
@@ -8038,7 +8038,7 @@ await main();
                 <div class="ntf-row"><span>通知</span>${seg(k, cfg[k].on)}</div>
                 <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span>${days(k, cfg[k].days)}</div>
                 <div class="ntf-row ntf-dep"><span>時間</span>${hourSel(k, cfg[k].hour)}</div>${extra || ""}</div>`;
-            const chTxt = cfg.ch.line && cfg.ch.push ? "LINEのグループに出欠の一覧を送り、アプリの通知を各自に送ります(○の人は日時・場所、△・？の人は回答のお願い)。" : cfg.ch.line ? "LINEのグループに、出欠の一覧を送ります(アプリの通知はオフ)。" : cfg.ch.push ? "アプリの通知を各自に送ります(LINEはオフ)。" : "LINE・アプリとも、オフになっています(届け方の設定)。";
+            const chTxt = cfg.ch.line && cfg.ch.push ? "LINEのグループに一覧、各自にアプリの通知。" : cfg.ch.line ? "LINEのグループに一覧(アプリはオフ)。" : cfg.ch.push ? "各自にアプリの通知(LINEはオフ)。" : "LINE・アプリともオフです。";
             box.innerHTML = blk("volley", "バレーのお知らせ", chTxt);
             renderNtfChannels(cfg);
             renderNotifyText(cfg);
@@ -8051,9 +8051,9 @@ await main();
             cfg = cfg || notifyCfg();
             const seg = (k, on) => `<span class="st-seg"><button type="button" class="${on ? "on" : ""}" onclick="ntfSetCh('${k}',true)">オン</button><button type="button" class="${on ? "" : "on"}" onclick="ntfSetCh('${k}',false)">オフ</button></span>`;
             el.innerHTML = `<div class="ntf-blk"><div class="ntf-row"><span>LINE通知</span>${seg("line", cfg.ch.line)}</div>
-                <div class="ntf-sub">グループへのバレーのお知らせと、管理者の個人LINEへの予定のお知らせ。オフの間は、ボットには「通知しない」と伝えます(タイミングなどの設定は消えません)。</div>
+                <div class="ntf-sub">グループへのバレーと、管理者の個人LINEへの予定。オフでも設定は残ります。</div>
                 <div class="ntf-row"><span>アプリ通知</span>${seg("push", cfg.ch.push)}</div>
-                <div class="ntf-sub">各自の端末へのバレー・予定のお知らせ(push-notify.gs が送ります)。ロスターの変更の通知は、この設定とは別です。</div></div>`;
+                <div class="ntf-sub">各自の端末へのバレー・予定(ロスター変更は別)。</div></div>`;
         }
         function ntfSetCh(k, on) {
             const cfg = notifyCfg();
@@ -8072,9 +8072,9 @@ await main();
         var PUSH_VP_OPTS = [["a", "すべて"], ["u", "未回答のときだけ"], ["n", "受け取らない"]];
         function myVolPref() { const r = pushMRec(myRosterId()); return r && (r.vp === "u" || r.vp === "n") ? r.vp : "a"; }
         function myVolBlock() {
-            if (myRosterId() == null) return `<div class="ntf-sub">名簿の名前とひもづいていないので、バレーのお知らせは届きません。</div>`;
+            if (myRosterId() == null) return `<div class="ntf-sub">名簿とひもづいていないので届きません。</div>`;
             const v = myVolPref();
-            const note = v === "a" ? "○の人は日時・場所、△・？の人は回答のお願いが届きます。" : v === "u" ? "自分が△・？のときだけ、回答のお願いが届きます(○・✖のときは届きません)。" : "バレーのお知らせは届きません(ほかの通知は届きます)。";
+            const note = v === "a" ? "○なら日時・場所、△・？なら回答のお願い。" : v === "u" ? "自分が△・？のときだけ届きます。" : "バレーのお知らせは届きません。";
             return `<div class="ntf-row col"><div class="ntf-chips">${PUSH_VP_OPTS.map(([k, l]) => `<button type="button" class="ntf-chip${v === k ? " on" : ""}" onclick="setMyVolPref('${k}')">${l}</button>`).join("")}</div>
                 <div class="ntf-sub" style="margin:0">${note}</div></div>`;
         }
@@ -8087,13 +8087,13 @@ await main();
         function myNtfBlock(cfg) {
             const me = myRosterId();
             const head = "";   // 見出しは設定の行(「自分の予定の通知」)にある
-            if (me == null) return `<div class="ntf-blk">${head}<div class="ntf-sub">名簿の名前とひもづいていないので、自分あての通知は届きません。</div></div>`;
+            if (me == null) return `<div class="ntf-blk">${head}<div class="ntf-sub">名簿とひもづいていないので届きません。</div></div>`;
             const b = myPlanTiming(cfg, me), on = b.on;
             const name = (roster.find(r => r.id === me) || {}).name || "";
             const seg = (field, val, a, bLabel) => `<span class="st-seg"><button type="button" class="${val ? "on" : ""}" onclick="ntfMySet('${field}',true)">${a}</button><button type="button" class="${val ? "" : "on"}" onclick="ntfMySet('${field}',false)">${bLabel}</button></span>`;
-            const where = realAdmin() ? "個人LINE(ボットとの連携が必要)と、受け取りをオンにしたこの端末など" : "受け取りをオンにした端末";
+            const where = realAdmin() ? "個人LINE(ボット連携時)と登録した端末" : "登録した端末";
             return `<div class="ntf-blk${on ? "" : " ntf-off"}">${head}
-                <div class="ntf-sub">${escapeHtml(name)}さんの${where}に届きます。対象は、自分が入っている共有予定・ペア予定と、通知をオンにしたローカル予定です。</div>
+                <div class="ntf-sub">${escapeHtml(name)}さんの${where}に届きます。</div>
                 <div class="ntf-row"><span>受け取る</span>${seg("on", on, "受け取る", "受け取らない")}</div>
                 <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span><div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${b.days.includes(n) ? " on" : ""}" onclick="ntfMyDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div>${b.days.length ? "" : `<div class="ntf-sub" style="margin:0">何日前のお知らせなし(直前のお知らせだけ)${b.mins.length ? "" : `。直前のお知らせもえらんでいないので、<b>何も届きません</b>`}</div>`}</div>
                 <div class="ntf-row ntf-dep"><span>時間</span><select class="ntf-sel" onchange="ntfMySet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${b.hour === i ? " selected" : ""}>${i}時台</option>`).join("")}</select></div>
@@ -17955,7 +17955,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181520;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181850;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
