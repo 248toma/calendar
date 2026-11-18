@@ -4650,6 +4650,7 @@ await main();
                 <div class="st-row pr-only"><span class="st-lbl">予定の表示</span><span class="st-seg" id="pvSeg"><button type="button" data-v="dot" onclick="setProtoPlanView('dot')">点</button><button type="button" data-v="text" onclick="setProtoPlanView('text')">文字</button><button type="button" data-v="en" onclick="setProtoPlanView('en')">EN</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">メニュー</span><span class="st-seg" id="menuSeg"><button type="button" data-v="hold" onclick="setMenuMode('hold')">長押し</button><button type="button" data-v="bar" onclick="setMenuMode('bar')">下</button></span></div>
+                <div class="st-row pr-only"><span class="st-lbl">入力画面</span><span class="st-seg" id="pinPosSeg"><button type="button" data-v="top" onclick="setPinPos('top')">上</button><button type="button" data-v="bottom" onclick="setPinPos('bottom')">下</button></span></div>
             </div>
             <!-- 管理者だけ: 分析(前は下のメニューにあった) と Googleに接続中の挙動(この端末だけの設定。開くと出す) -->
             <div class="st-card st-group" id="setAdmLinks" style="display:none">
@@ -17962,7 +17963,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181914;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181925;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20381,7 +20382,16 @@ const namesBtn = isAdmin() && dates.length > 0
             applyMenuSeg(); try { renderProto(); } catch (e) { console.warn(e); }
             try { gcalSyncTile(); } catch (e) { /* ignore */ }
         }
-        function applyMenuSeg() { const m = prMenuMode(); document.querySelectorAll("#menuSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); }
+        function applyMenuSeg() { const m = prMenuMode(); document.querySelectorAll("#menuSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); applyPinPosSeg(); }
+        // 予定の入力画面の場所(この端末だけ): bottom = 下(カレンダーが上、入力がキーボードのすぐ上。最初はこれ) / top = 上(ヘッダーの場所)
+        const PR_PIN_POS_KEY = "pr_pin_pos_v1";
+        function prPinPos() { try { return localStorage.getItem(PR_PIN_POS_KEY) === "top" ? "top" : "bottom"; } catch (e) { return "bottom"; } }
+        function setPinPos(v) {
+            try { localStorage.setItem(PR_PIN_POS_KEY, v === "top" ? "top" : "bottom"); } catch (e) { /* ignore */ }
+            applyPinPosSeg();
+            try { if (typeof syncSetTop === "function") syncSetTop(true); } catch (e) { /* ignore */ }
+        }
+        function applyPinPosSeg() { const m = prPinPos(); document.querySelectorAll("#pinPosSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); }
         function prMenuBarHtml() {
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
             if (prBe) setTimeout(prBeAfterRender, 0);   // 並べ替えの途中で描き直したとき: 完了ボタンの位置・ドラッグ中の見た目を合わせ直す
@@ -20972,7 +20982,7 @@ const namesBtn = isAdmin() && dates.length > 0
             return { empty, sd, ed: ed0 && ed0 > sd ? ed0 : "", st: planAllDay ? "" : $op("opStart").value, et: planAllDay ? "" : $op("opEnd").value, allDay: planAllDay, title: [$op("opTitle").value, $op("opMemo").value].filter(Boolean).join(" ") };
         }
         function protoOpenInput(id) {
-            protoPinBottom = prMenuMode() !== "bar" && !(window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches); prRadBottom = false;   // 横画面は今のまま
+            protoPinBottom = prPinPos() === "bottom" && !(window.matchMedia && matchMedia("(orientation: landscape) and (max-height: 620px)").matches); prRadBottom = false;   // 場所は設定の「入力画面」(メニューの種類とは別)。横画面は上のまま
             planDetailId = null; pinShareOpen = false; pinColOpen = false; pinSetOpen = false; pinRange = false; pinGhost = { d: "", h: "" };
             pinEditId = id != null ? id : null;
             const p = pinEditId != null ? planList.find(x => x.id === pinEditId) : null;
