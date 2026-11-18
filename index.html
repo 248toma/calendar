@@ -2181,6 +2181,14 @@
         #nvDayPanel .nv-sub, #nvDayPanel .nv-memo { margin-top: 0; font-size: 11px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #sheetBody #nvDayPanel { margin: 0; }
         /* ===== スマホに通知(Web Push) ===== */
+        /* ロスター変更の「知らせる変更」の表 */
+        table.rmx { border-collapse: separate; border-spacing: 4px; margin: 2px -4px 0; font-size: 12px; }
+        table.rmx th { font-weight: 700; color: var(--sn-ink2, var(--ink-2)); padding: 0 2px; text-align: center; white-space: nowrap; }
+        table.rmx tbody th { text-align: left; }
+        table.rmx td { text-align: center; padding: 0; }
+        .rmx-c { width: 34px; height: 30px; border: none; border-radius: 10px; background: var(--sn-bg, var(--bg)); color: var(--sn-acc, var(--accent)); font: inherit; font-weight: 800; box-shadow: 3px 3px 7px var(--sn-dk), -3px -3px 7px var(--sn-lt); cursor: pointer; }
+        .rmx-c.on { box-shadow: inset 2px 2px 5px var(--sn-dk), inset -2px -2px 5px var(--sn-lt); }
+        .rmx-na { color: var(--sn-ink3, var(--ink-3)); }
         .push-st { font-size: 12.5px; font-weight: 700; color: var(--ink-3); text-align: right; }
         .push-st.on { color: #0a8f6a; }
         .push-st.ng { color: #b2475a; }
@@ -4924,7 +4932,7 @@ await main();
             <details class="acc" id="pushAdmAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
                 <summary>ロスター変更の通知</summary>
                 <div class="acc-body">
-                    <div class="acc-desc"><b>管理者の端末にだけ届きます。</b>今週のバレーの出欠(○✖△)が変わったら、アプリの通知を出します(LINEは使いません)。届くのは、「この端末の登録」で受け取りをオンにした管理者の端末のうち、ここでオンにした端末だけです。</div>
+                    <div class="acc-desc"><b>管理者の端末にだけ届きます。</b>今週のバレーの出欠(○✖△？)が変わったら、アプリの通知を出します(LINEは使いません)。届くのは、「この端末の登録」で受け取りをオンにした管理者の端末のうち、ここでオンにした端末だけです。</div>
                     <div id="pushAdmSettings"></div>
                 </div>
             </details>
@@ -7700,12 +7708,40 @@ await main();
                 const devs = Object.keys(list).filter(k => list[k] && list[k].on !== false && list[k].t).map(k => escapeHtml(`${list[k].n || "?"}(${list[k].os || "?"})`) + (list[k].r === 0 ? "・ロスターなし" : "") + (k === myId ? "←この端末" : ""));
                 const mem = pushMStore().filter(r => r.d && Object.keys(r.d).length).map(r => escapeHtml(`${r.n || "?"}(${Object.keys(r.d).length}台)`));
                 const rOn = !!(mine && mine.r !== 0);
+                const rc = notifyCfg().roster, daily = rc.mode === "daily";
+                const tSeg = `<span class="st-seg"><button type="button" class="${daily ? "" : "on"}" onclick="ntfRosterSet('mode','each')">変更のたび</button><button type="button" class="${daily ? "on" : ""}" onclick="ntfRosterSet('mode','daily')">毎日1回</button></span>`;
+                const hSel = `<select class="ntf-sel" onchange="ntfRosterSet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${i === rc.hour ? " selected" : ""}>${i}時台</option>`).join("")}</select>`;
+                const SYM = { o: "○", t: "△", x: "✖", u: "？", "-": "外れた" };
+                const fChips = `<table class="rmx"><thead><tr><th></th>${NTF_ROSTER_TO.map(b => `<th>→${SYM[b]}</th>`).join("")}</tr></thead><tbody>${["o", "t", "x", "u"].map(a => `<tr><th>${SYM[a]}から</th>${NTF_ROSTER_TO.map(b => a === b ? `<td><span class="rmx-na">—</span></td>` : `<td><button type="button" class="rmx-c${(rc.mx[a] || "").includes(b) ? " on" : ""}" onclick="ntfRosterMx('${a}','${b}')" aria-pressed="${(rc.mx[a] || "").includes(b)}" aria-label="${SYM[a]}から${SYM[b]}">${(rc.mx[a] || "").includes(b) ? "✓" : ""}</button></td>`).join("")}</tr>`).join("")}</tbody></table>`;
                 adm.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${mine ? `<span class="st-seg"><button type="button" class="${rOn ? "on" : ""}" onclick="pushSetRoster(true)"${pushBusy ? " disabled" : ""}>オン</button><button type="button" class="${rOn ? "" : "on"}" onclick="pushSetRoster(false)"${pushBusy ? " disabled" : ""}>オフ</button></span>` : `<b class="push-st">「この端末の登録」で受け取りをオンにしてください</b>`}</div>
-                    <div class="acc-desc">受け取り中の管理者の端末: ${devs.length ? devs.join("、") : "なし"}</div>
-                    <div class="acc-desc">受け取り中のメンバー: ${mem.length ? mem.join("、") : "なし"}</div>`;
+                    <div class="ntf-row"><span>タイミング</span>${tSeg}</div>
+                    ${daily ? `<div class="ntf-row"><span>時間</span>${hSel}</div>` : ""}
+                    <div class="ntf-sub">${daily ? `毎日${rc.hour}時台に1回、前の日のその時からの変更をまとめて送ります(元に戻った変更・知らせる変更がない日は送りません)。` : "変わるたびに送ります(5分ごとに確認。23時〜7時の間の変更は、7時台にまとめて送ります)。"}管理者みんなで共通の設定です。</div>
+                    <div class="ntf-row col"><span>知らせる変更(✓のマスだけ届きます)</span>${fChips}</div>
+                    <div class="ntf-sub">縦が前の状態、横が変わったあと。「外れた」はその回の名簿から外れたとき。名簿に足されたばかりの人は「？から」として扱います。</div>
+                    <div class="acc-desc">受け取り中の管理者の端末: ${devs.length ? devs.join("、") : "なし"}<br><small>端末を登録して、ロスター変更の通知をオンにしている管理者の端末(「ロスターなし」はオフの端末)</small></div>
+                    <div class="acc-desc">通知を受け取れるメンバー(端末を登録した人): ${mem.length ? mem.join("、") : "なし"}<br><small>メンバーにはロスター変更は届きません(バレー・予定の通知だけ)</small></div>`;
             }
         }
         function pushSetNote(t) { pushNote = t || ""; renderPushSettings(); }
+        // ロスター変更の通知の共通設定(通知の設定の roster。切り替えたあとの最初の確認では、push-notify.gs は送らずに今の状態を覚え直す)
+        function ntfRosterSet(field, val) {
+            if (!realAdmin()) return;
+            const cfg = notifyCfg();
+            if (field === "mode") { if (val !== "each" && val !== "daily") return; }
+            else if (field === "hour") { if (!Number.isInteger(val) || val < 0 || val > 23) return; }
+            else return;
+            if (cfg.roster[field] === val) return;
+            cfg.roster[field] = val;
+            saveNotifyRaw(cfg); renderPushSettings(); setSavedMsg("保存しました ✓");
+        }
+        function ntfRosterMx(a, b) {   // 表のマスを切り替える(a → b の変更を知らせるか)
+            if (!realAdmin() || !["o", "t", "x", "u"].includes(a) || !NTF_ROSTER_TO.includes(b) || a === b) return;
+            const cfg = notifyCfg(), cur = cfg.roster.mx[a] || "";
+            const next = cur.includes(b) ? cur.replace(b, "") : cur + b;
+            cfg.roster.mx = { ...cfg.roster.mx, [a]: NTF_ROSTER_TO.filter(x => next.includes(x)).join("") };
+            saveNotifyRaw(cfg); renderPushSettings(); setSavedMsg("保存しました ✓");
+        }
         // 管理者の端末: ロスターの変更を受け取るか(r: 0 = 受け取らない)
         function pushSetRoster(on) {
             const id = pushDeviceId(false), mine = pushMine();
@@ -7855,8 +7891,23 @@ await main();
             if (v.pnod && typeof v.pnod === "object") Object.keys(v.pnod).forEach(id => { if (v.pnod[id] === 1 || v.pnod[id] === 0) pnod[id] = v.pnod[id]; });
             Object.keys(pnod).forEach(id => { const x = out.personal[id] || (out.personal[id] = { on: true, days: null, hour: null, everyone: false }); x.on = pnod[id] === 1; });
             out.pnod = pnod;
+            // ロスター変更の通知(管理者の共通設定。push-notify.gs が読む。LINEのボットは見ない)
+            //   mode: each = 変更のたび / daily = 毎日 hour 時台に1回。from: ？からの変更 o = ？→○ / t = ？→△ / x = ？→✖
+            const rv = v.roster && typeof v.roster === "object" ? v.roster : {}, rf = rv.from && typeof rv.from === "object" ? rv.from : {};
+            // mx: 知らせる変更の表。行 = 前の状態(o ○ / t △ / x ✖ / u ？)、文字 = 知らせる変更先(o t x u と - = 回から外れた)。前の版の from(？からだけ)も読む
+            const rm = rv.mx && typeof rv.mx === "object" ? rv.mx : null, mx = {};
+            ["o", "t", "x", "u"].forEach(a => {
+                let s0 = rm && typeof rm[a] === "string" ? rm[a] : null;
+                if (s0 == null && a === "u" && rv.from && typeof rv.from === "object") s0 = (rf.o !== false ? "o" : "") + (rf.t === true ? "t" : "") + (rf.x === true ? "x" : "");
+                if (s0 == null) s0 = NTF_ROSTER_MX[a];
+                mx[a] = NTF_ROSTER_TO.filter(b => b !== a && s0.includes(b)).join("");
+            });
+            out.roster = { mode: rv.mode === "daily" ? "daily" : "each", hour: Number.isInteger(rv.hour) && rv.hour >= 0 && rv.hour <= 23 ? rv.hour : NTF_ROSTER_HOUR, mx };
             return out;
         }
+        var NTF_ROSTER_MX = { o: "txu-", t: "oxu-", x: "otu-", u: "o" };   // 初期: ○・△・✖からの変更は全部、？からは ？→○ だけ(push-notify.gs と同じ)
+        var NTF_ROSTER_TO = ["o", "t", "x", "u", "-"];
+        var NTF_ROSTER_HOUR = 21;   // 「毎日1回」の初期の時台(push-notify.gs の ROSTER_DAILY_HOUR と同じ)
         // 共有データ・端末に入れる形(LINEがオフなら、ボットが読む所をオフにして本当の値は sched へ)
         function ntfStored(cfg) {
             const o = JSON.parse(JSON.stringify(cfg));
@@ -7895,7 +7946,7 @@ await main();
                 const merged = ntfStored(mergeNotify(prev, cfg, notifyCfgFrom(remote)));
                 tx.update(firestoreRef, { ["values." + NOTIFY_KEY]: JSON.stringify(merged), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                 return merged;
-            }).then(merged => { setLocalQuiet(NOTIFY_KEY, JSON.stringify(merged)); if (document.getElementById("settingsPanel").classList.contains("open") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#ntfText"))) renderNotifySettings(); })   // 文章を入力している途中は作り直さない(入力中の文字が消える)
+            }).then(merged => { setLocalQuiet(NOTIFY_KEY, JSON.stringify(merged)); if (document.getElementById("settingsPanel").classList.contains("open") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#ntfText"))) { renderNotifySettings(); renderPushSettings(); } })   // 文章を入力している途中は作り直さない(入力中の文字が消える)
               .catch(err => { console.error("通知設定を共有データに保存できませんでした。", err); setSavedMsg("保存できませんでした", true); });
         }
         // prev(変える前)→ mine(変えた後)で変わったところだけを remote(共有データの最新)に重ねる
@@ -7914,6 +7965,11 @@ await main();
                     const v0 = prev.vday || {}, v1 = mine.vday || {};
                     out.vday = { ...(remote.vday || {}) };
                     new Set(Object.keys(v0).concat(Object.keys(v1))).forEach(d => { if (J(v0[d]) !== J(v1[d])) { if (v1[d]) out.vday[d] = v1[d]; else delete out.vday[d]; } });
+                } else if (k === "roster") {   // ロスター変更の通知: 変えた項目だけ(タイミング・時台・？からの変更ごと)
+                    const r0 = prev.roster || {}, r1 = mine.roster || {}, rr = remote.roster || {};
+                    out.roster = { ...rr, mx: { ...(rr.mx || {}) } }; delete out.roster.from;
+                    ["mode", "hour"].forEach(f => { if (J(r0[f]) !== J(r1[f])) out.roster[f] = r1[f]; });
+                    ["o", "t", "x", "u"].forEach(f => { if (J((r0.mx || {})[f]) !== J((r1.mx || {})[f])) out.roster.mx[f] = (r1.mx || {})[f]; });   // 行ごと(変えた行だけ)
                 } else if (J(prev[k]) !== J(mine[k])) out[k] = mine[k];
             });
             return out;
@@ -17899,7 +17955,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181453;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181520;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
