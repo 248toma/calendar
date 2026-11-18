@@ -17872,6 +17872,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // ログアウト: ゲストなら、名簿の「ゲスト」の記録からこの端末を消してから(最大3秒待つ)。通知の登録がある端末は、それも外す(ゲストもGoogleも。最大5秒)
         function signOutFromFirestore() {
+            try { localStorage.removeItem(PUSH_ASKED_KEY); } catch (e) { /* ignore */ }   // 次にログインしたとき、通知がオフならもう一度「受け取る?」を出す
             let anon = false; try { anon = !!(firebase.auth().currentUser && firebase.auth().currentUser.isAnonymous); } catch (e) { anon = false; }
             const done = () => firebase.auth().signOut();
             const rm = () => Promise.resolve(appSeenPut(true, true)).catch(() => { });   // この端末の版の記録も消す
@@ -18104,7 +18105,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611190105;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611190110;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
