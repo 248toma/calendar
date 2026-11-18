@@ -1802,6 +1802,14 @@
         .sv-who { display: inline-flex; align-items: center; gap: 4px; margin: 0 2px 14px; padding: 6px 14px; border-radius: 999px; box-shadow: var(--sink); font-size: 15px; }
         .sv-who .ic { width: 15px; height: 15px; color: var(--ink-3); }
         .sv-tools { display: flex; gap: 10px; margin: 0 2px 14px; }
+        .sv-ntf { display: flex; align-items: center; gap: 8px; margin: 0 2px 12px; padding: 7px 8px 7px 12px; border-radius: 14px; box-shadow: var(--sink); font-size: 12px; color: var(--ink-2); }
+        .sv-ntf > .ic { width: 14px; height: 14px; flex: none; color: var(--ink-3); }
+        .sv-ntf-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+        .sv-ntf-t span { font-size: 11px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sv-ntf button { flex: none; height: 30px; padding: 0 11px; border: none; border-radius: 15px; background: var(--bg); box-shadow: var(--raise-sm); font: inherit; font-size: 12px; font-weight: 700; color: var(--ink-2); cursor: pointer; }
+        .sv-nbell { flex: none; margin-left: auto; width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%; background: transparent; display: inline-flex; align-items: center; justify-content: center; color: var(--accent, #2f9e6e); cursor: pointer; }
+        .sv-nbell .ic { width: 15px; height: 15px; }
+        .sv-nbell.off { color: var(--ink-3); opacity: .7; }
         .sv-lhead { font-size: 15px; font-weight: 800; color: var(--ink); margin: 2px 4px 12px; }
         .sv-tools .sv-sort { flex: 1; margin: 0; min-width: 0; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
         .sv-tools .sv-sort .ic { width: 15px; height: 15px; }
@@ -4877,6 +4885,14 @@ await main();
                     <div id="pushSettings"></div>
                 </div>
             </details>
+            <!-- バレーの通知(自分): 管理者が決めたバレーのお知らせを、自分は受け取るか(アプリの通知だけ) -->
+            <details class="acc" id="pushVolAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
+                <summary>バレーの通知</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">管理者が決めたタイミングで届くバレーのお知らせを、自分が受け取るかを選べます(アプリの通知だけ。LINEのグループへのお知らせは変わりません)。</div>
+                    <div id="pushVol"></div>
+                </div>
+            </details>
             <!-- 自分の予定の通知: 共有予定・ペア予定・通知をオンにしたローカル予定のタイミング -->
             <details class="acc" id="pushMyAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
                 <summary>自分の予定の通知</summary>
@@ -7602,7 +7618,7 @@ await main();
                     next.who = who; next.n = name;
                     if (next.d && !Object.keys(next.d).length) delete next.d;
                     if (next.l && !next.l.length) delete next.l;
-                    if (!next.d && !next.l && !next.s) next = null;   // 中身が無ければ記録ごと消す
+                    if (!next.d && !next.l && !next.s && !next.vp) next = null;   // 中身が無ければ記録ごと消す
                 }
                 const strip = (x) => { if (!x) return ""; const o = { ...x }; delete o.ts; return JSON.stringify(o); };
                 if (strip(cur) === strip(next)) return null;   // 変わっていない
@@ -7675,6 +7691,8 @@ await main();
             }
             const my = document.getElementById("pushMyPlan");
             if (my) my.innerHTML = myNtfBlock(notifyCfg());
+            const vol = document.getElementById("pushVol");
+            if (vol) vol.innerHTML = myVolBlock();
             const adm = document.getElementById("pushAdmSettings");
             if (adm) {
                 if (!realAdmin()) { adm.innerHTML = ""; return; }   // 閲覧者には出さない
@@ -7993,6 +8011,22 @@ await main();
             if (!x) return { on: !b.offMine, days: b.days.slice(), hour: b.hour, everyone: b.everyone, mins: b.mins.slice() };
             const days = ntfDaysOk(x.days), mins = ntfMinsOk(x.mins);
             return { on: x.on !== false, days: x.nod ? [] : days && days.length ? days : b.days.slice(), hour: Number.isInteger(x.hour) && x.hour >= 0 && x.hour <= 23 ? x.hour : b.hour, everyone: !!x.everyone, mins: mins || b.mins.slice() };
+        }
+        // バレーの通知(自分の分): a = すべて(初期) / u = 未回答(△・？)のときだけ / n = 受け取らない。出欠データの pushm の vp に入れる(GASが見る)
+        var PUSH_VP_OPTS = [["a", "すべて"], ["u", "未回答のときだけ"], ["n", "受け取らない"]];
+        function myVolPref() { const r = pushMRec(myRosterId()); return r && (r.vp === "u" || r.vp === "n") ? r.vp : "a"; }
+        function myVolBlock() {
+            if (myRosterId() == null) return `<div class="ntf-sub">名簿の名前とひもづいていないので、バレーのお知らせは届きません。</div>`;
+            const v = myVolPref();
+            const note = v === "a" ? "○の人は日時・場所、△・？の人は回答のお願いが届きます。" : v === "u" ? "自分が△・？のときだけ、回答のお願いが届きます(○・✖のときは届きません)。" : "バレーのお知らせは届きません(ほかの通知は届きます)。";
+            return `<div class="ntf-row col"><div class="ntf-chips">${PUSH_VP_OPTS.map(([k, l]) => `<button type="button" class="ntf-chip${v === k ? " on" : ""}" onclick="setMyVolPref('${k}')">${l}</button>`).join("")}</div>
+                <div class="ntf-sub" style="margin:0">${note}</div></div>`;
+        }
+        function setMyVolPref(k) {
+            if (!["a", "u", "n"].includes(k) || myVolPref() === k) return;
+            pushMPut(rec => { if (k === "a") delete rec.vp; else rec.vp = k; return rec; })
+                .then(() => { renderPushSettings(); setSavedMsg("保存しました ✓"); })
+                .catch(err => { console.warn(err); setSavedMsg("保存できませんでした: " + ((err && err.message) || err), true); });
         }
         function myNtfBlock(cfg) {
             const me = myRosterId();
@@ -8442,6 +8476,46 @@ await main();
                 });
                 saveNotify(cfg);
             } catch (e) { console.warn("通知の設定を変えられませんでした。", e); }
+        }
+        // ------- アンケートの画面から、バレーの回の通知をまとめてオン/オフ(管理者だけ) -------
+        // 対象: これから先の確定のバレー(surveyDates。今の一覧と「N月〜」の両方)。未定の回(tent の印)はさわらない
+        // オン = その回の「通知なし」を消して いつもの設定 に戻す(この回だけの日にちの設定はそのまま)/ オフ = { off: true }
+        function svNtfIsOff(e) { return !!(e && e.off && !e.monly && !e.tent); }
+        function svNtfInfo() {
+            const cfg = notifyCfg(), base = ntfVolleyBase(cfg), ks = surveyDates().filter(k => !isTent(k));
+            const off = ks.filter(k => svNtfIsOff(cfg.vday[k])).length;
+            const timing = base.on ? "いつも: " + ntfSummary(undefined, base).text.replace("(いつもの設定)", "") : "全体の設定でオフ";
+            return { cfg, base, ks, off, timing };
+        }
+        function svNtfAfter(msg) {
+            renderSurvey();   // 試作のアンケートもここから描き直す
+            try { updateVbNtf(); } catch (e) { /* ignore */ }
+            setSavedMsg("保存しました");
+            gcalToast(msg);
+        }
+        function svNtfAll(on) {
+            if (!isAdmin()) return;
+            const { cfg, ks } = svNtfInfo();
+            const tgt = on ? ks.filter(k => svNtfIsOff(cfg.vday[k])) : ks.filter(k => { const e = cfg.vday[k]; return !(e && e.tent) && !svNtfIsOff(e); });
+            if (!tgt.length) { gcalToast(on ? "通知なしの回はありません" : "すべて通知なしになっています"); return; }
+            const own = on ? 0 : tgt.filter(k => cfg.vday[k]).length;   // この回だけの設定があって、上書きされる回
+            const msg = on ? `通知なしになっている ${tgt.length}回 の通知をオンにします(いつもの設定に戻します)。\nよろしいですか?`
+                : `これから先のバレー ${tgt.length}回 を、すべて通知なしにします。${own ? `\n(この回だけの設定がある ${own}回 も通知なしで上書きします)` : ""}\nよろしいですか?`;
+            if (!confirm(msg)) return;
+            tgt.forEach(k => { if (on) delete cfg.vday[k]; else cfg.vday[k] = { off: true }; });
+            saveNotify(cfg);
+            svNtfAfter(on ? `${tgt.length}回の通知をオンにしました` : `${tgt.length}回を通知なしにしました`);
+        }
+        // 1つの回だけ: 通知なし ↔ いつもの
+        function svNtfOne(k) {
+            if (!isAdmin() || !volOk(k)) return;
+            const cfg = notifyCfg(), e = cfg.vday[k];
+            if (e && e.tent) return;
+            const [, m, d] = k.slice(0, 10).split("-").map(Number);
+            if (svNtfIsOff(e)) { delete cfg.vday[k]; saveNotify(cfg); svNtfAfter(`${m}/${d} の通知をオンにしました`); return; }
+            if (e && !confirm(`${m}/${d} はこの回だけの通知の設定(${ntfSummary(e, ntfVolleyBase(cfg)).text})があります。\n通知なしにしますか?`)) return;
+            cfg.vday[k] = { off: true }; saveNotify(cfg);
+            svNtfAfter(`${m}/${d} を通知なしにしました`);
         }
         // 未定: 閲覧者には見えない・アンケート/チーム分け/精算/通知なし。確定: 今までどおりの共有のバレー。切り替えても出欠・予約などの中身はそのまま残す
         function setVolleyTent(on) {
@@ -12890,6 +12964,7 @@ await main();
                 dates = dates.map((d, i) => ({ d, i, r: rank(d) })).sort((a, b) => a.r - b.r || a.i - b.i).map(x => x.d);
             }
             let unanswered = 0;
+            const ntfI = isAdmin() && allDates.length ? svNtfInfo() : null;   // 管理者: 回ごとの通知のオン/オフ
             const cards = dates.map(d => {
                 const mem = (attendanceByDate[d] || []).find(m => m.name === name);
                 const st = mem ? mem.status : "";
@@ -12905,6 +12980,10 @@ await main();
                     const un = day.filter(x => x.status === "未確認" && !isGuestName(x.name)).map(x => escapeHtml(x.name)), pd = day.filter(x => x.status === "未定" && !isGuestName(x.name)).map(x => escapeHtml(x.name));   // ゲストは出さない
                     const txt = (a) => surveyShowNames ? a.join("・") : `${a.length}`;
                     ppl = `<span class="sv-ppls">${un.length ? `<span class="sv-ppl un"><b>?</b> ${txt(un)}</span>` : ""}${pd.length ? `<span class="sv-ppl pd"><b>△</b> ${txt(pd)}</span>` : ""}</span>`;
+                }
+                if (ntfI) {
+                    const e = ntfI.cfg.vday[d], off = svNtfIsOff(e), t = off ? "通知なし" : ntfSummary(e, ntfI.base).text;
+                    ppl += `<button type="button" class="sv-nbell${off ? " off" : ""}${e && !off ? " own" : ""}" onclick="svNtfOne('${d}')" title="通知: ${escapeHtml(t)}(押すと${off ? "オン" : "通知なし"})" aria-label="${m}/${dd}の通知: ${escapeHtml(t)}"><i class="ic ${off ? "ic-belloff" : "ic-bell"}"></i></button>`;
                 }
                 const btns = ["来る", "来ない", "未定"].map(s => `<button type="button" class="sv-btn ${STATUS_META[s].cls}${st === s ? " sel" : ""}" ${mem ? "" : "disabled"} onclick="surveySet('${d}','${s}')" aria-label="${s}"><span class="sv-sym">${STATUS_META[s].sym}</span></button>`).join("");
                 // 管理者へのひとこと(自分の分)
@@ -12944,7 +13023,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (surveyPlanTab && name) box.innerHTML = head + (pcards || `<div class="sv-empty">—</div>`);
             else {
                 const lhead = surveyLater ? `<div class="sv-lhead">${nm}月以降のアンケート</div>` : "";
-                box.innerHTML = head + lhead + note + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards;
+                const ntfRow = ntfI ? `<div class="sv-ntf"><i class="ic ic-bell"></i><div class="sv-ntf-t"><b>通知</b><span>${escapeHtml(ntfI.timing)}${ntfI.off ? ` ・ 通知なし ${ntfI.off}回` : ""}</span></div><button type="button" onclick="svNtfAll(true)">全部オン</button><button type="button" onclick="svNtfAll(false)">全部オフ</button></div>` : "";
+                box.innerHTML = head + lhead + note + ntfRow + `<div class="sv-tools">${namesBtn}${sortBtn}</div>` + cards;
             }
         }
 
@@ -17819,7 +17899,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181420;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181453;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18240,7 +18320,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // スマホ通知の宛先(管理者の端末の登録)だけが変わったときは、読み直さずに取り込む(赤い点を出さない)
                 if (remoteValues[PUSH_KEY] != null && remoteValues[PUSH_KEY] !== localValues[PUSH_KEY]) {
                     setLocalQuiet(PUSH_KEY, remoteValues[PUSH_KEY]);
-                    if (remoteCoveredByLocal(remoteValues, getShareableLocalValues())) { firestoreBase = remoteValues; try { if (document.getElementById("pushAcc").open || document.getElementById("pushMyAcc").open) renderPushSettings(); } catch (e) { /* ignore */ } return; }
+                    if (remoteCoveredByLocal(remoteValues, getShareableLocalValues())) { firestoreBase = remoteValues; try { if (document.getElementById("pushAcc").open || document.getElementById("pushMyAcc").open || document.getElementById("pushVolAcc").open) renderPushSettings(); } catch (e) { /* ignore */ } return; }
                 }
                 // 他の人の更新では画面を勝手に切り替えない。保留して、↻を押す/アプリに戻ってきたときに反映する
                 firestorePendingValues = remoteValues;
@@ -21504,6 +21584,14 @@ const namesBtn = isAdmin() && dates.length > 0
                 ${tools}</div>`;
             // ---- バレーの日 ----
             const dateHead = (k, extra) => { const [, m, d] = k.slice(0, 10).split("-").map(Number), w = new Date(k.slice(0, 10) + "T00:00:00").getDay(); return `<div style="display:flex;align-items:baseline;gap:6px;min-width:0"><span style="font-family:${en};font-size:16px;font-weight:600;letter-spacing:.01em">${m}/${d}</span><span style="font-family:${en};font-size:9.5px;font-weight:600;letter-spacing:.1em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3};opacity:.85">${WD3[w]}</span>${extra || ""}</div>`; };
+            // ---- 管理者: これから先の確定のバレーの通知をまとめてオン/オフ(両方のタブの回すべて。未定の回は除く) ----
+            const ntfI = isAdmin() && tab !== "plan" && allDates.length ? svNtfInfo() : null;
+            const BELL = '<path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path>', BELL_OFF = BELL + '<path d="M4 4l16 16"></path>';
+            const ntfBtn = (lb, click) => `<button type="button" onclick="protoHaptic();${click}" style="height:30px;padding:0 12px;border-radius:15px;flex:none;display:flex;align-items:center;font-size:11.5px;font-weight:700;color:${P.ink2};${raiseS}">${lb}</button>`;
+            const ntfHtml = ntfI ? `<div style="display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:22px;${insetS}">
+                <span style="flex:none;display:flex;color:${ntfI.base.on ? P.acc : P.ink3}">${ico(ntfI.base.on ? BELL : BELL_OFF, 14)}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.3"><span style="font-size:12.5px;font-weight:700;color:${P.ink2}">通知${ntfI.off ? `<span style="margin-left:6px;font-size:11px;font-weight:700;color:${P.red}">通知なし ${ntfI.off}回</span>` : ""}</span><span style="font-size:10.5px;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(ntfI.timing)}</span></div>
+                ${ntfBtn("全部オン", "svNtfAll(true)")}${ntfBtn("全部オフ", "svNtfAll(false)")}</div>` : "";
             let body = "";
             if (tab === "plan") {
                 body = plans.map(p => {
@@ -21537,6 +21625,11 @@ const namesBtn = isAdmin() && dates.length > 0
                         if (ns.length) notesChip = `<button type="button" aria-label="みんなのひとこと ${ns.length}件" aria-pressed="${shown}" onclick="protoSvNotesToggle('${d}')" style="position:relative;align-self:flex-start;height:28px;padding:0 10px;border-radius:14px;flex:none;display:flex;align-items:center;gap:5px;font-family:${en};font-size:11px;font-weight:700;color:${shown ? P.acc : P.ink2};${shown ? insetS : raiseS}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9z"></path></svg>${ns.length}${fresh ? `<i style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:4px;background:${P.today}"></i>` : ""}</button>`;
                         if (ns.length && shown) notes = `<div style="display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-radius:14px;${insetS}">${ns.map(x => `<div style="display:flex;gap:7px;font-size:12px;line-height:1.5"><b style="flex:none">${esc(x.name)}</b><span style="flex:none;color:${AC[x.status] || P.ink3}">${STATUS_META[x.status] ? STATUS_META[x.status].sym : ""}</span><span style="color:${P.ink2}">${esc(x.note)}</span>${svNoteFresh.has(svNoteKey(d, x)) ? `<i style="width:6px;height:6px;border-radius:3px;flex:none;margin-top:6px;background:${P.today}"></i>` : ""}</div>`).join("")}</div>`;
                     }
+                    let bell = "";
+                    if (ntfI) {   // この回だけの通知のオン/オフ(押すと 通知なし ↔ いつもの)
+                        const e = ntfI.cfg.vday[d], off = svNtfIsOff(e), t = off ? "通知なし" : ntfSummary(e, ntfI.base).text, [, bm, bd] = d.slice(0, 10).split("-").map(Number);
+                        bell = `<button type="button" onclick="protoHaptic();svNtfOne('${d}')" title="通知: ${esc(t)}(押すと${off ? "オン" : "通知なし"})" aria-label="${bm}/${bd}の通知: ${esc(t)}" aria-pressed="${!off}" style="align-self:flex-start;width:28px;height:28px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;color:${off ? P.ink3 : e ? P.acc : P.ink2};opacity:${off ? 0.55 : 1};${off ? insetS : raiseS}">${ico(off ? BELL_OFF : BELL, 13)}</button>`;
+                    }
                     // ひとことはふだん畳んでおく: 答えの横の吹き出しボタンで開く。書いてあるときだけ、その文を小さく出す(押すと直せる)
                     const chat = '<path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9z"></path>';
                     const noteOpen = name && mem && protoSvNoteOpen.has(d), hasNote = !!(mem && mem.note);
@@ -21550,7 +21643,7 @@ const namesBtn = isAdmin() && dates.length > 0
                             <div style="display:flex;align-items:center;gap:7px">${dateHead(d, name && mem && !answered(st) ? dot : "")}</div>
                             ${info.map(t => `<span style="font-family:${en};font-size:11.5px;font-weight:500;color:${P.ink3};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t)}</span>`).join("")}
                           </div>
-                          ${notesChip}
+                          ${notesChip}${bell}
                         </div>
                         ${name || ppl ? `<div style="display:flex;align-items:center;gap:10px">${ppl}${name ? seg(st, !!mem, s0 => `protoAnswer('${d}','${s0}')`, true) : ""}${noteBtn}</div>` : ""}
                         ${notes}${note}
@@ -21559,7 +21652,7 @@ const namesBtn = isAdmin() && dates.length > 0
             }
             el.style.background = P.bg; el.style.color = P.ink;
             el.innerHTML = `<div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 16px) 22px calc(env(safe-area-inset-bottom, 0px) + 40px);display:flex;flex-direction:column;gap:18px;font-family:'Noto Sans JP',system-ui,sans-serif">
-                ${head}${tabsHtml}<div style="display:flex;flex-direction:column;gap:16px">${body}</div></div>`;
+                ${head}${tabsHtml}${ntfHtml}<div style="display:flex;flex-direction:column;gap:16px">${body}</div></div>`;
             if (keep) { const i = el.querySelector(`input[data-k="${keep.k}"]`); if (i) { i.value = keep.v; try { i.focus(); i.setSelectionRange(keep.s, keep.e); } catch (e) { /* ignore */ } } }
         }
 
