@@ -7906,6 +7906,30 @@ await main();
         }
         // 起動したあと: 受け取り中の端末なら、トークンが変わっていないか確かめる(変わっていたら・30日たったら・名前が変わったら保存し直す)
         var pushRefreshTries = 0;
+        // ログインして名前が決まったら、1回だけ「通知を受け取りますか?」と聞く(この端末で一度聞いたら、もう聞かない。あとから設定の「通知」でも変えられる)
+        const PUSH_ASKED_KEY = "push_asked_v1";
+        function pushAskOnce() {
+            try {
+                if (localStorage.getItem(PUSH_ASKED_KEY) || tutOpen || document.getElementById("pushAskOv")) return;
+                if (!firebaseAvailable || !authUid || !PUSH_VAPID_KEY || pushUnsupported() || pushMine()) return;
+                if (Notification.permission === "denied") return;
+                if (myRosterId() == null && !realAdmin()) return;
+            } catch (e) { return; }
+            const P = typeof protoPal === "function" ? protoPal().P : null;
+            const ov = document.createElement("div"); ov.id = "pushAskOv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "通知");
+            ov.style.cssText = "position:fixed;inset:0;z-index:9800;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.3)";
+            const bg = P ? P.bg : "var(--bg)", ink = P ? P.ink : "var(--ink)", ink2 = P ? P.ink2 : "var(--ink-2)", acc = P ? P.acc : "var(--accent)";
+            ov.innerHTML = `<div style="width:calc(100% - 20px);max-width:460px;margin:0 10px calc(14px + env(safe-area-inset-bottom));padding:20px 20px 16px;border-radius:28px;background:${bg};color:${ink};box-shadow:0 -6px 24px rgba(0,0,0,.22);font-family:'Noto Sans JP',system-ui,sans-serif">
+                <div style="display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${acc}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>スマホに通知を受け取りますか?</div>
+                <div style="margin-top:8px;font-size:13px;line-height:1.6;color:${ink2}">バレーの日時や回答のお願い、自分の予定のお知らせが届きます。あとから設定の「通知」でも変えられます。</div>
+                <div style="display:flex;gap:10px;margin-top:16px"><button type="button" id="pushAskLater" style="flex:1;height:46px;border:none;border-radius:23px;background:transparent;color:${ink2};font:inherit;font-weight:700">あとで</button>
+                <button type="button" id="pushAskYes" style="flex:1.4;height:46px;border:none;border-radius:23px;background:${acc};color:#fff;font:inherit;font-weight:800">受け取る</button></div></div>`;
+            document.body.appendChild(ov);
+            const done = () => { try { localStorage.setItem(PUSH_ASKED_KEY, "1"); } catch (e) { /* ignore */ } ov.remove(); };
+            document.getElementById("pushAskYes").onclick = () => { done(); try { pushEnable(); pushTileSync(); } catch (e) { console.warn(e); } };   // タップの中でそのまま許可を求める
+            document.getElementById("pushAskLater").onclick = done;
+            ov.onclick = e => { if (e.target === ov) done(); };
+        }
         async function pushAutoRefresh() {
             try {
                 if (!firebaseAvailable || !PUSH_VAPID_KEY || pushUnsupported()) return;
@@ -17912,6 +17936,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     try { localStorage.setItem(GUEST_NAME_KEY, name); } catch (e) { console.warn(e); }
                     ov.remove();
                     try { renderPushSettings(); pushTileSync(); } catch (e) { /* ignore */ }
+                    setTimeout(pushAskOnce, 2500);   // 名前が決まったら、1回だけ「通知を受け取りますか?」
                     setTimeout(() => guestDevPut(true), 800);   // 名簿に「ゲスト」と出すための記録
                     setTimeout(() => appSeenPut(true), 1300);
                     setFirestoreSyncStatus(firestoreEditor ? "管理者" : "閲覧中");
@@ -18093,7 +18118,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611182320;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611182331;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18542,6 +18567,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     applyRole();
                     setTimeout(syncLocalNtf, 1500);
                     setTimeout(pushAutoRefresh, 4000);   // アプリの通知: トークンが変わっていたら保存し直す(受け取り中の端末だけ)
+                    setTimeout(pushAskOnce, 6000);   // まだ受け取っていなければ、1回だけ聞く
                     setTimeout(() => syncGuestExclude(), 2000);   // 前の版で除外リストに入れたゲストを外す
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
@@ -22282,6 +22308,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 { id: "menu", target: "menusv", tap: true, screen: "main" },
                 { id: "ans", target: "seg", tap: true, screen: "survey" },
                 ...(tutStandalone() ? [] : [{ id: "home", center: true, screen: "survey" }]),
+                { id: "notify", center: true, screen: "survey" },
                 { id: "login", center: true, screen: "survey" }
             ];
         }
@@ -22420,6 +22447,11 @@ const namesBtn = isAdmin() && dates.length > 0
                 return { ttl: "ホーム画面に追加しよう", msg: (ios
                     ? `Safariの下の${sh}<b>共有</b> → <b>ホーム画面に追加</b> で、アプリのように開けます。`
                     : `ブラウザの右上の<b>︙</b> → <b>ホーム画面に追加</b> で、アプリのように開けます。`) + "<br>あとからでも、設定の<b>使い方</b>で見られます。", btn: "次へ" };
+            }
+            if (id === "notify") {
+                const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+                return { ttl: "通知をオンにしよう", msg: "ログインして名前を選んだら、<b>設定</b>の<b>🔔 通知</b>ボタンでオンに。バレーの日時や<b>回答のお願い</b>が、スマホに届きます。"
+                    + (ios && !tutStandalone() ? "<br>iPhoneは<b>ホーム画面に追加したアプリ</b>から(iOS 16.4以降)。" : ""), btn: "次へ" };
             }
             if (id === "cal") return { ttl: "自分のカレンダーに入れる", msg: "下のメニューの<b>カレンダー</b>を押すと、バレーの予定の一覧が出ます。<br>・<b>Googleカレンダー</b>: 1件ずつ押して追加<br>・<b>iPhoneのカレンダー</b>: 「All」でまとめて書き出し、開いた画面で「すべて追加」", btn: "次へ" };
             if (id === "detail") return tutS.detail
