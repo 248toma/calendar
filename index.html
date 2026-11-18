@@ -2032,6 +2032,20 @@
         .vb-tent button.on[data-v="1"] { color: var(--ink-2); }
         body:not(.nv-full) .vb-tent { display: none !important; }
         /* 未定の回: 出欠・チーム分け・精算のタブは出さない(予約と動画だけ) */
+        /* バレー画面の上の行: 日付は残りの幅に収め(はみ出さない)、通知・未定/確定・削除は小さくそろえて右へ */
+        body.nv-full .day-bar { flex-wrap: nowrap; gap: 8px; }
+        body.nv-full .selected-date-label { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+        body.nv-full .selected-date-label .sd-main { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+        body.nv-full .day-bar .vb-ntf { order: 1; }
+        body.nv-full .day-bar .vb-tent { order: 2; }
+        body.nv-full .day-bar .vb-del { order: 3; }
+        body.nv-full .vb-del, body.nv-full .vb-ntf { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 16px; gap: 0; }
+        body.nv-full .vb-del svg { width: 15px; height: 15px; }
+        body.nv-full .vb-ntf .ic { width: 15px; height: 15px; }
+        body.nv-full .vb-ntf span { display: none; }
+        body.nv-full .vb-ntf.has-txt { width: auto; padding: 0 11px; gap: 4px; }
+        body.nv-full .vb-ntf.has-txt span { display: inline; }
+        body.nv-full .vb-tent button { height: 26px; min-width: 38px; padding: 0 8px; border-radius: 13px; }
         body.vb-tent-on #tabMemberBtn, body.vb-tent-on #tabTeamsBtn, body.vb-tent-on #tabSettleBtn, body.vb-tent-on #vbNtfBtn { display: none !important; }
         /* 日付枠の中の予定の影が、枠の角で切れないように */
         /* ヘッダーなし: カレンダーの上の段に まとめる */
@@ -2158,6 +2172,11 @@
         #nvDayPanel .nv-go .nv-ttl::after { content: "›"; margin-left: auto; padding-left: 8px; font-weight: 400; color: var(--ink-3); }
         #nvDayPanel .nv-sub, #nvDayPanel .nv-memo { margin-top: 0; font-size: 11px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #sheetBody #nvDayPanel { margin: 0; }
+        /* ===== スマホに通知(Web Push) ===== */
+        .push-st { font-size: 12.5px; font-weight: 700; color: var(--ink-3); text-align: right; }
+        .push-st.on { color: #0a8f6a; }
+        .push-st.ng { color: #b2475a; }
+        #pushSettings .st-btn[disabled] { opacity: .45; cursor: default; }
         /* ===== LINE通知 ===== */
         :root { --i-bell:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4'/%3E%3C/svg%3E"); --i-belloff:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%2016.500V11a6%206%200%200%201%2012%200v5.500l1.500%202h-15z'/%3E%3Cpath%20d='M10%2021h4M4%204l16%2016'/%3E%3C/svg%3E"); }
         .ic-bell{-webkit-mask-image:var(--i-bell);mask-image:var(--i-bell);}.ic-belloff{-webkit-mask-image:var(--i-belloff);mask-image:var(--i-belloff);}
@@ -4863,6 +4882,17 @@ await main();
                 </div>
             </details>
         </div>
+        <!-- スマホに通知(Web Push): 管理者の端末だけ。今週のロスターが変わったら、GAS(push-notify.gs)が送る -->
+        <div class="panel-group-label admin-only real-admin-only">スマホに通知</div>
+        <div class="st-card st-group admin-only real-admin-only">
+            <details class="acc" id="pushAcc" ontoggle="if(this.open) renderPushSettings()">
+                <summary>スマホに通知(ロスターの変更)</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">今週のバレーの出欠(○✖△)が変わったら、この端末にお知らせを出します(LINEは使いません)。受け取るのは、ここで「受け取る」を押した管理者の端末だけです。iPhoneはホーム画面に追加したアプリ(iOS 16.4以降)から設定してください。</div>
+                    <div id="pushSettings"></div>
+                </div>
+            </details>
+        </div>
         <div class="panel-group-label">予約・精算</div>
         <div class="st-card st-group">
             <details class="acc">
@@ -4920,7 +4950,7 @@ await main();
 
     <div class="day-bar">
         <div class="selected-date-label" id="selectedDateLabel"></div>
-        <button type="button" class="vb-del admin-only" id="vbDelBtn" onclick="deleteVolleyDay()" aria-label="この日のバレーを削除" title="この日のバレーを削除"><i class="ic ic-close"></i><span>削除</span></button>
+        <button type="button" class="vb-del admin-only" id="vbDelBtn" onclick="deleteVolleyDay()" aria-label="この日のバレーを削除" title="この日のバレーを削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4.5h6V7"></path><path d="M6.5 7l1 12.5h9l1-12.5"></path><path d="M10 11v5.5M14 11v5.5"></path></svg></button>
         <button type="button" class="vb-ntf admin-only" id="vbNtfBtn" onclick="openVolleyNtf()" aria-label="この日のLINE通知"><i class="ic ic-bell"></i><span>通知</span></button>
         <span class="st-seg vb-tent admin-only" id="vbTentSeg" role="group" aria-label="未定 / 確定(未定は管理者だけに見えます)"><button type="button" data-v="1" onclick="setVolleyTent(true)" title="未定: 管理者だけの仮の予定(閲覧者には見えません。アンケート・チーム分け・精算・通知なし)">未定</button><button type="button" data-v="0" onclick="setVolleyTent(false)" title="確定: みんなに共有するバレー">確定</button></span>
         <div class="day-toggles">
@@ -5983,6 +6013,7 @@ await main();
                 renderRvPresetEditor();
                 renderTeamSettingsPanel();
                 renderNotifySettings();
+                try { renderPushSettings(); } catch (e) { /* ignore */ }
                 try { renderJpcalSeg(); } catch (e) { /* ignore */ }
                 if (document.getElementById("rosterAcc").open) renderRosterPanel();
                 renderSetAcct();
@@ -7427,6 +7458,179 @@ await main();
         function ntfVdayDrop(ks) {   // 消した回の、通知の個別設定を消す(まとめて1回で保存)
             try { const cfg = notifyCfg(); let ch = false; (ks || []).forEach(k => { if (cfg.vday[k]) { delete cfg.vday[k]; ch = true; } }); if (ch) saveNotify(cfg); } catch (e) { console.warn(e); }
         }
+        // ------- スマホに通知(Web Push / Firebase Cloud Messaging)。管理者の端末だけ -------
+        //   「この端末で受け取る」を押すと、この端末の宛先(FCMのトークン)を共有データ attendance_push_v1 に入れる:
+        //     { [端末ID]: { t: トークン, n: 管理者の名前, os: "iOS"/"Android"/"PC", at: 登録・更新した時刻(ISO), on: true } }
+        //   送るのは別に動かす Google Apps Script(push-notify.gs)。数分ごとに今週のロスターを見て、変わっていたらこの宛先に送る。
+        //   Service Worker は firebase-messaging-sw.js(index.html と同じ場所に置く。キャッシュはしない)
+        var PUSH_VAPID_KEY = "BKX9fG44yysA6Q352DtmZXnJCIgSuaMF8FcFHgZ6pNIOOO3bBL3gPFoscJU6Ajdie2QL3mPGcMKzIqU8ajMEiN4";   // Firebaseコンソール → プロジェクトの設定 → Cloud Messaging → ウェブプッシュ証明書 の「鍵ペア」(公開鍵)。空のあいだは「準備中」
+        var PUSH_KEY = "attendance_push_v1";
+        var PUSH_DEV_KEY = "vb_push_device_v1";   // この端末のID(attendance_ で始めないので共有しない)
+        var PUSH_SW_URL = "./firebase-messaging-sw.js";
+        var PUSH_SDK_URL = "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js";
+        var PUSH_KEEP_DAYS = 120;   // これより長く更新されていない宛先は、保存のついでに消す(共有データを小さく保つ)
+        var pushBusy = false, pushNote = "", pushSdkP = null, pushFgOn = false;
+        function pushDeviceId(create) {
+            let id = "";
+            try { id = localStorage.getItem(PUSH_DEV_KEY) || ""; } catch (e) { id = ""; }
+            if (!id && create) {
+                id = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+                try { localStorage.setItem(PUSH_DEV_KEY, id); } catch (e) { /* ignore */ }
+            }
+            return id;
+        }
+        function pushParse(s) { try { const v = JSON.parse(s || "null"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
+        function pushList() { let s = null; try { s = localStorage.getItem(PUSH_KEY); } catch (e) { s = null; } return pushParse(s); }
+        function pushMine() { const id = pushDeviceId(false); return id ? (pushList()[id] || null) : null; }
+        function pushIsIOS() { const ua = navigator.userAgent || ""; return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); }
+        function pushOS() { return pushIsIOS() ? "iOS" : /Android/i.test(navigator.userAgent || "") ? "Android" : "PC"; }
+        // 使えないときは理由(使えるときは "")
+        function pushUnsupported() {
+            if (!firebaseAvailable) return "共有データにつながっていません";
+            if (!window.isSecureContext) return "https で開いていません";
+            const api = ("serviceWorker" in navigator) && ("PushManager" in window) && typeof Notification !== "undefined";
+            if (pushIsIOS() && !isStandaloneApp()) return "ホーム画面に追加したアプリから開いてください(iOS 16.4以降)";
+            if (!api) return pushIsIOS() ? "iOS 16.4以降の、ホーム画面に追加したアプリで使えます" : "このブラウザは通知に対応していません";
+            return "";
+        }
+        // firebase-messaging-compat.js は、使うときだけ読み込む
+        function pushLoadSdk() {
+            if (window.firebase && firebase.messaging) return Promise.resolve();
+            if (pushSdkP) return pushSdkP;
+            pushSdkP = new Promise((res, rej) => {
+                const s = document.createElement("script");
+                s.src = PUSH_SDK_URL; s.async = true;
+                s.onload = () => (firebase.messaging ? res() : rej(new Error("通知の部品を読み込めませんでした")));
+                s.onerror = () => { pushSdkP = null; rej(new Error("通知の部品を読み込めませんでした(通信を確認してください)")); };
+                document.head.appendChild(s);
+            });
+            return pushSdkP;
+        }
+        // Service Worker が動き出すまで待つ(登録した直後は installing のことがある)
+        function pushWaitActive(reg) {
+            if (reg.active) return Promise.resolve(reg);
+            return new Promise((res, rej) => {
+                const w = reg.installing || reg.waiting;
+                const t = setTimeout(() => (reg.active ? res(reg) : rej(new Error("Service Worker が動きません"))), 15000);
+                if (!w) { clearTimeout(t); return reg.active ? res(reg) : rej(new Error("Service Worker が動きません")); }
+                w.addEventListener("statechange", () => { if (reg.active) { clearTimeout(t); res(reg); } });
+            });
+        }
+        async function pushMessaging(reg) {
+            await pushLoadSdk();
+            if (firebase.messaging.isSupported && !(await firebase.messaging.isSupported())) throw new Error("この端末は通知に対応していません");
+            const m = firebase.messaging();
+            if (!pushFgOn) {   // アプリを開いている間に届いた通知は、SDKが出さないので自分で出す
+                pushFgOn = true;
+                try {
+                    m.onMessage(p => {
+                        const n = (p && p.notification) || {};
+                        try { reg.showNotification(n.title || "お知らせ", { body: n.body || "", tag: "roster", icon: n.icon || undefined, data: { link: ((p && p.fcmOptions) || {}).link || "./" } }); } catch (e) { /* ignore */ }
+                    });
+                } catch (e) { /* ignore */ }
+            }
+            return m;
+        }
+        function pushToken(m, reg) { return m.getToken({ vapidKey: PUSH_VAPID_KEY, serviceWorkerRegistration: reg }); }
+        // この端末の宛先を、共有データの最新に重ねて保存する(entry = null で消す)。通知の設定と同じく、共有データ全体の保存は使わない
+        function pushSaveEntry(id, entry) {
+            if (!realAdmin() || !sharedTxReady()) return Promise.reject(new Error("共有データに保存できません(管理者でログインして、少し待ってから押してください)"));
+            return firebase.firestore().runTransaction(async tx => {
+                const snap = await tx.get(firestoreRef);
+                if (!snap.exists) throw new Error("no-doc");
+                const values = (snap.data() && snap.data().values) || {};
+                const cur = pushParse(values[PUSH_KEY]), lim = Date.now() - PUSH_KEEP_DAYS * 864e5;
+                Object.keys(cur).forEach(k => { const x = cur[k]; if (!x || !x.t || x.on === false || !(Date.parse(x.at) > lim)) delete cur[k]; });
+                if (entry) cur[id] = entry; else delete cur[id];
+                const s = JSON.stringify(cur);
+                if (s !== (values[PUSH_KEY] || "")) tx.update(firestoreRef, { ["values." + PUSH_KEY]: s, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                return s;
+            }).then(s => { setLocalQuiet(PUSH_KEY, s); return s; });
+        }
+        function pushEntry(token) { return { t: token, n: (myMemberName() || "管理者").slice(0, 20), os: pushOS(), at: new Date().toISOString(), on: true }; }
+        function pushStatus() {
+            const why = pushUnsupported();
+            if (why) return { cls: "na", text: "この端末は未対応(" + why + ")" };
+            if (!PUSH_VAPID_KEY) return { cls: "na", text: "準備中(VAPIDキー未設定)" };
+            if (Notification.permission === "denied") return { cls: "ng", text: "許可されていません(端末の設定で、このアプリの通知を許可してください)" };
+            if (pushMine() && Notification.permission === "granted") return { cls: "on", text: "この端末で受け取り中" };
+            return { cls: "", text: "未設定" };
+        }
+        function renderPushSettings() {
+            const box = document.getElementById("pushSettings");
+            if (!box) return;
+            if (!realAdmin()) { box.innerHTML = ""; return; }   // 閲覧者には出さない
+            const st = pushStatus(), mine = pushMine(), list = pushList();
+            const can = !pushUnsupported() && !!PUSH_VAPID_KEY && Notification.permission !== "denied";
+            const devs = Object.keys(list).filter(k => list[k] && list[k].on !== false && list[k].t).map(k => escapeHtml(`${list[k].n || "?"}(${list[k].os || "?"})`) + (k === pushDeviceId(false) ? "←この端末" : ""));
+            box.innerHTML = `<div class="ntf-row"><span>この端末</span><b class="push-st ${st.cls}">${escapeHtml(st.text)}</b></div>
+                <div class="ntf-row" style="gap:8px;flex-wrap:wrap;justify-content:flex-start">
+                    <button type="button" class="st-btn" onclick="pushEnable()"${can && !pushBusy ? "" : " disabled"}>${mine && st.cls === "on" ? "もう一度登録する" : "この端末で受け取る"}</button>
+                    ${mine ? `<button type="button" class="st-btn" onclick="pushDisable()"${pushBusy ? " disabled" : ""}>受け取りをやめる</button>` : ""}
+                </div>
+                ${pushNote ? `<div class="acc-desc">${escapeHtml(pushNote)}</div>` : ""}
+                <div class="acc-desc">受け取り中の端末: ${devs.length ? devs.join("、") : "なし"}</div>`;
+        }
+        function pushSetNote(t) { pushNote = t || ""; renderPushSettings(); }
+        // 「この端末で受け取る」。通知の許可は、押したその場で聞く(iPhoneは、押した直後でないと聞けない)
+        function pushEnable() {
+            if (!realAdmin() || pushBusy) return;
+            const why = pushUnsupported();
+            if (why) { pushSetNote(why); return; }
+            if (!PUSH_VAPID_KEY) { pushSetNote("準備中(VAPIDキー未設定)"); return; }
+            let perm;
+            try { perm = Notification.requestPermission(); } catch (e) { perm = null; }
+            pushBusy = true; pushSetNote("設定中…");
+            Promise.resolve(perm).then(async p => {
+                p = p || Notification.permission;
+                if (p !== "granted") throw new Error(p === "denied" ? "通知が許可されませんでした(端末の設定で、このアプリの通知を許可してください)" : "通知の許可が必要です");
+                const reg = await navigator.serviceWorker.register(PUSH_SW_URL, { scope: "./" });
+                await pushWaitActive(reg);
+                const m = await pushMessaging(reg);
+                const token = await pushToken(m, reg);
+                if (!token) throw new Error("宛先(トークン)を作れませんでした");
+                await pushSaveEntry(pushDeviceId(true), pushEntry(token));
+                return "この端末で受け取ります。今週のロスターが変わると通知が届きます。";
+            }).then(msg => { pushBusy = false; pushSetNote(msg); setSavedMsg("保存しました ✓"); })
+              .catch(err => { pushBusy = false; console.warn("通知の設定に失敗しました。", err); pushSetNote("設定できませんでした: " + ((err && err.message) || err)); });
+        }
+        // 「受け取りをやめる」: トークンを消して、共有データからこの端末を外す
+        function pushDisable() {
+            if (!realAdmin() || pushBusy) return;
+            const id = pushDeviceId(false);
+            pushBusy = true; pushSetNote("解除中…");
+            (async () => {
+                try {
+                    const reg = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration("./") : null;
+                    if (reg && PUSH_VAPID_KEY && typeof Notification !== "undefined" && Notification.permission === "granted") {
+                        const m = await pushMessaging(reg);
+                        await pushToken(m, reg);   // この登録を使うように覚えさせてから消す(覚えていないと、別の場所の Service Worker を探しにいく)
+                        await m.deleteToken();
+                    } else if (reg && reg.pushManager) { const s = await reg.pushManager.getSubscription(); if (s) await s.unsubscribe(); }
+                } catch (e) { console.warn("トークンを消せませんでした(共有データからは外します)。", e); }
+                if (id) await pushSaveEntry(id, null);
+            })().then(() => { pushBusy = false; pushSetNote("受け取りをやめました。"); setSavedMsg("保存しました ✓"); })
+                .catch(err => { pushBusy = false; pushSetNote("解除できませんでした: " + ((err && err.message) || err)); });
+        }
+        // 起動したあと: 受け取り中の管理者の端末なら、トークンが変わっていないか確かめる(変わっていたら・30日たったら保存し直す)
+        var pushRefreshTries = 0;
+        async function pushAutoRefresh() {
+            try {
+                if (!realAdmin() || !firebaseAvailable || !PUSH_VAPID_KEY || pushUnsupported()) return;
+                if (Notification.permission !== "granted") return;
+                const id = pushDeviceId(false), mine = pushMine();
+                if (!id || !mine || !mine.t) return;
+                const reg = await navigator.serviceWorker.getRegistration("./");
+                if (!reg || !reg.active) return;   // Service Worker がないときは何もしない(「受け取る」を押し直す)
+                if (!sharedTxReady()) { if (++pushRefreshTries < 4) setTimeout(pushAutoRefresh, 5000); return; }
+                const m = await pushMessaging(reg);
+                const token = await pushToken(m, reg);
+                const name = (myMemberName() || "管理者").slice(0, 20);
+                const stale = !(Date.parse(mine.at) > Date.now() - 30 * 864e5);
+                if (token && (token !== mine.t || stale || mine.n !== name || mine.on === false)) await pushSaveEntry(id, pushEntry(token));
+            } catch (e) { console.warn("通知のトークンを確かめられませんでした。", e); }
+        }
+
         // ------- LINE通知の設定(共有データに保存。LINEのボット(GAS)が毎時これを読んで送る) -------
         var NOTIFY_KEY = "attendance_notify_v1";
         var NTF_DAY_OPTS = [14, 10, 7, 5, 3, 2, 1, 0];
@@ -7875,8 +8079,9 @@ await main();
             const cfg = notifyCfg(), sm = ntfSummary(cfg.vday[selectedDate], cfg.volley);
             b.classList.toggle("off", sm.off);
             const own = cfg.vday[selectedDate] && !cfg.vday[selectedDate].off;
+            b.classList.toggle("has-txt", !sm.off && !!own);   // この日だけの設定があるときだけ文字も出す(ほかはアイコンだけ)
             b.innerHTML = `<i class="ic ${sm.off ? "ic-belloff" : "ic-bell"}"></i><span>${sm.off ? "通知なし" : own ? ntfShortDays(cfg.vday[selectedDate].days) : "通知"}</span>`;
-            b.title = `LINE通知: ${sm.text}`;
+            b.title = `LINE通知: ${sm.text}`; b.setAttribute("aria-label", `この日のLINE通知: ${sm.text}`);
         }
         function openVolleyNtf() {
             if (!isAdmin() || !volOk(selectedDate)) return;   // 未定の回は通知しない
@@ -17137,7 +17342,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const rv = firestorePendingValues, base = firestoreBase;
             if (!rv || !base) return;
             Object.keys(rv).forEach(k => {
-                if (!isSharedKey(k) || k === CHANGELOG_KEY || k === NOTIFY_KEY) return;
+                if (!isSharedKey(k) || k === CHANGELOG_KEY || k === NOTIFY_KEY || k === PUSH_KEY) return;
                 if (vals[k] == null || sameShared(k, vals[k], base[k])) { vals[k] = rv[k]; return; }   // この端末では変えていない → 最新のまま
                 if (sameShared(k, vals[k], rv[k])) return;
                 vals[k] = merge3Json(base[k], vals[k], rv[k]);   // 両方で変わった → 中身を1件ずつ合わせる
@@ -17285,7 +17490,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611171346;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611180914;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -17325,6 +17530,7 @@ const namesBtn = isAdmin() && dates.length > 0
                         mergePendingLog(vals);
                         mergePendingAttendance(vals);   // 閲覧者の回答・ペア予定・通知用の予定・ひとことは新しい方
                         if (remote[NOTIFY_KEY] != null) vals[NOTIFY_KEY] = remote[NOTIFY_KEY];   // 通知の設定は別に保存している
+                        if (remote[PUSH_KEY] != null) vals[PUSH_KEY] = remote[PUSH_KEY]; else delete vals[PUSH_KEY];   // スマホ通知の宛先も別に保存している(古い端末が上書きしない)
                     } finally { firestorePendingValues = keep; }
                 }
                 vals[APPVER_KEY] = String(Math.max(APP_VERSION, remoteAppVer(remote)));
@@ -17702,6 +17908,11 @@ const namesBtn = isAdmin() && dates.length > 0
                     try { renderTeamSyncUi(); } catch (e) { /* ignore */ }
                     if (remoteCoveredByLocal(remoteValues, getShareableLocalValues())) { firestoreBase = remoteValues; return; }
                 }
+                // スマホ通知の宛先(管理者の端末の登録)だけが変わったときは、読み直さずに取り込む(赤い点を出さない)
+                if (remoteValues[PUSH_KEY] != null && remoteValues[PUSH_KEY] !== localValues[PUSH_KEY]) {
+                    setLocalQuiet(PUSH_KEY, remoteValues[PUSH_KEY]);
+                    if (remoteCoveredByLocal(remoteValues, getShareableLocalValues())) { firestoreBase = remoteValues; try { if (document.getElementById("pushAcc").open) renderPushSettings(); } catch (e) { /* ignore */ } return; }
+                }
                 // 他の人の更新では画面を勝手に切り替えない。保留して、↻を押す/アプリに戻ってきたときに反映する
                 firestorePendingValues = remoteValues;
                 if (syncCheckPending) { syncCheckPending = false; autoApplyRemote(); }   // 開いた直後・戻ってきた直後は自動で最新にする
@@ -17727,6 +17938,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 refreshMyMember().then(() => {
                     applyRole();
                     setTimeout(syncLocalNtf, 1500);
+                    if (firestoreEditor) setTimeout(pushAutoRefresh, 4000);   // スマホ通知: トークンが変わっていたら保存し直す(受け取り中の管理者の端末だけ)
                     setTimeout(() => syncGuestExclude(), 2000);   // 前の版で除外リストに入れたゲストを外す
                     // ゲストログインした直後で名前が未選択なら、名前の選択を出す
                     if (authIsGuest && guestJustSignedIn && !myMemberName()) openGuestNamePicker();
