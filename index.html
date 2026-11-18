@@ -2484,6 +2484,13 @@
         #protoUI .pin-in { -webkit-appearance: none; appearance: none; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding: 0 !important; margin: 0 !important; height: 100% !important; min-height: 0 !important; width: 100% !important; min-width: 0; border-radius: 0 !important; color: inherit !important; font: 600 13.5px 'Montserrat', 'Noto Sans JP', system-ui, sans-serif !important; }
         #protoUI #pinT { font: 700 17px 'Noto Sans JP', system-ui, sans-serif !important; }
         #protoUI .pin-in::placeholder { color: inherit; opacity: .14; }
+        /* 予定の入力の上の切り替え(+ の中身と同じ: Volley / 予定 / 節約 / 記録 / まとめて) */
+        #protoUI .pin-seg { flex: 1; min-width: 0; height: 34px; box-sizing: border-box; padding: 3px; border-radius: 17px; display: flex; gap: 2px; }
+        #protoUI .pin-seg button { flex: 1 1 auto; min-width: 0; height: 28px; padding: 0 2px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+        #protoUI .pin-seg button svg { width: 13px; height: 13px; flex: none; }
+        #protoUI .pin-seg button b { font-size: 12px !important; flex: none; }
+        #protoUI .pin-seg button span { overflow: hidden; text-overflow: clip; }
+        @media (max-width: 374px) { #protoUI .pin-seg button svg, #protoUI .pin-seg button b { display: none; } #protoUI .pin-seg button { font-size: 10px; } }   /* 細い画面(iPhone SE など)は文字だけ */
         body.proto-on #protoUI { display: block; position: fixed; inset: 0; z-index: 40; overflow: hidden; }
         body.proto-on.nv-full #protoUI, body.proto-on.plan-editing #protoUI,
         body.proto-on.proto-panel #protoUI { display: none; }
@@ -17955,7 +17962,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181850;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181914;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -19972,14 +19979,17 @@ const namesBtn = isAdmin() && dates.length > 0
                 <button type="button" aria-label="予定を追加" onclick="protoAdd()" style="width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:${P.acc};${raise}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
               </div>`;
             // 入力中: ヘッダーが入力欄になる(上: かんたん入力 / 左: 入れる日の文字盤 / 右: 読み取った日時・題名と色 / 下: 保存先などのボタン)
-            let pinDialH = "", pinInfo = "", pinOpts = "", pinCols = "", pinLine = P.ink3;
+            let pinDialH = "", pinInfo = "", pinOpts = "", pinCols = "", pinLine = P.ink3, pinSeg = "";
             if (pin) {
+                // 上の切り替え(+ の中身と同じ並び。中身が出るのは管理者だけ: そうでない人の + はすぐ予定の入力)
+                const sw = isAdmin() ? PR_RAD_SUB : [];
+                if (sw.length > 1) pinSeg = `<div class="pin-seg" role="tablist" aria-label="追加するもの" style="${insetS}">${sw.map(it => { const on = it.k === "plan"; return `<button type="button" role="tab" aria-selected="${on}" aria-label="${it.label}" onclick="pinSwitch('${it.k}')" style="color:${on ? P.acc : P.ink3};${on ? raiseS : ""}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span></button>`; }).join("")}</div>`;
                 const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
                 const dd = (k, big) => { const [yy, mm, d0] = k.slice(0, 10).split("-").map(Number); const w = new Date(yy, mm - 1, d0).getDay(); return `<span style="font-family:${en};font-size:14px;font-weight:700">${mm}/${d0}</span><span style="font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span>`; };
                 const pc = C[planColor] || C[0];
                 const dots = PIN_COLS.map(([c, lb]) => { const on = planColor === c; return `<button type="button" role="radio" aria-checked="${on}" aria-label="${lb}" onclick="setPlanColor(${c});renderProto()" style="width:24px;height:24px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;${on ? insetS : raiseS}"><i style="width:${on ? 10 : 12}px;height:${on ? 10 : 12}px;border-radius:50%;background:${C[c]}"></i></button>`; }).join("");
                 // 文字盤はヘッダーの高さに収まるよう、ふだんの大きさ(138px)を少し縮めて見せる
-                const PZ = 128, sc = PZ / 138;
+                const PZ = pinSeg ? 112 : 128, sc = PZ / 138;   // 上に切り替えがあるときは、少し小さく
                 pinDialH = `<div style="width:${PZ}px;height:${PZ}px"><div style="position:relative;width:138px;height:138px;border-radius:50%;display:flex;align-items:center;justify-content:center;transform:scale(${sc});transform-origin:0 0;${raiseS}">
                     ${dial.map(L).join("")}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
@@ -20041,16 +20051,16 @@ const namesBtn = isAdmin() && dates.length > 0
 
                 pinOpts = op.join("");
             }
-            // 入力中のヘッダー: ふだんのヘッダーと同じ並び(左に文字盤、右に文字)。入力欄は線だけの1行
+            // 入力中のヘッダー: ふだんのヘッダーと同じ並び(左に文字盤、右に文字)。入力欄は線だけの1行。管理者は上に + の中身の切り替え(× はその右)
+            const pinX = `<button type="button" aria-label="閉じる" onclick="protoCloseInput()" style="width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink3}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>`;
             const headPin = `
-              <div style="position:relative;height:${up ? 292 : 286}px;box-sizing:border-box;border-radius:28px;padding:16px 20px 12px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
-                <div style="display:flex;align-items:center;gap:18px;flex:1;min-height:0">
-                  <div id="prPinDial" style="flex:none">${pinDialH}</div>
+              <div style="position:relative;height:${(up ? 292 : 286) + (pinSeg ? 16 : 0)}px;box-sizing:border-box;border-radius:28px;padding:${pinSeg ? 12 : 16}px 20px 12px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
+                ${pinSeg ? `<div style="display:flex;align-items:center;gap:6px;height:34px;flex:none;margin:0 -8px 8px -6px">${pinSeg}${pinX}</div>` : ""}
+                <div style="display:flex;align-items:center;gap:${pinSeg ? 16 : 18}px;flex:1;min-height:0">
+                  <div id="prPinDial" style="flex:none${pinSeg ? ";margin-left:-4px" : ""}">${pinDialH}</div>
                   <div style="display:flex;flex-direction:column;min-width:0;flex:1">
-                    <div style="position:absolute;top:10px;right:14px">
-                      <button type="button" aria-label="閉じる" onclick="protoCloseInput()" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:${P.ink3}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
-                    </div>
-                    <div id="prPinLine" style="height:34px;margin-right:22px;display:flex;align-items:center;border-bottom:1.5px solid ${pinLine}">
+                    ${pinSeg ? "" : `<div style="position:absolute;top:10px;right:14px">${pinX}</div>`}
+                    <div id="prPinLine" style="height:${pinSeg ? 30 : 34}px;margin-right:${pinSeg ? 0 : 22}px;display:flex;align-items:center;border-bottom:1.5px solid ${pinLine}">
                       <input id="pinT" class="pin-in" type="text" enterkeyhint="next" autocomplete="off" spellcheck="false" aria-label="題名" placeholder="タイトル" oninput="pinInput()" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();document.getElementById('pinH').focus();}"><button type="button" id="pinTS" class="pin-sug" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="pinSugApply()" style="display:none;color:${P.ink3}"></button>
                     </div>
                     <div style="height:30px;margin-top:6px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${P.lo};color:${P.ink3}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="3"></rect><path d="M4 10h16M9 3.5v4M15 3.5v4"></path></svg>
@@ -21001,6 +21011,19 @@ const namesBtn = isAdmin() && dates.length > 0
             planEditId = null; planFormDate = "";
             const [y, m] = selectedDate.slice(0, 10).split("-").map(Number); protoYM = [y, m];
             renderProto();
+        }
+        // 入力中のヘッダーの切り替え(+ の中身と同じ: Volley / 予定 / 節約 / 記録 / まとめて)。予定の入力を閉じて、入れようとしていた日でそれを開く
+        function pinSwitch(k) {
+            const it = PR_RAD_SUB.find(x => x.k === k);
+            if (!it || k === "plan" || !pinOpen || !isAdmin()) return;
+            if ((pinVal("pinT").trim() || pinVal("pinM").trim()) && !confirm("入力中の予定は保存されません。切り替えますか?")) return;
+            protoHaptic && protoHaptic();
+            const d = String(pinSD || selectedDate).slice(0, 10), today = formatDateKey(new Date());
+            protoCloseInput();
+            if (sessDay(selectedDate) !== d) { const [y, m] = d.split("-").map(Number); protoYM = [y, m]; selectDate(d); }   // Volley・節約は selectedDate の日で開く
+            try { it.run(); } catch (e) { console.warn(e); return; }
+            if (k === "kiroku" && krForm && d <= today) { krForm.date = d; renderKiroku(); }   // 記録: その日を選んでおく(先の日は今日のまま)
+            if (k === "vbulk" && vba && d >= vbaToday()) { vba.dates.add(d); vba.ym = [+d.slice(0, 4), +d.slice(5, 7) - 1]; vbaRender(); }   // まとめて: その日を選んでおく
         }
         // メモ: 題名の13文字目からあふれた分 + メモ欄
         function pinMemoSync() {
