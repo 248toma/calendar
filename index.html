@@ -2727,6 +2727,29 @@
         .mt-tmem { padding: 6px 8px 2px; }
         .mt-tdet[open] > summary { background: rgba(128, 128, 128, .14); }
 
+        /* ===== 通知を受け取るか、1回だけ聞く(設定・お知らせと同じ、やわらかい凹凸。下から浮かぶカード) ===== */
+        #pushAskOv { position: fixed; inset: 0; z-index: 9800; display: flex; align-items: flex-end; justify-content: center; background: rgba(12, 16, 24, .32); animation: paFade .22s ease both; -webkit-tap-highlight-color: transparent; }
+        body.dark #pushAskOv { background: rgba(0, 0, 0, .5); }
+        #pushAskOv .pa-box { position: relative; box-sizing: border-box; width: calc(100% - 20px); max-width: 460px; margin: 0 10px calc(14px + env(safe-area-inset-bottom)); padding: 22px 20px 20px; border-radius: 28px; background: var(--sn-dome); box-shadow: 0 14px 40px rgba(10, 14, 24, .28), 0 2px 8px rgba(10, 14, 24, .10), inset 1px 1px 0 var(--sn-eh), inset -1px -1px 0 var(--sn-el); color: var(--sn-ink); font-family: 'Noto Sans JP', system-ui, sans-serif; animation: paUp .38s cubic-bezier(.16, 1, .3, 1) both; }
+        body.dark #pushAskOv .pa-box { box-shadow: 0 14px 40px rgba(0, 0, 0, .55), inset 1px 1px 0 var(--sn-eh), inset -1px -1px 0 var(--sn-el); }
+        #pushAskOv .pa-head { display: flex; align-items: center; gap: 16px; }
+        #pushAskOv .pa-ic { flex: none; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-acc); }
+        #pushAskOv .pa-ic svg { width: 22px; height: 22px; }
+        #pushAskOv .pa-ht { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+        #pushAskOv .pa-eye { font: 700 10px/1 var(--sn-en); letter-spacing: .16em; color: var(--sn-ink3); }
+        #pushAskOv .pa-ttl { margin: 0; font-size: 16.5px; font-weight: 700; line-height: 1.35; color: var(--sn-ink); }
+        #pushAskOv .pa-msg { margin: 16px 2px 0; font-size: 13px; line-height: 1.7; color: var(--sn-ink2); text-wrap: pretty; }
+        #pushAskOv .pa-msg b { color: var(--sn-ink); font-weight: 700; }
+        #pushAskOv .pa-acts { display: flex; gap: 14px; margin-top: 20px; }
+        #pushAskOv .pa-b { flex: 1; height: 48px; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 0 14px; border: none; border-radius: 24px; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink2); font: 700 14px 'Noto Sans JP', system-ui, sans-serif; cursor: pointer; transition: box-shadow .15s ease; }
+        #pushAskOv .pa-b.pri { flex: 1.35; color: var(--sn-acc); font-weight: 800; }
+        #pushAskOv .pa-b svg { width: 16px; height: 16px; flex: none; }
+        #pushAskOv .pa-b:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
+        #pushAskOv .pa-b:focus-visible { outline: 2px solid color-mix(in srgb, var(--sn-acc) 55%, transparent); outline-offset: 3px; }
+        @keyframes paFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes paUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { #pushAskOv, #pushAskOv .pa-box { animation: none; } }
+        body.pr-noanim #pushAskOv, body.pr-noanim #pushAskOv .pa-box { animation: none; }
         /* ===== 節約の記録 ===== */
         .sv-total-host:empty { display: none; }
         .sv-total { margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--ink-3); opacity: .75; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
@@ -3272,7 +3295,7 @@
         @keyframes prChipIn { from { opacity: 0; transform: translate(-50%, 10px); } }
         /* ===== 設定(11/06): やわらかい凹凸。面は背景と同じ色、出っぱり=raise / へこみ=inset、色は青ひとつ ===== */
         /*   色と影は、メイン画面の protoPal() / protoNeu() と同じ値を CSS の変数に写したもの */
-        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail, #icsOv, #protoBell {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
+        #settingsPanel, #fxOv, #pairOv, #rotOv, #matchBox .mt-ed, #prDetail, #icsOv, #protoBell, #pushAskOv, #tutOv {   /* フォーム分析(#fxOv)・ローテ(#rotOv)・チーム分けの画面で試合を直すとき(.mt-ed)も同じ色と影を使う */
             --sn-bg: #e7eaf0; --sn-ink: #1f2329; --sn-ink2: #4a505a; --sn-ink3: #8a909b; --sn-acc: #3b6fe0; --sn-neg: #c4575c;   /* 負け・マイナスだけ、くすんだ赤 */
             --sn-dk: rgba(160,172,194,.62); --sn-lt: rgba(255,255,255,.95);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 68%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 92%, #9aa6bb);
@@ -3286,7 +3309,7 @@
             --sn-insetS: inset 3px 3px 5px var(--sn-dk), inset -3px -3px 5px var(--sn-lt), inset -1px -1px 0 var(--sn-eh);
             --sn-en: 'Montserrat', 'Noto Sans JP', system-ui, sans-serif;
         }
-        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed, body.dark #icsOv, body.dark #protoBell {
+        body.dark #settingsPanel, body.dark #fxOv, body.dark #pairOv, body.dark #prDetail, body.dark #rotOv, body.dark #matchBox .mt-ed, body.dark #icsOv, body.dark #protoBell, body.dark #pushAskOv, body.dark #tutOv {
             --sn-bg: #2b2e34; --sn-ink: #eceef2; --sn-ink2: #c3c7cf; --sn-ink3: #8f959f; --sn-acc: #7aa2ff; --sn-neg: #e0868a;
             --sn-dk: rgba(0,0,0,.55); --sn-lt: rgba(255,255,255,.06);
             --sn-hi: color-mix(in srgb, var(--sn-bg) 92%, #fff); --sn-lo: color-mix(in srgb, var(--sn-bg) 88%, #000);
@@ -3309,7 +3332,7 @@
         #settingsPanel .panel-x:active { background: var(--sn-pit); box-shadow: var(--sn-insetS); }
         /* 上の欄: カードを縦に並べる */
         #settingsPanel #setTop { display: flex; flex-direction: column; gap: 22px; margin: 6px 0 8px; padding: 0; background: none; box-shadow: none; border-radius: 0; }
-        #settingsPanel .st-card { border-radius: 28px; background: var(--sn-dome); box-shadow: var(--sn-raise); }
+        #settingsPanel .st-card, #tutOv .st-card { border-radius: 28px; background: var(--sn-dome); box-shadow: var(--sn-raise); }
         #settingsPanel .st-hidden { display: none !important; }
         #settingsPanel button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
         /* アカウント */
@@ -3325,15 +3348,15 @@
         #settingsPanel .st-mode button { height: 24px; min-width: 0; padding: 0 9px; border-radius: 12px; font: 700 10.5px var(--sn-en); letter-spacing: .04em; }
         #settingsPanel .st-mode button.on { color: var(--sn-acc); }
         /* オン・オフの丸いボタン(4列) */
-        #settingsPanel .st-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 6px; padding: 20px 12px 18px; }
-        #settingsPanel .st-tile-w { display: flex; justify-content: center; min-width: 0; }
-        #settingsPanel .st-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; width: 100%; padding: 0; border: none; background: none; box-shadow: none; color: var(--sn-ink3); cursor: pointer; }
-        #settingsPanel .st-ti { width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink3); transition: box-shadow .18s ease, color .18s ease; }
-        #settingsPanel .st-ti svg { width: 20px; height: 20px; }
-        #settingsPanel .st-tile.on .st-ti { background: var(--sn-pit); box-shadow: var(--sn-inset); color: var(--sn-acc); }
+        #settingsPanel .st-tiles, #tutOv .st-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 6px; padding: 20px 12px 18px; }
+        #settingsPanel .st-tile-w, #tutOv .st-tile-w { display: flex; justify-content: center; min-width: 0; }
+        #settingsPanel .st-tile, #tutOv .st-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; width: 100%; padding: 0; border: none; background: none; box-shadow: none; color: var(--sn-ink3); cursor: pointer; }
+        #settingsPanel .st-ti, #tutOv .st-ti { width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sn-dome); box-shadow: var(--sn-raiseS); color: var(--sn-ink3); transition: box-shadow .18s ease, color .18s ease; }
+        #settingsPanel .st-ti svg, #tutOv .st-ti svg { width: 20px; height: 20px; }
+        #settingsPanel .st-tile.on .st-ti, #tutOv .st-tile.on .st-ti { background: var(--sn-pit); box-shadow: var(--sn-inset); color: var(--sn-acc); }
         #settingsPanel .st-tile:active .st-ti { box-shadow: var(--sn-insetS); }
-        #settingsPanel .st-tl { max-width: 100%; font-size: 10.5px; font-weight: 700; line-height: 1.25; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sn-ink3); }
-        #settingsPanel .st-tile.on .st-tl { color: var(--sn-ink2); }
+        #settingsPanel .st-tl, #tutOv .st-tl { max-width: 100%; font-size: 10.5px; font-weight: 700; line-height: 1.25; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sn-ink3); }
+        #settingsPanel .st-tile.on .st-tl, #tutOv .st-tile.on .st-tl { color: var(--sn-ink2); }
         #settingsPanel .st-tl small { display: block; margin-top: 2px; font: 700 8px var(--sn-en); letter-spacing: .1em; color: var(--sn-ink3); opacity: .85; }
         /* 選ぶ設定: 1枚のカードに行を並べ、右にへこんだ溝 */
         #settingsPanel .st-rows { padding: 6px 18px; }
@@ -3420,8 +3443,8 @@
         #settingsPanel:not([data-solo]) .acc-body :is(.add-btn, .pair-add-row button, .roles-edit-row button, .conflict-add-btn, .template-reset-btn, .st-btn):active { background: var(--sn-pit) !important; box-shadow: var(--sn-insetS) !important; }
         #settingsPanel:not([data-solo]) .acc-body .template-reset-btn { padding: 0 14px; min-height: 34px; margin-top: 10px; text-decoration: none; }
         @media (max-width: 389px) {
-            #settingsPanel .st-tiles { gap: 14px 4px; padding: 18px 8px 16px; }
-            #settingsPanel .st-ti { width: 50px; height: 50px; }
+            #settingsPanel .st-tiles, #tutOv .st-tiles { gap: 14px 4px; padding: 18px 8px 16px; }
+            #settingsPanel .st-ti, #tutOv .st-ti { width: 50px; height: 50px; }
             #settingsPanel .st-acct { gap: 12px; padding: 16px 14px; }
             #settingsPanel .st-av { width: 42px; height: 42px; }
             #settingsPanel .st-rows { padding: 4px 14px; }
@@ -7915,15 +7938,14 @@ await main();
                 if (Notification.permission === "denied") return;
                 if (myRosterId() == null && !realAdmin()) return;
             } catch (e) { return; }
-            const P = typeof protoPal === "function" ? protoPal().P : null;
-            const ov = document.createElement("div"); ov.id = "pushAskOv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "通知");
-            ov.style.cssText = "position:fixed;inset:0;z-index:9800;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.3)";
-            const bg = P ? P.bg : "var(--bg)", ink = P ? P.ink : "var(--ink)", ink2 = P ? P.ink2 : "var(--ink-2)", acc = P ? P.acc : "var(--accent)";
-            ov.innerHTML = `<div style="width:calc(100% - 20px);max-width:460px;margin:0 10px calc(14px + env(safe-area-inset-bottom));padding:20px 20px 16px;border-radius:28px;background:${bg};color:${ink};box-shadow:0 -6px 24px rgba(0,0,0,.22);font-family:'Noto Sans JP',system-ui,sans-serif">
-                <div style="display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${acc}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>スマホに通知を受け取りますか?</div>
-                <div style="margin-top:8px;font-size:13px;line-height:1.6;color:${ink2}">バレーの日時や回答のお願い、自分の予定のお知らせが届きます。あとから設定の「通知」でも変えられます。</div>
-                <div style="display:flex;gap:10px;margin-top:16px"><button type="button" id="pushAskLater" style="flex:1;height:46px;border:none;border-radius:23px;background:transparent;color:${ink2};font:inherit;font-weight:700">あとで</button>
-                <button type="button" id="pushAskYes" style="flex:1.4;height:46px;border:none;border-radius:23px;background:${acc};color:#fff;font:inherit;font-weight:800">受け取る</button></div></div>`;
+            // 見た目は設定・お知らせと同じ(--sn-* の色と影。#pushAskOv に付けてある)。下から浮かぶカードに、出っぱった丸の中のベル・2つの出っぱったボタン
+            const ov = document.createElement("div"); ov.id = "pushAskOv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-labelledby", "pushAskTtl");
+            ov.innerHTML = `<div class="pa-box">
+                <div class="pa-head"><span class="pa-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></span>
+                  <div class="pa-ht"><span class="pa-eye">NOTIFICATIONS</span><h2 class="pa-ttl" id="pushAskTtl">スマホに通知を受け取りますか?</h2></div></div>
+                <p class="pa-msg">バレーの日時や回答のお願い、自分の予定のお知らせが届きます。<br>あとから設定の<b>「通知」</b>でも変えられます。</p>
+                <div class="pa-acts"><button type="button" class="pa-b" id="pushAskLater">あとで</button>
+                  <button type="button" class="pa-b pri" id="pushAskYes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>受け取る</button></div></div>`;
             document.body.appendChild(ov);
             const done = () => { try { localStorage.setItem(PUSH_ASKED_KEY, "1"); } catch (e) { /* ignore */ } ov.remove(); };
             document.getElementById("pushAskYes").onclick = () => { done(); try { pushEnable(); pushTileSync(); } catch (e) { console.warn(e); } };   // タップの中でそのまま許可を求める
@@ -18118,7 +18140,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611182331;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611190020;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -22290,7 +22312,8 @@ const namesBtn = isAdmin() && dates.length > 0
         // ======================================================================
         // はじめての人向けチュートリアル(ログインしていない人が起動・更新したときに出る。閲覧モードの使い方だけ)
         // ログインしていないと、本物の画面は中身が空で回答ボタンも出ない。そこで「見本の画面」の上で、押してほしい所を光らせて案内する
-        // 流れ: ①日付をタップ → ②人数と場所 → リング(バレーの画面・動画) → ③もう一度タップで詳細 → ④ダブルタップで入力 → カレンダーへ追加 → ⑤メニューの「アンケート」 → ⑥○✖△で答える → サインイン / ゲストでログイン
+        // 流れ: バレーの日程を見る(①日付をタップ → ②人数と場所 → ③リング) → アンケートで答える(④メニューの「アンケート」 → ⑤○✖△)
+        //       → 通知をオンに(⑥メニューの「設定」 → ⑦設定の「通知」ボタン) → サインイン / ゲストでログイン
         // (見本の画面は、最初の設定の「メニューを下に常に出す」の形。長押しの手順は出さない)
         // ======================================================================
         var tutAuthChecked, tutOpen, tutIdx, tutS, tutScreen, tutDays, tutOnResize;   // var: 起動時の認証確認から先に参照されても大丈夫なように(初期値は入れない)
@@ -22301,15 +22324,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 { id: "day", target: "day", tap: true, screen: "main" },
                 { id: "head", target: "head", screen: "main" },
                 { id: "ring", target: "ring", screen: "main" },
-                { id: "detail", target: "day", tap: true, screen: "main" },
-                { id: "dbl", target: "day", screen: "main" },
-                { id: "cal", target: "menucal", screen: "main" },
                 ...(bar ? [] : [{ id: "hold", target: "hold", tap: true, hold: true, screen: "main" }]),
                 { id: "menu", target: "menusv", tap: true, screen: "main" },
                 { id: "ans", target: "seg", tap: true, screen: "survey" },
-                ...(tutStandalone() ? [] : [{ id: "home", center: true, screen: "survey" }]),
-                { id: "notify", center: true, screen: "survey" },
-                { id: "login", center: true, screen: "survey" }
+                { id: "set", target: "menuset", tap: true, screen: "main" },
+                { id: "push", target: "push", tap: true, screen: "settings" },
+                { id: "login", center: true, screen: "settings" }
             ];
         }
         // ホーム画面から開いているか(すでに追加済みなら「ホームに追加」の手順は出さない)
@@ -22350,7 +22370,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 下に常に出すメニューの見本(本物と同じアイコンだけの丸い帯)
         function tutBarHtml(P, dark) {
             const { raiseS } = protoNeu(P, dark), items = PR_RAD_ITEMS.filter(it => !it.adm);
-            return `<div style="position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom, 0px) + 18px);transform:translateX(-50%);display:flex;gap:2px;padding:5px;border-radius:28px;background:${P.bg};${raiseS}">${items.map(it => `<span ${it.k === "survey" ? 'data-tut="menusv" data-tr="23"' : it.k === "cal" ? 'data-tut="menucal" data-tr="23"' : ""} style="position:relative;width:44px;height:46px;border-radius:23px;display:flex;align-items:center;justify-content:center;color:${it.k === "add" ? "#2f6fe0" : P.ink2}"><span style="display:flex;width:21px;height:21px">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" ? `<i style="position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:#e5484d"></i>` : ""}</span>`).join("")}</div>`;
+            return `<div style="position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom, 0px) + 18px);transform:translateX(-50%);display:flex;gap:2px;padding:5px;border-radius:28px;background:${P.bg};${raiseS}">${items.map(it => `<span ${it.k === "survey" ? 'data-tut="menusv" data-tr="23"' : it.k === "cal" ? 'data-tut="menucal" data-tr="23"' : it.k === "settings" ? 'data-tut="menuset" data-tr="23"' : ""} style="position:relative;width:44px;height:46px;border-radius:23px;display:flex;align-items:center;justify-content:center;color:${it.k === "add" ? "#2f6fe0" : P.ink2}"><span style="display:flex;width:21px;height:21px">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" ? `<i style="position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:#e5484d"></i>` : ""}</span>`).join("")}</div>`;
         }
         // 予定の詳細の見本(選んでいる日をもう一度タップしたとき)
         function tutSheetHtml(P, dark) {
@@ -22434,35 +22454,57 @@ const namesBtn = isAdmin() && dates.length > 0
               <div class="tut-sample">SAMPLE</div>
             </div>`;
         }
+        // 見本の設定画面(本物の設定のいちばん上と同じ作り。丸いボタンは本物と同じ .st-tile / .st-ti の見た目を #tutOv でも使う)
+        function tutSettingsHtml() {
+            const { dark, P } = protoPal(), { raiseS, insetS } = protoNeu(P, dark);
+            const ic = d => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+            const TILES = [
+                ["ダーク", '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', dark],
+                ["動き", '<path d="M4 12c3-6 5-6 8 0s5 6 8 0"/>', true],
+                ["振動", '<rect x="8" y="3.5" width="8" height="17" rx="2.5"/><path d="M4 9v6M20 9v6"/>', true],
+                ["天気", '<path d="M7 18a4 4 0 1 1 .5-8A6 6 0 0 1 19 11a3.5 3.5 0 0 1-1 7z"/>', true],
+                ["祝日", '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/>', true],
+                ["行事", '<path d="M4 20h16M7 20V10l5-5 5 5v10"/>', true],
+                ["通知", '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>', !!tutS.push, 'data-tut="push" data-tr="22"']
+            ];
+            const tiles = TILES.map(([l, d, on, at]) => `<span class="st-tile${on ? " on" : ""}" ${at || ""} style="padding:2px 0 0"><i class="st-ti"${at && on ? ' style="animation:tutPop .25s ease both"' : ""}>${ic(d)}</i><span class="st-tl">${l}</span></span>`).join("");
+            const seg = (opts, on) => `<span style="display:inline-flex;padding:4px;border-radius:19px;${insetS}">${opts.map((o, i) => `<span style="min-width:44px;height:30px;padding:0 10px;box-sizing:border-box;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:${TUT_EN};font-size:12px;font-weight:700;color:${i === on ? P.ink : P.ink3};${i === on ? raiseS : ""}">${o}</span>`).join("")}</span>`;
+            const row = (l, r, first) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;${first ? "" : `border-top:1px solid var(--sn-line)`}"><span style="font-size:14px;font-weight:700">${l}</span>${r}</div>`;
+            return `<div style="position:absolute;inset:0;background:${P.bg};color:${P.ink};font-family:'Noto Sans JP',system-ui,sans-serif">
+              <div style="max-width:440px;margin:0 auto;box-sizing:border-box;padding:calc(env(safe-area-inset-top, 0px) + 18px) 18px 40px;display:flex;flex-direction:column;gap:22px">
+                <div style="display:flex;align-items:center;gap:10px;height:40px">
+                  <span style="flex:1;padding-left:4px;font-family:${TUT_EN};font-size:15px;font-weight:700;letter-spacing:.1em;color:${P.ink2}">SETTINGS</span>
+                </div>
+                <div class="st-card" style="display:flex;align-items:center;gap:14px;padding:18px 18px">
+                  <span style="flex:none;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${P.ink2};${insetS}">${ic('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.2 7-5.2s5.8 1.6 7 5.2"/>')}</span>
+                  <span style="min-width:0;display:flex;flex-direction:column;gap:6px"><b style="font-family:${TUT_EN};font-size:16px;font-weight:700">Guest</b><span style="display:flex;align-items:center;gap:8px;font-size:11px;color:${P.ink3}">閲覧中<span style="padding:3px 10px;border-radius:10px;font-family:${TUT_EN};font-size:10.5px;font-weight:700;color:${P.acc};${raiseS}">Sign in</span></span></span>
+                </div>
+                <div class="st-card st-tiles">${tiles}</div>
+                <div class="st-card" style="padding:4px 18px">${row("予定の表示", seg(["点", "文字", "EN"], 0), true)}${row("時計", seg(["24h", "12h"], 0))}${row("メニュー", seg(["長押し", "下"], 1))}</div>
+              </div>
+              <div class="tut-sample">SAMPLE</div>
+            </div>`;
+        }
         // 吹き出しの文
         function tutCopy() {
             const id = TUT_STEPS[tutIdx].id;
-            if (id === "intro") return { ttl: "ようこそ!", msg: "出欠の見かたと答えかたを、実際に押しながら<b>30秒</b>で体験しましょう。ここから先は<b>見本の画面</b>です(本物のデータは使いません)。", btn: "はじめる" };
+            if (id === "intro") return { ttl: "ようこそ!", msg: "<b>バレーの日程</b>の見かた・<b>アンケート</b>の答えかた・<b>通知</b>のオンを、実際に押しながら<b>30秒</b>で体験しましょう。ここから先は<b>見本の画面</b>です(本物のデータは使いません)。", btn: "はじめる" };
             if (id === "day") return { ttl: "① バレーの日をタップ", msg: "カレンダーで<b>「バレー」</b>と書いてある日が、バレーのある日です。光っている日をタップしてみましょう。" };
             if (id === "head") return { ttl: "② 人数・時間・場所が見られる", msg: "上のリングは<b>「来る」と答えた人数</b>です。マスが埋まるほど集まっています。時間と場所もここに出ます。", btn: "次へ" };
-            if (id === "ring") return { ttl: "リングを押すとバレーの画面", msg: "上の<b>リング</b>を押すと、バレーの画面が開きます。来る人の一覧のほか、その日の<b>試合の動画のリンク</b>もここから見られます。", btn: "次へ" };
-            if (id === "home") {
-                const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-                const sh = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 15V3M8 7l4-4 4 4"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>`;
-                return { ttl: "ホーム画面に追加しよう", msg: (ios
-                    ? `Safariの下の${sh}<b>共有</b> → <b>ホーム画面に追加</b> で、アプリのように開けます。`
-                    : `ブラウザの右上の<b>︙</b> → <b>ホーム画面に追加</b> で、アプリのように開けます。`) + "<br>あとからでも、設定の<b>使い方</b>で見られます。", btn: "次へ" };
-            }
-            if (id === "notify") {
-                const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-                return { ttl: "通知をオンにしよう", msg: "ログインして名前を選んだら、<b>設定</b>の<b>🔔 通知</b>ボタンでオンに。バレーの日時や<b>回答のお願い</b>が、スマホに届きます。"
-                    + (ios && !tutStandalone() ? "<br>iPhoneは<b>ホーム画面に追加したアプリ</b>から(iOS 16.4以降)。" : ""), btn: "次へ" };
-            }
-            if (id === "cal") return { ttl: "自分のカレンダーに入れる", msg: "下のメニューの<b>カレンダー</b>を押すと、バレーの予定の一覧が出ます。<br>・<b>Googleカレンダー</b>: 1件ずつ押して追加<br>・<b>iPhoneのカレンダー</b>: 「All」でまとめて書き出し、開いた画面で「すべて追加」", btn: "次へ" };
-            if (id === "detail") return tutS.detail
-                ? { ttl: "その日の詳細が出ました", msg: "予定の<b>メモ</b>や<b>出欠</b>、バレーの場所はここで見られます。予定の行を押すと、その予定の詳細へ進みます。", btn: "次へ" }
-                : { ttl: "③ もう一度タップすると詳細", msg: "選んでいる日を<b>もう一度タップ</b>すると、その日の詳細が下から出ます。光っている日を押してみましょう。" };
-            if (id === "dbl") return { ttl: "④ ダブルタップで予定を入れる", msg: "日付を<b>すばやく2回</b>タップすると、その日の予定の入力が開きます(バレーの日はバレーの画面)。<br>上の予定の行を押しても、その予定の詳細が出ます。", btn: "次へ" };
+            if (id === "ring") return { ttl: "③ リングを押すとバレーの画面", msg: "上の<b>リング</b>を押すと、バレーの画面が開きます。来る人の一覧のほか、その日の<b>試合の動画のリンク</b>もここから見られます。", btn: "次へ" };
             if (id === "hold") return { ttl: "画面を長押ししてみよう", msg: "ボタンは普段は隠れています。画面を<b>指で押したまま、少し待つ</b>と、まわりに<b>メニュー</b>が開きます(画面のどこでもOK)。光っている所を<b>長押し</b>してみましょう。" };
-            if (id === "menu") return { ttl: "⑤ 「アンケート」を選ぶ", msg: "画面の下に、いつもメニューが出ています。出欠の回答は、メニューの<b>アンケート</b>から。赤い点がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
+            if (id === "menu") return { ttl: "④ 「アンケート」を選ぶ", msg: "画面の下に、いつもメニューが出ています。出欠の回答は、メニューの<b>アンケート</b>から。赤い点がついているときは<b>まだ答えていない日がある</b>というサインです。押してみましょう。" };
             if (id === "ans") return tutS.ans
                 ? { ttl: "回答できました!", msg: "答えはすぐにみんなへ共有されます。あとから何度でも変えられます。", btn: "次へ" }
-                : { ttl: "⑥ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
+                : { ttl: "⑤ ○ ✖ △ で答えるだけ", msg: "<b>○</b>行く・<b>✖</b>行かない・<b>△</b>未定、のどれかをタップ。光っているボタンを押してみましょう。" };
+            if (id === "set") return { ttl: "⑥ 「設定」を開く", msg: `次は<b>通知</b>です。バレーの日時や<b>回答のお願い</b>を、スマホに届くようにできます。下のメニューの<b>設定</b>(<span style="display:inline-flex;width:15px;height:15px;vertical-align:-3px">${(PR_RAD_ICONS.settings || "").replace(/width="20" height="20"/, 'width="15" height="15"')}</span>)を押してみましょう。` };
+            if (id === "push") {
+                if (!tutS.push) return { ttl: "⑦ 「通知」をオンに", msg: "設定のいちばん上の丸いボタンが、オン・オフの切り替えです。<b>へこんで青くなったらオン</b>。光っている<b>通知</b>を押してみましょう。" };
+                const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+                const sh = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 15V3M8 7l4-4 4 4"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>`;
+                return { ttl: "オンになりました!", msg: "本物は、ログインして<b>名前を選んだあと</b>に、設定のこのボタンで。"
+                    + (ios && !tutStandalone() ? `<br>iPhoneは<b>ホーム画面のアプリ</b>から(Safariの${sh}<b>共有</b> → <b>ホーム画面に追加</b>)。` : ""), btn: "次へ" };
+            }
             return { ttl: "最後に、ログインしましょう", msg: "出欠への回答は、<b>ログインした人</b>ができます。どちらかを選んでください。" };
         }
         function tutTip() {
@@ -22487,15 +22529,15 @@ const namesBtn = isAdmin() && dates.length > 0
             const st = TUT_STEPS[tutIdx], q = id => document.getElementById(id);
             const spot = q("tutSpot"), hit = q("tutHit"), fin = q("tutFinger"), tip = q("tutTip"), arrow = q("tutArrow");
             const W = ov.clientWidth, H = ov.clientHeight, safeTop = 50;
-            const name = st.id === "ans" && tutS.ans ? "card" : st.id === "detail" && tutS.detail ? "sheet" : st.target;
+            const name = st.id === "ans" && tutS.ans ? "card" : st.id === "detail" && tutS.detail ? "sheet" : st.target;   // 通知(push)はオンにしたあとも同じ丸を光らせる
             const el = !st.center && name ? demo.querySelector(`[data-tut="${name}"]`) : null;
             let r = null;
-            if (el) { const b = el.getBoundingClientRect(), pad = name === "menusv" ? 5 : 4; r = { l: b.left - pad, t: b.top - pad, w: b.width + pad * 2, h: b.height + pad * 2, rad: (+el.getAttribute("data-tr") || 14) + pad }; }
+            if (el) { const b = el.getBoundingClientRect(), pad = name === "menusv" || name === "menuset" ? 5 : name === "push" ? 6 : 4; r = { l: b.left - pad, t: b.top - pad, w: b.width + pad * 2, h: b.height + pad * 2, rad: (+el.getAttribute("data-tr") || 14) + pad }; }
             const px = v => Math.round(v) + "px";
             if (r) { spot.style.left = px(r.l); spot.style.top = px(r.t); spot.style.width = px(r.w); spot.style.height = px(r.h); spot.style.borderRadius = px(r.rad); }
             else { spot.style.left = px(W / 2); spot.style.top = px(H / 2); spot.style.width = "1px"; spot.style.height = "1px"; spot.style.borderRadius = "0px"; }
             spot.firstElementChild.style.display = r ? "" : "none";
-            const tappable = !!r && !!st.tap && !(st.id === "ans" && tutS.ans) && !(st.id === "detail" && tutS.detail);
+            const tappable = !!r && !!st.tap && !(st.id === "ans" && tutS.ans) && !(st.id === "detail" && tutS.detail) && !(st.id === "push" && tutS.push);
             if (tappable) { hit.style.display = "block"; hit.style.left = px(r.l); hit.style.top = px(r.t); hit.style.width = px(r.w); hit.style.height = px(r.h); hit.style.borderRadius = px(r.rad); }
             else hit.style.display = "none";
             fin.style.animation = st.hold ? "none" : "";
@@ -22523,7 +22565,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const st = TUT_STEPS[i]; if (!st) { tutClose(); return; }
             const demo = document.getElementById("tutDemo"); if (!demo) return;
             tutIdx = i; tutTheme();
-            demo.innerHTML = st.screen === "survey" ? tutSurveyHtml() : tutMainHtml();
+            demo.innerHTML = st.screen === "survey" ? tutSurveyHtml() : st.screen === "settings" ? tutSettingsHtml() : tutMainHtml();
             if (tutScreen !== st.screen && demo.firstElementChild) demo.firstElementChild.style.animation = "tutFade .3s ease both";   // 画面が変わるときだけ、ふわっと
             tutScreen = st.screen;
             tutTip();
@@ -22536,7 +22578,8 @@ const namesBtn = isAdmin() && dates.length > 0
             if (st.hold || Date.now() - tutHoldAt < 600) return;   // 長押しの手順はクリックでは進まない / メニューが開いた直後の指離しは無視
             try { if (typeof protoHaptic === "function") protoHaptic(); } catch (x) { /* ignore */ }
             if (st.id === "day") { tutS.sel = tutDays.d1; tutShow(tutIdx + 1); }
-            else if (st.id === "menu") tutShow(tutIdx + 1);
+            else if (st.id === "menu" || st.id === "set") tutShow(tutIdx + 1);
+            else if (st.id === "push" && !tutS.push) { tutS.push = true; tutShow(tutIdx); }   // 同じ手順のまま、オンになった見た目に
             else if (st.id === "detail" && !tutS.detail) { tutS.detail = true; tutShow(tutIdx); }   // 同じ手順のまま、詳細が出た見た目に
             else if (st.id === "ans") {
                 const b = document.getElementById("tutHit").getBoundingClientRect(), x = e && e.clientX != null ? e.clientX : b.left + b.width / 2;
@@ -22554,7 +22597,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (tutOpen || authUid || !firebaseAvailable) return;
             try { closeSurveyIfOpen(); } catch (e) { /* ignore */ }
             const old = document.getElementById("tutOv"); if (old) old.remove();
-            tutOpen = true; tutScreen = ""; tutDays = tutDaysOf(); tutS = { sel: tutDays.todayKey, ans: "", detail: false };
+            tutOpen = true; tutScreen = ""; tutDays = tutDaysOf(); tutS = { sel: tutDays.todayKey, ans: "", detail: false, push: false };
             TUT_STEPS = tutStepsFor(true);   // 案内は、最初の設定(メニューを下に常に出す)の画面で
             const ov = document.createElement("div"); ov.id = "tutOv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "使い方");
             ov.innerHTML = `<div class="tut-demo" id="tutDemo"></div><div class="tut-spot" id="tutSpot"><i class="tut-ring"></i></div><div class="tut-block" id="tutBlock"></div>
