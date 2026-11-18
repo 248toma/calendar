@@ -2209,6 +2209,11 @@
         .ntf-chip { height: 30px; min-width: 52px; padding: 0 10px; border: none; border-radius: 15px; background: var(--bg); color: var(--ink-3); font-size: 12px; font-weight: 700; box-shadow: var(--raise-xs); cursor: pointer; }
         .ntf-chip.on { background: var(--accent); color: #fff; }
         .ntf-chip.ex.on { background: var(--notcome-ink, #c0392b); }
+        /* 通知に載せない人: 端末を登録している人は青(点と文字)。選んだ(赤)ときは文字は白のまま、点に白いふち */
+        .ntf-chip.reg:not(.on) { color: var(--sn-acc, #3b6fe0); }
+        .ntf-reg { display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: var(--sn-acc, #3b6fe0); vertical-align: 1px; flex: none; }
+        .ntf-chip.on .ntf-reg { box-shadow: 0 0 0 1.5px #fff; }
+        .ntf-reg-lg { flex-basis: 100%; margin: 2px 0 0; display: flex; align-items: center; }
         .ntf-chip.guest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line-2, #bbb); color: var(--ink-3); opacity: .7; cursor: not-allowed; display: inline-flex; align-items: center; gap: 4px; }
         .rstat-acc { margin: 4px 0 10px; }
         .rs-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 2px; }
@@ -3260,10 +3265,6 @@
         #prFind .prf-t { flex: 1; min-width: 0; font: 500 12.5px 'Noto Sans JP', system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #prFind .prf-sep { display: block; height: 1px; margin: 6px 6px; background: var(--fln); }
         #prFind .prf-none { padding: 10px 6px 4px; font-size: 11px; color: var(--fi3); }
-        /* そろそろ(いつもの間隔から見た、次の予定の目安)と天気: どちらも薄く、色をつけない */
-        #protoUI .pr-soon { opacity: .5; }
-        #protoUI .pr-lt-solo.pr-soon > b { color: var(--pr-ink3, #737a85) !important; font-weight: 600; }
-        #protoUI .pr-lt-solo.pr-soon > b::before { content: none !important; }
         #protoUI .pr-wx { position: absolute; top: 0; right: -8px; width: 9px; height: 9px; display: flex; pointer-events: none; opacity: .55; }
         #protoUI .pr-wx svg { width: 9px; height: 9px; }
         .pr-chip.over-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); }
@@ -4660,7 +4661,6 @@ await main();
                 <button type="button" class="st-tile pr-only" data-seg="animSeg" onclick="setTileTap(this)" aria-label="アニメーション"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12c3-6 5-6 8 0s5 6 8 0"/></svg></i><span class="st-tl">動き</span></button>
                 <button type="button" class="st-tile pr-only" id="hapTile" data-seg="hapSeg" onclick="setTileTap(this)" aria-label="触覚フィードバック"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3.5" width="8" height="17" rx="2.5"/><path d="M4 9v6M20 9v6"/></svg></i><span class="st-tl">振動</span></button>
                 <button type="button" class="st-tile pr-only" data-seg="wxSeg" onclick="setTileTap(this)" aria-label="天気"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4 4 0 1 1 .5-8A6 6 0 0 1 19 11a3.5 3.5 0 0 1-1 7z"/></svg></i><span class="st-tl">天気</span></button>
-                <button type="button" class="st-tile pr-only" data-seg="soonSeg" onclick="setTileTap(this)" aria-label="そろそろ"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5" stroke-dasharray="2.5 2.5"/></svg></i><span class="st-tl">そろそろ</span></button>
                 <button type="button" class="st-tile" data-seg="jpSeg" data-k="hol" onclick="setTileTap(this)" aria-label="祝日"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg></i><span class="st-tl">祝日</span></button>
                 <button type="button" class="st-tile" data-seg="jpSeg" data-k="ev" onclick="setTileTap(this)" aria-label="行事"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M7 20V10l5-5 5 5v10"/></svg></i><span class="st-tl">行事</span></button>
                 <button type="button" class="st-tile" id="pushTile" onclick="pushTileTap()" aria-label="この端末で通知を受け取る" aria-pressed="false"><i class="st-ti"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></i><span class="st-tl">通知</span></button>
@@ -4671,7 +4671,6 @@ await main();
             <div class="st-hidden" aria-hidden="true">
                 <span class="st-seg" id="jpSeg"><button type="button" data-k="hol" onclick="setJpcal('hol')" tabindex="-1">祝日</button><button type="button" data-k="ev" onclick="setJpcal('ev')" tabindex="-1">行事</button></span>
                 <span class="st-seg pr-only" id="animSeg"><button type="button" data-v="0" onclick="setAnim(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setAnim(true)" tabindex="-1">オン</button></span>
-                <span class="st-seg pr-only" id="soonSeg"><button type="button" data-v="0" onclick="setSoon(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setSoon(true)" tabindex="-1">オン</button></span>
                 <span class="st-seg pr-only" id="wxSeg"><button type="button" data-v="0" onclick="setWx(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setWx(true)" tabindex="-1">オン</button></span>
                 <span class="st-seg pr-only" id="hapSeg"><button type="button" data-v="0" onclick="setHaptic(false)" tabindex="-1">オフ</button><button type="button" data-v="1" onclick="setHaptic(true)" tabindex="-1" style="position:relative">オン</button></span>
             </div>
@@ -6202,7 +6201,7 @@ await main();
             t.classList.toggle("on", on); t.setAttribute("aria-pressed", String(on));
             t.classList.toggle("busy", !!pushBusy);
         }
-        // 押した: 受け取り中ならやめる。受け取っていなければ、「この端末の登録」のオンと同じ流れ(その場で通知の許可を聞く)。
+        // 押した: 受け取り中ならやめる(pushDisable)。受け取っていなければ登録する(pushEnable。その場で通知の許可を聞く)。オン・オフはこのボタンだけ。
         //   登録できないとき(名前がない・未対応・iPhoneでホーム画面から開いていない・許可されていない)は、通知詳細設定の「この端末の登録」を開いて理由を見せる
         function pushTileTap() {
             if (pushBusy) return;
@@ -7648,6 +7647,13 @@ await main();
         function pushParse(s) { try { const v = JSON.parse(s || "null"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
         function pushList() { let s = null; try { s = localStorage.getItem(PUSH_KEY); } catch (e) { s = null; } return pushParse(s); }
         function pushMStore() { const a = attendanceByDate[PUSH_M]; return Array.isArray(a) ? a.filter(x => x && x.who != null) : []; }
+        // 端末を登録している人の名簿ID(文字列)の集まり: pushm で宛先(d)のある人 + 管理者の端末(attendance_push_v1)で名簿ID(m)のある人
+        function pushRegIds() {
+            const ids = new Set();
+            try { pushMStore().forEach(r => { if (r.d && Object.keys(r.d).some(k => r.d[k] && r.d[k].t)) ids.add(String(r.who)); }); } catch (e) { /* ignore */ }
+            try { const l = pushList(); Object.keys(l).forEach(k => { const x = l[k]; if (x && x.on !== false && x.t && x.m != null) ids.add(String(x.m)); }); } catch (e) { /* ignore */ }
+            return ids;
+        }
         function pushMRec(who) { return who == null ? null : pushMStore().find(x => String(x.who) === String(who)) || null; }
         // この端末の宛先(管理者は attendance_push_v1、ほかの人は pushm の自分の記録の中)
         function pushMine() {
@@ -7790,9 +7796,9 @@ await main();
                 const cfg = notifyCfg();
                 const needName = me == null && !realAdmin();
                 const on = !!mine && st.cls === "on";
-                const seg = `<span class="st-seg"><button type="button" class="${on ? "on" : ""}" onclick="pushEnable()"${can && !pushBusy && !needName ? "" : " disabled"}>オン</button><button type="button" class="${on ? "" : "on"}" onclick="pushDisable()"${mine && !pushBusy ? "" : " disabled"}>オフ</button></span>`;
-                box.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${seg}</div>
-                    <div class="ntf-row"><span>状態</span><b class="push-st ${st.cls}">${escapeHtml(st.text)}</b></div>
+                // オン・オフは丸いボタン「通知」(pushTile)だけで切り替える。ここは状態と、登録できない理由・名前選び・登録し直しを見せる
+                box.innerHTML = `<div class="ntf-row"><span>状態</span><b class="push-st ${st.cls}">${escapeHtml(st.text)}</b></div>
+                    <div class="acc-desc">オン・オフは上の「通知」ボタンで切り替えます。</div>
                     ${needName ? `<div class="acc-desc">先に自分の名前を選んでください。${authIsGuest ? `<button type="button" class="st-btn" style="margin-left:6px" onclick="openGuestNamePicker()">名前を選ぶ</button>` : "(Googleアカウントでログインしている人は、管理者に名簿との紐付けを頼んでください)"}</div>` : ""}
                     ${me == null && realAdmin() ? `<div class="acc-desc">名簿とひもづいていないので、届くのはロスター変更だけです。</div>` : ""}
                     ${on && mine.t && Notification.permission === "granted" ? `<div class="ntf-row" style="justify-content:flex-start"><button type="button" class="st-btn" onclick="pushEnable()"${can && !pushBusy ? "" : " disabled"}>もう一度登録する</button></div>` : ""}
@@ -7815,7 +7821,7 @@ await main();
                 const hSel = `<select class="ntf-sel" onchange="ntfRosterSet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${i === rc.hour ? " selected" : ""}>${i}時台</option>`).join("")}</select>`;
                 const SYM = { o: "○", t: "△", x: "✖", u: "？", "-": "外れた" };
                 const fChips = `<table class="rmx"><thead><tr><th></th>${NTF_ROSTER_TO.map(b => `<th>→${SYM[b]}</th>`).join("")}</tr></thead><tbody>${["o", "t", "x", "u"].map(a => `<tr><th>${SYM[a]}から</th>${NTF_ROSTER_TO.map(b => a === b ? `<td><span class="rmx-na">—</span></td>` : `<td><button type="button" class="rmx-c${(rc.mx[a] || "").includes(b) ? " on" : ""}" onclick="ntfRosterMx('${a}','${b}')" aria-pressed="${(rc.mx[a] || "").includes(b)}" aria-label="${SYM[a]}から${SYM[b]}">${(rc.mx[a] || "").includes(b) ? "✓" : ""}</button></td>`).join("")}</tr>`).join("")}</tbody></table>`;
-                adm.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${mine ? `<span class="st-seg"><button type="button" class="${rOn ? "on" : ""}" onclick="pushSetRoster(true)"${pushBusy ? " disabled" : ""}>オン</button><button type="button" class="${rOn ? "" : "on"}" onclick="pushSetRoster(false)"${pushBusy ? " disabled" : ""}>オフ</button></span>` : `<b class="push-st">「この端末の登録」で受け取りをオンにしてください</b>`}</div>
+                adm.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${mine ? `<span class="st-seg"><button type="button" class="${rOn ? "on" : ""}" onclick="pushSetRoster(true)"${pushBusy ? " disabled" : ""}>オン</button><button type="button" class="${rOn ? "" : "on"}" onclick="pushSetRoster(false)"${pushBusy ? " disabled" : ""}>オフ</button></span>` : `<b class="push-st">上の「通知」ボタンで受け取りをオンにしてください</b>`}</div>
                     <div class="ntf-row"><span>タイミング</span>${tSeg}</div>
                     ${daily ? `<div class="ntf-row"><span>時間</span>${hSel}</div>` : ""}
                     <div class="ntf-sub">${daily ? `毎日${rc.hour}時台に、その日の変更をまとめて1回。` : "変わるたびに送ります(23〜7時の分は7時にまとめて)。"}管理者で共通。</div>
@@ -7876,20 +7882,24 @@ await main();
             }).then(msg => { pushBusy = false; pushSetNote(msg); setSavedMsg("保存しました ✓"); })
               .catch(err => { pushBusy = false; console.warn("通知の設定に失敗しました。", err); pushSetNote("設定できませんでした: " + ((err && err.message) || err)); });
         }
+        // この端末のトークン(FCM)を消す。失敗しても止めない(共有データからは外す)
+        async function pushDropToken() {
+            try {
+                const reg = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration("./") : null;
+                if (reg && PUSH_VAPID_KEY && typeof Notification !== "undefined" && Notification.permission === "granted") {
+                    const m = await pushMessaging(reg);
+                    await pushToken(m, reg);   // この登録を使うように覚えさせてから消す(覚えていないと、別の場所の Service Worker を探しにいく)
+                    await m.deleteToken();
+                } else if (reg && reg.pushManager) { const s = await reg.pushManager.getSubscription(); if (s) await s.unsubscribe(); }
+            } catch (e) { console.warn("トークンを消せませんでした(共有データからは外します)。", e); }
+        }
         // 「受け取らない(オフ)」: トークンを消して、共有データからこの端末を外す
         function pushDisable() {
             if (pushBusy) return;
             const id = pushDeviceId(false);
             pushBusy = true; pushSetNote("解除中…");
             (async () => {
-                try {
-                    const reg = ("serviceWorker" in navigator) ? await navigator.serviceWorker.getRegistration("./") : null;
-                    if (reg && PUSH_VAPID_KEY && typeof Notification !== "undefined" && Notification.permission === "granted") {
-                        const m = await pushMessaging(reg);
-                        await pushToken(m, reg);   // この登録を使うように覚えさせてから消す(覚えていないと、別の場所の Service Worker を探しにいく)
-                        await m.deleteToken();
-                    } else if (reg && reg.pushManager) { const s = await reg.pushManager.getSubscription(); if (s) await s.unsubscribe(); }
-                } catch (e) { console.warn("トークンを消せませんでした(共有データからは外します)。", e); }
+                await pushDropToken();
                 if (id) await pushSaveEntry(id, null);
             })().then(() => { pushBusy = false; pushSetNote("受け取りをやめました。"); setSavedMsg("保存しました ✓"); })
                 .catch(err => { pushBusy = false; pushSetNote("解除できませんでした: " + ((err && err.message) || err)); });
@@ -8144,8 +8154,11 @@ await main();
             box.innerHTML = blk("volley", "バレーのお知らせ", chTxt);
             renderNtfChannels(cfg);
             renderNotifyText(cfg);
-            const names = sortedRosterForNtf();
-            ex.innerHTML = names.length ? names.map(r => r.position === GUEST_POS ? `<button type="button" class="ntf-chip ex guest" disabled title="希望ポジションがゲストなので選べません(自動で「来る」のときだけ載ります)">${escapeHtml(r.name)}<small>ゲスト</small></button>` : `<button type="button" class="ntf-chip ex${cfg.exclude.includes(r.id) ? " on" : ""}" onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${escapeHtml(r.name)}</button>`).join("") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
+            const names = sortedRosterForNtf(), reg = pushRegIds();
+            const regI = r => reg.has(String(r.id)) ? `<i class="ntf-reg" aria-hidden="true"></i>` : "";   // 端末を登録している人: 青い点
+            const regC = r => reg.has(String(r.id)) ? " reg" : "";
+            const regT = r => reg.has(String(r.id)) ? ` title="端末を登録しています(アプリの通知が届きます)"` : "";
+            ex.innerHTML = names.length ? names.map(r => r.position === GUEST_POS ? `<button type="button" class="ntf-chip ex guest${regC(r)}" disabled title="希望ポジションがゲストなので選べません(自動で「来る」のときだけ載ります)">${regI(r)}${escapeHtml(r.name)}<small>ゲスト</small></button>` : `<button type="button" class="ntf-chip ex${regC(r)}${cfg.exclude.includes(r.id) ? " on" : ""}"${regT(r)} onclick="ntfToggleExclude(${JSON.stringify(r.id).replace(/"/g, "&quot;")})">${regI(r)}${escapeHtml(r.name)}</button>`).join("") + (reg.size ? `<div class="ntf-sub ntf-reg-lg"><i class="ntf-reg" aria-hidden="true"></i>青 = 端末を登録している人(アプリの通知が届く)</div>` : "") : `<div class="acc-desc">名簿にメンバーがいません。</div>`;
         }
         // 届け方(LINE / アプリ)のオン・オフ(管理者)
         function renderNtfChannels(cfg) {
@@ -17833,13 +17846,30 @@ const namesBtn = isAdmin() && dates.length > 0
             });
         }
 
-        // ログアウト: ゲストなら、名簿の「ゲスト」の記録からこの端末を消してから(最大3秒待つ)
+        // ログアウトの前に: この端末をアプリの通知の宛先から外す(トークンを消して、pushm の自分の記録 / 管理者なら attendance_push_v1 から消す)。
+        //   ログアウトすると名前(名簿ID)も書く権限もなくなるので、その前にやる。つながらない・失敗したときはログに残して先に進む(ログアウトは止めない)
+        function pushUnregisterForSignOut() {
+            let id = "", mine = null;
+            try { id = pushDeviceId(false); mine = id ? pushMine() : null; } catch (e) { mine = null; }
+            if (!id || !mine) return Promise.resolve(false);
+            pushBusy = true;
+            return (async () => {
+                await pushDropToken();
+                await pushSaveEntry(id, null);
+                return true;
+            })().catch(e => { console.warn("ログアウト: この端末の通知の登録を外せませんでした。", e); return false; })
+                .finally(() => { pushBusy = false; pushNote = ""; });
+        }
+        // ログアウト: ゲストなら、名簿の「ゲスト」の記録からこの端末を消してから(最大3秒待つ)。通知の登録がある端末は、それも外す(ゲストもGoogleも。最大5秒)
         function signOutFromFirestore() {
             let anon = false; try { anon = !!(firebase.auth().currentUser && firebase.auth().currentUser.isAnonymous); } catch (e) { anon = false; }
             const done = () => firebase.auth().signOut();
             const rm = () => Promise.resolve(appSeenPut(true, true)).catch(() => { });   // この端末の版の記録も消す
-            if (!anon) { Promise.race([rm(), new Promise(r => setTimeout(r, 2500))]).then(done); return; }
-            Promise.race([Promise.all([guestDevPut(true, true), rm()]), new Promise(r => setTimeout(r, 3000))]).catch(() => { }).then(done);
+            let pushReg = false; try { pushReg = !!(pushDeviceId(false) && pushMine()); } catch (e) { pushReg = false; }
+            const pu = () => pushUnregisterForSignOut().catch(() => { });
+            const wait = ms => new Promise(r => setTimeout(r, ms));
+            if (!anon) { Promise.race([Promise.all([rm(), pu()]), wait(pushReg ? 5000 : 2500)]).catch(() => { }).then(done); return; }
+            Promise.race([Promise.all([guestDevPut(true, true), rm(), pu()]), wait(pushReg ? 5000 : 3000)]).catch(() => { }).then(done);
         }
 
         // ゲスト(匿名)ログイン: Googleアカウントなしで、名簿から自分の名前を選んで出欠・精算を共有する(閲覧モードと同じ制限)
@@ -17873,9 +17903,15 @@ const namesBtn = isAdmin() && dates.length > 0
                 b.type = "button";
                 b.textContent = name;
                 b.style.cssText = "border:1px solid var(--line-2);background:" + (name === cur ? "var(--accent-soft)" : "var(--surface-2)") + ";color:var(--ink);border-radius:999px;padding:8px 14px;font-size:14px;";
-                b.onclick = () => {
+                b.onclick = async () => {
+                    // 名前を変えるときは、前の名前で登録していたアプリの通知を外してから(ログアウトと同じ。最大5秒、失敗しても先に進む)
+                    if (cur && name !== cur) {
+                        let reg = false; try { reg = !!(pushDeviceId(false) && pushMine()); } catch (e) { reg = false; }
+                        if (reg) { ov.style.pointerEvents = "none"; await Promise.race([pushUnregisterForSignOut().catch(() => { }), new Promise(r => setTimeout(r, 5000))]); }
+                    }
                     try { localStorage.setItem(GUEST_NAME_KEY, name); } catch (e) { console.warn(e); }
                     ov.remove();
+                    try { renderPushSettings(); pushTileSync(); } catch (e) { /* ignore */ }
                     setTimeout(() => guestDevPut(true), 800);   // 名簿に「ゲスト」と出すための記録
                     setTimeout(() => appSeenPut(true), 1300);
                     setFirestoreSyncStatus(firestoreEditor ? "管理者" : "閲覧中");
@@ -18057,7 +18093,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611182245;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611182320;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -19896,14 +19932,10 @@ const namesBtn = isAdmin() && dates.length > 0
                 return { id: p.id, t: timed ? p.start : endsHere ? `〜${p.end}` : "終日", title: p.title || "予定", sub: planRsvpOn(p) ? `○${planComing(p)}` : "", gc: gcalPlanMap[p.id] ? "G" : "", col: C[+p.color || 0] || C[0], min: timed ? s0 : endsHere ? -0.5 : -1 };
             });
             if (!pin) sessKeysOf(sel).forEach((sk, i, a) => { const v = volInfo(sk); if (v) rows.push({ vol: true, no: !!v.no, tent: v.tent, k: sk, cur: a.length > 1 && sk === selS, t: v.s != null ? fmtMin(v.s) : "—", title: v.tent ? "バレー(未定)" : "バレー", sub: v.place || "", gc: gcalHeaderLabel(sk), col: P.ink2, min: v.s != null ? v.s : 0 }); });   // 2回ある日は1回ずつ;
-            // そろそろ: いつもの間隔なら、そろそろ入りそうな予定(描くたびに1回だけ数える。マスごとには数えない)
-            const soon = protoSoonOn && !pin ? protoSoonCalc(todayKey) : null;
-            protoSoonSel = soon ? (soon.get(sel) || []) : [];
-            protoSoonSel.forEach((g, i) => rows.push({ soon: i, t: "", title: g.t + "?", col: P.ink3, min: 1e4 + i }));   // いちばん下に薄く1行(押すと、いつもの時間・色で入力)
             rows.sort((a, b) => a.min - b.min);
             const wxSel = pin ? null : protoWxDay(sel);   // 選んだ日の天気(オンのときだけ)
             const visN = up ? 2 : 3;   // 見えている行の数(「NEXT」が出ているときは2行)
-            const moreN = Math.max(0, rows.filter(r => r.soon == null).length - visN - protoRowsTop);   // そろそろの行は「+N」に数えない
+            const moreN = Math.max(0, rows.length - visN - protoRowsTop);
 
             // ---------- カレンダー ----------
             const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
@@ -19964,12 +19996,10 @@ const namesBtn = isAdmin() && dates.length > 0
                 const dotHtml = dots.slice(0, MAXD).map(x => x.vol
                     ? `<i style="width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:${x.tent ? `1.4px dashed ${x.col}` : `2px solid ${x.col}`}${x.no ? ";opacity:.38" : x.tent ? ";opacity:.75" : ""}"></i>`
                     : `<i${pidA(x)} style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
-                const gh = soon && inM && k >= todayKey ? soon.get(k) : null;   // そろそろ(見ている月の、今日から先の日だけ)
-                const ghDot = gh && dots.length < MAXD ? `<i class="pr-soon" style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px dashed ${P.ink3}"></i>` : "";   // 点線の小さな丸
                 let volMark = "";
                 const wx = protoWxDay(k);
                 if (wx) volMark = `<i class="pr-wx" style="color:${P.ink3}">${protoWxIco(wx.kind, 9)}</i>`;   // 天気: 日付の右上に、小さな線の絵だけ(色はつけない)
-                let tags = lineHtml + (dotHtml || ghDot ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}${ghDot}</span>` : "");
+                let tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
                 if (protoCalPlans && !pin) {   // 入力中は行が低くなるので、題名は出さず点だけ
                     // 「点」の細い線の上に、題名を重ねる(線は文字のところだけ切れる)。連続予定は日をつなぐ線で、題名は始まりの日と週のはじめだけ
                     // 1日の予定は短い線。"en" は英語に置きかえ(辞書にない言葉はそのまま)
@@ -19986,7 +20016,6 @@ const namesBtn = isAdmin() && dates.length > 0
                     let slots = laneRows.slice(); const rest = sg.slice(); const VAC = `<span class="pr-lt"></span>`;
                     if (slots.length + rest.length > room) slots = slots.map(h => h === VAC && rest.length ? rest.shift() : h);
                     const all = slots.concat(rest);
-                    if (gh && all.length < room) all.push(`<span class="pr-lt pr-lt-solo pr-soon"><b>${esc(word(gh[0].t))}</b></span>`);   // そろそろ: 題名だけを、ごく薄く(空いているときだけ)
                     tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}">${all.slice(0, room).join("")}</span>${all.length > room && sg.length ? `<span class="pr-fit-more">+${all.length - room}</span>` : ""}`;
                 }
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
@@ -20038,7 +20067,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8, 10)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
                     <div style="position:relative">
                       <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 2 * PROTO_ROW_H : 3 * PROTO_ROW_H}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > visN ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
-                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" ${r.soon != null ? `class="pr-soon" aria-label="${esc(r.title)} を入れる" ` : ""}onclick="${r.soon != null ? `protoSoonAdd(${r.soon})` : r.vol ? `protoHdrRow('${r.k || sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer${r.no ? ";opacity:.42" : ""}${r.cur ? `;margin:0 -6px;padding:0 6px;border-radius:10px;${insetS}` : ""}"${r.cur ? ` aria-current="true"` : ""}>${r.soon != null ? `<i style="width:8px;height:8px;margin:0 -1.5px;border-radius:50%;flex:none;box-sizing:border-box;border:1.2px dashed ${P.ink3}"></i>` : `<i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.cur ? P.acc : r.col}"></i>`}<span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:${r.gc ? "0 1 auto" : "1"};min-width:0;font-size:11px;font-weight:${r.cur ? 700 : 600};${r.tent ? `color:${P.red};` : r.cur ? `color:${P.acc};` : ""}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}${r.sub ? `<span style="margin-left:6px;font-size:11px;font-weight:500;color:${P.ink3}">${esc(r.sub)}</span>` : ""}</span>${r.gc ? `<span class="gc-mark" title="Googleカレンダーにもあります" style="flex:none;margin-left:0">${r.gc}</span><span style="flex:1"></span>` : ""}</div>`).join("") : ""}
+                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoHdrRow('${r.k || sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer${r.no ? ";opacity:.42" : ""}${r.cur ? `;margin:0 -6px;padding:0 6px;border-radius:10px;${insetS}` : ""}"${r.cur ? ` aria-current="true"` : ""}><i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.cur ? P.acc : r.col}"></i><span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:${r.gc ? "0 1 auto" : "1"};min-width:0;font-size:11px;font-weight:${r.cur ? 700 : 600};${r.tent ? `color:${P.red};` : r.cur ? `color:${P.acc};` : ""}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}${r.sub ? `<span style="margin-left:6px;font-size:11px;font-weight:500;color:${P.ink3}">${esc(r.sub)}</span>` : ""}</span>${r.gc ? `<span class="gc-mark" title="Googleカレンダーにもあります" style="flex:none;margin-left:0">${r.gc}</span><span style="flex:1"></span>` : ""}</div>`).join("") : ""}
                       </div>
                       <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
                     </div>
@@ -20401,7 +20430,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 let extra = 0;
                 const rows = [...box.querySelectorAll(".pr-lt")];
                 if (!rows.length || rows[rows.length - 1].getBoundingClientRect().bottom <= bottom) return;
-                while (rows.length && rows[rows.length - 1].getBoundingClientRect().bottom > bottom) { const r = rows.pop(); r.style.display = "none"; if (r.querySelector("b") && !r.classList.contains("pr-soon")) extra++; }   // そろそろ(薄い題名)は数えない
+                while (rows.length && rows[rows.length - 1].getBoundingClientRect().bottom > bottom) { const r = rows.pop(); r.style.display = "none"; if (r.querySelector("b")) extra++; }
                 if (extra > 0) { const old = c.querySelector(".pr-fit-more"); if (old) old.textContent = "+" + ((parseInt(old.textContent.replace(/\D/g, ""), 10) || 0) + extra); else { const t = document.createElement("span"); t.className = "pr-fit-more"; t.textContent = "+" + extra; c.appendChild(t); } }   // もう「+N」が出ている日は、そこに足す(2つ重ねない)
             });
         }
@@ -20897,7 +20926,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // 設定の「触覚フィードバック」(この端末だけ。最初はオン)
         const HAP_KEY = "haptic_v1";
         try { applyMenuSeg(); } catch (e) { /* ignore */ }
-        try { setTimeout(() => { applySoonSeg(); applyWxSeg(); }, 0); } catch (e) { /* ignore */ }   // そろそろ・天気の設定ボタン(関数は下で決める)
+        try { setTimeout(() => { applyWxSeg(); }, 0); } catch (e) { /* ignore */ }   // 天気の設定ボタン(関数は下で決める)
         var hapOn = true;
         try { hapOn = localStorage.getItem(HAP_KEY) !== "0"; } catch (e) { /* ignore */ }
         function hapSegSync() {
@@ -21027,7 +21056,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoRowsScroll(el) {
             protoRowsTop = Math.round(el.scrollTop / PROTO_ROW_H);
             const b = document.getElementById("prMore"); if (!b) return;
-            const total = el.querySelectorAll(":scope > div:not(.pr-soon)").length, n = Math.max(0, total - Math.max(1, Math.round(el.clientHeight / PROTO_ROW_H)) - protoRowsTop);   // そろそろの行は数えない・見えている行数は高さから
+            const total = el.querySelectorAll(":scope > div").length, n = Math.max(0, total - Math.max(1, Math.round(el.clientHeight / PROTO_ROW_H)) - protoRowsTop);   // 見えている行数は高さから
             b.style.display = n > 0 ? "flex" : "none"; const num = b.querySelector("b"); if (num) num.textContent = String(n);
         }
 
@@ -21389,7 +21418,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const ds = [...new Set(rows.map(r => r.k))].sort(), day = k => new Date(k.slice(0, 10) + "T00:00:00").getTime();
             const past = ds.filter(k => k < todayKey), fut = ds.filter(k => k >= todayKey), t0 = day(todayKey), parts = [];
             if (past.length) parts.push(`前回${Math.round((t0 - day(past[past.length - 1])) / 864e5)}日前`);
-            if (past.length >= 2) parts.push(`${Math.round(protoGapStat(past).mean)}日ごと`);   // 平均の間隔(そろそろと同じ数え方)
+            if (past.length >= 2) parts.push(`${Math.round(protoGapStat(past).mean)}日ごと`);   // 平均の間隔
             if (fut.length) { const n = Math.round((day(fut[0]) - t0) / 864e5); parts.push(n ? `次${n}日後` : "次は今日"); }
             return parts.join(" · ");
         }
@@ -21419,7 +21448,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (k !== selectedDate) selectDate(k);
             renderProto();
         }
-        // ------- 間隔: 日付(古い順・重なりなし)の間が平均何日か、どれくらいばらつくか(探す板の「M日ごと」と、そろそろで使う) -------
+        // ------- 間隔: 日付(古い順・重なりなし)の間が平均何日か、どれくらいばらつくか(探す板の「M日ごと」で使う) -------
         function protoGapStat(keys) {
             if (!keys || keys.length < 2) return null;
             const day = k => new Date(k.slice(0, 10) + "T00:00:00").getTime(), g = [];
@@ -21429,66 +21458,8 @@ const namesBtn = isAdmin() && dates.length > 0
             return { mean, cv: mean > 0 ? sd / mean : 1, n: g.length };
         }
 
-        // ------- そろそろ: 決まった間隔でくり返す予定(美容院など)の、次の目安の日 -------
-        //   過去に3回以上・間隔がそろっている(ばらつき 35% まで・平均 7〜120日)・これから先にまだ入れていない題名だけ
-        //   次の目安 = 最後の日 + 平均の間隔。今日より前になったものは出さない
-        //   描くたびに1回だけ数える(予定を題名ごとに分けるだけなので軽い)。マスごとには数えない
-        const SOON_KEY = "pr_soon_v1";   // この端末だけ。最初はオン
-        var protoSoonOn = true, protoSoonSel = [];
-        try { protoSoonOn = localStorage.getItem(SOON_KEY) !== "0"; } catch (e) { /* ignore */ }
-        function setSoon(on) {
-            protoSoonOn = !!on;
-            try { localStorage.setItem(SOON_KEY, on ? "1" : "0"); } catch (e) { /* ignore */ }
-            applySoonSeg(); try { renderProto(); } catch (e) { console.warn(e); }
-        }
-        function applySoonSeg() { document.querySelectorAll("#soonSeg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === protoSoonOn)); }
-        function protoSoonCalc(todayKey) {
-            const okK = k => /^\d{4}-\d\d-\d\d(_\d+)?$/.test(String(k || ""));
-            const g = new Map();
-            planList.forEach(p => {
-                if (!p || p.deleted || p.holiday || !okK(p.startDate) || !planHas(p) || !planVisible(p)) return;
-                const t = String(p.title || "").trim(), n = normName(t); if (!n) return;
-                const o = g.get(n) || { t, last: "", fut: false, ds: new Set(), times: new Map(), cols: new Map() };
-                if ((p.endDate || p.startDate) >= todayKey) o.fut = true;   // これから先(今日も・続いている途中も)にもう入れてある
-                else {
-                    o.ds.add(p.startDate);
-                    if (p.startDate >= o.last) { o.last = p.startDate; o.t = t; }   // 題名は、いちばん新しい書き方で
-                }
-                const okT = x => /^\d{1,2}:\d{2}$/.test(String(x || ""));
-                const tm = planTimed(p) && okT(p.start) ? `${p.start}|${okT(p.end) ? p.end : ""}` : "|"; o.times.set(tm, (o.times.get(tm) || 0) + 1);
-                const c = +p.color || 0; o.cols.set(c, (o.cols.get(c) || 0) + 1);
-                g.set(n, o);
-            });
-            const top = m => [...m.entries()].sort((a, b) => b[1] - a[1])[0][0];
-            const out = new Map();
-            g.forEach(o => {
-                if (o.fut || o.ds.size < 3) return;
-                const ds = [...o.ds].sort().slice(-8);   // 最近の8回まで(間隔が変わってきても追いつくように)
-                const st = protoGapStat(ds);
-                if (!st || st.cv > 0.35 || st.mean < 7 || st.mean > 120) return;
-                const [y, m, d] = ds[ds.length - 1].slice(0, 10).split("-").map(Number);
-                let k = formatDateKey(new Date(y, m - 1, d + Math.round(st.mean)));
-                if (k < todayKey) {   // 目安の日を過ぎた: 平均の間隔の半分までは、今日に出しつづける
-                    const late = Math.round((new Date(todayKey.slice(0, 10) + "T00:00:00") - new Date(k.slice(0, 10) + "T00:00:00")) / 864e5);
-                    if (late > st.mean / 2) return;
-                    k = todayKey;
-                }
-                const [s0, e0] = top(o.times).split("|");
-                if (!out.has(k)) out.set(k, []);
-                out.get(k).push({ t: o.t, st: s0, et: e0, col: top(o.cols) });
-            });
-            return out;
-        }
-        // ヘッダーの「◌ 美容院?」を押した: その日の入力を、いつもの題名・時間・色で開く(保存は自分で)
-        function protoSoonAdd(i) {
-            const g = protoSoonSel[i]; if (!g) return;
-            protoHaptic();
-            protoOpenInput(null);
-            const t = document.getElementById("pinT"), h = document.getElementById("pinH"); if (!t || !h) return;
-            t.value = g.t; h.value = g.st ? pinHDigits(g.st, g.et) : "";
-            setPlanColor(g.col);
-            pinInput();
-        }
+        // (「そろそろ」— いつもの間隔から次の予定の目安を薄く出す機能 — は取りやめた。前の設定の保存は捨てる)
+        try { localStorage.removeItem("pr_soon_v1"); } catch (e) { /* ignore */ }
 
         // ------- 天気(Open-Meteo: 無料・鍵なし)。設定でオンにしたときだけ取りに行く -------
         //   場所: 愛知(名古屋)に決めておく(現在地は聞かない)
