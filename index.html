@@ -7085,18 +7085,25 @@ await main();
             } catch (e) { return "member"; }
         }
         // 開発モードOFFのときは、日付を触ったら一番左の未完タスクのタブを開く(前の日に触っていたタブを引き継がない)
-        function openFirstIncompleteTab() {
-            // 閲覧モード: ⚠️の条件(予約のある今日以降の日で、自分の出欠が ○・✖ 以外)のときは、メンバータスクを表示する
-            if (!isAdmin()) {
-                try { if (dayTaskState(selectedDate).myUnanswered) { switchView("member"); return; } } catch (e) { console.warn(e); }
+        // バレーの画面を開いたとき、最初に出すタブ(管理者も閲覧者も同じ):
+        //   新しく入れたばかり・未定の回 → 予約 / 終わった回(日付・終わりの時間を過ぎた) → 精算がまだなら精算、済んでいれば動画
+        //   当日でまだ終わっていない回 → チーム分け / それより先の回 → メンバー
+        function volInitialView(k) {
+            if (!k) return "member";
+            if ((volleyDraft && volleyDraft.key === k) || isTent(k)) return "reserve";
+            const now = new Date(), today = formatDateKey(now), day = sessDay(k), nowMin = now.getHours() * 60 + now.getMinutes();
+            let end = -1;
+            (reservations[k] || []).forEach(r => { const t = parseTimeRangeMin(r && r.time); if (t && t.e > end) end = t.e; });
+            const ended = day < today || (day === today && end >= 0 && nowMin >= end);
+            if (ended) {
+                let settled = false; try { settled = !!dayTaskState(k).oks[3]; } catch (e) { settled = false; }
+                return settled ? "videos" : "settle";
             }
-            if (isAdmin()) { if (events[selectedDate]) switchView(pickAdminTaskView()); return; }   // 管理者: ⚠️のタブ、なければ一番左の未完了タスク
-            if (selectedDate >= formatDateKey(new Date())) { switchView("member"); return; }   // 当日まではメンバータスクを最初に表示
-            try {
-                const i = dayTaskState(selectedDate).oks.findIndex(ok => !ok);
-                const views = ["reserve", "member", "teams", "settle", "videos"];
-                switchView(i < 0 ? "videos" : views[i]);   // すべて完了なら「動画」を最初に表示
-            } catch (e) { console.warn(e); }
+            return day === today ? "teams" : "member";
+        }
+        function openFirstIncompleteTab() {
+            if (!events[selectedDate]) return;
+            try { switchView(volInitialView(selectedDate)); } catch (e) { console.warn(e); }
         }
 
         // 動画のある日(カレンダーの🎥表示用)。videos が変わるたびに作り直す
@@ -7111,7 +7118,7 @@ await main();
         // ------- 予約日の一覧(カレンダーと同じ日付枠で、対象の日だけ表示) -------
         // ------- カレンダー(タイムツリー風: 月カレンダー + 選んだ日の予定を下に一覧) -------
         var volleyFull = false;   // true: バレーのタスク画面を全体に表示(カレンダーは隠す)
-        function openVolleyFull() { volleyFull = true; if (isAdmin()) switchView(pickAdminTaskView()); else if (selectedDate >= formatDateKey(new Date())) switchView("member"); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
+        function openVolleyFull() { volleyFull = true; if (events[selectedDate]) switchView(volInitialView(selectedDate)); renderOtherPlanBox(); window.scrollTo(0, 0); applyPendingOnScreenChange(); }
         // 管理者がバレーありにした直後の日。予約・メンバー・精算・動画に何も触らずカレンダーへ戻ったら、バレーなしに戻す
         let volleyDraft = null;
         function volleyDaySig(k) { return JSON.stringify([attendanceByDate[k] || null, reservations[k] || null, settlements[k] || null, (typeof videos !== "undefined" ? videos : []).filter(v => v.date === k).length, isTent(k)]); }
@@ -18105,7 +18112,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611190110;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611190200;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
