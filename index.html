@@ -2071,7 +2071,7 @@
         .stg-d { text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
         .stg-d.up { color: var(--accent); }
         #settingsPanel.open { position: fixed; inset: 0; z-index: 9500; margin: 0; border-radius: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
-        body.viewer-mode #settingsPanel > :not(.panel-sticky):not(#setTop) { display: none !important; }
+        body.viewer-mode #settingsPanel > :not(.panel-sticky):not(#setTop):not(.ntf-all) { display: none !important; }   /* 通知の「個人設定」(.ntf-all)は閲覧者にも出す */
         body.viewer-mode #settingsPanel .panel-save { display: none !important; }
         #setTop { display: flex; flex-direction: column; gap: 12px; margin: 4px 0 18px; padding: 14px 16px; border-radius: 16px; background: var(--bg); box-shadow: var(--sink); }
         .st-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
@@ -3340,6 +3340,11 @@
         /* 下の項目(管理者): 同じカードと行。見出しは小さく字間をあける */
         #settingsPanel .panel-group-label { margin: 30px 8px 12px; padding: 0; border: none; font: 700 11px var(--sn-en); letter-spacing: .1em; color: var(--sn-ink3); }
         #settingsPanel .st-group { padding: 4px 0; overflow: hidden; }
+        /* 通知の中の小見出し(個人設定 / 共通設定(管理者)) */
+        #settingsPanel .ntf-sec { margin: 18px 12px 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--sn-ink3); }
+        #settingsPanel .panel-group-label + .ntf-sec { margin-top: 0; }
+        #settingsPanel .acc-body > .ntf-h { margin-top: 6px; }
+        #settingsPanel .acc-body > .ntf-h.ntf-h-sep { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--sn-line); }
         #settingsPanel .st-group > .acc { margin: 0; border: none; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
         #settingsPanel .st-group > .acc > summary { min-height: 54px; padding: 0 20px; font-size: 13px; font-weight: 600; color: var(--sn-ink2); background: none; border: none; }
         #settingsPanel .st-group > .acc > summary::after { content: ""; width: 7px; height: 7px; margin-right: 3px; border: solid var(--sn-ink3); border-width: 0 1.8px 1.8px 0; border-radius: 1px; transform: rotate(-45deg); transition: transform .18s ease; }
@@ -4641,17 +4646,6 @@ await main();
             <!-- 管理者でない人だけ: 自分の端末の予定として .ics を取り込む(管理者は「まとめて追加」の画面から) -->
             <button type="button" class="st-link ics-nonadmin" onclick="icsPick()">カレンダーのファイル(.ics)を取り込む<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
             <input type="file" id="icsFile" accept=".ics,text/calendar" hidden onchange="icsFileChosen(this)">
-            <!-- 通知(この端末): 誰でも。この端末でアプリの通知を受け取るか・自分あての予定の通知のタイミング -->
-            <div class="st-card st-group" id="setPushCard">
-                <details class="acc" id="pushAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
-                    <summary>通知(この端末)</summary>
-                    <div class="acc-body">
-                        <div class="acc-desc">オンにすると、この端末にアプリの通知が届きます: バレーのお知らせ(○の人は日時・場所、△・？の人は回答のお願い。✖の人には届きません)と、自分が入っている共有予定・ペア予定、通知をオンにした自分のLocal予定。iPhoneはホーム画面に追加したアプリ(iOS 16.4以降)から設定してください。</div>
-                        <div id="pushSettings"></div>
-                        <div id="pushMyPlan"></div>
-                    </div>
-                </details>
-            </div>
             <!-- 使い方: 出っぱった細長い行 -->
             <button type="button" class="st-link" onclick="openGuide('home')">ホーム画面に追加<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
             <button type="button" class="st-link" onclick="openGuide('widget')">ホームウィジェット<svg class="st-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -4871,43 +4865,60 @@ await main();
                 </div>
             </details>
         </div>
-        <div class="panel-group-label">通知</div>
-        <div class="st-card st-group">
-            <details class="acc" id="notifyChAcc">
-                <summary>LINE・アプリ(届け方)</summary>
+        <!-- 通知: 個人設定(誰でも。閲覧者にも出す: .ntf-all)と、共通設定(管理者だけ) -->
+        <div class="panel-group-label ntf-all">通知</div>
+        <div class="ntf-sec ntf-all">個人設定</div>
+        <div class="st-card st-group ntf-all" id="setPushCard">
+            <!-- この端末の登録: この端末でアプリの通知を受け取るか -->
+            <details class="acc" id="pushAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
+                <summary>この端末の登録</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">お知らせを LINE(公式アカウントのボット)で送るか、アプリ(スマホの通知)で送るかを、それぞれオン・オフします。タイミングはどちらも同じです。アプリの通知は、各自が設定の「通知(この端末)」で受け取りをオンにした端末に届きます。</div>
+                    <div class="acc-desc">オンにすると、この端末にアプリの通知が届きます: バレーのお知らせ(○の人は日時・場所、△・？の人は回答のお願い。✖の人には届きません)と、下の「自分の予定の通知」。iPhoneはホーム画面に追加したアプリ(iOS 16.4以降)から設定してください。</div>
+                    <div id="pushSettings"></div>
+                </div>
+            </details>
+            <!-- 自分の予定の通知: 共有予定・ペア予定・通知をオンにしたローカル予定のタイミング -->
+            <details class="acc" id="pushMyAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
+                <summary>自分の予定の通知</summary>
+                <div class="acc-body">
+                    <div class="acc-desc">自分あての予定の通知をいつ受け取るかを決めます。対象は、自分が入っている共有予定・ペア予定と、通知をオンにしたローカル予定です。予定ごとの設定があれば、そちらが優先されます。</div>
+                    <div id="pushMyPlan"></div>
+                </div>
+            </details>
+        </div>
+        <div class="ntf-sec admin-only real-admin-only">共通設定(管理者)</div>
+        <div class="st-card st-group admin-only real-admin-only" id="ntfAdmCard">
+            <!-- バレーの通知: 届け方(LINE / アプリ)・タイミング・通知に載せない人 -->
+            <details class="acc" id="notifyAcc" ontoggle="if(this.open) { renderNotifySettings(); requestAnimationFrame(() => syncSetTop(true)); }">
+                <summary>バレーの通知</summary>
+                <div class="acc-body">
+                    <div class="ntf-h">届け方</div>
+                    <div class="acc-desc">お知らせを LINE(公式アカウントのボット)で送るか、アプリ(スマホの通知)で送るかを、それぞれオン・オフします。タイミングはどちらも同じです。アプリの通知は、各自が「この端末の登録」で受け取りをオンにした端末に届きます。</div>
                     <div id="ntfChannels"></div>
-                </div>
-            </details>
-            <details class="acc" id="notifyAcc">
-                <summary>通知のタイミング</summary>
-                <div class="acc-body">
-                    <div class="acc-desc">バレーのお知らせを送るタイミングです(LINE・アプリ共通)。バレーの日ごとの設定(バレーの日の「通知」)があれば、そちらが優先されます。その他の予定は、各自が「通知(この端末)」で決めます。</div>
+                    <div class="ntf-h ntf-h-sep">タイミング</div>
+                    <div class="acc-desc">バレーのお知らせを送るタイミングです(LINE・アプリ共通)。バレーの日ごとの設定(バレーの日の「通知」)があれば、そちらが優先されます。その他の予定は、各自が「自分の予定の通知」で決めます。</div>
                     <div id="ntfSettings"></div>
-                </div>
-            </details>
-            <details class="acc" id="notifyTextAcc">
-                <summary>LINEの文章</summary>
-                <div class="acc-body">
-                    <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
-                    <div id="ntfText"></div>
-                </div>
-            </details>
-            <details class="acc" id="notifyExAcc">
-                <summary>通知に載せない人</summary>
-                <div class="acc-body">
+                    <div class="ntf-h ntf-h-sep">通知に載せない人</div>
                     <div class="acc-desc">選んだ人は、LINEのお知らせの名前一覧に出ません(「来る」のときは名前・人数とも出ます)。個人あての通知(LINE・アプリとも)も届きません(アプリの出欠はそのまま)。希望ポジションが「ゲスト」の人も同じ扱いです。</div>
                     <div class="ntf-chips" id="ntfExclude"></div>
                     <div class="acc-desc ntf-guest-note">点線で「ゲスト」と付いている人は、名簿の希望ポジションがゲストの人です。ここでは選べず、自動で「来る」のときだけ載ります。</div>
                 </div>
             </details>
-            <!-- ロスターの変更(管理者の端末だけ)。今週のロスターが変わったら、GAS(push-notify.gs)が送る -->
-            <details class="acc real-admin-only" id="pushAdmAcc" ontoggle="if(this.open) renderPushSettings()">
-                <summary>ロスターの変更(管理者)</summary>
+            <!-- ロスター変更の通知(管理者の端末だけ)。今週のロスターが変わったら、GAS(push-notify.gs)が送る -->
+            <details class="acc" id="pushAdmAcc" ontoggle="if(this.open) { renderPushSettings(); requestAnimationFrame(() => syncSetTop(true)); }">
+                <summary>ロスター変更の通知</summary>
                 <div class="acc-body">
-                    <div class="acc-desc">今週のバレーの出欠(○✖△)が変わったら、管理者の端末にアプリの通知を出します(LINEは使いません)。届くのは、「通知(この端末)」で受け取りをオンにした管理者の端末のうち、ここでオンにした端末だけです。</div>
+                    <div class="acc-desc"><b>管理者の端末にだけ届きます。</b>今週のバレーの出欠(○✖△)が変わったら、アプリの通知を出します(LINEは使いません)。届くのは、「この端末の登録」で受け取りをオンにした管理者の端末のうち、ここでオンにした端末だけです。</div>
                     <div id="pushAdmSettings"></div>
+                </div>
+            </details>
+            <!-- LINEの設定: ボットが送る文章 -->
+            <details class="acc" id="notifyTextAcc" ontoggle="if(this.open) requestAnimationFrame(() => syncSetTop(true))">
+                <summary>LINEの設定</summary>
+                <div class="acc-body">
+                    <div class="ntf-h">文章</div>
+                    <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
+                    <div id="ntfText"></div>
                 </div>
             </details>
         </div>
@@ -7668,7 +7679,7 @@ await main();
                 const devs = Object.keys(list).filter(k => list[k] && list[k].on !== false && list[k].t).map(k => escapeHtml(`${list[k].n || "?"}(${list[k].os || "?"})`) + (list[k].r === 0 ? "・ロスターなし" : "") + (k === myId ? "←この端末" : ""));
                 const mem = pushMStore().filter(r => r.d && Object.keys(r.d).length).map(r => escapeHtml(`${r.n || "?"}(${Object.keys(r.d).length}台)`));
                 const rOn = !!(mine && mine.r !== 0);
-                adm.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${mine ? `<span class="st-seg"><button type="button" class="${rOn ? "on" : ""}" onclick="pushSetRoster(true)"${pushBusy ? " disabled" : ""}>オン</button><button type="button" class="${rOn ? "" : "on"}" onclick="pushSetRoster(false)"${pushBusy ? " disabled" : ""}>オフ</button></span>` : `<b class="push-st">「通知(この端末)」で受け取りをオンにしてください</b>`}</div>
+                adm.innerHTML = `<div class="ntf-row"><span>この端末で受け取る</span>${mine ? `<span class="st-seg"><button type="button" class="${rOn ? "on" : ""}" onclick="pushSetRoster(true)"${pushBusy ? " disabled" : ""}>オン</button><button type="button" class="${rOn ? "" : "on"}" onclick="pushSetRoster(false)"${pushBusy ? " disabled" : ""}>オフ</button></span>` : `<b class="push-st">「この端末の登録」で受け取りをオンにしてください</b>`}</div>
                     <div class="acc-desc">受け取り中の管理者の端末: ${devs.length ? devs.join("、") : "なし"}</div>
                     <div class="acc-desc">受け取り中のメンバー: ${mem.length ? mem.join("、") : "なし"}</div>`;
             }
@@ -7919,7 +7930,7 @@ await main();
                 <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span>${days(k, cfg[k].days)}</div>
                 <div class="ntf-row ntf-dep"><span>時間</span>${hourSel(k, cfg[k].hour)}</div>${extra || ""}</div>`;
             const chTxt = cfg.ch.line && cfg.ch.push ? "LINEのグループに出欠の一覧を送り、アプリの通知を各自に送ります(○の人は日時・場所、△・？の人は回答のお願い)。" : cfg.ch.line ? "LINEのグループに、出欠の一覧を送ります(アプリの通知はオフ)。" : cfg.ch.push ? "アプリの通知を各自に送ります(LINEはオフ)。" : "LINE・アプリとも、オフになっています(届け方の設定)。";
-            box.innerHTML = blk("volley", "バレー", chTxt);
+            box.innerHTML = blk("volley", "バレーのお知らせ", chTxt);
             renderNtfChannels(cfg);
             renderNotifyText(cfg);
             const names = sortedRosterForNtf();
@@ -7950,14 +7961,14 @@ await main();
         }
         function myNtfBlock(cfg) {
             const me = myRosterId();
-            const head = `<div class="ntf-h">自分あての予定の通知</div>`;
+            const head = "";   // 見出しは設定の行(「自分の予定の通知」)にある
             if (me == null) return `<div class="ntf-blk">${head}<div class="ntf-sub">名簿の名前とひもづいていないので、自分あての通知は届きません。</div></div>`;
             const b = myPlanTiming(cfg, me), on = b.on;
             const name = (roster.find(r => r.id === me) || {}).name || "";
             const seg = (field, val, a, bLabel) => `<span class="st-seg"><button type="button" class="${val ? "on" : ""}" onclick="ntfMySet('${field}',true)">${a}</button><button type="button" class="${val ? "" : "on"}" onclick="ntfMySet('${field}',false)">${bLabel}</button></span>`;
             const where = realAdmin() ? "個人LINE(ボットとの連携が必要)と、受け取りをオンにしたこの端末など" : "受け取りをオンにした端末";
             return `<div class="ntf-blk${on ? "" : " ntf-off"}">${head}
-                <div class="ntf-sub">${escapeHtml(name)}さんの${where}に届きます。自分が共有相手に入っている予定・ペア予定と、通知をオンにした自分のLocal予定が対象です。予定ごとの設定があれば、そちらが優先されます。</div>
+                <div class="ntf-sub">${escapeHtml(name)}さんの${where}に届きます。対象は、自分が入っている共有予定・ペア予定と、通知をオンにしたローカル予定です。</div>
                 <div class="ntf-row"><span>受け取る</span>${seg("on", on, "受け取る", "受け取らない")}</div>
                 <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span><div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${b.days.includes(n) ? " on" : ""}" onclick="ntfMyDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div></div>
                 <div class="ntf-row ntf-dep"><span>時間</span><select class="ntf-sel" onchange="ntfMySet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${b.hour === i ? " selected" : ""}>${i}時台</option>`).join("")}</select></div>
@@ -8186,7 +8197,7 @@ await main();
             if (!show) return;
             b.classList.toggle("on", planPush); b.setAttribute("aria-pressed", String(planPush));
             b.innerHTML = `<i class="ic ${planPush ? "ic-bell" : "ic-belloff"}"></i> アプリ通知`;
-            if (nt) nt.textContent = planPush ? "題名・日時・メモが、通知のために共有データに入ります(自分にだけ届きます。タイミングは「通知(この端末)」の設定)" : "オンにすると、この予定の通知が自分のアプリに届きます";
+            if (nt) nt.textContent = planPush ? "題名・日時・メモが、通知のために共有データに入ります(自分にだけ届きます。タイミングは「自分の予定の通知」の設定)" : "オンにすると、この予定の通知が自分のアプリに届きます";
         }
         function renderPlanNtf() {
             try { renderPlanPush(); } catch (e) { /* ignore */ }
@@ -17712,7 +17723,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181005;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181031;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18133,7 +18144,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // スマホ通知の宛先(管理者の端末の登録)だけが変わったときは、読み直さずに取り込む(赤い点を出さない)
                 if (remoteValues[PUSH_KEY] != null && remoteValues[PUSH_KEY] !== localValues[PUSH_KEY]) {
                     setLocalQuiet(PUSH_KEY, remoteValues[PUSH_KEY]);
-                    if (remoteCoveredByLocal(remoteValues, getShareableLocalValues())) { firestoreBase = remoteValues; try { if (document.getElementById("pushAcc").open) renderPushSettings(); } catch (e) { /* ignore */ } return; }
+                    if (remoteCoveredByLocal(remoteValues, getShareableLocalValues())) { firestoreBase = remoteValues; try { if (document.getElementById("pushAcc").open || document.getElementById("pushMyAcc").open) renderPushSettings(); } catch (e) { /* ignore */ } return; }
                 }
                 // 他の人の更新では画面を勝手に切り替えない。保留して、↻を押す/アプリに戻ってきたときに反映する
                 firestorePendingValues = remoteValues;
