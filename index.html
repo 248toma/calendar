@@ -4919,6 +4919,9 @@ await main();
                     <div class="ntf-h">文章</div>
                     <div class="acc-desc">ボットが送る文章です。{いつ} は「今日・明日・1週間後・3日後」など、{日付} は「10/30(金)」に自動で置き換わります。名前の一覧とアプリのURLは自動で入ります。</div>
                     <div id="ntfText"></div>
+                    <div class="ntf-h" style="margin-top:14px">個人LINEに予定が届く管理者</div>
+                    <div class="acc-desc">管理者がアプリを開くと、自動でここに入ります(ボットはこの一覧の人に、個人LINEで予定のお知らせを送ります)。もう管理者でない人は × で外してください。その人の端末がまだ管理者のままなら、開いたときにまた入ります。</div>
+                    <div class="ntf-chips" id="ntfAdmins"></div>
                 </div>
             </details>
         </div>
@@ -7881,7 +7884,10 @@ await main();
         function mergeNotify(prev, mine, remote) {
             const out = JSON.parse(JSON.stringify(remote)), J = (x) => JSON.stringify(x === undefined ? null : x);
             Object.keys(mine).forEach(k => {
-                if (k === "admins") out.admins = [...new Set((remote.admins || []).concat(mine.admins || []))];
+                if (k === "admins") {   // 足した人は重ねる。外した人(prev にいて mine にいない)は最新からも外す
+                    const gone = (prev.admins || []).filter(x => !(mine.admins || []).some(y => String(y) === String(x)));
+                    out.admins = [...new Set((remote.admins || []).concat(mine.admins || []))].filter(x => !gone.some(g => String(g) === String(x)));
+                }
                 else if (k === "personal" || k === "pmins" || k === "pnod") {   // 人ごとに、変えた人の分だけ
                     const p0 = prev[k] || {}, p1 = mine[k] || {};
                     out[k] = { ...(remote[k] || {}) };
@@ -8083,7 +8089,26 @@ await main();
             volley: [["head", "見出し"], ["ask", "未定・未確認の人がいるときの最後の一言"], ["done", "全員回答済みのときの最後の一言"]],
             plan: [["head", "見出し({題名}で予定の題名)"]]
         };
+        // 個人LINEに予定が届く管理者(通知の設定の admins)。外すのは管理者だけ
+        function renderNtfAdmins(cfg) {
+            const el = document.getElementById("ntfAdmins");
+            if (!el) return;
+            cfg = cfg || notifyCfg();
+            const me = myRosterId();
+            el.innerHTML = cfg.admins.length ? cfg.admins.map(id => {
+                const r = roster.find(x => String(x.id) === String(id)), nm = r ? r.name : `(名簿にない人 ${id})`;
+                return `<button type="button" class="ntf-chip on" onclick="ntfRemoveAdmin(${JSON.stringify(id).replace(/"/g, "&quot;")})" title="外す">${escapeHtml(nm)}${String(id) === String(me) ? "(自分)" : ""} ×</button>`;
+            }).join("") : `<div class="acc-desc" style="margin:0">まだいません</div>`;
+        }
+        function ntfRemoveAdmin(id) {
+            if (!isAdmin()) return;
+            const cfg = notifyCfg(), r = roster.find(x => String(x.id) === String(id));
+            if (!confirm(`${r ? r.name : id} さんを、個人LINEに予定が届く管理者から外しますか?`)) return;
+            cfg.admins = cfg.admins.filter(x => String(x) !== String(id));
+            saveNotifyRaw(cfg); renderNtfAdmins(cfg); setSavedMsg("外しました ✓");
+        }
         function renderNotifyText(cfg) {
+            renderNtfAdmins(cfg);
             const el = document.getElementById("ntfText");
             if (!el) return;
             cfg = cfg || notifyCfg();
@@ -17794,7 +17819,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611181245;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611181420;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
