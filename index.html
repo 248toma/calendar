@@ -18114,7 +18114,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611191640;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611191650;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20421,19 +20421,31 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!protoYM) { const [a, b] = sel.split("-").map(Number); protoYM = [a, b]; }
             const [y, m] = protoYM;
             const dk = { floor: dark ? "#25282e" : "#dce0e7", crD: dark ? "rgba(0,0,0,.45)" : "#d9dde4", crL: dark ? "rgba(255,255,255,.06)" : "#f7f8fa", sh: dark ? "rgba(0,0,0,.6)" : "rgba(140,148,162,.75)",
-                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.28)" : "#bcc1ca", sunMute: dark ? "rgba(214,120,110,.4)" : "#d9bcb8", sun: dark ? "#d98a80" : "#b0625a", sub: dark ? "#9aa0aa" : "#6b7280" };
+                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.28)" : "#bcc1ca", sunMute: dark ? "rgba(214,120,110,.4)" : "#d9bcb8", sun: dark ? "#d98a80" : "#b0625a", sub: dark ? "#9aa0aa" : "#6b7280", txt: dark ? "#c9cdd4" : "#41464f" };
             const volTime = (k) => { const prs = (reservations[k] || []).map(r => parseTimeRangeMin(r.time)).filter(Boolean); if (!prs.length) return null; return { s: Math.min(...prs.map(x => x.s)), e: Math.max(...prs.map(x => x.e)) }; };
             const volPlace = (k) => [...new Set((reservations[k] || []).map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
             const volDone = (k) => { const d = sessDay(k); if (d < todayKey) return true; if (d > todayKey) return false; const t = volTime(k); if (!t) return false; return nowMin >= (t.e > t.s ? t.e : t.s + 120); };
             const itemsOf = (k) => {
                 const out = sessKeysOf(k).map(sk => ({ t: isTent(sk) ? "バレー(未)" : "バレー", vol: true, tent: isTent(sk) }));
-                plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定" }));
+                plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", multi: !!p.endDate && p.endDate !== p.startDate }));
                 return out;
             };
             // ---------- カレンダー ----------
             const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
             const days = new Date(y, m, 0).getDate(), rows = Math.ceil((off + days) / 7);
+            // 何日も続く予定: いつもの画面と同じく、日をまたぐ線でつなぐ(段は先に始まった予定が上)
+            const isMulti = p => !!p.endDate && p.endDate !== p.startDate;
+            const dkey = dn => formatDateKey(new Date(y, m - 1, dn));
+            const laneOf = new Map(), busyL = new Map();
+            for (let dn = 1; dn <= days; dn++) {
+                plansOn(dkey(dn)).map(({ p }) => p).filter(isMulti).forEach(p => {
+                    if (laneOf.has(p.id)) return;
+                    const ds = []; for (let j = dn; j <= days; j++) { const kk = dkey(j); if (kk > p.endDate) break; ds.push(kk); }
+                    let ln = 0; while (ds.some(kk => busyL.has(kk) && busyL.get(kk).has(ln))) ln++;
+                    laneOf.set(p.id, ln); ds.forEach(kk => { if (!busyL.has(kk)) busyL.set(kk, new Set()); busyL.get(kk).add(ln); });
+                });
+            }
             const wl = []; for (let i = 0; i < 7; i++) wl.push(["S", "M", "T", "W", "T", "F", "S"][(i + weekStartDay) % 7]);
             const [sy0, sm0, sd0] = sel.split("-").map(Number);
             const selRow = sy0 === y && sm0 === m ? Math.floor((off + sd0 - 1) / 7) : -1;
@@ -20449,11 +20461,19 @@ const namesBtn = isAdmin() && dates.length > 0
                     const isSel = k === sel, isT = k === todayKey, red = d.getDay() === 0 || !!jpDay(k).hol || planHolidayOn(k);
                     const shade = isSel || !has ? "" : it.length >= 2 ? `box-shadow:inset 2px 2px 4px ${dk.in2},inset -2px -2px 4px ${dk.hi};` : `box-shadow:inset 1.2px 1.2px 2.5px ${dk.in1},inset -1.2px -1.2px 2.5px ${dk.hi};`;
                     const col = isT ? ACC : has ? (red ? dk.sun : P.ink) : (red ? dk.sunMute : dk.mute);
-                    const nm = it.slice(0, 3).map(x => `<div style="${x.vol ? `color:${x.tent ? P.ink3 : ACC};font-weight:600` : ""}">${esc([...x.t].slice(0, 4).join(""))}</div>`).join("");
+                    const cbg = isSel ? dk.lift : P.bg, w4 = t => esc([...t].slice(0, 4).join(""));
+                    const ml = plansOn(k).map(({ p, first: f, last: l }) => ({ p, f, l })).filter(x => isMulti(x.p) && laneOf.has(x.p.id));
+                    const top = ml.reduce((a, x) => Math.max(a, laneOf.get(x.p.id)), -1);
+                    const lines = []; for (let ln = 0; ln <= top; ln++) { const x = ml.find(q => laneOf.get(q.p.id) === ln);
+                        if (!x) { lines.push(`<div style="height:9px"></div>`); continue; }
+                        const lc = C[+x.p.color || 0] || C[0], cc = lc === P.bg ? P.ink : lc, head = x.f || c === 0;
+                        lines.push(`<div style="position:relative;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 4 : 0}px;text-align:left"><i style="position:absolute;left:0;right:0;top:4px;height:1.5px;border-radius:1px;background:${cc}"></i>${head ? `<span style="position:relative;padding:0 2px;margin-left:2px;background:${cbg};color:${P.ink2}">${w4(x.p.title || "予定")}</span>` : ""}</div>`); }
+                    const singles = it.filter(x => !x.multi).slice(0, Math.max(0, 3 - lines.length));
+                    const nm = lines.slice(0, 3).join("") + singles.map(x => `<div style="${x.vol ? `color:${x.tent ? P.ink3 : ACC};font-weight:600` : ""}">${w4(x.t)}</div>`).join("");
                     const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:0;bottom:${r === selRow ? -7 : 0}px;border-radius:12px 12px 9px 9px;background:${dk.lift};box-shadow:0 10px 16px ${dark ? "rgba(0,0,0,.5)" : "rgba(110,118,132,.35)"},0 2px 3px ${dark ? "rgba(0,0,0,.4)" : "rgba(110,118,132,.25)"},inset 0 1px 0 ${dk.hi};z-index:3"></div>` : "";
                     g += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="position:relative;display:flex;flex-direction:column;align-items:center;padding-top:6px;min-width:0;min-height:0;overflow:visible">${lift}
                         <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : 400};color:${col};${shade}">${dn}</span>
-                        <span style="position:relative;z-index:4;margin-top:4px;line-height:1.3;text-align:center;font-family:${jp};font-size:7px;color:${dk.sub};white-space:nowrap;overflow:hidden;max-width:100%">${nm}</span></button>`;
+                        <span style="position:relative;z-index:4;margin-top:4px;width:100%;line-height:1.3;text-align:center;font-family:${jp};font-size:7px;color:${dk.sub};white-space:nowrap;overflow:hidden">${nm}</span></button>`;
                 }
                 cal += (r ? crease : "") + `<div style="flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;position:relative;z-index:${r === selRow ? 3 : 2}">${g}</div>`;
                 if (r === selRow) cal += p3Groove();
@@ -20484,7 +20504,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${SY}px;width:${w.toFixed(1)}px;height:14px;border-radius:3px;background:${d ? (dark ? "#1d2025" : "#cbd0d9") : h ? (dark ? "#2a2d33" : "#dde1e8") : "transparent"};box-shadow:${sh}"></i>`;
                     s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 16}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`;
                 }
-                for (let h = 0; h <= 24; h += 2) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${SY + 19}px;font-family:${en};font-size:7.5px;color:${h % 6 ? P.ink3 : dk.sub};opacity:${h % 6 ? .7 : 1}">${h}</span>`;
+                for (let h = 0; h <= 24; h += 2) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${SY + 19}px;font-family:${en};font-size:7.5px;color:${h % 6 ? dk.sub : dk.txt}">${h}</span>`;
                 if (sel === todayKey) { const x = tx(nowMin / 60); s += `<i style="position:absolute;left:${(x - .5).toFixed(1)}px;top:${SY - 3}px;width:1px;height:20px;background:${ACC};opacity:.9"></i><i style="position:absolute;left:${(x - 2.5).toFixed(1)}px;top:${SY - 6}px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>`; }
                 // 書き込み: 上の2段に、時刻の順で。左の人数と重ならないように
                 const placed = [[], []], LW = 86, CNTW = nk ? 104 : 0;
@@ -20501,15 +20521,24 @@ const namesBtn = isAdmin() && dates.length > 0
                     s += `<i style="position:absolute;left:${xa.toFixed(1)}px;top:${ly + 8}px;width:.8px;height:${SY - 8 - ly - 8}px;background:${P.ink3}"></i><i style="position:absolute;left:${Math.min(xa, lx).toFixed(1)}px;top:${ly + 8}px;width:${Math.abs(lx - xa).toFixed(1)}px;height:.8px;background:${P.ink3}"></i>`;
                     const go = e.v ? `protoVol('${e.k}')` : `protoRow(${JSON.stringify(e.pid)})`;
                     s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;${side > 0 ? `left:${(lx + 4).toFixed(1)}px` : `right:${(W - lx + 4).toFixed(1)}px;text-align:right`};top:${ly}px;max-width:${LW}px;line-height:1.35;white-space:nowrap;overflow:hidden;cursor:pointer;font-family:${jp}">
-                        <div style="font-size:11px;font-weight:500;color:${c};overflow:hidden;text-overflow:ellipsis">${esc(e.n)}</div><div style="font-family:${en};font-size:9px;font-weight:300;color:${dk.sub}">${esc(e.t)}</div>${e.m ? `<div style="font-size:9px;font-weight:300;color:${dk.sub};overflow:hidden;text-overflow:ellipsis">${esc(e.m)}</div>` : ""}</div>`;
+                        <div style="font-size:11px;font-weight:500;color:${c};overflow:hidden;text-overflow:ellipsis">${esc(e.n)}</div><div style="font-family:${en};font-size:9px;font-weight:400;color:${dk.txt}">${esc(e.t)}</div>${e.m ? `<div style="font-size:9px;font-weight:400;color:${dk.txt};overflow:hidden;text-overflow:ellipsis">${esc(e.m)}</div>` : ""}</div>`;
                 });
+                // 自分の出欠(○✖△)。いつもの画面と同じ protoAns で答える
+                let ans = "";
+                if (nk && !isTent(nk)) {
+                    const me = surveyWho(), myMem = me ? (attendanceByDate[nk] || []).find(x => x.name === me) : null, my = myMem ? myMem.status : "";
+                    const AO = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"]];
+                    const LVc = protoPal().LV, AC = { "来る": LVc.sufficient, "未定": LVc.warning, "来ない": LVc.danger };
+                    ans = `<div style="position:absolute;left:${X0 - 4}px;top:84px;display:flex;gap:7px">${AO.map(([st, ico, lb]) => { const on = my === st;
+                        return `<button type="button" aria-label="${lb}" aria-pressed="${on}" ${myMem ? `onclick="event.stopPropagation();protoAns('${nk}','${st}')"` : "disabled"} style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${on ? AC[st] : dk.sub};${on ? `box-shadow:inset 1.6px 1.6px 3px ${dk.in2},inset -1.6px -1.6px 3px ${dk.hi}` : `background:${dk.lift};box-shadow:2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`};${myMem ? "" : "opacity:.4"}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${on ? 3 : 2.2}" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></button>`; }).join("")}</div>`;
+                }
                 const WK = ["日", "月", "火", "水", "木", "金", "土"];
                 const nd = nk ? new Date(...sessDay(nk).split("-").map((v, i) => i === 1 ? +v - 1 : +v)) : null;
                 const cnt = nk ? `<div role="button" tabindex="0" onclick="protoVol('${nk}')" style="position:absolute;left:${X0 - 2}px;top:14px;line-height:1.2;cursor:pointer">
                     <div style="font-family:${jp};font-size:9.5px;font-weight:600;color:${ACC}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}</div>
                     <div style="font-family:${en};font-weight:300;color:${P.ink}"><span style="font-size:30px">${n}</span><span style="font-size:11px;color:${P.ink3};margin-left:2px">/${cap}</span></div>
-                    <div style="font-family:${en};font-size:9.5px;color:${dk.sub}">○${n}　△${tri}</div></div>` : "";
-                const ad = allDay.length ? `<div style="position:absolute;right:${X0 - 2}px;top:${SY + 34}px;font-family:${jp};font-size:9px;color:${dk.sub};text-align:right;white-space:nowrap">${allDay.slice(0, 2).map(p => `<span role="button" tabindex="0" onclick="protoRow(${esc(JSON.stringify(p.id))})" style="margin-left:10px;cursor:pointer"><span style="font-family:${en};font-size:8px;letter-spacing:.1em;color:${P.ink3};margin-right:4px">終日</span>${esc(p.title || "予定")}</span>`).join("")}</div>` : "";
+                    <div style="font-family:${en};font-size:9.5px;color:${dk.txt}">○${n}　△${tri}</div></div>${ans}` : "";
+                const ad = allDay.length ? `<div style="position:absolute;right:${X0 - 2}px;top:${SY + 34}px;font-family:${jp};font-size:9px;color:${dk.txt};text-align:right;white-space:nowrap">${allDay.slice(0, 2).map(p => `<span role="button" tabindex="0" onclick="protoRow(${esc(JSON.stringify(p.id))})" style="margin-left:10px;cursor:pointer"><span style="font-family:${en};font-size:8px;letter-spacing:.1em;color:${P.ink3};margin-right:4px">終日</span>${esc(p.title || "予定")}</span>`).join("")}</div>` : "";
                 return `<div style="position:relative;flex:none;height:${GH}px;z-index:1;background:${dk.floor};border-top:1px solid ${dk.crD};border-bottom:1px solid ${dk.crL};box-sizing:border-box;box-shadow:inset 0 8px 9px -6px ${dk.sh},inset 0 2px 2px -1px ${dk.sh}">${cnt}${s}${ad}</div>`;
             }
             // ---------- メニュー(並べて出す。名前なし) ----------
@@ -20517,7 +20546,7 @@ const namesBtn = isAdmin() && dates.length > 0
             let bellN = 0; try { bellN = bellUnreadCount(); } catch (e) { /* ignore */ }
             const items = prBarItems();
             const menu = items.map((it, i) => { const add = it.k === "add";
-                return `<div style="display:flex;justify-content:center"><button type="button" aria-label="${esc(it.label)}" onclick="prMenuRun(${i}, this)" style="position:relative;width:${add ? 40 : 36}px;height:${add ? 40 : 36}px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${add ? P.ink : dk.sub};${add ? `background:${dk.lift};box-shadow:3px 3px 7px ${P.lo},-3px -3px 7px ${P.hi}` : `box-shadow:inset 1.6px 1.6px 3px ${P.lo},inset -1.6px -1.6px 3px ${P.hi}`}"><span style="display:flex;width:${add ? 20 : 18}px;height:${add ? 20 : 18}px" class="p3ico">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" && svAlert ? `<i style="position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>` : ""}${it.k === "bell" && bellN ? `<i style="position:absolute;top:-1px;right:-3px;min-width:12px;height:12px;padding:0 3px;box-sizing:border-box;border-radius:6px;background:${ACC};color:#fff;font-style:normal;font-family:${en};font-size:7.5px;font-weight:600;display:flex;align-items:center;justify-content:center">${bellN > 99 ? "99+" : bellN}</i>` : ""}</button></div>`; }).join("");
+                return `<div style="display:flex;justify-content:center"><button type="button" aria-label="${esc(it.label)}" onclick="prMenuRun(${i}, this)" style="position:relative;width:${add ? 40 : 36}px;height:${add ? 40 : 36}px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${add ? P.ink : dk.sub};background:${dk.lift};box-shadow:${add ? `3px 3px 7px ${P.lo},-3px -3px 7px ${P.hi}` : `2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`}"><span style="display:flex;width:${add ? 20 : 18}px;height:${add ? 20 : 18}px" class="p3ico">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" && svAlert ? `<i style="position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>` : ""}${it.k === "bell" && bellN ? `<i style="position:absolute;top:-1px;right:-3px;min-width:12px;height:12px;padding:0 3px;box-sizing:border-box;border-radius:6px;background:${ACC};color:#fff;font-style:normal;font-family:${en};font-size:7.5px;font-weight:600;display:flex;align-items:center;justify-content:center">${bellN > 99 ? "99+" : bellN}</i>` : ""}</button></div>`; }).join("");
             root.innerHTML = `<div class="p3" ontouchstart="p3TS(event)" ontouchend="p3TE(event)" style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 14px) 0 calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;background:${P.bg};color:${P.ink}">
               <button type="button" onclick="protoToday()" aria-label="今日へ" style="align-self:flex-start;margin:0 0 0 26px;flex:none;font-family:${jp};font-size:22px;font-weight:300;color:${P.ink}">${m}月<span style="font-family:${en};font-size:11px;font-weight:500;letter-spacing:.28em;color:${P.ink3};margin-left:10px">${y}</span></button>
               <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;margin:10px 0 2px;flex:none;text-align:center;font-family:${en};font-size:9px;font-weight:500;letter-spacing:.14em;color:${P.ink3}">${wl.map(t => `<span>${t}</span>`).join("")}</div>
