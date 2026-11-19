@@ -7317,14 +7317,23 @@ await main();
             } catch (e) { return { i: [], r: [] }; }
         };
         function krAll() {
-            const sh = krRead(KIROKU_KEY), lo = krRead(KIROKU_LOCAL_KEY);
+            const sh = krRead(KIROKU_KEY), lo = krRead(KIROKU_LOCAL_KEY), pm = krPushM();
             const u = (a, b) => { const ids = new Set(a.map(x => x.id)); return a.concat(b.filter(x => !ids.has(x.id))); };
-            return { i: u(lo.i, sh.i), r: u(lo.r, sh.r) };
+            return { i: u(u(lo.i, sh.i), pm.i), r: u(u(lo.r, sh.r), pm.r) };
         }
+        // 管理者でない人が共有した項目と記録: 出欠データの "pushm" の本人の記録の kr に入れる(閲覧者が書けるのは出欠データだけなので)
+        const KR_PM_BUDGET = 40000;   // 1人ぶん(UTF-8のバイト)。超えた古い記録は共有せず、この端末にだけ残す
+        function krPushM() {
+            const i = [], r = [];
+            try { pushMStore().forEach(x => { const k = x.kr; if (!k) return; (Array.isArray(k.i) ? k.i : []).forEach(it => { if (it && it.id != null && typeof it.n === "string") i.push(it); }); (Array.isArray(k.r) ? k.r : []).forEach(q => { if (q && q.id != null && q.i != null && /^\d{4}-\d{2}-\d{2}$/.test(q.d)) r.push(q); }); }); } catch (e) { /* ignore */ }
+            return { i, r };
+        }
+        function krPushMSig() { try { return pushMStore().map(x => x.kr ? `${x.who}:${x.ts || 0}` : "").join(","); } catch (e) { return ""; } }
         const krMine = it => !!it && it.o === planAuthorKey();
         const krShared = it => !!it && !it.x && (it.t || []).length > 0;
         const krCol = it => KR_COLORS[(+(it && it.c) || 0) % KR_COLORS.length];
         function krSaveAll(d) {
+            if (!isAdmin()) return krSaveAllMember(d);
             const me = planAuthorKey(), byId = new Map(d.i.map(x => [x.id, x]));
             const inShared = it => it.o !== me || krShared(it);   // ほかの人の項目は、共有データにしかない
             const li = d.i.filter(it => !inShared(it)), si = d.i.filter(inShared), lr = [], sr = [];
@@ -7343,9 +7352,35 @@ await main();
                 if (before !== next && !(before == null && !si.length && !sr.length)) localStorage.setItem(KIROKU_KEY, next);   // 共有データは変わったときだけ書く
             } catch (e) { console.warn(e); }
         }
+        // 管理者でない人: 共有しない項目と記録はこの端末だけ。共有する自分の項目と記録は "pushm" の自分の記録(kr)へ。ほかの人の項目は読むだけ
+        var krPmTimer = 0, krPmLast = null;
+        function krSaveAllMember(d) {
+            const me = planAuthorKey(), byId = new Map(d.i.map(x => [x.id, x]));
+            const mineSh = it => it.o === me && krShared(it);
+            const li = d.i.filter(it => it.o === me && !krShared(it)), si = d.i.filter(mineSh), lr = [], sr = [];
+            const enc = typeof TextEncoder !== "undefined" ? new TextEncoder() : null;
+            let used = 0;
+            d.r.filter(r => byId.has(r.i)).sort((a, b) => b.d.localeCompare(a.d) || (b.id > a.id ? 1 : b.id < a.id ? -1 : 0)).forEach(r => {
+                const it = byId.get(r.i);
+                if (it.o !== me) return;   // ほかの人の記録は、その人の共有データにある
+                if (!krShared(it)) { lr.push(r); return; }
+                const t = JSON.stringify(r); used += (enc ? enc.encode(t).length : t.length * 3) + 1;
+                (used <= KR_PM_BUDGET ? sr : lr).push(r);
+            });
+            // 共有する分も、つながっていないときに消えないように端末にも置いておく(読むときは同じidをまとめる)
+            try { localStorage.setItem(KIROKU_LOCAL_KEY, JSON.stringify({ i: li.concat(si), r: lr.concat(sr) })); } catch (e) { console.warn(e); }
+            const kr = si.length ? { i: si, r: sr } : null, sig = JSON.stringify(kr);
+            if (sig === krPmLast) return;
+            krPmLast = sig;
+            clearTimeout(krPmTimer);
+            krPmTimer = setTimeout(() => {
+                if (!pushMCanWrite()) return;
+                pushMPut(base => { const cur = JSON.stringify(base.kr || null); if (cur === sig) return false; if (kr) base.kr = kr; else delete base.kr; return base; }).catch(e => console.warn("kiroku share", e));
+            }, 800);
+        }
         // 見える項目: 自分の項目 / ペアの相手から共有された項目(管理者モードのときだけ)。しまった項目は出さない
         function krVisible(it) {
-            if (!isAdmin() || !it || it.x) return false;
+            if (!it || it.x) return false;
             if (krMine(it)) return true;
             const me = myRosterId(); return me != null && krShared(it) && it.t.includes(me);
         }
@@ -7373,15 +7408,14 @@ await main();
         // ---- カレンダーの点(日付 → その日に記録した項目の色。項目の並び順) ----
         var krDayCache = null;
         function krDayColors() {
-            if (!isAdmin()) return null;
             const a = localStorage.getItem(KIROKU_KEY), b = localStorage.getItem(KIROKU_LOCAL_KEY);
-            if (a == null && b == null) return null;
-            const me = planAuthorKey(), rid = myRosterId(), c = krDayCache;
-            if (c && c.a === a && c.b === b && c.me === me && c.rid === rid) return c.m;
+            if (a == null && b == null && !krPushMSig().replace(/,/g, "")) return null;
+            const me = planAuthorKey(), rid = myRosterId(), c = krDayCache, pm = krPushMSig();
+            if (c && c.a === a && c.b === b && c.me === me && c.rid === rid && c.pm === pm) return c.m;
             const d = krAll(), vis = d.i.filter(krVisible).sort(krOrd), idx = new Map(vis.map((it, n) => [it.id, n])), m = new Map();
             d.r.forEach(r => { if (!idx.has(r.i)) return; let x = m.get(r.d); if (!x) m.set(r.d, x = []); if (!x.includes(r.i)) x.push(r.i); });
             m.forEach((x, k) => m.set(k, x.sort((p, q) => idx.get(p) - idx.get(q)).map(id => krCol(vis[idx.get(id)]))));
-            krDayCache = { a, b, me, rid, m };
+            krDayCache = { a, b, me, rid, pm, m };
             return m;
         }
         // マスの左上: 2列で4つまで(5つ以上は3つと小さな輪)
@@ -7396,7 +7430,6 @@ await main();
         const krNewId = () => { let n = Date.now(); if (n <= krLastId) n = krLastId + 1; krLastId = n; return n; };
         function openKiroku(tab) {
             closeAddChooser();
-            if (!isAdmin()) return;
             const today = formatDateKey(new Date());
             const mine = krAll().i.filter(it => krVisible(it) && krMine(it));
             krForm = { tab: tab || (mine.length ? "add" : "items"), id: null, item: mine.some(it => it.id === krLastItem) ? krLastItem : (mine.length === 1 ? mine[0].id : null), date: today, memo: "", colorFor: null, newName: "" };
@@ -7491,6 +7524,7 @@ await main();
         function krToggleShare(id) {
             krEditItem(id, it => {
                 if (krShared(it)) { if (!confirm(`「${it.n}」の共有をやめますか？\n(記録はこの端末に残ります)`)) return false; it.t = []; return; }
+                if (!isAdmin() && !pushMCanWrite()) { alert("共有するには、ログインして名簿の名前を選んでください。"); return false; }
                 const ids = pairIds();
                 if (!ids.length) { alert("共有の相手は、ペアモードで選んだ人です。\n先にペアモードで相手を選んでください。"); return false; }
                 const names = ids.map(i => (roster.find(r => r.id === i) || {}).name).filter(Boolean);
@@ -7746,7 +7780,7 @@ await main();
                     next.who = who; next.n = name;
                     if (next.d && !Object.keys(next.d).length) delete next.d;
                     if (next.l && !next.l.length) delete next.l;
-                    if (!next.d && !next.l && !next.s && !next.vp) next = null;   // 中身が無ければ記録ごと消す
+                    if (!next.d && !next.l && !next.s && !next.vp && !next.kr) next = null;   // 中身が無ければ記録ごと消す
                 }
                 const strip = (x) => { if (!x) return ""; const o = { ...x }; delete o.ts; return JSON.stringify(o); };
                 if (strip(cur) === strip(next)) return null;   // 変わっていない
@@ -18117,7 +18151,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611192140;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611192320;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20210,7 +20244,7 @@ const namesBtn = isAdmin() && dates.length > 0
             let pinDialH = "", pinInfo = "", pinOpts = "", pinCols = "", pinLine = P.ink3, pinSeg = "";
             if (pin) {
                 // 上の切り替え(+ の中身と同じ並び。中身が出るのは管理者だけ: そうでない人の + はすぐ予定の入力)
-                const sw = isAdmin() ? PR_RAD_SUB : [];
+                const sw = prSubItems();
                 if (sw.length > 1) pinSeg = `<div class="pin-seg" role="tablist" aria-label="追加するもの" style="${insetS}">${sw.map(it => { const on = it.k === "plan"; return `<button type="button" role="tab" aria-selected="${on}" aria-label="${it.label}" onclick="pinSwitch('${it.k}')" style="color:${on ? P.acc : P.ink3};${on ? raiseS : ""}">${PR_RAD_ICONS[it.k] || ""}<span>${it.label}</span></button>`; }).join("")}</div>`;
                 const WD3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
                 const dd = (k, big) => { const [yy, mm, d0] = k.slice(0, 10).split("-").map(Number); const w = new Date(yy, mm - 1, d0).getDay(); return `<span style="font-family:${en};font-size:14px;font-weight:700">${mm}/${d0}</span><span style="font-family:${en};font-size:10.5px;font-weight:700;letter-spacing:.08em;color:${w === 0 ? P.red : w === 6 ? P.blue : P.ink3}">${WD3[w]}</span>`; };
@@ -20398,7 +20432,7 @@ const namesBtn = isAdmin() && dates.length > 0
 
         // ======= 試作UI「切れ目」: ヘッダーなし。選んだ週の下の折り目がまっすぐ割れて、その日の24時間(12マス=2時間=人数)が出る =======
         //   いつもの画面はそのまま。設定の「画面」で切り替える(この端末だけ)。予定の入力中・お知らせ中はいつもの画面
-        var P3_KEY = "attendance_ui3_v1";
+        var P3_KEY = "p3_ui_v1";   // attendance_ で始めない: 共有データに入れず、この端末だけ
         function p3On() { try { return localStorage.getItem(P3_KEY) === "1"; } catch (e) { return false; } }
         function setUi3(on) {
             try { localStorage.setItem(P3_KEY, on ? "1" : "0"); } catch (e) { /* ignore */ }
@@ -20740,7 +20774,7 @@ const namesBtn = isAdmin() && dates.length > 0
             add: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`,
         };
         const PR_RAD_ITEMS = [
-            { k: "add", label: "追加", run: () => { if (!isAdmin()) { protoAdd(); return; } prRadSub(); } },   // 管理者は、その場で「Volley / 予定 / 節約 / 記録」を出す
+            { k: "add", label: "追加", run: () => prRadSub() },   // その場で中身を出す(管理者: Volley / 予定 / 節約 / 記録 …、閲覧者: 予定 / 記録)
             { k: "cal", label: "カレンダー", run: () => openBulkAdd() },
             { k: "survey", label: "アンケート", run: () => openSurvey() },
             { k: "roster", label: "名簿", adm: true, run: () => protoSolo("roster") },
@@ -20989,7 +21023,7 @@ const namesBtn = isAdmin() && dates.length > 0
             { k: "volley", label: "Volley", run: () => addChooseVolley() },
             { k: "plan", label: "予定", run: () => addChoosePlan() },
             { k: "saving", label: "節約", run: () => openSaving() },
-            { k: "kiroku", label: "記録", run: () => openKiroku() },   // 継続記録(管理者だけ)
+            { k: "kiroku", label: "記録", run: () => openKiroku() },   // 継続記録(閲覧者も使える。閲覧者の記録はこの端末だけ)
             { k: "vbulk", label: "まとめて", run: () => openVbAdd() }   // バレー予定の一括追加(管理者だけ。この中身は管理者にしか出さない)
         ];
         PR_RAD_ICONS.volley = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5c-1.5 4 .5 8 5.5 9.5M5 7.5c3.5 2.5 8 2 10.5-2.5M5.5 16.5c2-3.5 6.5-5 10-3.5"></path></svg>`;
@@ -21054,8 +21088,10 @@ const namesBtn = isAdmin() && dates.length > 0
         function prRadSub() {
             const x = prRad ? prRad.cx : (prRadLast ? prRadLast[0] : innerWidth / 2), y = prRad ? prRad.cy : (prRadLast ? prRadLast[1] : innerHeight / 2);
             prRad = { open: true, tap: true, sel: -1 };
-            prRadRender(PR_RAD_SUB, x, y);
+            prRadRender(prSubItems(), x, y);
         }
+        // + の中身: 管理者は全部、閲覧者は「予定」と「記録」だけ
+        function prSubItems() { return isAdmin() ? PR_RAD_SUB : PR_RAD_SUB.filter(x => x.k === "plan" || x.k === "kiroku"); }
         var prRadLast = null;
         var prRadBottom = false;   // 長押しメニューを下半分で使ったか(予定の入力を下に出す)
         function prRadPick(x, y) {
