@@ -18114,7 +18114,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611191730;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611191745;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20500,11 +20500,13 @@ const namesBtn = isAdmin() && dates.length > 0
                 const cw = (X1 - X0) / 12;
                 for (let i = 0; i < 12; i++) {
                     const x = X0 + i * cw + 1.2, w = cw - 2.4, d = i < deep, h = !d && i < deep + shal;
+                    const fillC = d ? (dark ? "#aab1bd" : "#7d8592") : h ? (dark ? "rgba(255,255,255,.28)" : "#c3c8d0") : "";
+                    if (d || h) { s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${SY + 2}px;width:${w.toFixed(1)}px;height:10px;border-radius:3px;background:${fillC};box-shadow:inset 0 1px 1px ${dark ? "rgba(255,255,255,.15)" : "rgba(255,255,255,.35)"}"></i>`; s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 14}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`; continue; }
                     const sh = d ? `inset 2.4px 2.4px 3.5px ${dark ? "rgba(0,0,0,.7)" : "#9ba3b1"},inset -1.5px -1.5px 2.5px ${dark ? "rgba(255,255,255,.07)" : "#f6f8fb"}` : h ? `inset 1.1px 1.1px 1.6px ${dark ? "rgba(0,0,0,.55)" : "#aab1bd"},inset -.8px -.8px 1.4px ${dark ? "rgba(255,255,255,.06)" : "#f6f8fb"}` : `0 0 0 .6px ${dark ? "rgba(255,255,255,.1)" : "#c9ced7"}`;
-                    s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${SY}px;width:${w.toFixed(1)}px;height:14px;border-radius:3px;background:${d ? (dark ? "#1d2025" : "#cbd0d9") : h ? (dark ? "#2a2d33" : "#dde1e8") : "transparent"};box-shadow:${sh}"></i>`;
-                    s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 16}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`;
+                    s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${SY + 2}px;width:${w.toFixed(1)}px;height:10px;border-radius:3px;background:${d ? (dark ? "#1d2025" : "#cbd0d9") : h ? (dark ? "#2a2d33" : "#dde1e8") : "transparent"};box-shadow:${sh}"></i>`;
+                    s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 14}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`;
                 }
-                for (let h = 0; h <= 24; h += 2) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${SY + 19}px;font-family:${en};font-size:7.5px;color:${h % 6 ? dk.sub : dk.txt}">${h}</span>`;
+                for (let h = 0; h <= 24; h += 2) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${SY + 17}px;font-family:${en};font-size:7.5px;color:${h % 6 ? dk.sub : dk.txt}">${h}</span>`;
                 if (sel === todayKey) { const x = tx(nowMin / 60); s += `<i style="position:absolute;left:${(x - .5).toFixed(1)}px;top:${SY - 3}px;width:1px;height:20px;background:${ACC};opacity:.9"></i><i style="position:absolute;left:${(x - 2.5).toFixed(1)}px;top:${SY - 6}px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>`; }
                 // 予定の線: 帯のすぐ上。時間が重なる予定は、線を細い段に分けて両方見えるように
                 const trk = []; ev.forEach(e => { let t = 0; while ((trk[t] || []).some(q => q.a < e.b && e.a < q.b)) t++; (trk[t] = trk[t] || []).push(e); e.tr = t; });
