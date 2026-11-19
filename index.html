@@ -18114,7 +18114,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611191650;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611191700;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20484,62 +20484,64 @@ const namesBtn = isAdmin() && dates.length > 0
                 const nk = selV.length ? (protoHdrKey(sel) && volOk(protoHdrKey(sel)) ? protoHdrKey(sel) : selV[0]) : Object.keys(events).filter(k => volOk(k) && sessDay(k) >= todayKey && !volDone(k)).sort(sessCmp)[0];
                 const n = nk ? countComing(nk) : 0, tri = nk ? (attendanceByDate[nk] || []).filter(x => x.status === "未定").length : 0, cap = thresholds.cyanMax || 14;
                 const deep = Math.min(n, 12), shal = Math.max(0, Math.min(n + tri, 12) - deep);
-                const ev = [], allDay = [];
+                const ev = [];
                 sessKeysOf(sel).forEach(sk => { const t = volTime(sk); if (t) ev.push({ v: true, k: sk, a: t.s / 60, b: (t.e > t.s ? t.e : t.s + 120) / 60, n: isTent(sk) ? "バレー(未)" : "バレー", t: `${fmtMin(t.s)}–${fmtMin(t.e)}`, m: volPlace(sk) }); });
                 plansOn(sel).forEach(({ p, first: f, last: l }) => {
-                    const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = !!p.endDate && p.endDate !== p.startDate;
+                    const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = isMulti(p);
                     let a = null, b = null;
                     if (!p.allDay && s0 != null && (!multi || f)) { a = s0 / 60; b = !multi && e0 != null && e0 > s0 ? e0 / 60 : multi ? 24 : a + .5; }
                     else if (multi && l && !p.allDay && e0 != null) { a = 0; b = e0 / 60; }
-                    if (a == null) { allDay.push(p); return; }
-                    ev.push({ pid: p.id, a, b, n: p.title || "予定", t: p.start + (p.end && !multi ? `–${p.end}` : ""), m: p.memo ? String(p.memo).split("\n")[0] : "", c: C[+p.color || 0] || C[0] });
+                    const all = a == null;   // 終日(何日も続く予定の途中の日も): 0〜24時の線
+                    ev.push({ pid: p.id, all, a: all ? 0 : a, b: all ? 24 : b, n: p.title || "予定", t: all ? "終日" : p.start + (p.end && !multi ? `–${p.end}` : ""), m: p.memo ? String(p.memo).split("\n")[0] : "", c: C[+p.color || 0] || C[0] });
                 });
-                ev.sort((a, b) => a.a - b.a);
-                const X0 = Math.round(W * .077), X1 = W - X0, tx = h => X0 + (X1 - X0) * h / 24, SY = 128;
+                ev.sort((x, y2) => (y2.all - x.all) || x.a - y2.a);
+                const X0 = Math.round(W * .077), X1 = W - X0, tx = h => X0 + (X1 - X0) * h / 24;
+                const LY = 12, SY = 98;   // 書き込みの段 / 12マスの帯
                 let s = "";
-                const cell = (X1 - X0) / 12;
+                const cw = (X1 - X0) / 12;
                 for (let i = 0; i < 12; i++) {
-                    const x = X0 + i * cell + 1.2, w = cell - 2.4, d = i < deep, h = !d && i < deep + shal;
+                    const x = X0 + i * cw + 1.2, w = cw - 2.4, d = i < deep, h = !d && i < deep + shal;
                     const sh = d ? `inset 2.4px 2.4px 3.5px ${dark ? "rgba(0,0,0,.7)" : "#9ba3b1"},inset -1.5px -1.5px 2.5px ${dark ? "rgba(255,255,255,.07)" : "#f6f8fb"}` : h ? `inset 1.1px 1.1px 1.6px ${dark ? "rgba(0,0,0,.55)" : "#aab1bd"},inset -.8px -.8px 1.4px ${dark ? "rgba(255,255,255,.06)" : "#f6f8fb"}` : `0 0 0 .6px ${dark ? "rgba(255,255,255,.1)" : "#c9ced7"}`;
                     s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${SY}px;width:${w.toFixed(1)}px;height:14px;border-radius:3px;background:${d ? (dark ? "#1d2025" : "#cbd0d9") : h ? (dark ? "#2a2d33" : "#dde1e8") : "transparent"};box-shadow:${sh}"></i>`;
                     s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 16}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`;
                 }
                 for (let h = 0; h <= 24; h += 2) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${SY + 19}px;font-family:${en};font-size:7.5px;color:${h % 6 ? dk.sub : dk.txt}">${h}</span>`;
                 if (sel === todayKey) { const x = tx(nowMin / 60); s += `<i style="position:absolute;left:${(x - .5).toFixed(1)}px;top:${SY - 3}px;width:1px;height:20px;background:${ACC};opacity:.9"></i><i style="position:absolute;left:${(x - 2.5).toFixed(1)}px;top:${SY - 6}px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>`; }
-                // 書き込み: 上の2段に、時刻の順で。左の人数と重ならないように
-                const placed = [[], []], LW = 86, CNTW = nk ? 104 : 0;
-                ev.forEach(e => {
-                    const c = e.v ? ACC : (e.c === P.bg ? P.ink : (e.c || P.ink)), xa = tx(Math.max(0, e.a)), xb = tx(Math.min(24, e.b));
-                    let side = xa > W * .62 ? -1 : 1;
-                    let lx = side > 0 ? Math.max(xa + 12, CNTW + 4) : xa - 12;
-                    const span = side > 0 ? [lx, lx + LW] : [lx - LW, lx];
-                    let lv = [0, 1].find(L => !placed[L].some(q => q[0] < span[1] + 6 && span[0] < q[1] + 6));
-                    if (lv == null) lv = 1;
-                    placed[lv].push(span);
-                    const ly = lv ? 62 : 16;
-                    s += `<i style="position:absolute;left:${xa.toFixed(1)}px;width:${Math.max(xb - xa, 3).toFixed(1)}px;top:${SY - 7}px;height:3px;border-radius:2px;background:${c};box-shadow:0 1.5px 2px rgba(80,88,100,.35)"></i>`;
-                    s += `<i style="position:absolute;left:${xa.toFixed(1)}px;top:${ly + 8}px;width:.8px;height:${SY - 8 - ly - 8}px;background:${P.ink3}"></i><i style="position:absolute;left:${Math.min(xa, lx).toFixed(1)}px;top:${ly + 8}px;width:${Math.abs(lx - xa).toFixed(1)}px;height:.8px;background:${P.ink3}"></i>`;
+                // 予定の線: 帯のすぐ上。時間が重なる予定は、線を細い段に分けて両方見えるように
+                const trk = []; ev.forEach(e => { let t = 0; while ((trk[t] || []).some(q => q.a < e.b && e.a < q.b)) t++; (trk[t] = trk[t] || []).push(e); e.tr = t; });
+                // 書き込み: 1段だけ。時刻の順に左から並べ、重なるときは右へずらす(段を重ねない)
+                const est = e => Math.min(110, Math.max([...e.n].length * 11, e.t.length * 5.4, [...e.m].length * 9) + 6);
+                let prevR = X0 - 10;
+                const lab = ev.map(e => { const w = est(e), xa = tx(Math.max(0, e.a)); let lx = Math.max(xa, prevR + 10); if (lx + w > X1) lx = Math.max(prevR + 10, X1 - w); prevR = lx + w; return { e, w, xa, lx }; });
+                // 右からはみ出したら、全体を左へ詰める
+                const over = prevR - X1; if (over > 0) { let shift = over; for (let i = lab.length - 1; i >= 0 && shift > 0; i--) { const minX = i ? lab[i - 1].lx + lab[i - 1].w + 10 : X0; const can = Math.max(0, lab[i].lx - Math.max(minX - shift, X0)); lab[i].lx -= Math.min(can, shift); } }
+                lab.forEach(({ e, w, xa, lx }) => {
+                    const c = e.v ? ACC : (e.c === P.bg ? P.ink : (e.c || P.ink)), xb = tx(Math.min(24, e.b)), by = SY - 6 - e.tr * 4;
+                    s += `<i style="position:absolute;left:${xa.toFixed(1)}px;width:${Math.max(xb - xa, 3).toFixed(1)}px;top:${by}px;height:${e.all ? 2 : 3}px;border-radius:2px;background:${c};opacity:${e.all ? .7 : 1};box-shadow:0 1px 1.5px rgba(80,88,100,.3)"></i>`;
+                    const px = xa + (e.all ? 6 : 0), lb = LY + 44;   // 線の上がる位置 / 書き込みの下端
+                    const vl = (x, y1, y2) => `<i style="position:absolute;left:${x.toFixed(1)}px;top:${Math.min(y1, y2).toFixed(1)}px;width:.8px;height:${Math.abs(y2 - y1).toFixed(1)}px;background:${P.ink3}"></i>`;
+                    if (px >= lx && px <= lx + w) s += vl(px, lb, by);   // 真上に書き込みがあれば、まっすぐ上へ
+                    else { const yk = lb + 8; s += vl(px, yk, by) + vl(lx, lb, yk) + `<i style="position:absolute;left:${Math.min(px, lx).toFixed(1)}px;top:${yk}px;width:${Math.abs(px - lx).toFixed(1)}px;height:.8px;background:${P.ink3}"></i>`; }
                     const go = e.v ? `protoVol('${e.k}')` : `protoRow(${JSON.stringify(e.pid)})`;
-                    s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;${side > 0 ? `left:${(lx + 4).toFixed(1)}px` : `right:${(W - lx + 4).toFixed(1)}px;text-align:right`};top:${ly}px;max-width:${LW}px;line-height:1.35;white-space:nowrap;overflow:hidden;cursor:pointer;font-family:${jp}">
+                    s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${lx.toFixed(1)}px;top:${LY}px;width:${w}px;line-height:1.35;white-space:nowrap;overflow:hidden;cursor:pointer;font-family:${jp};border-left:.8px solid ${P.ink3};padding-left:4px;box-sizing:border-box">
                         <div style="font-size:11px;font-weight:500;color:${c};overflow:hidden;text-overflow:ellipsis">${esc(e.n)}</div><div style="font-family:${en};font-size:9px;font-weight:400;color:${dk.txt}">${esc(e.t)}</div>${e.m ? `<div style="font-size:9px;font-weight:400;color:${dk.txt};overflow:hidden;text-overflow:ellipsis">${esc(e.m)}</div>` : ""}</div>`;
                 });
-                // 自分の出欠(○✖△)。いつもの画面と同じ protoAns で答える
+                // 下の段: 次のバレーの人数と、自分の出欠(○✖△。いつもの画面と同じ protoAns で答える)
                 let ans = "";
                 if (nk && !isTent(nk)) {
                     const me = surveyWho(), myMem = me ? (attendanceByDate[nk] || []).find(x => x.name === me) : null, my = myMem ? myMem.status : "";
                     const AO = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"]];
                     const LVc = protoPal().LV, AC = { "来る": LVc.sufficient, "未定": LVc.warning, "来ない": LVc.danger };
-                    ans = `<div style="position:absolute;left:${X0 - 4}px;top:84px;display:flex;gap:7px">${AO.map(([st, ico, lb]) => { const on = my === st;
-                        return `<button type="button" aria-label="${lb}" aria-pressed="${on}" ${myMem ? `onclick="event.stopPropagation();protoAns('${nk}','${st}')"` : "disabled"} style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${on ? AC[st] : dk.sub};${on ? `box-shadow:inset 1.6px 1.6px 3px ${dk.in2},inset -1.6px -1.6px 3px ${dk.hi}` : `background:${dk.lift};box-shadow:2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`};${myMem ? "" : "opacity:.4"}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${on ? 3 : 2.2}" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></button>`; }).join("")}</div>`;
+                    ans = `<div style="position:absolute;right:${X0 - 4}px;top:142px;display:flex;gap:8px">${AO.map(([st, ico, lb]) => { const on = my === st;
+                        return `<button type="button" aria-label="${lb}" aria-pressed="${on}" ${myMem ? `onclick="event.stopPropagation();protoAns('${nk}','${st}')"` : "disabled"} style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${on ? AC[st] : dk.sub};${on ? `box-shadow:inset 1.6px 1.6px 3px ${dk.in2},inset -1.6px -1.6px 3px ${dk.hi}` : `background:${dk.lift};box-shadow:2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`};${myMem ? "" : "opacity:.4"}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${on ? 3 : 2.2}" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></button>`; }).join("")}</div>`;
                 }
                 const WK = ["日", "月", "火", "水", "木", "金", "土"];
                 const nd = nk ? new Date(...sessDay(nk).split("-").map((v, i) => i === 1 ? +v - 1 : +v)) : null;
-                const cnt = nk ? `<div role="button" tabindex="0" onclick="protoVol('${nk}')" style="position:absolute;left:${X0 - 2}px;top:14px;line-height:1.2;cursor:pointer">
-                    <div style="font-family:${jp};font-size:9.5px;font-weight:600;color:${ACC}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}</div>
-                    <div style="font-family:${en};font-weight:300;color:${P.ink}"><span style="font-size:30px">${n}</span><span style="font-size:11px;color:${P.ink3};margin-left:2px">/${cap}</span></div>
-                    <div style="font-family:${en};font-size:9.5px;color:${dk.txt}">○${n}　△${tri}</div></div>${ans}` : "";
-                const ad = allDay.length ? `<div style="position:absolute;right:${X0 - 2}px;top:${SY + 34}px;font-family:${jp};font-size:9px;color:${dk.txt};text-align:right;white-space:nowrap">${allDay.slice(0, 2).map(p => `<span role="button" tabindex="0" onclick="protoRow(${esc(JSON.stringify(p.id))})" style="margin-left:10px;cursor:pointer"><span style="font-family:${en};font-size:8px;letter-spacing:.1em;color:${P.ink3};margin-right:4px">終日</span>${esc(p.title || "予定")}</span>`).join("")}</div>` : "";
-                return `<div style="position:relative;flex:none;height:${GH}px;z-index:1;background:${dk.floor};border-top:1px solid ${dk.crD};border-bottom:1px solid ${dk.crL};box-sizing:border-box;box-shadow:inset 0 8px 9px -6px ${dk.sh},inset 0 2px 2px -1px ${dk.sh}">${cnt}${s}${ad}</div>`;
+                const cnt = nk ? `<div role="button" tabindex="0" onclick="protoVol('${nk}')" style="position:absolute;left:${X0 - 2}px;top:140px;display:flex;align-items:baseline;gap:10px;white-space:nowrap;cursor:pointer">
+                    <span style="font-family:${jp};font-size:9.5px;font-weight:600;color:${ACC}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}</span>
+                    <span style="font-family:${en};font-weight:300;color:${P.ink}"><span style="font-size:26px">${n}</span><span style="font-size:10px;color:${P.ink3};margin-left:2px">/${cap}</span></span>
+                    <span style="font-family:${en};font-size:9.5px;color:${dk.txt}">○${n}　△${tri}</span></div>${ans}` : "";
+                return `<div style="position:relative;flex:none;height:${GH}px;z-index:1;background:${dk.floor};border-top:1px solid ${dk.crD};border-bottom:1px solid ${dk.crL};box-sizing:border-box;box-shadow:inset 0 8px 9px -6px ${dk.sh},inset 0 2px 2px -1px ${dk.sh};overflow:hidden">${s}${cnt}</div>`;
             }
             // ---------- メニュー(並べて出す。名前なし) ----------
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
