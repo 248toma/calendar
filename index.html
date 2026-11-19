@@ -4680,6 +4680,7 @@ await main();
                 <div class="st-row pr-only"><span class="st-lbl">予定の表示</span><span class="st-seg" id="pvSeg"><button type="button" data-v="dot" onclick="setProtoPlanView('dot')">点</button><button type="button" data-v="text" onclick="setProtoPlanView('text')">文字</button><button type="button" data-v="en" onclick="setProtoPlanView('en')">EN</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">時計</span><span class="st-seg" id="dialSeg"><button type="button" data-v="24" onclick="setDial12(false)">24h</button><button type="button" data-v="12" onclick="setDial12(true)">12h</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">メニュー</span><span class="st-seg" id="menuSeg"><button type="button" data-v="hold" onclick="setMenuMode('hold')">長押し</button><button type="button" data-v="bar" onclick="setMenuMode('bar')">下</button></span></div>
+                <div class="st-row pr-only"><span class="st-lbl">画面</span><span class="st-seg" id="ui2Seg"><button type="button" data-v="0" onclick="setUi2(false)">いつもの</button><button type="button" data-v="1" onclick="setUi2(true)">試作</button></span></div>
                 <div class="st-row pr-only"><span class="st-lbl">入力画面</span><span class="st-seg" id="pinPosSeg"><button type="button" data-v="top" onclick="setPinPos('top')">上</button><button type="button" data-v="bottom" onclick="setPinPos('bottom')">下</button></span></div>
             </div>
             <input type="file" id="icsFile" accept=".ics,text/calendar" hidden onchange="icsFileChosen(this)">
@@ -18112,7 +18113,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611190200;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611191530;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -19817,6 +19818,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function renderProto() {
             const root = document.getElementById("protoUI");
             if (!root) return;
+            if (p2On() && !pinOpen && !protoNote) { if (protoCapMode) { protoCapOut = ""; return; } renderP2(root); return; }   // 試作UI(設定で切り替え)。入力中・お知らせ中はいつもの画面
             const { dark, P, C, LV } = protoPal();
             const en = "'Montserrat', 'Noto Sans JP', system-ui, sans-serif";
             const { raise, raiseS, inset, insetS } = protoNeu(P, dark);   // 凹凸はまとめて protoNeu で決める
@@ -20388,6 +20390,141 @@ const namesBtn = isAdmin() && dates.length > 0
         var protoBackAt = 0;
         document.addEventListener("visibilitychange", () => { protoBackAt = Date.now(); });
         addEventListener("pageshow", () => { protoBackAt = Date.now(); });
+
+        // ======= 試作UI: ヘッダーなし。月は「数字+予定名(4文字・3つまで)」、下に人数と24時間の文字盤 =======
+        //   いつもの画面はそのまま残し、設定の「画面」で切り替える(この端末だけ)。入力中・お知らせ中はいつもの画面を使う
+        var P2_KEY = "attendance_ui2_v1";
+        function p2On() { try { return localStorage.getItem(P2_KEY) === "1"; } catch (e) { return false; } }
+        function setUi2(on) {
+            try { localStorage.setItem(P2_KEY, on ? "1" : "0"); } catch (e) { /* ignore */ }
+            applyUi2Seg();
+            try { renderProto(); } catch (e) { /* ignore */ }
+        }
+        function applyUi2Seg() { const on = p2On(); document.querySelectorAll("#ui2Seg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === on)); }
+        var p2Sw = null;   // 横スワイプで月を移る
+        function p2TS(e) { const t = e.touches && e.touches[0]; if (t) p2Sw = { x: t.clientX, y: t.clientY, at: Date.now() }; }
+        function p2TE(e) {
+            const t = e.changedTouches && e.changedTouches[0]; const s = p2Sw; p2Sw = null;
+            if (!t || !s) return;
+            const dx = t.clientX - s.x, dy = t.clientY - s.y;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - s.at < 800) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); }
+        }
+        function p2Menu(ev) {   // …: いつもの長押しメニュー(扇)を、押した場所に出す
+            const r = ev && ev.currentTarget ? ev.currentTarget.getBoundingClientRect() : null;
+            const x = r ? r.left + r.width / 2 : innerWidth - 60, y = r ? r.top + r.height / 2 : innerHeight - 60;
+            prRadLast = [x, y]; prRad = { open: true, tap: true, sel: -1 };
+            prRadRender(prRadItems(), x, y);
+        }
+        function p2Add(ev) {
+            const r = ev && ev.currentTarget ? ev.currentTarget.getBoundingClientRect() : null;
+            if (r) prRadLast = [r.left + r.width / 2, r.top + r.height / 2];
+            if (!isAdmin()) { protoAdd(); return; }
+            prRad = null; prRadSub();
+        }
+        function renderP2(root) {
+            const { dark, P, C } = protoPal();
+            const ACC = dark ? "#f08a52" : "#ec6a2c";
+            const esc = escapeHtml, todayKey = formatDateKey(new Date());
+            const en = "Inter, 'Montserrat', 'Noto Sans JP', system-ui, sans-serif";
+            const sel = sessDay(selectedDate);
+            if (!protoYM) { const [a, b] = sel.split("-").map(Number); protoYM = [a, b]; }
+            const [y, m] = protoYM;
+            const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const WK = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            const volTime = (k) => { const prs = (reservations[k] || []).map(r => parseTimeRangeMin(r.time)).filter(Boolean); if (!prs.length) return null; return { s: Math.min(...prs.map(x => x.s)), e: Math.max(...prs.map(x => x.e)) }; };
+            const volPlace = (k) => [...new Set((reservations[k] || []).map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
+            const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+            const volDone = (k) => { const d = sessDay(k); if (d < todayKey) return true; if (d > todayKey) return false; const t = volTime(k); if (!t) return false; return nowMin >= (t.e > t.s ? t.e : t.s + 120); };
+            // その日に出すもの(バレーが先、あとは時刻順)
+            const itemsOf = (k) => {
+                const out = sessKeysOf(k).map(sk => ({ t: isTent(sk) ? "バレー(未)" : "バレー", vol: true, tent: isTent(sk), k: sk }));
+                plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", pid: p.id, s: p.allDay ? -1 : (parseHM(p.start) ?? -1) }));
+                return out;
+            };
+            // ---------- カレンダー ----------
+            const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
+            const days = new Date(y, m, 0).getDate(), rows = Math.ceil((off + days) / 7);
+            const wl = []; for (let i = 0; i < 7; i++) wl.push(["S", "M", "T", "W", "T", "F", "S"][(i + weekStartDay) % 7]);
+            let cells = "";
+            for (let i = 0; i < rows * 7; i++) {
+                const dn = i - off + 1;
+                if (dn < 1 || dn > days) { cells += `<div></div>`; continue; }
+                const d = new Date(y, m - 1, dn), k = formatDateKey(d), it = itemsOf(k), has = it.length > 0;
+                const isSel = k === sel, isT = k === todayKey, red = d.getDay() === 0 || !!jpDay(k).hol || planHolidayOn(k);
+                const bg = isSel ? P.ink : !has ? "transparent" : it.length === 1 ? (dark ? "rgba(255,255,255,.07)" : "#dbdee4") : (dark ? "rgba(255,255,255,.13)" : "#cacfd7");
+                const col = isSel ? P.bg : isT ? ACC : red ? (has ? P.red || "#b5675f" : (dark ? "rgba(214,120,110,.45)" : "#d8b6b1")) : has ? P.ink : (dark ? "rgba(255,255,255,.3)" : "#b9bec7");
+                const names = it.slice(0, 3).map(x => `<span style="display:block;font-size:9.5px;line-height:1.3;white-space:nowrap;overflow:hidden;font-weight:${x.vol ? 700 : 400};color:${x.vol ? (x.tent ? P.ink3 : ACC) : P.ink2}">${esc([...x.t].slice(0, 4).join(""))}</span>`).join("");
+                cells += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="display:flex;flex-direction:column;align-items:center;min-width:0;min-height:0;overflow:hidden;padding-top:2px">
+                    <span style="width:34px;height:34px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${bg};color:${col};font-family:${en};font-size:15.5px;font-weight:${isT && !isSel ? 700 : 400}">${dn}</span>
+                    <span style="margin-top:3px;width:100%;text-align:center;font-family:'Noto Sans JP',sans-serif">${names}</span></button>`;
+            }
+            // ---------- 文字盤: 選んだ日の予定 + 次のバレーの人数 ----------
+            const selV = sessKeysOf(sel).filter(volOk);
+            const nextKey = selV.length ? (protoHdrKey(sel) && volOk(protoHdrKey(sel)) ? protoHdrKey(sel) : selV[0]) : Object.keys(events).filter(k => volOk(k) && sessDay(k) >= todayKey && !volDone(k)).sort(sessCmp)[0];
+            const n = nextKey ? countComing(nextKey) : 0, tri = nextKey ? (attendanceByDate[nextKey] || []).filter(x => x.status === "未定").length : 0;
+            const cap = thresholds.cyanMax || 14;
+            const spans = [];
+            sessKeysOf(sel).forEach(sk => { const t = volTime(sk); if (t) spans.push({ vol: true, k: sk, h1: t.s / 60, h2: (t.e > t.s ? t.e : t.s + 120) / 60, ti: isTent(sk) ? "バレー(未)" : "バレー", tm: `${fmtMin(t.s)}–${fmtMin(t.e)}`, memo: volPlace(sk) }); });
+            const allDay = [];
+            plansOn(sel).forEach(({ p, first: f, last: l }) => {
+                const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = !!p.endDate && p.endDate !== p.startDate;
+                let h1 = null, h2 = null;
+                if (!p.allDay && s0 != null && (!multi || f)) { h1 = s0 / 60; h2 = !multi && e0 != null && e0 > s0 ? e0 / 60 : multi ? 24 : s0 / 60 + 1; }
+                else if (multi && l && !p.allDay && e0 != null) { h1 = 0; h2 = e0 / 60; }
+                if (h1 == null) { allDay.push(p); return; }
+                spans.push({ pid: p.id, h1, h2, col: C[+p.color || 0] || C[0], ti: p.title || "予定", tm: p.start || "", memo: p.memo ? String(p.memo).split("\n")[0] : "" });
+            });
+            const D = 236, R = D / 2, rS = 102, rN = 86, rP = 72;
+            const Pt = (r, deg) => [R + r * Math.cos((deg - 90) * Math.PI / 180), R + r * Math.sin((deg - 90) * Math.PI / 180)];
+            const arc = (r, d0, d1) => { const [x0, y0] = Pt(r, d0), [x1, y1] = Pt(r, d1); return `M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 ${d1 - d0 > 180 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`; };
+            let s = "";
+            const segOn = dark ? "#aab1bd" : "#5a6270", segTri = dark ? "rgba(255,255,255,.3)" : "#b4bac4", segOff = dark ? "rgba(255,255,255,.08)" : "#d6d9df";
+            for (let i = 0; i < 12; i++) { const on = i < Math.min(n, 12), t = !on && i < Math.min(n + tri, 12); s += `<path d="${arc(rS, i * 30 + 2.2, i * 30 + 27.8)}" stroke="${on ? segOn : t ? segTri : segOff}" stroke-width="5" fill="none"/>`; }
+            if (n > 12) for (let i = 0; i < Math.min(n - 12, 12); i++) s += `<path d="${arc(rS, i * 30 + 2.2, i * 30 + 27.8)}" stroke="${P.ink}" stroke-width="5" fill="none"/>`;   // 12人を超えたぶんは濃く塗り直す
+            for (let h = 0; h < 24; h += 2) { const [tx, ty] = Pt(rN, h * 15); s += `<text x="${tx.toFixed(1)}" y="${(ty + 3.6).toFixed(1)}" font-size="10" font-weight="300" fill="${P.ink}" text-anchor="middle" font-family="${en}">${h}</text>`; }
+            for (let h = 1; h < 24; h += 2) { const [a1, b1] = Pt(93, h * 15), [a2, b2] = Pt(90, h * 15); s += `<line x1="${a1.toFixed(1)}" y1="${b1.toFixed(1)}" x2="${a2.toFixed(1)}" y2="${b2.toFixed(1)}" stroke="${segTri}" stroke-width="1"/>`; }
+            spans.forEach(x => { s += `<path d="${arc(rP, Math.max(0, x.h1) * 15 + .6, Math.min(24, x.h2) * 15 - .6)}" stroke="${x.vol ? ACC : (x.col === P.bg ? P.ink : x.col)}" stroke-width="3" fill="none"/>`; });
+            if (sel === todayKey) { const a = nowMin / 4; const [x1, y1] = Pt(64, a), [x2, y2] = Pt(78, a); s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${ACC}" stroke-width="2" stroke-linecap="round"/>`; }
+            // 書き込み(折れ線)
+            let lab = "";
+            const placed = [];
+            spans.slice().sort((a, b) => a.h1 - b.h1).forEach(x => {
+                const mid = (Math.max(0, x.h1) + Math.min(24, x.h2)) / 2 * 15;
+                const [x0, y0] = Pt(rP, mid), [x1, y1] = Pt(R + 6, mid);
+                const right = Math.cos((mid - 90) * Math.PI / 180) >= 0;
+                let yy = y1; placed.filter(q => q.right === right).forEach(q => { if (Math.abs(q.y - yy) < 40) yy = q.y + (yy >= q.y ? 40 : -40); });
+                placed.push({ right, y: yy });
+                const x2 = x1 + (right ? 12 : -12);
+                s += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} L${x1.toFixed(1)} ${yy.toFixed(1)} L${x2.toFixed(1)} ${yy.toFixed(1)}" stroke="${P.ink}" stroke-width=".7" fill="none"/>`;
+                const go = x.vol ? `protoVol('${x.k}')` : `protoRow(${JSON.stringify(x.pid)})`;
+                lab += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;${right ? `left:calc(50% - ${R}px + ${(x2 + 5).toFixed(1)}px)` : `right:calc(50% + ${R}px - ${(x2 - 5).toFixed(1)}px)`};top:${(yy - 8).toFixed(1)}px;text-align:${right ? "left" : "right"};line-height:1.3;white-space:nowrap;max-width:110px;cursor:pointer">
+                    <div style="font-size:12.5px;font-weight:500;color:${x.vol ? ACC : P.ink};overflow:hidden;text-overflow:ellipsis">${esc(x.ti)}</div>
+                    <div style="font-family:${en};font-size:10px;font-weight:300;color:${P.ink2}">${esc(x.tm)}</div>${x.memo ? `<div style="font-size:10px;font-weight:300;color:${P.ink2};overflow:hidden;text-overflow:ellipsis">${esc(x.memo)}</div>` : ""}</div>`;
+            });
+            const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
+            const ad = allDay.length ? `<div style="position:absolute;left:0;top:0;font-size:10.5px;color:${P.ink2};line-height:1.5">${allDay.slice(0, 3).map(p => `<div role="button" tabindex="0" onclick="protoRow(${esc(JSON.stringify(p.id))})" style="cursor:pointer"><span style="font-family:${en};font-size:9px;font-weight:600;letter-spacing:.1em;color:${P.ink3};margin-right:6px">ALL DAY</span>${esc(p.title || "予定")}</div>`).join("")}</div>` : "";
+            const btn = (side, inner, onclick, label, dot) => `<button type="button" aria-label="${label}" onclick="${onclick}" style="position:absolute;${side}:4px;bottom:0;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${P.ink};background:${P.bg};box-shadow:4px 4px 10px ${P.lo},-4px -4px 10px ${P.hi}">${inner}${dot ? `<i style="position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:${ACC}"></i>` : ""}</button>`;
+            const selD = new Date(...sel.split("-").map((v, i) => i === 1 ? +v - 1 : +v));
+            root.innerHTML = `<div class="p2" ontouchstart="p2TS(event)" ontouchend="p2TE(event)" style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;background:${P.bg};color:${P.ink};font-family:'Noto Sans JP',system-ui,sans-serif">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 8px;flex:none">
+                <button type="button" onclick="protoToday()" aria-label="今日へ" style="font-family:${en};font-size:30px;font-weight:300;letter-spacing:-.01em">${MON[m - 1]}${y !== new Date().getFullYear() ? `<span style="font-size:13px;color:${P.ink3};margin-left:8px">${y}</span>` : ""}</button>
+                <span style="font-family:${en};font-size:12px;font-weight:500;letter-spacing:.12em;color:${P.ink3}">${WK[selD.getDay()]} ${selD.getDate()}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;font-family:${en};font-size:10px;font-weight:600;letter-spacing:.12em;color:${P.ink3};margin:16px 0 6px;flex:none">${wl.map(t => `<span>${t}</span>`).join("")}</div>
+              <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr));row-gap:4px">${cells}</div>
+              <div style="position:relative;flex:none;height:${D + 34}px;margin-top:6px">
+                ${ad}
+                <div role="button" tabindex="0" aria-label="バレーの画面へ" ${nextKey ? `onclick="protoVol('${nextKey}')"` : ""} style="position:absolute;left:50%;top:0;width:${D}px;height:${D}px;margin-left:-${R}px;border-radius:50%;background:${P.bg};box-shadow:8px 8px 20px ${P.lo},-8px -8px 20px ${P.hi};cursor:pointer">
+                  <div style="position:absolute;left:${R - 62}px;top:${R - 62}px;width:124px;height:124px;border-radius:50%;box-shadow:inset 2px 2px 6px ${P.lo},inset -2px -2px 6px ${P.hi}"></div>
+                  <div style="position:absolute;left:0;right:0;top:${R - 26}px;text-align:center;line-height:1;font-family:${en}">${nextKey ? `<span style="font-size:36px;font-weight:200">${n}</span><span style="font-size:11px;color:${P.ink3};margin-left:3px">/${cap}</span><div style="font-size:9.5px;letter-spacing:.12em;color:${P.ink3};margin-top:6px">${sessDay(nextKey) === sel ? "" : esc(sessDay(nextKey).slice(5).replace("-", "/"))}</div>` : `<span style="font-size:12px;color:${P.ink3}">—</span>`}</div>
+                  <svg width="${D}" height="${D}" style="position:absolute;inset:0;overflow:visible;pointer-events:none">${s}</svg>
+                </div>
+                                ${lab}
+                ${btn("left", `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`, "p2Add(event)", "追加")}
+                ${btn("right", `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>`, "p2Menu(event)", "メニュー", svAlert)}
+              </div>
+            </div>`;
+        }
         function protoPick(k) {
             if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
             if (Date.now() - protoFing.at < 2000 && (protoFing.edge || protoFing.moved > 12)) return;   // ホームバーから上げた・指をすべらせた(タップではない)
@@ -20605,7 +20742,7 @@ const namesBtn = isAdmin() && dates.length > 0
             applyMenuSeg(); try { renderProto(); } catch (e) { console.warn(e); }
             try { gcalSyncTile(); } catch (e) { /* ignore */ }
         }
-        function applyMenuSeg() { const m = prMenuMode(); document.querySelectorAll("#menuSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); applyPinPosSeg(); }
+        function applyMenuSeg() { const m = prMenuMode(); document.querySelectorAll("#menuSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === m)); applyPinPosSeg(); try { applyUi2Seg(); } catch (e) { /* ignore */ } }
         // 予定の入力画面の場所(この端末だけ): bottom = 下(カレンダーが上、入力がキーボードのすぐ上。最初はこれ) / top = 上(ヘッダーの場所)
         const PR_PIN_POS_KEY = "pr_pin_pos_v1";
         function prPinPos() { try { return localStorage.getItem(PR_PIN_POS_KEY) === "top" ? "top" : "bottom"; } catch (e) { return "bottom"; } }
