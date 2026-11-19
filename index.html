@@ -18151,7 +18151,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611192320;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611192330;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20844,7 +20844,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const it = prBarItems()[i]; if (!it) return;
             if (prBe || Date.now() < prBeBlockClick) return;   // 並べ替え中(と長押しで入った直後)は、押しても実行しない
             protoHaptic && protoHaptic();
-            if (it.k === "add" && isAdmin()) { const r = btn.getBoundingClientRect(); prRadLast = [r.left + r.width / 2, r.top]; prRadSub(); return; }   // 追加は、その場で「Volley / 予定 / 節約 / 記録」を出す
+            if (it.k === "add") { const r = btn.getBoundingClientRect(); prRadLast = [r.left + r.width / 2, r.top]; prRadSub(); return; }   // 追加は、その場で「Volley / 予定 / 節約 / 記録」を出す
             it.run();
         }
         const PR_BE_HOLD = 500;
@@ -21127,7 +21127,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!prRad || prRad.done) return;   // 2回呼ばれても1回だけ(タップと触覚のスイッチの両方から来る)
             const it = prRad.items ? prRad.items[i] : prRadItems()[i];
             if (prRad) prRadLast = [prRad.cx, prRad.cy];
-            if (it && it.k === "add" && isAdmin()) { prRadSub(); return; }   // 追加は、その場で中身を出す
+            if (it && it.k === "add") { prRadSub(); return; }   // 追加は、その場で中身を出す
             if (prRad) { prRad.done = true; prRadBottom = prRad.cy > innerHeight / 2; }   // 下半分で選んだら、入力は下に出す
             prRadClose();
             if (it) setTimeout(() => { try { it.run(); } catch (e) { console.warn(e); } prRadBottom = false; }, 0);
