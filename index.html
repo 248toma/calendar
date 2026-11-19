@@ -18114,7 +18114,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611191720;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611191730;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20421,7 +20421,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!protoYM) { const [a, b] = sel.split("-").map(Number); protoYM = [a, b]; }
             const [y, m] = protoYM;
             const dk = { floor: dark ? "#25282e" : "#dce0e7", crD: dark ? "rgba(0,0,0,.45)" : "#d9dde4", crL: dark ? "rgba(255,255,255,.06)" : "#f7f8fa", sh: dark ? "rgba(0,0,0,.6)" : "rgba(140,148,162,.75)",
-                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.28)" : "#bcc1ca", sunMute: dark ? "rgba(214,120,110,.4)" : "#d9bcb8", sun: dark ? "#d98a80" : "#b0625a", sub: dark ? "#9aa0aa" : "#6b7280", txt: dark ? "#c9cdd4" : "#41464f" };
+                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.2)" : "#c8ccd3", sunMute: dark ? "rgba(214,120,110,.3)" : "#e2cdca", sun: dark ? "#d98a80" : "#b0625a", sub: dark ? "#9aa0aa" : "#6b7280", txt: dark ? "#c9cdd4" : "#41464f" };
             const volTime = (k) => { const prs = (reservations[k] || []).map(r => parseTimeRangeMin(r.time)).filter(Boolean); if (!prs.length) return null; return { s: Math.min(...prs.map(x => x.s)), e: Math.max(...prs.map(x => x.e)) }; };
             const volPlace = (k) => [...new Set((reservations[k] || []).map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
@@ -20459,8 +20459,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (dn < 1 || dn > days) { g += `<div></div>`; continue; }
                     const d = new Date(y, m - 1, dn), k = formatDateKey(d), it = itemsOf(k), has = it.length > 0;
                     const isSel = k === sel, isT = k === todayKey, red = d.getDay() === 0 || !!jpDay(k).hol || planHolidayOn(k);
-                    const shade = isSel || !has ? "" : it.length >= 2 ? `box-shadow:inset 2px 2px 4px ${dk.in2},inset -2px -2px 4px ${dk.hi};` : `box-shadow:inset 1.2px 1.2px 2.5px ${dk.in1},inset -1.2px -1.2px 2.5px ${dk.hi};`;
-                    const col = isT ? ACC : has ? (red ? dk.sun : P.ink) : (red ? dk.sunMute : dk.mute);
+                    const shade = "";
+                    const col = isT ? ACC : has ? (red ? dk.sun : (dark ? "#f4f5f7" : "#14171c")) : (red ? dk.sunMute : dk.mute);
                     const cbg = isSel ? dk.lift : P.bg, w4 = t => esc([...t].slice(0, 4).join(""));
                     const ml = plansOn(k).map(({ p, first: f, last: l }) => ({ p, f, l })).filter(x => isMulti(x.p) && laneOf.has(x.p.id));
                     const top = ml.reduce((a, x) => Math.max(a, laneOf.get(x.p.id)), -1);
@@ -20472,7 +20472,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const nm = lines.slice(0, 3).join("") + singles.map(x => `<div style="${x.vol ? `color:${x.tent ? P.ink3 : ACC};font-weight:600` : ""}">${w4(x.t)}</div>`).join("");
                     const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:0;bottom:2px;border-radius:12px 12px 9px 9px;background:${dk.lift};box-shadow:0 10px 16px ${dark ? "rgba(0,0,0,.5)" : "rgba(110,118,132,.35)"},0 2px 3px ${dark ? "rgba(0,0,0,.4)" : "rgba(110,118,132,.25)"},inset 0 1px 0 ${dk.hi};z-index:3"></div>` : "";
                     g += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="position:relative;display:flex;flex-direction:column;align-items:center;padding-top:6px;min-width:0;min-height:0;overflow:visible">${lift}
-                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : 400};color:${col};${shade}">${dn}</span>
+                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has ? 500 : 300};color:${col};${shade}">${dn}</span>
                         <span style="position:relative;z-index:4;margin-top:4px;width:100%;line-height:1.3;text-align:center;font-family:${jp};font-size:7px;color:${dk.sub};white-space:nowrap;overflow:hidden">${nm}</span></button>`;
                 }
                 cal += (r ? crease : "") + `<div style="flex:1 1 0;min-height:70px;max-height:96px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;position:relative;z-index:${r === selRow ? 3 : 2}">${g}</div>`;
