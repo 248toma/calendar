@@ -4022,6 +4022,7 @@
         /* 上に固定する帯も、地と同じ色 */
         .view-tabs-wrap { background: color-mix(in srgb, var(--bg) 92%, transparent); }
         #protoUI .p3ico svg { width: 100%; height: 100%; }
+        #protoUI #p3gw { touch-action: manipulation; }
         #protoUI .p3kr .pr-kr { opacity: .85; }
         #protoUI .p3kr.sel .pr-kr { opacity: 1; }
         #protoUI .p3kr .pr-kr i { width: 4px; height: 4px; }
@@ -18151,7 +18152,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611192340;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611192400;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20597,16 +20598,44 @@ const namesBtn = isAdmin() && dates.length > 0
             const items = prBarItems();
             const menu = items.map((it, i) => { const add = it.k === "add";
                 return `<div style="display:flex;justify-content:center"><button type="button" aria-label="${esc(it.label)}" onclick="prMenuRun(${i}, this)" style="position:relative;width:${add ? 40 : 36}px;height:${add ? 40 : 36}px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${add ? P.ink : dk.sub};background:${dk.lift};box-shadow:${add ? `3px 3px 7px ${P.lo},-3px -3px 7px ${P.hi}` : `2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`}"><span style="display:flex;width:${add ? 20 : 18}px;height:${add ? 20 : 18}px" class="p3ico">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" && svAlert ? `<i style="position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>` : ""}${it.k === "bell" && bellN ? `<i style="position:absolute;top:-1px;right:-3px;min-width:12px;height:12px;padding:0 3px;box-sizing:border-box;border-radius:6px;background:${ACC};color:#fff;font-style:normal;font-family:${en};font-size:7.5px;font-weight:600;display:flex;align-items:center;justify-content:center">${bellN > 99 ? "99+" : bellN}</i>` : ""}</button></div>`; }).join("");
+            const p3Top = p3PosTop();
+            const gwH = mg => `<div id="p3gw" onclick="p3GwClick(event)" ontouchstart="p3GwTS(event)" ontouchend="p3GwTE(event)" style="flex:none;height:170px;margin:${mg};border-radius:18px;overflow:hidden;position:relative">${p3Groove()}</div>`;
             root.innerHTML = `<div class="p3" ontouchstart="p3TS(event)" ontouchend="p3TE(event)" style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 14px) 0 calc(env(safe-area-inset-bottom,0px) + 30px);display:flex;flex-direction:column;background:${P.bg};color:${P.ink}">
               <button type="button" onclick="protoToday()" aria-label="今日へ" style="align-self:flex-start;margin:0 0 0 26px;flex:none;font-family:${jp};font-size:22px;font-weight:300;color:${P.ink}">${m}月<span style="font-family:${en};font-size:11px;font-weight:500;letter-spacing:.28em;color:${P.ink3};margin-left:10px">${y}</span></button>
+              ${p3Top ? gwH(`10px 12px 4px`) : ""}
               <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;margin:10px 0 2px;flex:none;text-align:center;font-family:${en};font-size:9px;font-weight:500;letter-spacing:.14em;color:${P.ink3}">${wl.map(t => `<span>${t}</span>`).join("")}</div>
               <div style="flex:1;min-height:0;display:flex;flex-direction:column">${cal}</div>
-              <div id="p3gw" style="flex:none;height:170px;margin:10px 12px 18px;border-radius:18px;overflow:hidden;position:relative">${p3Groove()}</div>
+              ${p3Top ? "" : gwH(`10px 12px 18px`)}
               ${prMenuMode() === "bar" ? `<div style="display:grid;grid-template-columns:repeat(${items.length},minmax(0,1fr));padding:0 12px;flex:none">${menu}</div>` : ""}
             </div>`;
             const gw = root.querySelector("#p3gw"), gh = gw ? gw.clientHeight : 0;
         }
         var p3GH = 0, p3Remeasure = false;
+        // 下の受け皿(その日の時間帯)をダブルタップで、画面の上と下を入れ替える(この端末だけ)
+        var P3_POS_KEY = "p3_pos_v1", p3LastTap = 0;
+        function p3PosTop() { try { return localStorage.getItem(P3_POS_KEY) === "top"; } catch (e) { return false; } }
+        var p3GwT = null, p3GwTouchAt = 0;
+        function p3GwFlip(ev) {
+            if (ev) { if (ev.cancelable) ev.preventDefault(); ev.stopPropagation(); }
+            p3LastTap = 0;
+            try { localStorage.setItem(P3_POS_KEY, p3PosTop() ? "bottom" : "top"); } catch (e) { /* ignore */ }
+            try { protoHaptic && protoHaptic(); } catch (e) { /* ignore */ }
+            setTimeout(renderProto, 0);
+        }
+        function p3GwTap(ev) {   // 2回目のタップが近ければ入れ替える
+            const now = Date.now();
+            if (now - p3LastTap < 380) { p3GwFlip(ev); return true; }
+            p3LastTap = now; return false;
+        }
+        // スマホ: タッチで数える(クリックが来ない端末でも動くように)。指が動いたら数えない
+        function p3GwTS(e) { const t = e.touches && e.touches[0]; p3GwT = t && e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null; }
+        function p3GwTE(e) {
+            p3GwTouchAt = Date.now();
+            const t = e.changedTouches && e.changedTouches[0], s0 = p3GwT; p3GwT = null;
+            if (!t || !s0 || Math.hypot(t.clientX - s0.x, t.clientY - s0.y) > 12) { p3LastTap = 0; return; }
+            p3GwTap(e);
+        }
+        function p3GwClick(e) { if (Date.now() - p3GwTouchAt < 700) return; p3GwTap(e); }   // パソコンのマウス
         function protoPick(k) {
             if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
             if (Date.now() - protoFing.at < 2000 && (protoFing.edge || protoFing.moved > 12)) return;   // ホームバーから上げた・指をすべらせた(タップではない)
