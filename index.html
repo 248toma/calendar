@@ -18113,7 +18113,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611191530;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611191535;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20453,10 +20453,10 @@ const namesBtn = isAdmin() && dates.length > 0
                 const isSel = k === sel, isT = k === todayKey, red = d.getDay() === 0 || !!jpDay(k).hol || planHolidayOn(k);
                 const bg = isSel ? P.ink : !has ? "transparent" : it.length === 1 ? (dark ? "rgba(255,255,255,.07)" : "#dbdee4") : (dark ? "rgba(255,255,255,.13)" : "#cacfd7");
                 const col = isSel ? P.bg : isT ? ACC : red ? (has ? P.red || "#b5675f" : (dark ? "rgba(214,120,110,.45)" : "#d8b6b1")) : has ? P.ink : (dark ? "rgba(255,255,255,.3)" : "#b9bec7");
-                const names = it.slice(0, 3).map(x => `<span style="display:block;font-size:9.5px;line-height:1.3;white-space:nowrap;overflow:hidden;font-weight:${x.vol ? 700 : 400};color:${x.vol ? (x.tent ? P.ink3 : ACC) : P.ink2}">${esc([...x.t].slice(0, 4).join(""))}</span>`).join("");
+                const names = it.slice(0, 3).map(x => `<span style="display:block;font-size:8.5px;line-height:1.3;white-space:nowrap;overflow:hidden;font-weight:${x.vol ? 700 : 400};color:${x.vol ? (x.tent ? P.ink3 : ACC) : P.ink2}">${esc([...x.t].slice(0, 4).join(""))}</span>`).join("");
                 cells += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="display:flex;flex-direction:column;align-items:center;min-width:0;min-height:0;overflow:hidden;padding-top:2px">
-                    <span style="width:34px;height:34px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${bg};color:${col};font-family:${en};font-size:15.5px;font-weight:${isT && !isSel ? 700 : 400}">${dn}</span>
-                    <span style="margin-top:3px;width:100%;text-align:center;font-family:'Noto Sans JP',sans-serif">${names}</span></button>`;
+                    <span style="width:28px;height:28px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${bg};color:${col};font-family:${en};font-size:12.5px;font-weight:${isT && !isSel ? 700 : 400}">${dn}</span>
+                    <span style="margin-top:2px;width:100%;text-align:center;font-family:'Noto Sans JP',sans-serif">${names}</span></button>`;
             }
             // ---------- 文字盤: 選んだ日の予定 + 次のバレーの人数 ----------
             const selV = sessKeysOf(sel).filter(volOk);
@@ -20492,12 +20492,12 @@ const namesBtn = isAdmin() && dates.length > 0
                 const mid = (Math.max(0, x.h1) + Math.min(24, x.h2)) / 2 * 15;
                 const [x0, y0] = Pt(rP, mid), [x1, y1] = Pt(R + 6, mid);
                 const right = Math.cos((mid - 90) * Math.PI / 180) >= 0;
-                let yy = y1; placed.filter(q => q.right === right).forEach(q => { if (Math.abs(q.y - yy) < 40) yy = q.y + (yy >= q.y ? 40 : -40); });
+                let yy = Math.min(y1, D - 70); placed.filter(q => q.right === right).forEach(q => { if (Math.abs(q.y - yy) < 40) yy = q.y + (yy >= q.y && q.y + 40 <= D - 70 ? 40 : -40); });
                 placed.push({ right, y: yy });
-                const x2 = x1 + (right ? 12 : -12);
+                const x2 = right ? Math.max(x1 + 12, D + 4) : Math.min(x1 - 12, -4), half = Math.min(innerWidth, 440) / 2 - 18, avail = Math.max(56, Math.floor(half - R + (right ? D - x2 : x2) - 9));
                 s += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} L${x1.toFixed(1)} ${yy.toFixed(1)} L${x2.toFixed(1)} ${yy.toFixed(1)}" stroke="${P.ink}" stroke-width=".7" fill="none"/>`;
                 const go = x.vol ? `protoVol('${x.k}')` : `protoRow(${JSON.stringify(x.pid)})`;
-                lab += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;${right ? `left:calc(50% - ${R}px + ${(x2 + 5).toFixed(1)}px)` : `right:calc(50% + ${R}px - ${(x2 - 5).toFixed(1)}px)`};top:${(yy - 8).toFixed(1)}px;text-align:${right ? "left" : "right"};line-height:1.3;white-space:nowrap;max-width:110px;cursor:pointer">
+                lab += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;${right ? `left:calc(50% - ${R}px + ${(x2 + 5).toFixed(1)}px)` : `right:calc(50% + ${R}px - ${(x2 - 5).toFixed(1)}px)`};top:${(yy - 8).toFixed(1)}px;text-align:${right ? "left" : "right"};line-height:1.3;white-space:nowrap;max-width:${avail}px;overflow:hidden;cursor:pointer">
                     <div style="font-size:12.5px;font-weight:500;color:${x.vol ? ACC : P.ink};overflow:hidden;text-overflow:ellipsis">${esc(x.ti)}</div>
                     <div style="font-family:${en};font-size:10px;font-weight:300;color:${P.ink2}">${esc(x.tm)}</div>${x.memo ? `<div style="font-size:10px;font-weight:300;color:${P.ink2};overflow:hidden;text-overflow:ellipsis">${esc(x.memo)}</div>` : ""}</div>`;
             });
@@ -20507,10 +20507,10 @@ const namesBtn = isAdmin() && dates.length > 0
             const selD = new Date(...sel.split("-").map((v, i) => i === 1 ? +v - 1 : +v));
             root.innerHTML = `<div class="p2" ontouchstart="p2TS(event)" ontouchend="p2TE(event)" style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;background:${P.bg};color:${P.ink};font-family:'Noto Sans JP',system-ui,sans-serif">
               <div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 8px;flex:none">
-                <button type="button" onclick="protoToday()" aria-label="今日へ" style="font-family:${en};font-size:30px;font-weight:300;letter-spacing:-.01em">${MON[m - 1]}${y !== new Date().getFullYear() ? `<span style="font-size:13px;color:${P.ink3};margin-left:8px">${y}</span>` : ""}</button>
-                <span style="font-family:${en};font-size:12px;font-weight:500;letter-spacing:.12em;color:${P.ink3}">${WK[selD.getDay()]} ${selD.getDate()}</span>
+                <button type="button" onclick="protoToday()" aria-label="今日へ" style="font-family:${en};font-size:24px;font-weight:300;letter-spacing:-.01em">${MON[m - 1]}${y !== new Date().getFullYear() ? `<span style="font-size:13px;color:${P.ink3};margin-left:8px">${y}</span>` : ""}</button>
+                <span style="font-family:${en};font-size:11px;font-weight:500;letter-spacing:.12em;color:${P.ink3}">${WK[selD.getDay()]} ${selD.getDate()}</span>
               </div>
-              <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;font-family:${en};font-size:10px;font-weight:600;letter-spacing:.12em;color:${P.ink3};margin:16px 0 6px;flex:none">${wl.map(t => `<span>${t}</span>`).join("")}</div>
+              <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;font-family:${en};font-size:9px;font-weight:600;letter-spacing:.12em;color:${P.ink3};margin:14px 0 6px;flex:none">${wl.map(t => `<span>${t}</span>`).join("")}</div>
               <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr));row-gap:4px">${cells}</div>
               <div style="position:relative;flex:none;height:${D + 34}px;margin-top:6px">
                 ${ad}
