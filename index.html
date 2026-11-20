@@ -18152,7 +18152,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611201030;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611202045;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20450,9 +20450,13 @@ const namesBtn = isAdmin() && dates.length > 0
             if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - s.at < 800) { protoSkipClick = Date.now(); protoMonth(dx < 0 ? 1 : -1); }
         }
         function renderP3(root) {
-            const { dark, P, C } = protoPal();
+            const { dark, P, C: C0 } = protoPal();
+            // 色を減らす(試作UIだけ): 予定は 灰色→黒、ピンク→赤。記録は 黒・赤・青・紫・オレンジ。人数が足りているバレーは黒
+            const K = { blk: dark ? "#f1f2f4" : "#1f2124", red: dark ? "#d0789f" : "#9c3d68", blu: dark ? "#86aef0" : "#4677c4", pur: dark ? "#b9a4ec" : "#8b6fc9", org: dark ? "#f08a52" : "#ec6a2c" };
+            const C = C0.map(c => /^#(9aa0a8|7f848c)$/i.test(c) ? K.blk : /^#(e597b7|f4c0d5)$/i.test(c) ? K.red : c);
+            const KRMAP = [K.blu, K.blk, K.org, K.red, K.pur, K.blu, K.org, K.blk];
             const ACC = dark ? "#f08a52" : "#ec6a2c";
-            const LVp = protoPal().LV, volCol = sk => isTent(sk) ? P.ink3 : LVp[getStatusLevel(countComing(sk))];   // バレーの色: いつもの画面と同じ(人数の段階の色)
+            const LVp = protoPal().LV, volCol = sk => { if (isTent(sk)) return P.ink3; const lv = getStatusLevel(countComing(sk)); return lv === "sufficient" ? K.blk : LVp[lv]; };   // バレーの色: いつもの画面と同じ(人数の段階の色)
             const esc = escapeHtml, todayKey = formatDateKey(new Date());
             const en = "Inter, 'Montserrat', 'Noto Sans JP', system-ui, sans-serif", jp = "'Noto Sans JP', system-ui, sans-serif";
             const W = Math.min(root.clientWidth || innerWidth || 390, 440);
@@ -20476,7 +20480,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // 何日も続く予定: いつもの画面と同じく、日をまたぐ線でつなぐ(段は先に始まった予定が上)
             const isMulti = p => !!p.endDate && p.endDate !== p.startDate;
             const dkey = dn => formatDateKey(new Date(y, m - 1, dn));
-            let krMap = null; try { krMap = krDayColors(); } catch (e) { /* ignore */ }
+            let krMap = null; try { const km = krDayColors(); if (km) { krMap = new Map(); km.forEach((cs, kk) => krMap.set(kk, cs.map(c => { const ix = KR_COLORS.indexOf(c); return ix >= 0 ? KRMAP[ix] : c; }))); } } catch (e) { /* ignore */ }
             const laneOf = new Map(), busyL = new Map();
             for (let dn = 1; dn <= days; dn++) {
                 plansOn(dkey(dn)).map(({ p }) => p).filter(isMulti).forEach(p => {
@@ -20538,7 +20542,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (!p.allDay && s0 != null && (!multi || f)) { a = s0 / 60; b = !multi && e0 != null && e0 > s0 ? e0 / 60 : multi ? 24 : a + .5; }
                     else if (multi && l && !p.allDay && e0 != null) { a = 0; b = e0 / 60; }
                     const all = a == null;   // 終日(何日も続く予定の途中の日も): 0〜24時の線
-                    ev.push({ pid: p.id, all, a: all ? 0 : a, b: all ? 24 : b, n: p.title || "予定", t: all ? "終日" : p.start + (p.end && !multi ? `–${p.end}` : ""), m: p.memo ? String(p.memo).split("\n")[0] : "", c: C[+p.color || 0] || C[0] });
+                    ev.push({ pid: p.id, rs: planRsvpOn(p) ? `○${planComing(p)}` : "", all, a: all ? 0 : a, b: all ? 24 : b, n: p.title || "予定", t: all ? "終日" : p.start + (p.end && !multi ? `–${p.end}` : ""), m: p.memo ? String(p.memo).split("\n")[0] : "", c: C[+p.color || 0] || C[0] });
                 });
                 ev.sort((x, y2) => (y2.all - x.all) || x.a - y2.a);
                 const WG = W - 24, X0 = Math.round(WG * .06), X1 = WG - X0, tx = h => X0 + (X1 - X0) * h / 24;
@@ -20554,11 +20558,17 @@ const namesBtn = isAdmin() && dates.length > 0
                     s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 14}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`;
                 }
                 for (let h = 0; h <= 24; h += 2) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${SY + 17}px;font-family:${en};font-size:7.5px;color:${h % 6 ? dk.sub : dk.txt}">${h}</span>`;
-                if (sel === todayKey) { const x = tx(nowMin / 60); s += `<i style="position:absolute;left:${(x - .5).toFixed(1)}px;top:${SY - 3}px;width:1px;height:20px;background:${ACC};opacity:.9"></i><i style="position:absolute;left:${(x - 2.5).toFixed(1)}px;top:${SY - 6}px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>`; }
+                if (sel === todayKey) {   // 今: 過ぎた時間は帯を薄くして、今の位置に時刻の札と縦線
+                    const x = tx(nowMin / 60), hm = `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`;
+                    s += `<i style="position:absolute;left:${X0}px;top:${SY}px;width:${Math.max(0, x - X0).toFixed(1)}px;height:14px;background:${dk.floor};opacity:.55;z-index:2;border-radius:3px 0 0 3px"></i>`;
+                    s += `<i style="position:absolute;left:${(x - 1).toFixed(1)}px;top:${SY - 5}px;width:2px;height:22px;border-radius:1px;background:${ACC};z-index:3;box-shadow:0 0 0 1.5px ${dk.floor}"></i>`;
+                    const lx = Math.min(Math.max(x - 17, X0 - 6), X1 - 28);
+                    s += `<span style="position:absolute;left:${lx.toFixed(1)}px;top:${SY + 16}px;width:34px;height:13px;border-radius:7px;background:${ACC};color:#fff;font-family:${en};font-size:8px;font-weight:600;line-height:13px;text-align:center;z-index:3;letter-spacing:.02em">${hm}</span>`;
+                }
                 // 予定の線: 帯のすぐ上。時間が重なる予定は、線を細い段に分けて両方見えるように
                 const trk = []; ev.forEach(e => { let t = 0; while ((trk[t] || []).some(q => q.a < e.b && e.a < q.b)) t++; (trk[t] = trk[t] || []).push(e); e.tr = t; });
                 // 書き込み: 1段だけ。時刻の順に左から並べ、重なるときは右へずらす(段を重ねない)
-                const est = e => Math.min(110, Math.max([...e.n].length * 11, e.t.length * 5.4, [...e.m].length * 9) + 6);
+                const est = e => Math.min(120, Math.max([...e.n].length * 11 + (e.rs ? e.rs.length * 6 + 4 : 0), e.t.length * 5.4, [...e.m].length * 9) + 6);
                 let prevR = X0 - 10;
                 const lab = ev.map(e => { const w = est(e), xa = tx(Math.max(0, e.a)); let lx = Math.max(xa, prevR + 10); if (lx + w > X1) lx = Math.max(prevR + 10, X1 - w); prevR = lx + w; return { e, w, xa, lx }; });
                 // 右からはみ出したら、全体を左へ詰める
@@ -20572,7 +20582,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     else { const yk = lb + 8; s += vl(px, yk, by) + vl(lx, lb, yk) + `<i style="position:absolute;left:${Math.min(px, lx).toFixed(1)}px;top:${yk}px;width:${Math.abs(px - lx).toFixed(1)}px;height:.8px;background:${P.ink3}"></i>`; }
                     const go = e.v ? `protoVol('${e.k}')` : `protoRow(${JSON.stringify(e.pid)})`;
                     s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${lx.toFixed(1)}px;top:${LY}px;width:${w}px;line-height:1.35;white-space:nowrap;overflow:hidden;cursor:pointer;font-family:${jp};border-left:.8px solid ${P.ink3};padding-left:4px;box-sizing:border-box">
-                        <div style="font-size:11px;font-weight:500;color:${c};overflow:hidden;text-overflow:ellipsis">${esc(e.n)}</div><div style="font-family:${en};font-size:9px;font-weight:400;color:${dk.txt}">${esc(e.t)}</div>${e.m ? `<div style="font-size:9px;font-weight:400;color:${dk.txt};overflow:hidden;text-overflow:ellipsis">${esc(e.m)}</div>` : ""}</div>`;
+                        <div style="font-size:11px;font-weight:500;color:${c};overflow:hidden;text-overflow:ellipsis">${esc(e.n)}${e.rs ? `<span style="font-family:${en};font-size:9px;font-weight:500;color:${dk.txt};margin-left:4px">${e.rs}</span>` : ""}</div><div style="font-family:${en};font-size:9px;font-weight:400;color:${dk.txt}">${esc(e.t)}</div>${e.m ? `<div style="font-size:9px;font-weight:400;color:${dk.txt};overflow:hidden;text-overflow:ellipsis">${esc(e.m)}</div>` : ""}</div>`;
                 });
                 // 下の段: 次のバレーの人数と、自分の出欠(○✖△。いつもの画面と同じ protoAns で答える)
                 let ans = "";
