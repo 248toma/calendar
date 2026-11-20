@@ -18152,7 +18152,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611192400;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611201030;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20452,6 +20452,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function renderP3(root) {
             const { dark, P, C } = protoPal();
             const ACC = dark ? "#f08a52" : "#ec6a2c";
+            const LVp = protoPal().LV, volCol = sk => isTent(sk) ? P.ink3 : LVp[getStatusLevel(countComing(sk))];   // バレーの色: いつもの画面と同じ(人数の段階の色)
             const esc = escapeHtml, todayKey = formatDateKey(new Date());
             const en = "Inter, 'Montserrat', 'Noto Sans JP', system-ui, sans-serif", jp = "'Noto Sans JP', system-ui, sans-serif";
             const W = Math.min(root.clientWidth || innerWidth || 390, 440);
@@ -20465,7 +20466,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
             const volDone = (k) => { const d = sessDay(k); if (d < todayKey) return true; if (d > todayKey) return false; const t = volTime(k); if (!t) return false; return nowMin >= (t.e > t.s ? t.e : t.s + 120); };
             const itemsOf = (k) => {
-                const out = sessKeysOf(k).map(sk => ({ t: isTent(sk) ? "バレー(未)" : "バレー", vol: true, tent: isTent(sk), s: (volTime(sk) || {}).s ?? -1 }));
+                const out = sessKeysOf(k).map(sk => ({ t: isTent(sk) ? "バレー(未)" : "バレー", vol: true, tent: isTent(sk), vc: volCol(sk), s: (volTime(sk) || {}).s ?? -1 }));
                 plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", multi: !!p.endDate && p.endDate !== p.startDate, col: C[+p.color || 0] || C[0], s: p.allDay ? -1 : (parseHM(p.start) ?? -1) }));
                 return out;
             };
@@ -20509,12 +20510,12 @@ const namesBtn = isAdmin() && dates.length > 0
                         lines.push(`<div style="position:relative;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 4 : 0}px;text-align:left"><i style="position:absolute;left:0;right:0;top:4px;height:1.5px;border-radius:1px;background:${cc}"></i>${head ? `<span style="position:relative;padding:0 2px;margin-left:2px;background:${cbg};color:${P.ink2}">${w4(x.p.title || "予定")}</span>` : ""}</div>`); }
                     // いつもの画面と同じ: 1日の予定は時刻順。3段からはみ出すときは、上の空いた段(連続予定の階段のすき間)に1日の予定を入れて詰める
                     const singles = it.filter(x => !x.multi).sort((a, b) => a.s - b.s);
-                    const sgH = singles.map(x => { const dc = x.vol ? (x.tent ? P.ink3 : ACC) : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;height:9px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; });
+                    const sgH = singles.map(x => { const dc = x.vol ? x.vc : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;height:9px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; });
                     let slots = lines.slice(); const rest = sgH.slice();
                     if (slots.length + rest.length > 3) slots = slots.map(h => h == null && rest.length ? rest.shift() : h);
                     const allR = slots.map(h => h == null ? `<div style="height:9px"></div>` : h).concat(rest);
                     const more = allR.length > 3 ? `<i style="position:absolute;right:2px;top:${isSel ? 4 : 2}px;font-style:normal;font-family:${en};font-size:7px;color:${P.ink3}">+${allR.length - 3}</i>` : "";
-                    const nm = allR.slice(0, 3).join("") + [].map(x => { const dc = x.vol ? (x.tent ? P.ink3 : ACC) : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; }).join("");
+                    const nm = allR.slice(0, 3).join("") + [].map(x => { const dc = x.vol ? x.vc : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; }).join("");
                     const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:0;bottom:2px;border-radius:12px 12px 9px 9px;background:${dk.lift};box-shadow:0 10px 16px ${dark ? "rgba(0,0,0,.5)" : "rgba(110,118,132,.35)"},0 2px 3px ${dark ? "rgba(0,0,0,.4)" : "rgba(110,118,132,.25)"},inset 0 1px 0 ${dk.hi};z-index:3"></div>` : "";
                     const wx = protoWxDay(k), wxH = wx ? `<i class="pr-wx" style="color:${P.ink3};top:1px;right:-6px">${protoWxIco(wx.kind, 9)}</i>` : "";
                     g += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="position:relative;display:flex;flex-direction:column;align-items:center;padding-top:6px;min-width:0;min-height:0;overflow:visible">${lift}${krMap ? `<span class="p3kr${isSel ? " sel" : ""}" style="position:absolute;inset:${isSel ? "3px 0 0 4px" : "0"};z-index:5;pointer-events:none">${krCellDots(krMap, k, false)}</span>` : ""}${more}
@@ -20530,7 +20531,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const n = nk ? countComing(nk) : 0, tri = nk ? (attendanceByDate[nk] || []).filter(x => x.status === "未定").length : 0, cap = thresholds.cyanMax || 14;
                 const deep = Math.min(n, 12), shal = Math.max(0, Math.min(n + tri, 12) - deep);
                 const ev = [];
-                sessKeysOf(sel).forEach(sk => { const t = volTime(sk); if (t) ev.push({ v: true, k: sk, a: t.s / 60, b: (t.e > t.s ? t.e : t.s + 120) / 60, n: isTent(sk) ? "バレー(未)" : "バレー", t: `${fmtMin(t.s)}–${fmtMin(t.e)}`, m: volPlace(sk) }); });
+                sessKeysOf(sel).forEach(sk => { const t = volTime(sk); if (t) ev.push({ v: true, vc: volCol(sk), k: sk, a: t.s / 60, b: (t.e > t.s ? t.e : t.s + 120) / 60, n: isTent(sk) ? "バレー(未)" : "バレー", t: `${fmtMin(t.s)}–${fmtMin(t.e)}`, m: volPlace(sk) }); });
                 plansOn(sel).forEach(({ p, first: f, last: l }) => {
                     const s0 = parseHM(p.start), e0 = parseHM(p.end), multi = isMulti(p);
                     let a = null, b = null;
@@ -20563,7 +20564,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 // 右からはみ出したら、全体を左へ詰める
                 const over = prevR - X1; if (over > 0) { let shift = over; for (let i = lab.length - 1; i >= 0 && shift > 0; i--) { const minX = i ? lab[i - 1].lx + lab[i - 1].w + 10 : X0; const can = Math.max(0, lab[i].lx - Math.max(minX - shift, X0)); lab[i].lx -= Math.min(can, shift); } }
                 lab.forEach(({ e, w, xa, lx }) => {
-                    const c = e.v ? ACC : (e.c === P.bg ? P.ink : (e.c || P.ink)), xb = tx(Math.min(24, e.b)), by = SY - 6 - e.tr * 4;
+                    const c = e.v ? e.vc : (e.c === P.bg ? P.ink : (e.c || P.ink)), xb = tx(Math.min(24, e.b)), by = SY - 6 - e.tr * 4;
                     s += `<i style="position:absolute;left:${xa.toFixed(1)}px;width:${Math.max(xb - xa, 3).toFixed(1)}px;top:${by}px;height:${e.all ? 2 : 3}px;border-radius:2px;background:${c};opacity:${e.all ? .7 : 1};box-shadow:0 1px 1.5px rgba(80,88,100,.3)"></i>`;
                     const px = xa + (e.all ? 6 : 0), lb = LY + 44;   // 線の上がる位置 / 書き込みの下端
                     const vl = (x, y1, y2) => `<i style="position:absolute;left:${x.toFixed(1)}px;top:${Math.min(y1, y2).toFixed(1)}px;width:.8px;height:${Math.abs(y2 - y1).toFixed(1)}px;background:${P.ink3}"></i>`;
@@ -20585,8 +20586,8 @@ const namesBtn = isAdmin() && dates.length > 0
                 const WK = ["日", "月", "火", "水", "木", "金", "土"];
                 const nd = nk ? new Date(...sessDay(nk).split("-").map((v, i) => i === 1 ? +v - 1 : +v)) : null;
                 const cnt = nk ? `<div role="button" tabindex="0" onclick="protoVol('${nk}')" style="position:absolute;left:${X0 - 2}px;top:${GH - 44}px;display:flex;align-items:baseline;gap:10px;white-space:nowrap;cursor:pointer">
-                    <span style="font-family:${jp};font-size:9.5px;font-weight:600;color:${ACC}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}</span>
-                    <span style="font-family:${en};font-weight:300;color:${P.ink}"><span style="font-size:26px">${n}</span><span style="font-size:10px;color:${P.ink3};margin-left:2px">/${cap}</span></span>
+                    <span style="font-family:${jp};font-size:9.5px;font-weight:600;color:${volCol(nk)}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}</span>
+                    <span style="font-family:${en};font-weight:300;color:${volCol(nk)}"><span style="font-size:26px">${n}</span><span style="font-size:10px;color:${P.ink3};margin-left:2px">/${cap}</span></span>
                     <span style="font-family:${en};font-size:9.5px;color:${dk.txt}">○${n}　△${tri}</span></div>${ans}` : "";
                 const WKs = ["日", "月", "火", "水", "木", "金", "土"], sdt = new Date(sy0, sm0 - 1, sd0);
                 const dateHd = `<div style="position:absolute;left:${X0 - 2}px;top:11px;font-family:${jp};font-size:10.5px;font-weight:600;color:${P.ink}">${sm0}月${sd0}日<span style="font-weight:400;color:${dk.txt};margin-left:3px">(${WKs[sdt.getDay()]})</span>${sel === todayKey ? `<span style="font-family:${en};font-size:8.5px;font-weight:600;letter-spacing:.12em;color:${ACC};margin-left:8px">TODAY</span>` : ""}</div>`;
