@@ -18159,7 +18159,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611211440;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611211445;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20513,8 +20513,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const d = new Date(y, m - 1, dn), k = formatDateKey(d), it = itemsOf(k), has = it.length > 0;
                     const isSel = k === sel, isT = k === todayKey, red = d.getDay() === 0 || !!jpDay(k).hol || planHolidayOn(k);
                     const shade = "";
-                    const past = k < todayKey && !isSel;   // 過ぎた日: 予定のない日と同じ薄さ
-                    const col = isT ? ACC : past ? (red ? dk.sunMute : dk.mute) : has ? (red ? dk.sun : (dark ? "#f4f5f7" : "#14171c")) : (red ? dk.sunMute : dk.mute);
+                    const col = isT ? ACC : has ? (red ? dk.sun : (dark ? "#f4f5f7" : "#14171c")) : (red ? dk.sunMute : dk.mute);
                     const cbg = isSel ? dk.lift : P.bg, w4 = t => esc([...t].slice(0, 4).join(""));
                     const ml = plansOn(k).map(({ p, first: f, last: l }) => ({ p, f, l })).filter(x => isMulti(x.p) && laneOf.has(x.p.id) && laneOf.get(x.p.id) < MAXL);
                     const top = ml.reduce((a, x) => Math.max(a, laneOf.get(x.p.id)), -1);
@@ -20534,8 +20533,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:0;bottom:2px;border-radius:12px 12px 9px 9px;background:${dk.lift};box-shadow:0 10px 16px ${dark ? "rgba(0,0,0,.5)" : "rgba(110,118,132,.35)"},0 2px 3px ${dark ? "rgba(0,0,0,.4)" : "rgba(110,118,132,.25)"},inset 0 1px 0 ${dk.hi};z-index:3"></div>` : "";
                     const wx = protoWxDay(k), wxH = wx ? `<i class="pr-wx" style="color:${P.ink3};top:1px;right:-6px">${protoWxIco(wx.kind, 9)}</i>` : "";
                     g += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="position:relative;display:flex;flex-direction:column;align-items:center;padding-top:6px;min-width:0;min-height:0;overflow:visible">${lift}${krMap ? `<span class="p3kr${isSel ? " sel" : ""}" style="position:absolute;inset:${isSel ? "3px 0 0 4px" : "0"};z-index:5;pointer-events:none">${krCellDots(krMap, k, false)}</span>` : ""}${more}
-                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has && !past ? 500 : 300};color:${col};${shade}">${dn}${wxH}</span>
-                        <span style="position:relative;z-index:4;${past ? "opacity:.32;" : ""}margin-top:4px;width:100%;line-height:1.3;text-align:center;font-family:${jp};font-size:7px;color:${dk.sub};white-space:nowrap;overflow:hidden">${nm}</span></button>`;
+                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has ? 500 : 300};color:${col};${shade}">${dn}${wxH}</span>
+                        <span style="position:relative;z-index:4;margin-top:4px;width:100%;line-height:1.3;text-align:center;font-family:${jp};font-size:7px;color:${dk.sub};white-space:nowrap;overflow:hidden">${nm}</span></button>`;
                 }
                 cal += (r ? crease : "") + `<div style="flex:1 1 0;min-height:70px;max-height:96px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;position:relative;z-index:${r === selRow ? 3 : 2}">${g}</div>`;
             }
