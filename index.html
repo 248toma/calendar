@@ -18159,7 +18159,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611211400;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611211410;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20614,11 +20614,11 @@ const namesBtn = isAdmin() && dates.length > 0
             // ---------- メニュー(並べて出す。名前なし) ----------
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
             let bellN = 0; try { bellN = bellUnreadCount(); } catch (e) { /* ignore */ }
-            const allItems = prBarItems(), P3_MAIN = ["add", "survey", "bell", "settings"];   // 並べるのは4つだけ。残りは「…」の中
+            const allItems = prBarItems(), P3_MAIN = ["add", "survey", "today", "settings"];   // 並べるのは4つだけ。残りは「…」の中
             const items = allItems.map((it, i) => ({ it, i })).filter(x => P3_MAIN.includes(x.it.k));
             const menu = items.map(({ it, i }) => { const add = it.k === "add";
                 return `<div style="display:flex;justify-content:center"><button type="button" aria-label="${esc(it.label)}" onclick="prMenuRun(${i}, this)" style="position:relative;width:${add ? 40 : 36}px;height:${add ? 40 : 36}px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${add ? P.ink : dk.sub};background:${dk.lift};box-shadow:${add ? `3px 3px 7px ${P.lo},-3px -3px 7px ${P.hi}` : `2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`}"><span style="display:flex;width:${add ? 20 : 18}px;height:${add ? 20 : 18}px" class="p3ico">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" && svAlert ? `<i style="position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>` : ""}${it.k === "bell" && bellN ? `<i style="position:absolute;top:-1px;right:-3px;min-width:12px;height:12px;padding:0 3px;box-sizing:border-box;border-radius:6px;background:${ACC};color:#fff;font-style:normal;font-family:${en};font-size:7.5px;font-weight:600;display:flex;align-items:center;justify-content:center">${bellN > 99 ? "99+" : bellN}</i>` : ""}</button></div>`; }).join("");
-            const moreBtn = `<div style="display:flex;justify-content:center"><button type="button" aria-label="ほかのメニュー" onclick="p3More(this)" style="position:relative;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${dk.sub};background:${dk.lift};box-shadow:2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg></button></div>`;
+            const moreBtn = `<div style="display:flex;justify-content:center"><button type="button" aria-label="ほかのメニュー" onclick="p3More(this)" style="position:relative;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${dk.sub};background:${dk.lift};box-shadow:2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>${bellN ? `<i style="position:absolute;top:-1px;right:-3px;min-width:12px;height:12px;padding:0 3px;box-sizing:border-box;border-radius:6px;background:${ACC};color:#fff;font-style:normal;font-family:${en};font-size:7.5px;font-weight:600;display:flex;align-items:center;justify-content:center">${bellN > 99 ? "99+" : bellN}</i>` : ""}</button></div>`;
             const p3Top = p3PosTop();
             const gwH = mg => `<div id="p3gw" onclick="p3GwClick(event)" ontouchstart="p3GwTS(event)" ontouchend="p3GwTE(event)" style="flex:none;height:170px;margin:${mg};border-radius:18px;overflow:hidden;position:relative">${p3Groove()}</div>`;
             root.innerHTML = `<div class="p3" ontouchstart="p3TS(event)" ontouchend="p3TE(event)" style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 14px) 0 calc(env(safe-area-inset-bottom,0px) + 30px);display:flex;flex-direction:column;background:${P.bg};color:${P.ink}">
@@ -20634,7 +20634,7 @@ const namesBtn = isAdmin() && dates.length > 0
         var p3GH = 0, p3Remeasure = false, p3AnsOpen = null;
         // 「…」: 並べていないメニュー(カレンダー・名簿・Google・今日 など)を、押した場所に扇で出す
         function p3More(btn) {
-            const main = ["add", "survey", "bell", "settings"], rest = prBarItems().filter(it => !main.includes(it.k));
+            const main = ["add", "survey", "today", "settings"], rest = prBarItems().filter(it => !main.includes(it.k));
             const r = btn.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
             protoHaptic && protoHaptic();
             prRadLast = [x, y]; prRad = { open: true, tap: true, sel: -1 };
