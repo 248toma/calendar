@@ -18159,7 +18159,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611211445;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611220100;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20324,7 +20324,7 @@ const namesBtn = isAdmin() && dates.length > 0
             // 入力中のヘッダー: ふだんのヘッダーと同じ並び(左に文字盤、右に文字)。入力欄は線だけの1行。管理者は上に + の中身の切り替え(× はその右)
             const pinX = `<button type="button" aria-label="閉じる" onclick="protoCloseInput()" style="width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;color:${P.ink3}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>`;
             const headPin = `
-              <div style="position:relative;height:${(up ? 292 : 286) + (pinSeg ? 16 : 0)}px;box-sizing:border-box;border-radius:28px;padding:${pinSeg ? 12 : 16}px 20px 12px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
+              <div id="prPin" style="position:relative;height:${(up ? 292 : 286) + (pinSeg ? 16 : 0)}px;box-sizing:border-box;border-radius:28px;padding:${pinSeg ? 12 : 16}px 20px 12px;margin:0 -10px;overflow:hidden;display:flex;flex-direction:column;${raise}">
                 ${pinSeg ? `<div style="display:flex;align-items:center;gap:6px;height:34px;flex:none;margin:0 -8px 8px -6px">${pinSeg}${pinX}</div>` : ""}
                 <div style="display:flex;align-items:center;gap:${pinSeg ? 16 : 18}px;flex:1;min-height:0">
                   <div id="prPinDial" style="flex:none${pinSeg ? ";margin-left:-4px" : ""}">${pinDialH}</div>
@@ -20431,7 +20431,9 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         // 指の動きを覚えておく(iPhone の透明スイッチは、指をすべらせても切り替わって「押した」ことになるため)
         var protoFing = { y: 0, moved: 0, edge: false, at: 0 };
-        document.addEventListener("touchstart", e => { const t = e.touches[0]; if (!t || e.touches.length !== 1) return; protoFing = { x: t.clientX, y: t.clientY, moved: 0, edge: protoBottomEdge(t.clientY), at: Date.now() }; }, { capture: true, passive: true });
+        // away = 指を置いた場所が、カレンダーの画面(#protoUI)の外か、予定の入力欄(#prPin)の中(そこから始まった指で、日付を選んだことにしない)
+        document.addEventListener("touchstart", e => { const t = e.touches[0]; if (!t || e.touches.length !== 1) return; const g = e.target && e.target.closest ? e.target : null; protoFing = { x: t.clientX, y: t.clientY, moved: 0, edge: protoBottomEdge(t.clientY), at: Date.now(), end: 0, away: !g || !g.closest("#protoUI") || !!g.closest("#prPin") }; }, { capture: true, passive: true });
+        document.addEventListener("touchend", () => { protoFing.end = Date.now(); }, { capture: true, passive: true });
         document.addEventListener("touchmove", e => { const t = e.touches[0]; if (!t) return; protoFing.moved = Math.max(protoFing.moved, Math.hypot(t.clientX - protoFing.x, t.clientY - protoFing.y)); }, { capture: true, passive: true });
         var protoBackAt = 0;
         document.addEventListener("visibilitychange", () => { protoBackAt = Date.now(); });
@@ -20530,7 +20532,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const allR = slots.map(h => h == null ? `<div style="height:9px"></div>` : h).concat(rest);
                     const more = allR.length > 3 && sgH.length ? `<i style="position:absolute;right:2px;top:${isSel ? 4 : 2}px;font-style:normal;font-family:${en};font-size:7px;color:${P.ink3}">+${allR.length - 3}</i>` : "";
                     const nm = allR.slice(0, 3).join("") + [].map(x => { const dc = x.vol ? x.vc : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; }).join("");
-                    const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:0;bottom:2px;border-radius:12px 12px 9px 9px;background:${dk.lift};box-shadow:0 10px 16px ${dark ? "rgba(0,0,0,.5)" : "rgba(110,118,132,.35)"},0 2px 3px ${dark ? "rgba(0,0,0,.4)" : "rgba(110,118,132,.25)"},inset 0 1px 0 ${dk.hi};z-index:3"></div>` : "";
+                    const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:2px;bottom:4px;border-radius:12px;background:${dk.floor};box-shadow:inset 2.5px 3px 6px ${dk.sh},inset -2px -2px 5px ${dk.hi};z-index:3"></div>` : "";   // 選んだ日: 下の受け皿と同じ凹み
                     const wx = protoWxDay(k), wxH = wx ? `<i class="pr-wx" style="color:${P.ink3};top:1px;right:-6px">${protoWxIco(wx.kind, 9)}</i>` : "";
                     g += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="position:relative;display:flex;flex-direction:column;align-items:center;padding-top:6px;min-width:0;min-height:0;overflow:visible">${lift}${krMap ? `<span class="p3kr${isSel ? " sel" : ""}" style="position:absolute;inset:${isSel ? "3px 0 0 4px" : "0"};z-index:5;pointer-events:none">${krCellDots(krMap, k, false)}</span>` : ""}${more}
                         <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has ? 500 : 300};color:${col};${shade}">${dn}${wxH}</span>
@@ -20672,6 +20674,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (Date.now() - protoSkipClick < 400) return;   // スライドで月を移った直後のタップは無視
             if (Date.now() - protoFing.at < 2000 && (protoFing.edge || protoFing.moved > 12)) return;   // ホームバーから上げた・指をすべらせた(タップではない)
             if (Date.now() - protoBackAt < 700) return;   // アプリに戻ってきた直後
+            if (protoPickBlocked()) return;   // 予定の入力欄・× から始まった指や、入力を開いた/閉じた・キーボードが出た/引っ込んだ直後(画面がずれて、指の下に来たマスに当たったもの)
             protoHaptic();   // 日付を押したら「トン」(iPhone はマスに重ねた透明スイッチが鳴らす)
             protoPressK = k; protoPressAt = Date.now();   // 描き直したあとも、押したマスがふわっと戻るように
             if (pinOpen) {   // 入力中: 押した日が予定の日(→ を押したあとは終わりの日)
@@ -20700,6 +20703,16 @@ const namesBtn = isAdmin() && dates.length > 0
             const mem = protoHdrSess[sessDay(k)];   // 前にヘッダーで選んだ回があれば、その回
             selectDate(mem && protoHdrKeys(k).includes(mem) ? mem : sessPickKey(k));   // 日付を押したら、その日のいちばん早い回(閲覧モードは確定の回を先に)
             if (sameMonth) protoFaceSlide(from);
+        }
+        // 予定の入力の開け閉め・キーボードの出入りで画面がずれた直後に、後ろのカレンダーのマスに当たったクリックは、日付を選んだことにしない
+        //   iPhone: 題名の欄や × を押した指のクリック(とマスの透明スイッチ)が、入力欄が動いた/消えたあとに指の下に来たマスへ届いて、日付が変わっていた
+        var protoPinAt = 0, protoVvAt = 0;
+        function protoPickBlocked() {
+            const now = Date.now();
+            if (now - protoPinAt < 500) return true;   // 予定の入力を開いた・閉じた直後
+            if (now - protoVvAt < 400) return true;   // 入力中・閉じた直後に、キーボードが出た・引っ込んだ(画面の高さが変わった)
+            if (protoFing.away && now - Math.max(protoFing.at, protoFing.end || 0) < 1000) return true;   // 指を置いたのが入力欄の中・カレンダーの画面の外
+            return false;
         }
         // カレンダーを横にスライドして月を移る(指・マウスどちらでも)
         // 指に合わせてカレンダーが横に動き、となりの月が横から見えてくる。離すと: 十分動かした(または素早く払った)ら前後の月へ、足りなければ元に戻る
@@ -21495,7 +21508,7 @@ const namesBtn = isAdmin() && dates.length > 0
             pinSD = p ? p.startDate : selectedDate; pinED = p && p.endDate && p.endDate !== p.startDate ? p.endDate : "";
             if (p) { editOtherPlan(p.id); planPanel = { date: selectedDate, open: false }; renderOtherPlanBox(); }   // 状態だけ読み込む(今の入力欄は開かない)
             else { pinEditId = null; planPanel = { date: selectedDate, open: false }; resetPlanForm(); setPlanColor(9); }
-            pinOpen = true;
+            pinOpen = true; protoPinAt = Date.now();
             if (!protoNtfWatch) {
                 const nm = document.getElementById("ntfModal");   // 通知の設定を閉じたら、ボタンの表示を直す
                 if (nm) { protoNtfWatch = true; new MutationObserver(() => { if (pinOpen && !nm.classList.contains("show")) renderProto(); }).observe(nm, { attributes: true, attributeFilter: ["class"] }); }
@@ -21514,9 +21527,12 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         var protoNtfWatch = false;
         // 入力を下に出しているときは、試作UIの高さをキーボードの上までにする(入力欄がキーボードのすぐ上に来る)
-        var protoPinBottom = false;
+        var protoPinBottom = false, protoVvH = 0;
         function protoVV() {
             const root = document.getElementById("protoUI"), vv = window.visualViewport; if (!root) return;
+            const kbH = vv ? Math.round(vv.height) : 0;
+            if (vv && (pinOpen || Date.now() - protoPinAt < 1500) && protoVvH && Math.abs(kbH - protoVvH) > 60) protoVvAt = Date.now();   // 入力中(と閉じた直後)にキーボードが出た・引っ込んだ
+            if (vv) protoVvH = kbH;
             root.classList.toggle("kb-open", !!(vv && vv.height < window.innerHeight - 120));   // キーボードが出ているか(下の入力の余白を変える)
             if (pinOpen && protoPinBottom && vv) { root.style.top = vv.offsetTop + "px"; root.style.height = vv.height + "px"; root.style.bottom = "auto"; }
             else { root.style.top = ""; root.style.height = ""; root.style.bottom = ""; }
@@ -21525,7 +21541,7 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoCloseInput() {
             protoPinBottom = false;
             pinOpen = false; pinEditId = null; pinShareOpen = false; pinColOpen = false; pinSetOpen = false; pinRange = false;
-            planEditId = null; planFormDate = "";
+            planEditId = null; planFormDate = ""; protoPinAt = Date.now();
             const [y, m] = selectedDate.slice(0, 10).split("-").map(Number); protoYM = [y, m];
             renderProto();
         }
