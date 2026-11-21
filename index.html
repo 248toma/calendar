@@ -18159,7 +18159,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611211410;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611211420;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20478,7 +20478,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const volDone = (k) => { const d = sessDay(k); if (d < todayKey) return true; if (d > todayKey) return false; const t = volTime(k); if (!t) return false; return nowMin >= (t.e > t.s ? t.e : t.s + 120); };
             const itemsOf = (k) => {
                 const out = sessKeysOf(k).map(sk => ({ t: isTent(sk) ? "バレー(未)" : "バレー", vol: true, tent: isTent(sk), vc: volCol(sk), s: (volTime(sk) || {}).s ?? -1 }));
-                plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", multi: !!p.endDate && p.endDate !== p.startDate, col: C[+p.color || 0] || C[0], s: p.allDay ? -1 : (parseHM(p.start) ?? -1) }));
+                plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", multi: !!p.endDate && p.endDate !== p.startDate, hol: !!p.holiday, col: C[+p.color || 0] || C[0], s: p.allDay ? -1 : (parseHM(p.start) ?? -1) }));
                 return out;
             };
             // ---------- カレンダー ----------
@@ -20489,8 +20489,10 @@ const namesBtn = isAdmin() && dates.length > 0
             const dkey = dn => formatDateKey(new Date(y, m - 1, dn));
             let krMap = null; try { const km = krDayColors(); if (km) { krMap = new Map(); km.forEach((cs, kk) => krMap.set(kk, cs.map(c => { const ix = KR_COLORS.indexOf(c); return ix >= 0 ? KRMAP[ix] : c; }))); } } catch (e) { /* ignore */ }
             const laneOf = new Map(), busyL = new Map();
-            for (let dn = 1; dn <= days; dn++) {
-                plansOn(dkey(dn)).map(({ p }) => p).filter(isMulti).forEach(p => {
+            // いつもの画面と同じ: 休日にした予定はいちばん後(pass 1)。段は2つまで(MAXL)
+            const MAXL = 2;
+            for (let pass = 0; pass < 2; pass++) for (let dn = 1; dn <= days; dn++) {
+                plansOn(dkey(dn)).map(({ p }) => p).filter(p => isMulti(p) && (pass === 1) === !!p.holiday).forEach(p => {
                     if (laneOf.has(p.id)) return;
                     const ds = []; for (let j = dn; j <= days; j++) { const kk = dkey(j); if (kk > p.endDate) break; ds.push(kk); }
                     let ln = 0; while (ds.some(kk => busyL.has(kk) && busyL.get(kk).has(ln))) ln++;
@@ -20513,19 +20515,20 @@ const namesBtn = isAdmin() && dates.length > 0
                     const shade = "";
                     const col = isT ? ACC : has ? (red ? dk.sun : (dark ? "#f4f5f7" : "#14171c")) : (red ? dk.sunMute : dk.mute);
                     const cbg = isSel ? dk.lift : P.bg, w4 = t => esc([...t].slice(0, 4).join(""));
-                    const ml = plansOn(k).map(({ p, first: f, last: l }) => ({ p, f, l })).filter(x => isMulti(x.p) && laneOf.has(x.p.id));
+                    const ml = plansOn(k).map(({ p, first: f, last: l }) => ({ p, f, l })).filter(x => isMulti(x.p) && laneOf.has(x.p.id) && laneOf.get(x.p.id) < MAXL);
                     const top = ml.reduce((a, x) => Math.max(a, laneOf.get(x.p.id)), -1);
                     const lines = []; for (let ln = 0; ln <= top; ln++) { const x = ml.find(q => laneOf.get(q.p.id) === ln);
                         if (!x) { lines.push(null); continue; }
                         const lc = C[+x.p.color || 0] || C[0], cc = lc === P.bg ? P.ink : lc, head = x.f || c === 0;
                         lines.push(`<div style="position:relative;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 4 : 0}px;text-align:left"><i style="position:absolute;left:0;right:0;top:4px;height:1.5px;border-radius:1px;background:${cc}"></i>${head ? `<span style="position:relative;padding:0 2px;margin-left:2px;background:${cbg};color:${P.ink2}">${w4(x.p.title || "予定")}</span>` : ""}</div>`); }
                     // いつもの画面と同じ: 1日の予定は時刻順。3段からはみ出すときは、上の空いた段(連続予定の階段のすき間)に1日の予定を入れて詰める
-                    const singles = it.filter(x => !x.multi).sort((a, b) => a.s - b.s);
+                    let singles = it.filter(x => !x.multi).sort((a, b) => (a.hol ? 1 : 0) - (b.hol ? 1 : 0) || a.s - b.s);   // 休日にした予定は後ろ・あとは時刻順
+                    if (lines.length + singles.length > 3) singles = singles.filter(x => !x.hol);   // ほかの予定が隠れる日は、休日にした予定は出さない
                     const sgH = singles.map(x => { const dc = x.vol ? x.vc : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;height:9px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; });
                     let slots = lines.slice(); const rest = sgH.slice();
                     if (slots.length + rest.length > 3) slots = slots.map(h => h == null && rest.length ? rest.shift() : h);
                     const allR = slots.map(h => h == null ? `<div style="height:9px"></div>` : h).concat(rest);
-                    const more = allR.length > 3 ? `<i style="position:absolute;right:2px;top:${isSel ? 4 : 2}px;font-style:normal;font-family:${en};font-size:7px;color:${P.ink3}">+${allR.length - 3}</i>` : "";
+                    const more = allR.length > 3 && sgH.length ? `<i style="position:absolute;right:2px;top:${isSel ? 4 : 2}px;font-style:normal;font-family:${en};font-size:7px;color:${P.ink3}">+${allR.length - 3}</i>` : "";
                     const nm = allR.slice(0, 3).join("") + [].map(x => { const dc = x.vol ? x.vc : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; }).join("");
                     const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:0;bottom:2px;border-radius:12px 12px 9px 9px;background:${dk.lift};box-shadow:0 10px 16px ${dark ? "rgba(0,0,0,.5)" : "rgba(110,118,132,.35)"},0 2px 3px ${dark ? "rgba(0,0,0,.4)" : "rgba(110,118,132,.25)"},inset 0 1px 0 ${dk.hi};z-index:3"></div>` : "";
                     const wx = protoWxDay(k), wxH = wx ? `<i class="pr-wx" style="color:${P.ink3};top:1px;right:-6px">${protoWxIco(wx.kind, 9)}</i>` : "";
