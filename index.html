@@ -18159,7 +18159,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611220130;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611220200;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20522,7 +20522,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const lines = []; for (let ln = 0; ln <= top; ln++) { const x = ml.find(q => laneOf.get(q.p.id) === ln);
                         if (!x) { lines.push(null); continue; }
                         const lc = C[+x.p.color || 0] || C[0], cc = lc === P.bg ? P.ink : lc, head = x.f || c === 0;
-                        lines.push(`<div style="position:relative;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 4 : 0}px;text-align:left"><i style="position:absolute;left:0;right:0;top:4px;height:1.5px;border-radius:1px;background:${cc}"></i>${head ? `<span style="position:relative;padding:0 2px;margin-left:2px;background:${cbg};color:${P.ink2}">${w4(x.p.title || "予定")}</span>` : ""}</div>`); }
+                        lines.push(`<div style="display:flex;align-items:center;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 4 : 0}px;text-align:left">${head ? `<i style="width:4px;height:4px;border-radius:2px;flex:none;margin:0 2.5px 0 ${x.f ? 0 : 2}px;background:${cc}"></i><span style="flex:none;padding-right:3px;color:${P.ink2}">${w4(x.p.title || "予定")}</span>` : ""}<i style="flex:1;min-width:4px;height:1.5px;border-radius:1px;background:${cc}"></i></div>`); }   // タイトルの後ろから線を引く(背景で線を隠さない)
                     // いつもの画面と同じ: 1日の予定は時刻順。3段からはみ出すときは、上の空いた段(連続予定の階段のすき間)に1日の予定を入れて詰める
                     let singles = it.filter(x => !x.multi).sort((a, b) => (a.hol ? 1 : 0) - (b.hol ? 1 : 0) || a.s - b.s);   // 休日にした予定は後ろ・あとは時刻順
                     if (lines.length + singles.length > 3) singles = singles.filter(x => !x.hol);   // ほかの予定が隠れる日は、休日にした予定は出さない
