@@ -8929,7 +8929,30 @@ await main();
         function mergePairPlansIntoList() {
             planList = planList.filter(p => !p.pp).concat(pairPlanStore().filter(x => x && !x.deleted && x.startDate).map(x => ({ ...x, pp: true })));
         }
-        function pairPlanEditable(p) { return !!(p && p.pp && (isAdmin() || p.owner === planAuthorKey())); }
+        // ペア予定(閲覧者どうしの共有予定)は、作った人・管理者に加えて、共有された人(to に入っている人)も直せる・消せる
+        function movePersonalSharedToPair() {
+            if (!isAdmin()) return false;
+            const mv = planList.filter(p => p && !p.local && !p.pp && !p.gcal && !p.deleted && Array.isArray(p.to) && p.to.length);
+            if (!mv.length) return false;
+            const st = pairPlanStore(), key = planAuthorKey();
+            mv.forEach(p => {
+                const rec = { ...p, owner: p.by || key, by: p.by || key, pair: true, updated: nowStamp() }; delete rec.pp;
+                const i = st.findIndex(x => x.id === rec.id);
+                if (i >= 0) st[i] = rec; else st.push(rec);
+            });
+            const ids = new Set(mv.map(p => p.id));
+            planList = planList.filter(p => !ids.has(p.id));
+            mergePairPlansIntoList();
+            saveData(); renderCalendar(); renderOtherPlanBox();
+            return true;
+        }
+        function pairPlanEditable(p) { const me = myRosterId(); return !!(p && p.pp && (isAdmin() || p.owner === planAuthorKey() || (me != null && Array.isArray(p.to) && p.to.includes(me)))); }
+        // 人が作って自分に共有されたペア予定を直しているところ(共有の相手・作った人は変えない)
+        function editingOthersPair() {
+            if (isAdmin() || planEditId == null) return false;
+            const ep = planList.find(x => x.id === planEditId);
+            return !!(ep && ep.pp && ep.owner !== planAuthorKey());
+        }
         function putPairPlan(plan) {
             const rec = { ...plan }; delete rec.pp; rec.updated = nowStamp();
             const st = pairPlanStore(), i = st.findIndex(x => x.id === rec.id);
@@ -10276,6 +10299,19 @@ await main();
             const toLocal = (isAdmin() || pairActive()) ? planScope === "local" : true;
             const prev = planEditId != null ? planList.find(x => x.id === planEditId) : null;
             const keepNormal = editingNormalShared();   // 普通の共有予定を直す時は、ペアの相手を足したりペア予定にしない
+            if (prev && editingOthersPair()) {   // 共有された予定を直す: 中身だけ変える(共有の相手・作った人・出欠の設定はそのまま)
+                const q = { ...p, id: prev.id, owner: prev.owner, by: prev.owner, pair: true, to: prev.to };
+                delete q.byId; if (prev.byId != null) q.byId = prev.byId;
+                if (prev.rsvp) { q.rsvp = true; if (prev.noRsvp) q.noRsvp = prev.noRsvp; }
+                const me = myRosterId(), ntfP = prev.ntfP ? { ...prev.ntfP } : {};
+                if (me != null) { if (planNtf) ntfP[me] = planNtf; else delete ntfP[me]; }
+                if (Object.keys(ntfP).length) q.ntfP = ntfP;
+                putPairPlan(q);
+                planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = "";
+                saveData(); renderCalendar(); renderOtherPlanBox();
+                jumpToPlanDate(sd);
+                return;
+            }
             if (toLocal) { p.local = true; if (planNtf && myRosterId() != null) p.ntf = planNtf; }
             else {
                 const pids = pairActive() ? pairIds() : [];
@@ -10290,14 +10326,20 @@ await main();
                     if (Object.keys(ntfP).length) p.ntfP = ntfP;
                 }
             }
-            // 閲覧者の共有予定(=ペア予定)、もとからペア予定だったものは、出欠データ側(pairplans)に保存する
-            if (!toLocal && (!isAdmin() || (prev && prev.pp))) {
+            // 閲覧者の共有予定(=ペア予定)、もとからペア予定だったもの、管理者が相手を選んで共有した予定(個人的な共有)は、
+            // 出欠データ側(pairplans)に保存する(共有された人も直せる・消せるように。全員あての予定とバレーは今までどおり管理者だけ)
+            if (!toLocal && (!isAdmin() || (p.to && p.to.length))) {   // 管理者が「全員」にしたペア予定は、下で普通の共有予定へ戻す
                 if (!p.to || !p.to.length) { alert("共有する相手を選んでください。"); return; }
                 if (prev && !prev.local && !prev.pp && !isAdmin()) return;
-                p.id = prev && prev.pp ? prev.id : Date.now();
-                p.owner = prev && prev.pp ? prev.owner : planAuthorKey();
+                p.id = prev && !prev.local ? prev.id : Date.now();   // 共有予定から移すときも同じID(出欠 plan:ID をそのまま使う)
+                p.owner = prev && prev.pp ? prev.owner : (prev && !prev.local && prev.by) || planAuthorKey();
                 p.by = p.owner; p.pair = true;
-                if (prev && !prev.pp) planList = planList.filter(x => x.id !== prev.id);   // ローカルから移した
+                if (isAdmin() && planRsvp) {   // 出欠をとる
+                    p.rsvp = true;
+                    const nr = planNoRsvp.filter(id => p.to.includes(id));
+                    if (nr.length) p.noRsvp = nr;
+                }
+                if (prev && !prev.pp) planList = planList.filter(x => x.id !== prev.id);   // ローカル・共有予定から移した
                 putPairPlan(p);
                 planPanel = { date: selectedDate, open: false }; planEditId = null; planFormDate = "";
                 saveData(); renderCalendar(); renderOtherPlanBox();
@@ -18250,7 +18292,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611222110;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611222130;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18637,6 +18679,8 @@ const namesBtn = isAdmin() && dates.length > 0
                     setFirestoreSyncStatus(firestoreEditor ? "共有中" : "閲覧中");
                     // 共有データの名簿に昔のLINE名(本名)が残っていたら、管理者の端末から消して保存し直す
                     if (firestoreEditor && !firestoreApplyingRemote && /"lineNames"/.test(remoteValues[ROSTER_KEY] || "")) { saveRoster(); return; }
+                    // 管理者が相手を選んで共有した予定(前の形: 予定のデータ側)は、共有された人も直せるよう出欠データ側(ペア予定)へ移す
+                    if (firestoreEditor && !firestoreApplyingRemote && movePersonalSharedToPair()) return;
                     // バレーの日を消したのに予約だけ残っている日があれば、管理者の端末でその予約を消して保存し直す
                     if (firestoreEditor && !firestoreApplyingRemote) { const orph = orphanResvKeys(); if (orph.length) { orph.forEach(k => { delete reservations[k]; }); saveReservations(); renderCalendar(); return; } }
                     // 取り込み時に足した「他の人の変更」のログなど、この端末にだけあるログは共有データへ送る
@@ -20380,7 +20424,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     push: '<rect x="6.5" y="4" width="9" height="16" rx="2.2"></rect><path d="M10 17h2"></path><circle cx="17.5" cy="6.5" r="2.4"></circle>'
                 };
                 const ib = (ico, on, label, onclick, col, badge) => `<button type="button" aria-label="${label}" title="${label}" aria-pressed="${on}" onclick="${onclick}" style="position:relative;width:32px;height:32px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;color:${on ? col || P.acc : P.ink3};${on ? insetS : raiseS}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[ico]}</svg>${badge ? `<b style="position:absolute;top:-3px;right:-3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;font-family:${en};font-size:8.5px;line-height:14px;text-align:center;color:#fff;background:${P.acc}">${badge}</b>` : ""}</button>`;
-                const canShare = isAdmin() || pairActive(), op = [];
+                const canShare = (isAdmin() || pairActive()) && !editingOthersPair(), op = [];   // 共有された予定は、共有の相手を変えない
                 if (pinShareOpen && canShare && planScope === "shared") {
                     // 共有相手: 同じ1行を横にスクロール(‹ で戻る)
                     const pairing = pairActive() && !editingNormalShared(), pids = pairActive() ? pairIds() : [], cr = planCreatorId();
