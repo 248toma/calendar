@@ -4027,6 +4027,7 @@ body.dark #settingsPanel[data-solo="ana"], body.dark #fxOv { --sn-insetXS: inset
 #protoUI .p3kr .pr-kr { opacity: .85; }
 #protoUI .p3kr.sel .pr-kr { opacity: 1; }
 #protoUI .p3kr .pr-kr i { width: 4px; height: 4px; }
+#p3gwSc::-webkit-scrollbar{display:none}
 </style>
 </head>
 <body>
@@ -18292,7 +18293,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611222130;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611222215;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20585,7 +20586,7 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         function applyUi3Seg() { const on = p3On(); document.querySelectorAll("#ui3Seg button").forEach(b => b.classList.toggle("on", (b.dataset.v === "1") === on)); }
         var p3Sw = null;   // 横スワイプで月を移る
-        function p3TS(e) { const t = e.touches && e.touches[0]; if (t) p3Sw = { x: t.clientX, y: t.clientY, at: Date.now() }; }
+        function p3TS(e) { if (e.target && e.target.closest && e.target.closest("#p3gwSc")) { p3Sw = null; return; } const t = e.touches && e.touches[0]; if (t) p3Sw = { x: t.clientX, y: t.clientY, at: Date.now() }; }   // 受け皿の中の横スライドは、月を移らない
         function p3TE(e) {
             const t = e.changedTouches && e.changedTouches[0]; const s = p3Sw; p3Sw = null;
             if (!t || !s) return;
@@ -20674,10 +20675,10 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
                 cal += (r ? crease : "") + `<div style="flex:1 1 0;min-height:70px;max-height:96px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;position:relative;z-index:${r === selRow ? 3 : 2}">${g}</div>`;
             }
-            function p3Groove() {
-                // 次のバレー(選んだ日にバレーがあればその回)の人数 = 12マスの凹みの深さ
+            function p3Groove(nkFix) {
+                // 次のバレー(選んだ日にバレーがあればその回)の人数 = 12マスの凹みの深さ。nkFix = この回(同じ日に何回かあるときのページ)
                 const selV = sessKeysOf(sel).filter(volOk);
-                const nk = selV.length ? (protoHdrKey(sel) && volOk(protoHdrKey(sel)) ? protoHdrKey(sel) : selV[0]) : Object.keys(events).filter(k => volOk(k) && sessDay(k) >= todayKey && !volDone(k)).sort(sessCmp)[0];
+                const nk = nkFix ? nkFix : selV.length ? (protoHdrKey(sel) && volOk(protoHdrKey(sel)) ? protoHdrKey(sel) : selV[0]) : Object.keys(events).filter(k => volOk(k) && sessDay(k) >= todayKey && !volDone(k)).sort(sessCmp)[0];
                 const n = nk ? countComing(nk) : 0, tri = nk ? (attendanceByDate[nk] || []).filter(x => x.status === "未定").length : 0, cap = thresholds.cyanMax || 14;
                 const deep = Math.min(n, 12), shal = Math.max(0, Math.min(n + tri, 12) - deep);
                 const ev = [];
@@ -20744,11 +20745,72 @@ const namesBtn = isAdmin() && dates.length > 0
                 const WK = ["日", "月", "火", "水", "木", "金", "土"];
                 const nd = nk ? new Date(...sessDay(nk).split("-").map((v, i) => i === 1 ? +v - 1 : +v)) : null;
                 const cnt = nk ? `<div role="button" tabindex="0" onclick="protoVol('${nk}')" style="position:absolute;left:${X0 - 2}px;top:${GH - 44}px;display:flex;align-items:baseline;gap:10px;white-space:nowrap;cursor:pointer">
-                    <span style="font-family:${jp};font-size:9.5px;font-weight:600;color:${K.blk}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}</span>
+                    <span style="font-family:${jp};font-size:9.5px;font-weight:600;color:${K.blk}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}${sessKeysOf(sessDay(nk)).filter(volOk).length > 1 ? ` <span style="font-weight:400;color:${dk.txt}">${sessNoOf(nk)}回目</span>` : ""}</span>
                     <span style="font-family:${en};font-weight:700;color:${volCol(nk)}"><span style="font-size:26px">${n}</span></span>${tri ? `<span style="font-family:${en};font-size:9.5px;color:${dk.txt}">△${tri}</span>` : ""}</div>${ans}` : "";
                 const WKs = ["日", "月", "火", "水", "木", "金", "土"], sdt = new Date(sy0, sm0 - 1, sd0);
                 const dateHd = `<div style="position:absolute;left:${X0 - 2}px;top:11px;font-family:${jp};font-size:10.5px;font-weight:600;color:${P.ink}">${sm0}月${sd0}日<span style="font-weight:400;color:${dk.txt};margin-left:3px">(${WKs[sdt.getDay()]})</span>${sel === todayKey ? `<span style="font-family:${en};font-size:8.5px;font-weight:600;letter-spacing:.12em;color:${ACC};margin-left:8px">TODAY</span>` : ""}</div>`;
-                return `<div style="position:absolute;inset:0;z-index:1;background:${dk.floor};box-shadow:inset 3px 4px 9px ${dk.sh},inset -3px -3px 8px ${dk.hi};overflow:hidden">${s}${cnt}</div>`;
+                return `<div style="position:absolute;inset:0;z-index:1;overflow:hidden">${s}${cnt}</div>`;   // 凹み(床と影)は外の受け皿に
+            }
+            // ---------- 受け皿の横のページ: 記録(続き具合) ----------
+            function p3KrPage() {
+                let d; try { d = krAll(); } catch (e) { return ""; }
+                const items = d.i.filter(krVisible).sort(krOrd);
+                if (!items.length) return "";
+                const t0 = new Date(todayKey + "T00:00:00"), dayN = k => Math.round((t0 - new Date(k + "T00:00:00")) / 864e5);
+                const rows = items.map(it => {
+                    const days = [...new Set(d.r.filter(r => r.i === it.id && r.d <= todayKey).map(r => r.d))].sort();
+                    const last = days.length ? dayN(days[days.length - 1]) : null, first = days.length ? dayN(days[0]) : null;
+                    // 週のペース: 直近4週(記録を始めて4週たっていなければ、始めてからの日数。最短1週)
+                    const span = first == null ? 28 : Math.max(7, Math.min(28, first + 1)), n = days.filter(k => dayN(k) < span).length, pace = n * 7 / span;
+                    const set = new Set(days.filter(k => dayN(k) < 28).map(dayN));
+                    const col = KRMAP[(+it.c || 0) % KRMAP.length];
+                    let strip = ""; for (let i = 27; i >= 0; i--) strip += `<i style="flex:1;height:${set.has(i) ? 9 : 3}px;border-radius:1px;background:${set.has(i) ? col : (dark ? "rgba(255,255,255,.12)" : "#cfd4dc")}"></i>`;
+                    const gap = last == null ? "記録なし" : last === 0 ? "今日" : `${last}日あき`;
+                    const gapC = last != null && last >= 7 ? K.red : dk.txt;
+                    return `<div role="button" tabindex="0" onclick="openKiroku()" style="display:grid;grid-template-columns:minmax(0,74px) minmax(0,1fr) 44px 46px;align-items:center;gap:8px;height:24px;cursor:pointer">
+                        <span style="display:flex;align-items:center;gap:5px;min-width:0;font-family:${jp};font-size:10.5px;color:${P.ink}"><i style="width:6px;height:6px;border-radius:3px;flex:none;background:${col}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.n)}</span></span>
+                        <span style="display:flex;align-items:flex-end;gap:1.5px;height:10px">${strip}</span>
+                        <span style="font-family:${jp};font-size:9.5px;color:${P.ink};text-align:right;white-space:nowrap">週<b style="font-family:${en};font-size:12px;font-weight:600;margin:0 1px">${pace >= 10 ? Math.round(pace) : (Math.round(pace * 10) / 10)}</b>回</span>
+                        <span style="font-family:${jp};font-size:9.5px;color:${gapC};text-align:right;white-space:nowrap">${gap}</span></div>`;
+                }).join("");
+                return `<div style="position:absolute;inset:0;padding:12px 16px 22px;box-sizing:border-box;display:flex;flex-direction:column">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;font-family:${jp};font-size:10px;color:${dk.txt};margin-bottom:4px"><span style="font-weight:600;color:${P.ink}">記録</span><span>直近4週・週のペース・前回から</span></div>
+                    <div style="flex:1;min-height:0;overflow-y:auto">${rows}</div></div>`;
+            }
+            // ---------- 受け皿の横のページ: 節約(今年の合計と内訳) ----------
+            function p3SvPage() {
+                let list; try { if (!isAdmin()) return ""; list = savingList(); } catch (e) { return ""; }
+                const y = String(+todayKey.slice(0, 4)), yr = list.filter(r => r.date.slice(0, 4) === y);
+                if (!list.length) return "";
+                const tot = yr.reduce((t, r) => t + (+r.amount || 0), 0), mo = yr.filter(r => r.date.slice(0, 7) === todayKey.slice(0, 7)).reduce((t, r) => t + (+r.amount || 0), 0);
+                const by = new Map(); yr.forEach(r => { const c = r.cat || "その他"; by.set(c, (by.get(c) || 0) + (+r.amount || 0)); });
+                let cats = [...by.entries()].filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+                if (cats.length > 6) { const rest = cats.slice(5).reduce((t, x) => t + x[1], 0); cats = cats.slice(0, 5).concat([["ほか", rest]]); }
+                const CC = [K.blk, K.blu, K.red, K.org, K.pur, dark ? "#7d8592" : "#a3a9b3"];
+                // ドーナツ: 内訳の割合
+                const R = 44, r0 = 30, cx = 52, cy = 52; let a0 = -Math.PI / 2, arcs = "";
+                const pt = (r, a) => `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+                cats.forEach(([, v], i) => {
+                    const a1 = a0 + (tot ? v / tot : 0) * Math.PI * 2, big = a1 - a0 > Math.PI ? 1 : 0;
+                    if (cats.length === 1) arcs += `<circle cx="${cx}" cy="${cy}" r="${(R + r0) / 2}" fill="none" stroke="${CC[0]}" stroke-width="${R - r0}"></circle>`;
+                    else arcs += `<path d="M${pt(R, a0)}A${R},${R} 0 ${big} 1 ${pt(R, a1)}L${pt(r0, a1)}A${r0},${r0} 0 ${big} 0 ${pt(r0, a0)}Z" fill="${CC[i % CC.length]}" stroke="${dk.floor}" stroke-width="1"></path>`;
+                    a0 = a1;
+                });
+                if (!cats.length) arcs = `<circle cx="${cx}" cy="${cy}" r="${(R + r0) / 2}" fill="none" stroke="${dark ? "rgba(255,255,255,.12)" : "#cfd4dc"}" stroke-width="${R - r0}"></circle>`;
+                const leg = cats.map(([c, v], i) => `<div style="display:flex;align-items:center;gap:5px;height:17px;font-family:${jp};font-size:10px;color:${P.ink};white-space:nowrap"><i style="width:6px;height:6px;border-radius:3px;flex:none;background:${CC[i % CC.length]}"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(c)}</span><span style="font-family:${en};font-size:10px;color:${dk.txt}">${svYen(v)}</span><span style="font-family:${en};font-size:8.5px;color:${dk.txt};width:26px;text-align:right">${Math.round(v / tot * 100)}%</span></div>`).join("");
+                return `<div role="button" tabindex="0" onclick="openSaving('list')" style="position:absolute;inset:0;padding:12px 16px 22px;box-sizing:border-box;display:flex;flex-direction:column;cursor:pointer">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;font-family:${jp};font-size:10px;color:${dk.txt}"><span style="font-weight:600;color:${P.ink}">節約 ${y}年</span><span>今月 <b style="font-family:${en};font-weight:600;color:${P.ink}">${svYen(mo)}</b></span></div>
+                    <div style="flex:1;min-height:0;display:flex;align-items:center;gap:14px">
+                      <div style="position:relative;width:104px;height:104px;flex:none"><svg width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">${arcs}</svg>
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:${tot >= 100000 ? 11.5 : 13}px;font-weight:700;color:${P.ink}">${svYen(tot)}</div></div>
+                      <div style="flex:1;min-width:0;max-height:104px;overflow-y:auto">${leg || `<div style="font-family:${jp};font-size:10px;color:${dk.txt}">今年の記録はまだありません</div>`}</div>
+                    </div></div>`;
+            }
+            // 受け皿のページ: その日(バレーが何回かあれば回ごと) → 記録 → 節約。横にスライド
+            function p3Pages() {
+                const ss = sessKeysOf(sel).filter(volOk), day = ss.length > 1 ? ss.map(sk => ({ k: "d:" + sk, h: p3Groove(sk) })) : [{ k: "d", h: p3Groove() }];
+                const kr = p3KrPage(), sv = p3SvPage();
+                return day.concat(kr ? [{ k: "kr", h: kr }] : []).concat(sv ? [{ k: "sv", h: sv }] : []);
             }
             // ---------- メニュー(並べて出す。名前なし) ----------
             const svAlert = (() => { const o = document.getElementById("surveyBtn"); return !!(o && o.classList.contains("alert")); })();
@@ -20759,7 +20821,13 @@ const namesBtn = isAdmin() && dates.length > 0
                 return `<div style="display:flex;justify-content:center"><button type="button" aria-label="${esc(it.label)}" onclick="prMenuRun(${i}, this)" style="position:relative;width:${add ? 40 : 36}px;height:${add ? 40 : 36}px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${add ? P.ink : dk.sub};background:${dk.lift};box-shadow:${add ? `3px 3px 7px ${P.lo},-3px -3px 7px ${P.hi}` : `2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`}"><span style="display:flex;width:${add ? 20 : 18}px;height:${add ? 20 : 18}px" class="p3ico">${PR_RAD_ICONS[it.k] || ""}</span>${it.k === "survey" && svAlert ? `<i style="position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:${ACC}"></i>` : ""}${it.k === "bell" && bellN ? `<i style="position:absolute;top:-1px;right:-3px;min-width:12px;height:12px;padding:0 3px;box-sizing:border-box;border-radius:6px;background:${ACC};color:#fff;font-style:normal;font-family:${en};font-size:7.5px;font-weight:600;display:flex;align-items:center;justify-content:center">${bellN > 99 ? "99+" : bellN}</i>` : ""}</button></div>`; }).join("");
             const moreBtn = `<div style="display:flex;justify-content:center"><button type="button" aria-label="ほかのメニュー" onclick="p3More(this)" style="position:relative;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${dk.sub};background:${dk.lift};box-shadow:2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>${bellN ? `<i style="position:absolute;top:-1px;right:-3px;min-width:12px;height:12px;padding:0 3px;box-sizing:border-box;border-radius:6px;background:${ACC};color:#fff;font-style:normal;font-family:${en};font-size:7.5px;font-weight:600;display:flex;align-items:center;justify-content:center">${bellN > 99 ? "99+" : bellN}</i>` : ""}</button></div>`;
             const p3Top = p3PosTop();
-            const gwH = mg => `<div id="p3gw" onclick="p3GwClick(event)" ontouchstart="p3GwTS(event)" ontouchend="p3GwTE(event)" style="flex:none;height:170px;margin:${mg};border-radius:18px;overflow:hidden;position:relative">${p3Groove()}</div>`;
+            const pages = p3Pages();
+            // 最初に見せるページ: 日を選び直したらその日(バレーが何回かあれば、ヘッダーで選んでいる回)。同じ日のあいだは前のページのまま
+            if (p3PgSel !== sel) { p3PgSel = sel; const hk = protoHdrKey(sel); p3PgKey = hk && pages.some(x => x.k === "d:" + hk) ? "d:" + hk : pages[0].k; }
+            const pgIx = Math.max(0, pages.findIndex(x => x.k === p3PgKey));
+            const dots = pages.length > 1 ? `<div id="p3gwDots" style="position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center;gap:5px;z-index:3;pointer-events:none">${pages.map((x, i) => `<i data-k="${esc(x.k)}" style="width:${i === pgIx ? 10 : 4}px;height:4px;border-radius:2px;background:${P.ink3};opacity:${i === pgIx ? 1 : .4};transition:width .2s,opacity .2s"></i>`).join("")}</div>` : "";
+            const gwH = mg => `<div id="p3gw" onclick="p3GwClick(event)" ontouchstart="p3GwTS(event)" ontouchend="p3GwTE(event)" style="flex:none;height:170px;margin:${mg};border-radius:18px;overflow:hidden;position:relative;background:${dk.floor};box-shadow:inset 3px 4px 9px ${dk.sh},inset -3px -3px 8px ${dk.hi}">
+                <div id="p3gwSc" onscroll="p3GwScroll(this)" style="position:absolute;inset:0;display:flex;overflow-x:${pages.length > 1 ? "auto" : "hidden"};overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch">${pages.map(x => `<div data-k="${esc(x.k)}" style="position:relative;flex:0 0 100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always">${x.h}</div>`).join("")}</div>${dots}</div>`;
             root.innerHTML = `<div class="p3" ontouchstart="p3TS(event)" ontouchend="p3TE(event)" style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 14px) 0 calc(env(safe-area-inset-bottom,0px) + 30px);display:flex;flex-direction:column;background:${P.bg};color:${P.ink}">
               <button type="button" onclick="protoToday()" aria-label="今日へ" style="align-self:flex-start;margin:0 0 0 26px;flex:none;font-family:${jp};font-size:22px;font-weight:300;color:${P.ink}">${m}月<span style="font-family:${en};font-size:11px;font-weight:500;letter-spacing:.28em;color:${P.ink3};margin-left:10px">${y}</span></button>
               ${p3Top ? gwH(`10px 12px 4px`) : ""}
@@ -20769,8 +20837,19 @@ const namesBtn = isAdmin() && dates.length > 0
               ${prMenuMode() === "bar" ? `<div style="display:grid;grid-template-columns:repeat(${items.length + 1},minmax(0,1fr));padding:0 24px;flex:none">${menu}${moreBtn}</div>` : ""}
             </div>`;
             const gw = root.querySelector("#p3gw"), gh = gw ? gw.clientHeight : 0;
+            { const sc = root.querySelector("#p3gwSc"); if (sc && pgIx) { p3GwQuiet = true; sc.scrollLeft = pgIx * sc.clientWidth; requestAnimationFrame(() => { p3GwQuiet = false; }); } }
         }
         var p3GH = 0, p3Remeasure = false, p3AnsOpen = null;
+        var p3PgSel = null, p3PgKey = "d", p3GwQuiet = false, p3GwScT = 0;   // 受け皿のページ(日・記録・節約)
+        function p3GwScroll(sc) {   // 横にスライドしたら、今のページを覚えて点を動かす
+            if (p3GwQuiet) return;
+            clearTimeout(p3GwScT);
+            p3GwScT = setTimeout(() => {
+                const w = sc.clientWidth || 1, i = Math.round(sc.scrollLeft / w), pg = sc.children[i]; if (!pg) return;
+                p3PgKey = pg.getAttribute("data-k");
+                document.querySelectorAll("#p3gwDots i").forEach((d, j) => { d.style.width = j === i ? "10px" : "4px"; d.style.opacity = j === i ? "1" : ".4"; });
+            }, 90);
+        }
         // 「…」: 並べていないメニュー(カレンダー・名簿・Google・今日 など)を、押した場所に扇で出す
         function p3More(btn) {
             const main = ["add", "survey", "today", "settings"], rest = prBarItems().filter(it => !main.includes(it.k));
