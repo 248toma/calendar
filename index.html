@@ -2817,7 +2817,7 @@ body:not(.nv-full) .swap-float { display: none; }
 i.kr-sw { width: 14px; height: 14px; margin: 0 4px; }
 .kr-iname { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; border: none; background: none; padding: 4px 2px; text-align: left; color: var(--ink); font-size: 14px; font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: inherit; }
 .kr-iname small { font-size: 10.5px; font-weight: 600; color: var(--ink-3); }
-.kr-gap { flex: none; height: 30px; max-width: 64px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 11px; padding: 0 4px; font-family: inherit; }
+.kr-gap { flex: none; height: 30px; max-width: 78px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-2); font-size: 11px; padding: 0 4px; font-family: inherit; }
 .kr-gap.on { color: var(--ink); font-weight: 700; }
 .kr-ib { flex: none; width: 30px; height: 30px; border: none; border-radius: 9px; background: var(--bg); box-shadow: var(--raise-xs); color: var(--ink-3); font-size: 13px; padding: 0; }
 .kr-ib.wide { width: auto; padding: 0 10px; font-size: 12px; font-weight: 700; }
@@ -7524,18 +7524,30 @@ await main();
             });
         }
         // 最大何日おき(g): 前の記録からこの日数あくと、試作UIの受け皿の日付の上に出す。0 = なし
-        function krSetGap(id, n) { krEditItem(id, it => { n = Math.max(0, Math.min(60, Math.round(+n || 0))); if (n) it.g = n; else delete it.g; }); }
+        //   週何回(w): その週(月〜日)の、その日までの回数が w に届いていなければ出す。g と w はどちらか1つ
+        function krSetGap(id, v) {
+            krEditItem(id, it => {
+                const m = /^([gw])(\d+)$/.exec(String(v || "")); delete it.g; delete it.w;
+                if (m) { const n = +m[2]; if (m[1] === "g" && n >= 1 && n <= 60) it.g = n; if (m[1] === "w" && n >= 1 && n <= 7) it.w = n; }
+            });
+        }
+        // 項目 it が、その日(k)に間隔に届いていないか: { gap: 前回から何日, n7: 7日間の回数, txt: 受け皿に出す字 } / null
+        function krDueItem(it, recs, k) {
+            const g = +it.g || 0, w = +it.w || 0; if (!g && !w) return null;
+            const ds = recs.filter(r => r.i === it.id && r.d <= k).map(r => r.d);
+            if (!ds.length) return null;   // まだ1回も記録していない項目は出さない
+            const t = new Date(k + "T00:00:00"), dn = x => Math.round((t - new Date(x + "T00:00:00")) / 864e5);
+            const wd = (t.getDay() + 6) % 7;   // 月曜から何日目(月=0)
+            const gap = dn(ds.reduce((a, x) => x > a ? x : a, "")), n7 = new Set(ds.filter(x => dn(x) <= wd)).size;   // その週の月曜〜その日
+            if (g) return gap >= g ? { gap, n7, txt: `${gap}日` } : null;
+            return n7 < w && gap >= 1 ? { gap, n7, txt: `週${n7}/${w}` } : null;   // その日にやっていれば出さない
+        }
         // その日(k)に、間隔(g)に達している項目: [{ it, gap }]。今日より前の日は出さない
         function krDueOn(k) {
             const today = formatDateKey(new Date()); if (!k || k < today) return [];
             let d; try { d = krAll(); } catch (e) { return []; }
             const t = new Date(k + "T00:00:00"), out = [];
-            d.i.filter(it => krVisible(it) && +it.g > 0).sort(krOrd).forEach(it => {
-                const last = d.r.filter(r => r.i === it.id && r.d <= k).reduce((a, r) => r.d > a ? r.d : a, "");
-                if (!last) return;   // まだ1回も記録していない項目は出さない
-                const gap = Math.round((t - new Date(last + "T00:00:00")) / 864e5);
-                if (gap >= +it.g) out.push({ it, gap });
-            });
+            d.i.filter(it => krVisible(it) && (+it.g > 0 || +it.w > 0)).sort(krOrd).forEach(it => { const x = krDueItem(it, d.r, k); if (x) out.push({ it, ...x }); });
             return out;
         }
         function krSetColor(id, c) { krEditItem(id, it => { it.c = c; }); if (krForm) { krForm.colorFor = null; renderKiroku(); } }
@@ -7629,7 +7641,7 @@ await main();
                 const row = (it, i, n) => `<div class="kr-item">
                         <button type="button" class="kr-sw" style="background:${krCol(it)}" onclick="krSet('colorFor', ${it.id})" aria-label="色"></button>
                         <button type="button" class="kr-iname" onclick="krRename(${it.id})">${escapeHtml(it.n)}<small>${cnt(it.id)}件</small></button>
-                        <select class="kr-gap${+it.g ? " on" : ""}" onchange="krSetGap(${it.id}, +this.value)" aria-label="最大何日おき" title="最大何日おき(この日数あくと、試作UIの受け皿に出ます)"><option value="0"${+it.g ? "" : " selected"}>間隔</option>${Array.from({ length: 14 }, (_, i) => i + 1).map(n => `<option value="${n}"${+it.g === n ? " selected" : ""}>${n}日</option>`).join("")}</select>
+                        <select class="kr-gap${+it.g || +it.w ? " on" : ""}" onchange="krSetGap(${it.id}, this.value)" aria-label="間隔(何日おき・週何回)" title="間隔: 何日おき か 週何回(足りないと、試作UIの受け皿に出ます)"><option value=""${+it.g || +it.w ? "" : " selected"}>間隔</option><optgroup label="何日おき">${Array.from({ length: 14 }, (_, i) => i + 1).map(n => `<option value="g${n}"${+it.g === n ? " selected" : ""}>${n}日おき</option>`).join("")}</optgroup><optgroup label="週何回">${Array.from({ length: 7 }, (_, i) => i + 1).map(n => `<option value="w${n}"${+it.w === n ? " selected" : ""}>週${n}回</option>`).join("")}</optgroup></select>
                         <button type="button" class="kr-ib kr-share${krShared(it) ? " on" : ""}" onclick="krToggleShare(${it.id})" title="${krShared(it) ? `共有中: ${escapeHtml(nameOf(it.t))}` : pairNames.length ? `ペアの相手(${escapeHtml(pairNames.join("・"))})に共有` : "共有(ペアモードの相手)"}" aria-pressed="${krShared(it)}">${IC("users")}</button>
                         <button type="button" class="kr-ib" onclick="krMove(${it.id}, -1)" aria-label="上へ"${i === 0 ? " disabled" : ""}>↑</button>
                         <button type="button" class="kr-ib" onclick="krMove(${it.id}, 1)" aria-label="下へ"${i === n - 1 ? " disabled" : ""}>↓</button>
@@ -7638,7 +7650,7 @@ await main();
                 const others = vis.filter(it => !krMine(it)), gone = d.i.filter(it => krMine(it) && it.x);
                 body = `<div class="sv-line kr-newln"><input type="text" id="krNew" placeholder="新しい項目(例: 節約・筋トレ・早起き)" maxlength="${KR_NAME_MAX}" value="${escapeHtml(f.newName)}" onkeydown="if(event.key==='Enter'){event.preventDefault();krAddItem();}"><button type="button" class="sv-ok" onclick="krAddItem()" aria-label="項目を足す">＋</button></div>
                     ${mine.length ? `<div class="kr-items">${mine.map((it, i) => row(it, i, mine.length)).join("")}</div>` : `<div class="sv-empty">項目はまだありません</div>`}
-                    <div class="kr-note">色の丸で色を、名前で名前を変えられます。「間隔」で最大何日おきかを決めると、その日数あいたときに試作UIの受け皿の日付の上に出ます。${IC("users")} を押すと、その項目と記録をペアモードの相手に共有します(はじめは共有しません。共有しない記録はこの端末だけに保存)。</div>
+                    <div class="kr-note">色の丸で色を、名前で名前を変えられます。「間隔」で何日おき か 週何回 を決めると、届いていない日に試作UIの受け皿の日付の上に出ます(週何回は、その週の月曜からその日までの回数で見ます)。${IC("users")} を押すと、その項目と記録をペアモードの相手に共有します(はじめは共有しません。共有しない記録はこの端末だけに保存)。</div>
                     ${others.length ? `<div class="sv-day"><div class="sv-dh"><span>共有されている項目</span></div>${others.map(it => `<div class="kr-item ro"><i class="kr-sw" style="background:${krCol(it)}"></i><span class="kr-iname">${escapeHtml(it.n)}<small>${cnt(it.id)}件</small></span></div>`).join("")}</div>` : ""}
                     ${gone.length ? `<div class="sv-day"><div class="sv-dh"><span>しまった項目</span></div>${gone.map(it => `<div class="kr-item ro"><i class="kr-sw" style="background:${krCol(it)}"></i><span class="kr-iname">${escapeHtml(it.n)}<small>${cnt(it.id)}件</small></span><button type="button" class="kr-ib wide" onclick="krRestore(${it.id})">戻す</button><button type="button" class="kr-ib" onclick="krDeleteItem2(${it.id})" aria-label="消す">✕</button></div>`).join("")}</div>` : ""}`;
             }
@@ -18311,7 +18323,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611222240;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611230105;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20766,7 +20778,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     <span style="font-family:${jp};font-size:9.5px;font-weight:600;color:${K.blk}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}${sessKeysOf(sessDay(nk)).filter(volOk).length > 1 ? ` <span style="font-weight:400;color:${dk.txt}">${sessNoOf(nk)}回目</span>` : ""}</span>
                     <span style="font-family:${en};font-weight:700;color:${volCol(nk)}"><span style="font-size:26px">${n}</span></span>${tri ? `<span style="font-family:${en};font-size:9.5px;color:${dk.txt}">△${tri}</span>` : ""}</div>${ans}` : "";
                 // 記録: 間隔(最大何日おき)に達している項目を、日付の上に
-                let due = ""; try { const du = krDueOn(sel); if (du.length) due = `<div role="button" tabindex="0" onclick="event.stopPropagation();openKiroku()" style="position:absolute;left:${X0 - 2}px;right:${X0}px;top:${GH - 58}px;display:flex;gap:9px;overflow:hidden;white-space:nowrap;cursor:pointer;font-family:${jp};font-size:9px;line-height:12px;color:${P.ink2}">${du.map(({ it, gap }) => `<span style="display:inline-flex;align-items:center;gap:3px"><i style="width:5px;height:5px;border-radius:3px;background:${KRMAP[(+it.c || 0) % KRMAP.length]}"></i>${esc(it.n)}<b style="font-family:${en};font-weight:600;color:${K.red}">${gap}日</b></span>`).join("")}</div>`; } catch (e) { /* ignore */ }
+                let due = ""; try { const du = krDueOn(sel); if (du.length) due = `<div role="button" tabindex="0" onclick="event.stopPropagation();openKiroku()" style="position:absolute;left:${X0 - 2}px;right:${X0}px;top:${GH - 58}px;display:flex;gap:9px;overflow:hidden;white-space:nowrap;cursor:pointer;font-family:${jp};font-size:9px;line-height:12px;color:${P.ink2}">${du.map(({ it, txt }) => `<span style="display:inline-flex;align-items:center;gap:3px"><i style="width:5px;height:5px;border-radius:3px;background:${KRMAP[(+it.c || 0) % KRMAP.length]}"></i>${esc(it.n)}<b style="font-family:${en};font-weight:600;color:${K.red}">${esc(txt)}</b></span>`).join("")}</div>`; } catch (e) { /* ignore */ }
                 const WKs = ["日", "月", "火", "水", "木", "金", "土"], sdt = new Date(sy0, sm0 - 1, sd0);
                 const dateHd = `<div style="position:absolute;left:${X0 - 2}px;top:11px;font-family:${jp};font-size:10.5px;font-weight:600;color:${P.ink}">${sm0}月${sd0}日<span style="font-weight:400;color:${dk.txt};margin-left:3px">(${WKs[sdt.getDay()]})</span>${sel === todayKey ? `<span style="font-family:${en};font-size:8.5px;font-weight:600;letter-spacing:.12em;color:${ACC};margin-left:8px">TODAY</span>` : ""}</div>`;
                 return `<div style="position:absolute;inset:0;z-index:1;overflow:hidden">${s}${due}${cnt}</div>`;   // 凹み(床と影)は外の受け皿に
@@ -20786,7 +20798,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const col = KRMAP[(+it.c || 0) % KRMAP.length];
                     let strip = ""; for (let i = 27; i >= 0; i--) strip += `<i style="flex:1;height:${set.has(i) ? 9 : 3}px;border-radius:1px;background:${set.has(i) ? col : (dark ? "rgba(255,255,255,.12)" : "#cfd4dc")}"></i>`;
                     const gap = last == null ? "記録なし" : last === 0 ? "今日" : `${last}日あき`;
-                    const gapC = last != null && (+it.g ? last >= +it.g : last >= 7) ? K.red : dk.txt;   // 間隔(最大何日おき)があればそれ、なければ7日
+                    const gapC = last != null && (+it.g || +it.w ? !!krDueItem(it, d.r, todayKey) : last >= 7) ? K.red : dk.txt;   // 間隔(何日おき・週何回)があればそれ、なければ7日
                     return `<div role="button" tabindex="0" onclick="openKiroku()" style="display:grid;grid-template-columns:minmax(0,74px) minmax(0,1fr) 44px 46px;align-items:center;gap:8px;height:24px;cursor:pointer">
                         <span style="display:flex;align-items:center;gap:5px;min-width:0;font-family:${jp};font-size:10.5px;color:${P.ink}"><i style="width:6px;height:6px;border-radius:3px;flex:none;background:${col}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.n)}</span></span>
                         <span style="display:flex;align-items:flex-end;gap:1.5px;height:10px">${strip}</span>
