@@ -8287,8 +8287,8 @@ await main();
             const T = myPlanTiming(notifyCfg()), r = planNtfResolve(T, e, opts.timed, opts.noTarget === true);
             if (r.why === "all") return { off: true, text: "全員あての予定は通知しない設定です" };
             const a = [];
-            if (r.days.length) a.push(`${r.days.map(ntfDayLabel).join("・")} ${T.hour}時台${r.fb ? "(終日なので)" : ""}`);
-            if (r.mins.length) a.push(`直前 ${r.mins.map(ntfMinLabel).join("・")}`);
+            if (r.days.length) a.push(`${r.days.map(n => planTLabel("d", n)).join("・")} ${T.hour}時台${r.fb ? "(終日なので)" : ""}`);
+            if (r.mins.length) a.push(r.mins.map(n => planTLabel("m", n)).join("・"));
             if (!a.length) return { off: true, text: "通知しない" + (r.own ? "" : "(いつもの設定)") };
             return { off: false, text: a.join("・") + (r.own ? "" : "(いつもの設定)") };
         }
@@ -8308,29 +8308,29 @@ await main();
                 .then(() => { renderPushSettings(); setSavedMsg("保存しました ✓"); })
                 .catch(err => { console.warn(err); setSavedMsg("保存できませんでした: " + ((err && err.message) || err), true); });
         }
+        // 予定の通知のタイミングの候補(1週間前〜直前を1列に): ["d", 何日前] は 時間(hour)時台、["m", 分] は始まりの何分前
+        var PLAN_T_OPTS = [["d", 7], ["d", 3], ["d", 2], ["d", 1], ["d", 0], ["m", 180], ["m", 120], ["m", 60], ["m", 30], ["m", 15], ["m", 10]];
+        function planTLabel(k, n) { return k === "d" ? (n === 7 ? "1週間前" : ntfDayLabel(n)) : ntfMinLabel(n); }
+        function planTChips(days, mins, fn) {
+            return `<div class="ntf-chips">${PLAN_T_OPTS.map(([k, n]) => { const on = (k === "d" ? days : mins).includes(n); return `<button type="button" class="ntf-chip${on ? " on" : ""}" onclick="${fn}('${k}',${n})">${planTLabel(k, n)}</button>`; }).join("")}</div>`;
+        }
+        // 全体: いつものタイミング(えらんだ日・分)。事前・直前の区別は見せない
+        function myTSel(T) { return { days: T.pre ? T.days.slice() : [], mins: T.soon ? T.mins.slice() : [] }; }
         function myNtfBlock(cfg) {
             const me = myRosterId();
             if (me == null) return `<div class="ntf-blk"><div class="ntf-sub">名簿とひもづいていないので届きません。</div></div>`;
-            const b = myPlanTiming(cfg, me);
+            const b = myPlanTiming(cfg, me), sel = myTSel(b);
             const name = (roster.find(r => r.id === me) || {}).name || "";
             const seg = (field, val, a, bLabel) => `<span class="st-seg"><button type="button" class="${val ? "on" : ""}" onclick="ntfMySet('${field}',true)">${a}</button><button type="button" class="${val ? "" : "on"}" onclick="ntfMySet('${field}',false)">${bLabel}</button></span>`;
             return `<div class="ntf-blk">
                 <div class="ntf-sub">${escapeHtml(name)}さんの登録した端末に届きます。</div>
-                <div class="ntf-row"><span>全体</span>${seg("on", b.on, "オン", "オフ")}</div>
-                ${b.on ? "" : `<div class="ntf-sub" style="margin:0 0 4px">全体はオフ: 予定ごとに「する」にしたものだけ届きます。</div>`}
+                <div class="ntf-row"><span>通知</span>${seg("on", b.on, "オン", "オフ")}</div>
+                ${b.on ? "" : `<div class="ntf-sub" style="margin:0 0 4px">オフ: 予定ごとに「この予定だけ」で決めたものだけ届きます。</div>`}
                 <div class="${b.on ? "" : "ntf-off"}">
-                <div class="ntf-row ntf-dep"><span>事前のお知らせ</span>${seg("pre", b.pre, "する", "しない")}</div>
-                <div class="${b.pre ? "" : "ntf-off"}">
-                  <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span><div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${b.days.includes(n) ? " on" : ""}" onclick="ntfMyDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div></div>
-                  <div class="ntf-row ntf-dep"><span>時間</span><select class="ntf-sel" onchange="ntfMySet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${b.hour === i ? " selected" : ""}>${i}時台</option>`).join("")}</select></div>
-                </div>
-                <div class="ntf-row ntf-dep"><span>直前のお知らせ</span>${seg("soon", b.soon, "する", "しない")}</div>
-                <div class="${b.soon ? "" : "ntf-off"}">
-                  <div class="ntf-row col ntf-dep">${ntfMinChips(b.mins, "ntfMyMin")}<div class="ntf-sub" style="margin:0">${NTF_MIN_NOTE}</div></div>
-                  <div class="ntf-row ntf-dep"><span>終日の予定は事前の時間に</span>${seg("ad", b.ad, "知らせる", "知らせない")}</div>
-                  <div class="ntf-sub ntf-dep" style="margin:0">時間のない予定は直前に知らせられないので、事前のお知らせ(いつ・時間)で届けます。</div>
-                </div>
+                <div class="ntf-row col ntf-dep"><span>いつものタイミング(複数えらべます)</span>${planTChips(sel.days, sel.mins, "ntfMyT")}</div>
+                <div class="ntf-row ntf-dep"><span>日の通知の時間</span><select class="ntf-sel" onchange="ntfMySet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${b.hour === i ? " selected" : ""}>${i}時台</option>`).join("")}</select></div>
                 <div class="ntf-row ntf-dep"><span>全員あての予定も受け取る</span>${seg("everyone", b.everyone, "受け取る", "受け取らない")}</div>
+                <div class="ntf-sub ntf-dep" style="margin:0">「〜分前・〜時間前」は時間のある予定だけ(数分ずれることがあります)。終日の予定は、日の通知で届きます(日をえらんでいなければ当日)。</div>
                 </div></div>`;
         }
         // 自分あての設定を保存(管理者: 通知の設定の personal・pmins・pnod・pext / ほかの人: 出欠データの pushm の s)
@@ -8338,6 +8338,8 @@ await main();
         function ntfMySave(cfg, T) {
             const me = myRosterId(); if (me == null) return;
             if (T.soon && !T.mins.length) T.mins = [30];
+            if (!T.pre) T.days = [0];   // 日をえらんでいないとき: 終日の予定は当日に(push-notify.gs の ad)
+            T.ad = true;
             if (realAdmin()) {
                 cfg.pmins = { ...(cfg.pmins || {}) }; if (T.mins.length) cfg.pmins[me] = T.mins.slice(); else delete cfg.pmins[me];
                 cfg.pnod = { ...(cfg.pnod || {}) }; if (!T.pre) cfg.pnod[me] = T.on ? 1 : 0; else delete cfg.pnod[me];
@@ -8357,17 +8359,15 @@ await main();
             const cfg = notifyCfg(), T = myPlanTiming(cfg); if (myRosterId() == null) return;
             T[field] = val; ntfMySave(cfg, T); ntfMyDone();
         }
-        function ntfMyDay(n) {
+        function ntfMyT(k, n) {   // いつものタイミング: 日(d)・分(m)をまとめて1つ以上
             const cfg = notifyCfg(), T = myPlanTiming(cfg); if (myRosterId() == null) return;
-            const next = ntfDaysOk(T.days.includes(n) ? T.days.filter(d => d !== n) : T.days.concat(n));
-            if (!next.length) { setSavedMsg("1つ以上えらんでください(なしにするときは「しない」)", true); return; }
-            T.days = next; ntfMySave(cfg, T); ntfMyDone();
-        }
-        function ntfMyMin(m) {
-            const cfg = notifyCfg(), T = myPlanTiming(cfg); if (myRosterId() == null) return;
-            const next = ntfMinsOk(T.mins.includes(m) ? T.mins.filter(v => v !== m) : T.mins.concat(m));
-            if (!next.length) { setSavedMsg("1つ以上えらんでください(なしにするときは「しない」)", true); return; }
-            T.mins = next; ntfMySave(cfg, T); ntfMyDone();
+            const sel = myTSel(T), a = k === "d" ? sel.days : sel.mins;
+            const next = a.includes(n) ? a.filter(x => x !== n) : a.concat(n);
+            const days = k === "d" ? ntfDaysOk(next) : sel.days, mins = k === "m" ? ntfMinsOk(next) : sel.mins;
+            if (!days.length && !mins.length) { setSavedMsg("1つ以上えらんでください(なしにするときはオフ)", true); return; }
+            T.pre = days.length > 0; if (days.length) T.days = days;
+            T.soon = mins.length > 0; if (mins.length) T.mins = mins;
+            ntfMySave(cfg, T); ntfMyDone();
         }
         function sortedRosterForNtf() { return roster.slice().sort((a, b) => String(a.reading || a.name).localeCompare(String(b.reading || b.name), "ja")); }
         function ntfSet(k, field, val) {
@@ -8521,8 +8521,9 @@ await main();
         function ntfModalBase(kind) { const cfg = notifyCfg(); return kind === "vday" ? ntfVolleyBase(cfg) : planBaseFor(cfg); }
         function openNtfModal(kind, entry, title, sub) {
             if (kind === "plan") {   // 予定: 事前・直前それぞれ いつもの / する / しない
-                const T = myPlanTiming(notifyCfg()), m = ntfEntryModes(entry);
-                ntfEdit = { kind, pre: m.pre, soon: m.soon, days: (m.days || T.days).slice(), mins: (m.mins || (T.mins.length ? T.mins : [30])).slice(), title, sub };
+                const T = myPlanTiming(notifyCfg()), m = ntfEntryModes(entry), sel = myTSel(T), own = m.pre !== "i" || m.soon !== "i";
+                // この予定だけ: えらんだ日・分(しない にした方は空)。いつもの: 今のいつものタイミングを初めの値に
+                ntfEdit = { kind, own, days: own ? (m.pre === "on" ? (m.days || T.days).slice() : m.pre === "i" ? sel.days : []) : sel.days, mins: own ? (m.soon === "on" ? (m.mins || T.mins).slice() : m.soon === "i" ? sel.mins : []) : sel.mins, title, sub };
                 renderNtfModal(); document.getElementById("ntfModal").classList.add("show"); return;
             }
             const base = ntfModalBase(kind);
@@ -8565,25 +8566,24 @@ await main();
             </div>`;
         }
         function renderPlanNtfModal(el) {
-            const e = ntfEdit, T = myPlanTiming(notifyCfg());
-            const seg3 = (k) => `<span class="st-seg">${[["i", "いつもの"], ["on", "する"], ["off", "しない"]].map(([v, l]) => `<button type="button" class="${e[k] === v ? "on" : ""}" onclick="ntfEdit.${k}='${v}';renderNtfModal()">${l}</button>`).join("")}</span>`;
-            const preI = T.on && T.pre ? `${T.days.map(ntfDayLabel).join("・")} ${T.hour}時台` : "なし", soonI = T.on && T.soon ? T.mins.map(ntfMinLabel).join("・") : "なし";
+            const e = ntfEdit, T = myPlanTiming(notifyCfg()), sel = myTSel(T);
+            const usual = T.on ? [...sel.days.map(n => planTLabel("d", n) + ` ${T.hour}時台`), ...sel.mins.map(n => planTLabel("m", n))].join("・") || "なし" : "なし(通知オフ)";
             const sm = planNtfText(ntfEntryFromEdit(e), { timed: e.timed });
             el.innerHTML = `<div class="nm-box" role="dialog" aria-label="通知の設定">
                 <div class="nm-ttl"><i class="ic ic-bell"></i>${escapeHtml(e.title)}</div>
                 ${e.sub ? `<div class="nm-sub">${escapeHtml(e.sub)}</div>` : ""}
-                ${T.on ? "" : `<div class="nm-sub">全体の通知はオフです。「する」にしたものだけ届きます。</div>`}
-                <div class="ntf-row"><span>事前のお知らせ</span>${seg3("pre")}</div>
-                <div class="ntf-row col">${e.pre === "on"
-                    ? `<div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${e.days.includes(n) ? " on" : ""}" onclick="ntfModalDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div><div class="nm-sub" style="margin:0">時間はいつもの設定(${T.hour}時台)です</div>`
-                    : `<div class="nm-sub" style="margin:0">${e.pre === "off" ? "この予定は事前のお知らせなし" : `いつもの設定: ${escapeHtml(preI)}`}</div>`}</div>
-                <div class="ntf-row"><span>直前のお知らせ</span>${seg3("soon")}</div>
-                <div class="ntf-row col">${e.soon === "on"
-                    ? `${ntfMinChips(e.mins, "ntfModalMin")}<div class="nm-sub" style="margin:0">${NTF_MIN_NOTE}</div>`
-                    : `<div class="nm-sub" style="margin:0">${e.soon === "off" ? "この予定は直前のお知らせなし" : `いつもの設定: ${escapeHtml(soonI)}`}</div>`}</div>
-                <div class="nm-sub" style="margin:6px 0 0">${sm.off ? "→ この予定は何も届きません" : `→ ${escapeHtml(sm.text.replace("(いつもの設定)", ""))}`}${T.ad ? "" : ""}</div>
+                <div class="ntf-row"><span>タイミング</span><span class="st-seg"><button type="button" class="${e.own ? "" : "on"}" onclick="ntfEdit.own=false;renderNtfModal()">いつもの</button><button type="button" class="${e.own ? "on" : ""}" onclick="ntfEdit.own=true;renderNtfModal()">この予定だけ</button></span></div>
+                <div class="ntf-row col">${e.own
+                    ? `${planTChips(e.days, e.mins, "ntfModalT")}<div class="nm-sub" style="margin:0">日の通知は${T.hour}時台。何もえらばないと、この予定は通知しません。</div>`
+                    : `<div class="nm-sub" style="margin:0">いつもの設定: ${escapeHtml(usual)}</div>`}</div>
+                <div class="nm-sub" style="margin:6px 0 0">${sm.off ? "→ この予定は何も届きません" : `→ ${escapeHtml(sm.text.replace("(いつもの設定)", ""))}`}</div>
                 <div class="nm-acts"><button type="button" onclick="closeNtfModal()">キャンセル</button><button type="button" class="ok" onclick="applyNtfModal()">OK</button></div>
             </div>`;
+        }
+        function ntfModalT(k, n) {   // この予定だけ: 0個でもよい(この予定は通知しない)
+            const e = ntfEdit, a = k === "d" ? e.days : e.mins, next = a.includes(n) ? a.filter(x => x !== n) : a.concat(n);
+            if (k === "d") e.days = ntfDaysOk(next); else e.mins = ntfMinsOk(next);
+            renderNtfModal();
         }
         function ntfModalDay(n) {
             const a = ntfEdit.days;
@@ -8598,13 +8598,11 @@ await main();
         }
         function closeNtfModal() { const el = document.getElementById("ntfModal"); if (el) el.classList.remove("show"); ntfEdit = null; }
         function ntfEntryFromEdit(e) {
-            if (e.kind === "plan") {   // { pre: 1|0, soon: 1|0, days?, mins? }(いつもの は書かない)
-                const o = {};
-                if (e.pre !== "i") o.pre = e.pre === "on" ? 1 : 0;
-                if (e.pre === "on") o.days = e.days.slice();
-                if (e.soon !== "i") o.soon = e.soon === "on" ? 1 : 0;
-                if (e.soon === "on") o.mins = e.mins.slice();
-                return Object.keys(o).length ? o : null;
+            if (e.kind === "plan") {   // いつもの = null / この予定だけ = { pre: 1|0, soon: 1|0, days, mins? }
+                if (!e.own) return null;
+                const o = { pre: e.days.length ? 1 : 0, soon: e.mins.length ? 1 : 0, days: e.days.length ? e.days.slice() : [0] };   // 日なしは当日(終日の予定だけ使う)
+                if (e.mins.length) o.mins = e.mins.slice();
+                return o;
             }
             if (e.off) return { off: true };
             // 予定で「この予定だけ」の何日前を0個: 直前のお知らせだけ。LINEのボットには off(何日前のLINEも送らない)と見せ、monly でアプリが区別する
@@ -18252,7 +18250,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611222040;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611222100;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
