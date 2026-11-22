@@ -4828,9 +4828,7 @@ await main();
                         <div class="ntf-h">文章</div>
                         <div class="acc-desc">{いつ}は「明日」など、{日付}は「10/30(金)」に置き換わります。名前一覧とURLは自動。</div>
                         <div id="ntfText"></div>
-                        <div class="ntf-h" style="margin-top:14px">個人LINEに予定が届く管理者</div>
-                        <div class="acc-desc">管理者がアプリを開くと自動で入ります。管理者でなくなった人は × で外してください。</div>
-                        <div class="ntf-chips" id="ntfAdmins"></div>
+                        <div class="ntf-chips" id="ntfAdmins" hidden></div>
                     </div>
                 </details>
             </div>
@@ -8058,12 +8056,19 @@ await main();
                 out.plan.on = sc.planOn !== false;
                 Object.keys(out.personal).forEach(id => { out.personal[id].on = po[id] !== false; });
             }
+            // バレー以外の予定はLINEで送らない: ボットが読む plan.on / personal[id].on はいつも false。本当の値は lp に入っている(ntfStored)
+            if (v.lp && typeof v.lp === "object") {
+                const pon = v.lp.pon && typeof v.lp.pon === "object" ? v.lp.pon : {};
+                out.plan.on = v.lp.planOn !== false;
+                Object.keys(out.personal).forEach(id => { out.personal[id].on = pon[id] !== false; });
+            }
             // 管理者の「何日前のお知らせなし(直前だけ)」: pnod { 名簿ID: 1 = 受け取る / 0 = 受け取らない(なしは覚えておく) }。
             //   ボットは pnod を知らないので、personal[id].on は false で保存してある(ntfStored)。本当の 受け取る は pnod の値
             const pnod = {};
             if (v.pnod && typeof v.pnod === "object") Object.keys(v.pnod).forEach(id => { if (v.pnod[id] === 1 || v.pnod[id] === 0) pnod[id] = v.pnod[id]; });
             Object.keys(pnod).forEach(id => { const x = out.personal[id] || (out.personal[id] = { on: true, days: null, hour: null, everyone: false }); x.on = pnod[id] === 1; });
             out.pnod = pnod;
+            out.pext = v.pext && typeof v.pext === "object" ? JSON.parse(JSON.stringify(v.pext)) : {};   // 管理者の 直前なし(moff)・終日は事前に(ad)
             // ロスター変更の通知(管理者の共通設定。push-notify.gs が読む。LINEのボットは見ない)
             //   mode: each = 変更のたび / daily = 毎日 hour 時台に1回。from: ？からの変更 o = ？→○ / t = ？→△ / x = ？→✖
             const rv = v.roster && typeof v.roster === "object" ? v.roster : {}, rf = rv.from && typeof rv.from === "object" ? rv.from : {};
@@ -8084,12 +8089,18 @@ await main();
         // 共有データ・端末に入れる形(LINEがオフなら、ボットが読む所をオフにして本当の値は sched へ)
         function ntfStored(cfg) {
             const o = JSON.parse(JSON.stringify(cfg));
-            delete o.sched;
+            delete o.sched; delete o.lp;
+            // バレー以外の予定(共有・ペア・自分の予定)はLINEで送らない。ボットが読む plan.on と personal[id].on をいつも false にして、
+            // 本当の値は lp { planOn, pon: { 名簿ID: bool } } へ(アプリと push-notify.gs は lp を読む)。LINEのボットに登録した人も、設定が無ければ false の設定を作る
+            o.personal = o.personal || {};
+            (o.admins || []).forEach(id => { if (id != null && !o.personal[id]) o.personal[id] = { on: true, days: [1], hour: null, everyone: false }; });
+            const pon = {};
+            Object.keys(o.personal).forEach(id => { pon[id] = o.personal[id].on !== false; o.personal[id].on = false; });
+            o.lp = { planOn: o.plan.on !== false, pon };
+            o.plan.on = false;
             if (o.ch && o.ch.line === false) {
-                const po = {};
-                Object.keys(o.personal || {}).forEach(id => { po[id] = o.personal[id].on !== false; o.personal[id].on = false; });
-                o.sched = { volleyOn: o.volley.on !== false, planOn: o.plan.on !== false, personalOn: po };
-                o.volley.on = false; o.plan.on = false;
+                o.sched = { volleyOn: o.volley.on !== false, planOn: o.lp.planOn, personalOn: { ...pon } };
+                o.volley.on = false;
             }
             // 何日前のお知らせなし(pnod)の人: ボットが何日前のLINEを送らないように personal[id].on を false に(本当の値は pnod / sched.personalOn)
             const pn = o.pnod && typeof o.pnod === "object" ? o.pnod : {};
@@ -8130,7 +8141,7 @@ await main();
                     const gone = (prev.admins || []).filter(x => !(mine.admins || []).some(y => String(y) === String(x)));
                     out.admins = [...new Set((remote.admins || []).concat(mine.admins || []))].filter(x => !gone.some(g => String(g) === String(x)));
                 }
-                else if (k === "personal" || k === "pmins" || k === "pnod") {   // 人ごとに、変えた人の分だけ
+                else if (k === "personal" || k === "pmins" || k === "pnod" || k === "pext") {   // 人ごとに、変えた人の分だけ
                     const p0 = prev[k] || {}, p1 = mine[k] || {};
                     out[k] = { ...(remote[k] || {}) };
                     new Set(Object.keys(p0).concat(Object.keys(p1))).forEach(id => { if (J(p0[id]) !== J(p1[id])) { if (p1[id] != null) out[k][id] = p1[id]; else delete out[k][id]; } });
@@ -8227,7 +8238,7 @@ await main();
             cfg = cfg || notifyCfg();
             const seg = (k, on) => `<span class="st-seg"><button type="button" class="${on ? "on" : ""}" onclick="ntfSetCh('${k}',true)">オン</button><button type="button" class="${on ? "" : "on"}" onclick="ntfSetCh('${k}',false)">オフ</button></span>`;
             el.innerHTML = `<div class="ntf-blk"><div class="ntf-row"><span>LINE通知</span>${seg("line", cfg.ch.line)}</div>
-                <div class="ntf-sub">グループへのバレーと、管理者の個人LINEへの予定。オフでも設定は残ります。</div>
+                <div class="ntf-sub">グループへのバレーだけ(予定はLINEでは送りません)。オフでも設定は残ります。</div>
                 <div class="ntf-row"><span>アプリ通知</span>${seg("push", cfg.ch.push)}</div>
                 <div class="ntf-sub">各自の端末へのバレー・予定(ロスター変更は別)。</div></div>`;
         }
@@ -8237,12 +8248,49 @@ await main();
             saveNotifyRaw(cfg); renderNotifySettings(); renderPushSettings(); updateVbNtf(); setSavedMsg("保存しました ✓");
         }
         // 自分あての予定の通知(タイミングは LINE・アプリ共通)。管理者は通知の設定の personal、ほかの人は出欠データの pushm の s
+        // 自分あての予定の通知の全体の設定: { on: 全体, pre: 事前, days, hour, soon: 直前, mins, ad: 終日は事前の時間に, everyone }
+        //   days・mins はオフにしても前の値を持っておく(予定ごとに「する」にしたときに使う)。push-notify.gs の planTiming と同じ読み方
         function myPlanTiming(cfg, me) {
             if (me === undefined) me = myRosterId();
-            const b = planBaseFor(cfg, me), r = !realAdmin() ? pushMRec(me) : null, x = r && r.s && typeof r.s === "object" ? r.s : null;
-            if (!x) return { on: !b.offMine, days: b.days.slice(), hour: b.hour, everyone: b.everyone, mins: b.mins.slice() };
-            const days = ntfDaysOk(x.days), mins = ntfMinsOk(x.mins);
-            return { on: x.on !== false, days: x.nod ? [] : days && days.length ? days : b.days.slice(), hour: Number.isInteger(x.hour) && x.hour >= 0 && x.hour <= 23 ? x.hour : b.hour, everyone: !!x.everyone, mins: mins || b.mins.slice() };
+            const r = !realAdmin() ? pushMRec(me) : null, x = r && r.s && typeof r.s === "object" ? r.s : null;
+            const hOk = h => Number.isInteger(h) && h >= 0 && h <= 23;
+            if (x) {
+                const days = ntfDaysOk(x.days), mins = ntfMinsOk(x.mins) || [];
+                return { on: x.on !== false, pre: !x.nod, days: days && days.length ? days : [1], hour: hOk(x.hour) ? x.hour : 20, everyone: !!x.everyone, mins, soon: mins.length > 0 && !x.moff, ad: x.ad !== 0 };
+            }
+            const p = (me != null && cfg.personal[me]) || {}, ext = (me != null && cfg.pext && cfg.pext[me]) || {};
+            const days = ntfDaysOk(p.days), mins = (me != null && cfg.pmins ? ntfMinsOk(cfg.pmins[me]) : null) || [];
+            return { on: p.on !== false, pre: !(me != null && cfg.pnod && cfg.pnod[me] != null), days: days && days.length ? days : [1], hour: hOk(p.hour) ? p.hour : 20, everyone: !!p.everyone, mins, soon: mins.length > 0 && !ext.moff, ad: ext.ad !== 0 };
+        }
+        // 予定ごとの設定 → 事前・直前それぞれ "on" / "off" / "i"(いつもの)。新しい形 { pre: 1|0, soon: 1|0, days?, mins? }、前の形 { off, monly, days, mins } も読む
+        function ntfEntryModes(e) {
+            e = e && typeof e === "object" ? e : null;
+            if (!e) return { pre: "i", soon: "i", days: null, mins: null };
+            const d0 = ntfDaysOk(e.days), m0 = ntfMinsOk(e.mins), days = d0 && d0.length ? d0 : null;
+            const pre = e.pre === 1 ? "on" : e.pre === 0 ? "off" : e.off ? "off" : days ? "on" : "i";
+            const soon = e.soon === 1 ? "on" : e.soon === 0 ? "off" : (e.off && !e.monly) ? "off" : Array.isArray(e.mins) ? (m0 && m0.length ? "on" : "off") : "i";
+            return { pre, soon, days, mins: m0 && m0.length ? m0 : null };
+        }
+        // この予定がいつ届くか(push-notify.gs の planResolve と同じ)。timed = 始まりの時間がある / all = 全員あての予定
+        function planNtfResolve(T, e, timed, all) {
+            const m = ntfEntryModes(e);
+            if (all && !T.everyone && m.pre !== "on" && m.soon !== "on") return { days: [], mins: [], why: "all" };
+            let pre = m.pre === "on" || (m.pre === "i" && T.on && T.pre), fb = false;
+            const soon = m.soon === "on" || (m.soon === "i" && T.on && T.soon);
+            if (timed === false && soon && !pre && T.ad) { pre = true; fb = true; }
+            return { days: pre ? (m.days || T.days) : [], mins: soon && timed !== false ? (m.mins || (T.mins.length ? T.mins : [30])) : [], fb, own: m.pre !== "i" || m.soon !== "i" };
+        }
+        function planNtfText(e, opts) {
+            opts = opts || {};
+            if (opts.noTarget === "me") return { off: true, text: "名簿の名前が未設定のため通知できません" };
+            if (opts.noTarget === "notme") return { off: true, text: "共有相手に入っていないので届きません" };
+            const T = myPlanTiming(notifyCfg()), r = planNtfResolve(T, e, opts.timed, opts.noTarget === true);
+            if (r.why === "all") return { off: true, text: "全員あての予定は通知しない設定です" };
+            const a = [];
+            if (r.days.length) a.push(`${r.days.map(ntfDayLabel).join("・")} ${T.hour}時台${r.fb ? "(終日なので)" : ""}`);
+            if (r.mins.length) a.push(`直前 ${r.mins.map(ntfMinLabel).join("・")}`);
+            if (!a.length) return { off: true, text: "通知しない" + (r.own ? "" : "(いつもの設定)") };
+            return { off: false, text: a.join("・") + (r.own ? "" : "(いつもの設定)") };
         }
         // バレーの通知(自分の分): a = すべて(初期) / u = 未回答(△・？)のときだけ / n = 受け取らない。出欠データの pushm の vp に入れる(GASが見る)
         var PUSH_VP_OPTS = [["a", "すべて"], ["u", "未回答のときだけ"], ["n", "受け取らない"]];
@@ -8262,65 +8310,64 @@ await main();
         }
         function myNtfBlock(cfg) {
             const me = myRosterId();
-            const head = "";   // 見出しは設定の行(「自分の予定の通知」)にある
-            if (me == null) return `<div class="ntf-blk">${head}<div class="ntf-sub">名簿とひもづいていないので届きません。</div></div>`;
-            const b = myPlanTiming(cfg, me), on = b.on;
+            if (me == null) return `<div class="ntf-blk"><div class="ntf-sub">名簿とひもづいていないので届きません。</div></div>`;
+            const b = myPlanTiming(cfg, me);
             const name = (roster.find(r => r.id === me) || {}).name || "";
             const seg = (field, val, a, bLabel) => `<span class="st-seg"><button type="button" class="${val ? "on" : ""}" onclick="ntfMySet('${field}',true)">${a}</button><button type="button" class="${val ? "" : "on"}" onclick="ntfMySet('${field}',false)">${bLabel}</button></span>`;
-            const where = realAdmin() ? "個人LINE(ボット連携時)と登録した端末" : "登録した端末";
-            return `<div class="ntf-blk${on ? "" : " ntf-off"}">${head}
-                <div class="ntf-sub">${escapeHtml(name)}さんの${where}に届きます。</div>
-                <div class="ntf-row"><span>受け取る</span>${seg("on", on, "受け取る", "受け取らない")}</div>
-                <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span><div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${b.days.includes(n) ? " on" : ""}" onclick="ntfMyDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div>${b.days.length ? "" : `<div class="ntf-sub" style="margin:0">何日前のお知らせなし(直前のお知らせだけ)${b.mins.length ? "" : `。直前のお知らせもえらんでいないので、<b>何も届きません</b>`}</div>`}</div>
-                <div class="ntf-row ntf-dep"><span>時間</span><select class="ntf-sel" onchange="ntfMySet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${b.hour === i ? " selected" : ""}>${i}時台</option>`).join("")}</select></div>
+            return `<div class="ntf-blk">
+                <div class="ntf-sub">${escapeHtml(name)}さんの登録した端末に届きます。</div>
+                <div class="ntf-row"><span>全体</span>${seg("on", b.on, "オン", "オフ")}</div>
+                ${b.on ? "" : `<div class="ntf-sub" style="margin:0 0 4px">全体はオフ: 予定ごとに「する」にしたものだけ届きます。</div>`}
+                <div class="${b.on ? "" : "ntf-off"}">
+                <div class="ntf-row ntf-dep"><span>事前のお知らせ</span>${seg("pre", b.pre, "する", "しない")}</div>
+                <div class="${b.pre ? "" : "ntf-off"}">
+                  <div class="ntf-row col ntf-dep"><span>いつ(複数えらべます)</span><div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${b.days.includes(n) ? " on" : ""}" onclick="ntfMyDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div></div>
+                  <div class="ntf-row ntf-dep"><span>時間</span><select class="ntf-sel" onchange="ntfMySet('hour',+this.value)">${Array.from({ length: 24 }, (_, i) => `<option value="${i}"${b.hour === i ? " selected" : ""}>${i}時台</option>`).join("")}</select></div>
+                </div>
+                <div class="ntf-row ntf-dep"><span>直前のお知らせ</span>${seg("soon", b.soon, "する", "しない")}</div>
+                <div class="${b.soon ? "" : "ntf-off"}">
+                  <div class="ntf-row col ntf-dep">${ntfMinChips(b.mins, "ntfMyMin")}<div class="ntf-sub" style="margin:0">${NTF_MIN_NOTE}</div></div>
+                  <div class="ntf-row ntf-dep"><span>終日の予定は事前の時間に</span>${seg("ad", b.ad, "知らせる", "知らせない")}</div>
+                  <div class="ntf-sub ntf-dep" style="margin:0">時間のない予定は直前に知らせられないので、事前のお知らせ(いつ・時間)で届けます。</div>
+                </div>
                 <div class="ntf-row ntf-dep"><span>全員あての予定も受け取る</span>${seg("everyone", b.everyone, "受け取る", "受け取らない")}</div>
-                <div class="ntf-row col ntf-dep"><span>直前のお知らせ(複数えらべます)</span>${ntfMinChips(b.mins, "ntfMyMin")}<div class="ntf-sub" style="margin:0">${NTF_MIN_NOTE}</div></div></div>`;
+                </div></div>`;
         }
-        function myPersonal(cfg) {
-            const me = myRosterId(); if (me == null) return null;
-            const b = myPlanTiming(cfg, me);
-            return cfg.personal[me] = { on: b.on, days: b.days.slice(), hour: b.hour, everyone: b.everyone };
-        }
-        // 自分あての設定を保存(管理者: 通知の設定の personal / ほかの人: pushm の s)
-        //   直前のお知らせ(mins)は、管理者は通知の設定の pmins(personal はLINEのボットが読むので入れない)、ほかの人は s.mins。省略 = 今のまま
-        function ntfMySave(cfg, x, mins) {
-            if (mins === undefined) mins = myPlanTiming(cfg).mins;
-            const nod = !(x.days && x.days.length);   // 何日前のお知らせなし(直前だけ)
+        // 自分あての設定を保存(管理者: 通知の設定の personal・pmins・pnod・pext / ほかの人: 出欠データの pushm の s)
+        //   事前なしは 管理者 pnod / ほかの人 s.nod、直前なしは 管理者 pext.moff / ほかの人 s.moff(どちらも days・mins は前の値のまま持つ)
+        function ntfMySave(cfg, T) {
+            const me = myRosterId(); if (me == null) return;
+            if (T.soon && !T.mins.length) T.mins = [30];
             if (realAdmin()) {
-                const me = myRosterId();
-                if (me != null) {
-                    cfg.pmins = { ...(cfg.pmins || {}) }; if (mins.length) cfg.pmins[me] = mins.slice(); else delete cfg.pmins[me];
-                    // なしのときは pnod に(1 = 受け取る / 0 = 受け取らない)。personal の days は前の値のまま(ボットが読むので空にしない)
-                    cfg.pnod = { ...(cfg.pnod || {}) };
-                    if (nod) { cfg.pnod[me] = x.on ? 1 : 0; const p0 = notifyCfg().personal[me]; x.days = (p0 && ntfDaysOk(p0.days) && ntfDaysOk(p0.days).length ? ntfDaysOk(p0.days) : [1]); }
-                    else delete cfg.pnod[me];
-                    if (cfg.personal[me] !== x) cfg.personal[me] = x;
-                }
+                cfg.pmins = { ...(cfg.pmins || {}) }; if (T.mins.length) cfg.pmins[me] = T.mins.slice(); else delete cfg.pmins[me];
+                cfg.pnod = { ...(cfg.pnod || {}) }; if (!T.pre) cfg.pnod[me] = T.on ? 1 : 0; else delete cfg.pnod[me];
+                cfg.personal[me] = { on: T.on, days: T.days.slice(), hour: T.hour, everyone: T.everyone };
+                cfg.pext = { ...(cfg.pext || {}) }; const ex = {}; if (!T.soon) ex.moff = 1; if (!T.ad) ex.ad = 0;
+                if (Object.keys(ex).length) cfg.pext[me] = ex; else delete cfg.pext[me];
                 saveNotifyRaw(cfg);
-                const r = pushMRec(myRosterId());
-                if (r && r.s && pushMCanWrite()) pushMPut(rec => { delete rec.s; return rec; }).catch(e => console.warn(e));   // 前に管理者でなかったときの分は消す(personal を使う)
+                const r = pushMRec(me);
+                if (r && r.s && pushMCanWrite()) pushMPut(rec => { delete rec.s; return rec; }).catch(e => console.warn(e));   // 前に管理者でなかったときの分は消す
             } else {
-                // 何日前のお知らせなしは nod: 1(days は前の値のまま。古い版のアプリ・GAS でも読めるように空にしない)
-                const s0 = (pushMRec(myRosterId()) || {}).s, d0 = s0 && ntfDaysOk(s0.days) && ntfDaysOk(s0.days).length ? ntfDaysOk(s0.days) : [1];
-                pushMPut(rec => { rec.s = { on: x.on, days: nod ? d0.slice() : x.days.slice(), hour: x.hour, everyone: x.everyone, mins: mins.slice() }; if (nod) rec.s.nod = 1; return rec; })
+                pushMPut(rec => { const o = { on: T.on, days: T.days.slice(), hour: T.hour, everyone: T.everyone, mins: T.mins.slice() }; if (!T.pre) o.nod = 1; if (!T.soon) o.moff = 1; if (!T.ad) o.ad = 0; rec.s = o; return rec; })
                     .then(() => renderPushSettings()).catch(err => { console.warn(err); setSavedMsg("保存できませんでした", true); });
             }
         }
+        function ntfMyDone() { renderPushSettings(); renderPlanNtf(); setSavedMsg("保存しました ✓"); }
         function ntfMySet(field, val) {
-            const cfg = notifyCfg(), x = myPersonal(cfg); if (!x) return;
-            x[field] = val;
-            ntfMySave(cfg, x); renderPushSettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
+            const cfg = notifyCfg(), T = myPlanTiming(cfg); if (myRosterId() == null) return;
+            T[field] = val; ntfMySave(cfg, T); ntfMyDone();
         }
         function ntfMyDay(n) {
-            const cfg = notifyCfg(), x = myPersonal(cfg); if (!x) return;
-            const next = x.days.includes(n) ? x.days.filter(d => d !== n) : x.days.concat(n);
-            x.days = ntfDaysOk(next);   // 0個でもよい(何日前のお知らせなし = 直前のお知らせだけ)
-            ntfMySave(cfg, x); renderPushSettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
+            const cfg = notifyCfg(), T = myPlanTiming(cfg); if (myRosterId() == null) return;
+            const next = ntfDaysOk(T.days.includes(n) ? T.days.filter(d => d !== n) : T.days.concat(n));
+            if (!next.length) { setSavedMsg("1つ以上えらんでください(なしにするときは「しない」)", true); return; }
+            T.days = next; ntfMySave(cfg, T); ntfMyDone();
         }
-        function ntfMyMin(m) {   // 直前のお知らせ(0個でもよい = 送らない)
-            const cfg = notifyCfg(), cur = myPlanTiming(cfg).mins, x = myPersonal(cfg); if (!x) return;
-            const next = ntfMinsOk(cur.includes(m) ? cur.filter(v => v !== m) : cur.concat(m));
-            ntfMySave(cfg, x, next); renderPushSettings(); renderPlanNtf(); setSavedMsg("保存しました ✓");
+        function ntfMyMin(m) {
+            const cfg = notifyCfg(), T = myPlanTiming(cfg); if (myRosterId() == null) return;
+            const next = ntfMinsOk(T.mins.includes(m) ? T.mins.filter(v => v !== m) : T.mins.concat(m));
+            if (!next.length) { setSavedMsg("1つ以上えらんでください(なしにするときは「しない」)", true); return; }
+            T.mins = next; ntfMySave(cfg, T); ntfMyDone();
         }
         function sortedRosterForNtf() { return roster.slice().sort((a, b) => String(a.reading || a.name).localeCompare(String(b.reading || b.name), "ja")); }
         function ntfSet(k, field, val) {
@@ -8389,8 +8436,8 @@ await main();
                     + `<button type="button" class="template-reset-btn" onclick="ntfTextReset('${k}')">初期の文章に戻す</button></div>`;
             };
             el.innerHTML = sec("volley", "バレー", "グループに送る文章です。")
-                + sec("plan", "その他の予定", "自分の個人LINEに届くお知らせです。見出しの下に日時(とメモ)が入ります。リンクや出欠の一覧は付けません。",
-                    `<div class="ntf-row"><span>メモも載せる</span><span class="st-seg"><button type="button" class="${cfg.text.plan.memo ? "on" : ""}" onclick="ntfTextMemo(true)">載せる</button><button type="button" class="${cfg.text.plan.memo ? "" : "on"}" onclick="ntfTextMemo(false)">載せない</button></span></div>`);
+                + `<div class="ntf-blk"><div class="ntf-h">その他の予定</div><div class="ntf-sub">LINEでは送りません(アプリの通知だけ)。</div>`   // 予定のLINE(個人LINE)はやめた
+                    + `<div class="ntf-row"><span>メモも載せる</span><span class="st-seg"><button type="button" class="${cfg.text.plan.memo ? "on" : ""}" onclick="ntfTextMemo(true)">載せる</button><button type="button" class="${cfg.text.plan.memo ? "" : "on"}" onclick="ntfTextMemo(false)">載せない</button></span></div></div>`;
             renderNtfPreview(cfg);
         }
         var ntfTextTimer = 0;
@@ -8451,7 +8498,7 @@ await main();
         }
         function renderNtfPreview(cfg) {
             const pv = document.getElementById("ntfPv_volley"), pp = document.getElementById("ntfPv_plan");
-            if (!pv || !pp) return;
+            if (!pv) return;
             const today = formatDateKey(new Date()), daysTo = (k) => Math.max(0, Math.round((new Date(k + "T00:00") - new Date(today + "T00:00")) / 864e5));
             const key = Object.keys(events).filter(k => volOk(k) && k >= today).sort(sessCmp)[0] || today;
             const tv = cfg.text.volley, g = ntfGroupsOf(attendanceByDate[key], cfg);
@@ -8466,13 +8513,18 @@ await main();
                 || { title: "飲み会", startDate: formatDateKey(new Date(Date.now() + 864e5)), start: "19:00", end: "21:00", memo: "(メモ)" };
             const pls = [ntfFill(tp.head, daysTo(pl.startDate), pl.startDate, pl.title || "予定"), ntfMd(pl.startDate) + (pl.start ? " " + pl.start : "") + (pl.endDate && pl.endDate !== pl.startDate ? ` 〜 ${ntfMd(pl.endDate)}${pl.end ? " " + pl.end : ""}` : (pl.end ? "〜" + pl.end : (pl.start ? "" : " 終日")))];
             if (tp.memo && pl.memo) pls.push(pl.memo);
-            pp.textContent = pls.join("\n");   // 自分あてのお知らせ: リンク・出欠の一覧なし
+            if (pp) pp.textContent = pls.join("\n");   // 自分あてのお知らせ: リンク・出欠の一覧なし
         }
         var APP_LINK_FOR_NTF = "https://248toma.github.io/calendar/";
         // 予定ごと・バレーの日ごとの設定(小さな画面)
         var ntfEdit = null;   // { kind: "plan" | "vday", date, off, custom, days }
         function ntfModalBase(kind) { const cfg = notifyCfg(); return kind === "vday" ? ntfVolleyBase(cfg) : planBaseFor(cfg); }
         function openNtfModal(kind, entry, title, sub) {
+            if (kind === "plan") {   // 予定: 事前・直前それぞれ いつもの / する / しない
+                const T = myPlanTiming(notifyCfg()), m = ntfEntryModes(entry);
+                ntfEdit = { kind, pre: m.pre, soon: m.soon, days: (m.days || T.days).slice(), mins: (m.mins || (T.mins.length ? T.mins : [30])).slice(), title, sub };
+                renderNtfModal(); document.getElementById("ntfModal").classList.add("show"); return;
+            }
             const base = ntfModalBase(kind);
             const monly = kind === "plan" && !!(entry && entry.off && entry.monly);   // 直前のお知らせだけ(何日前なし)
             const own = monly ? [] : entry && ntfDaysOk(entry.days) && ntfDaysOk(entry.days).length ? ntfDaysOk(entry.days) : null;
@@ -8488,6 +8540,7 @@ await main();
                 el.addEventListener("click", (e) => { if (e.target === el) closeNtfModal(); });
                 document.body.appendChild(el);
             }
+            if (ntfEdit.kind === "plan") { renderPlanNtfModal(el); return; }
             const e = ntfEdit, base = ntfModalBase(e.kind);
             const baseTxt = base.days.length ? `${base.days.map(ntfDayLabel).join("・")} ${base.hour}時台` : "何日前のお知らせなし(直前のお知らせだけ)";
             const effD = e.custom ? e.days : base.days, effM = e.kind === "plan" ? (e.minsCustom ? e.mins : (base.mins || [])) : [1];
@@ -8511,18 +8564,48 @@ await main();
                 <div class="nm-acts"><button type="button" onclick="closeNtfModal()">キャンセル</button><button type="button" class="ok" onclick="applyNtfModal()">OK</button></div>
             </div>`;
         }
+        function renderPlanNtfModal(el) {
+            const e = ntfEdit, T = myPlanTiming(notifyCfg());
+            const seg3 = (k) => `<span class="st-seg">${[["i", "いつもの"], ["on", "する"], ["off", "しない"]].map(([v, l]) => `<button type="button" class="${e[k] === v ? "on" : ""}" onclick="ntfEdit.${k}='${v}';renderNtfModal()">${l}</button>`).join("")}</span>`;
+            const preI = T.on && T.pre ? `${T.days.map(ntfDayLabel).join("・")} ${T.hour}時台` : "なし", soonI = T.on && T.soon ? T.mins.map(ntfMinLabel).join("・") : "なし";
+            const sm = planNtfText(ntfEntryFromEdit(e), { timed: e.timed });
+            el.innerHTML = `<div class="nm-box" role="dialog" aria-label="通知の設定">
+                <div class="nm-ttl"><i class="ic ic-bell"></i>${escapeHtml(e.title)}</div>
+                ${e.sub ? `<div class="nm-sub">${escapeHtml(e.sub)}</div>` : ""}
+                ${T.on ? "" : `<div class="nm-sub">全体の通知はオフです。「する」にしたものだけ届きます。</div>`}
+                <div class="ntf-row"><span>事前のお知らせ</span>${seg3("pre")}</div>
+                <div class="ntf-row col">${e.pre === "on"
+                    ? `<div class="ntf-chips">${NTF_DAY_OPTS.map(n => `<button type="button" class="ntf-chip${e.days.includes(n) ? " on" : ""}" onclick="ntfModalDay(${n})">${ntfDayLabel(n)}</button>`).join("")}</div><div class="nm-sub" style="margin:0">時間はいつもの設定(${T.hour}時台)です</div>`
+                    : `<div class="nm-sub" style="margin:0">${e.pre === "off" ? "この予定は事前のお知らせなし" : `いつもの設定: ${escapeHtml(preI)}`}</div>`}</div>
+                <div class="ntf-row"><span>直前のお知らせ</span>${seg3("soon")}</div>
+                <div class="ntf-row col">${e.soon === "on"
+                    ? `${ntfMinChips(e.mins, "ntfModalMin")}<div class="nm-sub" style="margin:0">${NTF_MIN_NOTE}</div>`
+                    : `<div class="nm-sub" style="margin:0">${e.soon === "off" ? "この予定は直前のお知らせなし" : `いつもの設定: ${escapeHtml(soonI)}`}</div>`}</div>
+                <div class="nm-sub" style="margin:6px 0 0">${sm.off ? "→ この予定は何も届きません" : `→ ${escapeHtml(sm.text.replace("(いつもの設定)", ""))}`}${T.ad ? "" : ""}</div>
+                <div class="nm-acts"><button type="button" onclick="closeNtfModal()">キャンセル</button><button type="button" class="ok" onclick="applyNtfModal()">OK</button></div>
+            </div>`;
+        }
         function ntfModalDay(n) {
             const a = ntfEdit.days;
             const next = a.includes(n) ? a.filter(x => x !== n) : a.concat(n);
-            if (!next.length && ntfEdit.kind !== "plan") return;   // バレーの日は1つは残す(予定は0個 = 直前のお知らせだけ)
+            if (!next.length) return;   // 1つは残す(なしにするときは「しない」)   // バレーの日は1つは残す(予定は0個 = 直前のお知らせだけ)
             ntfEdit.days = ntfDaysOk(next); renderNtfModal();
         }
         function ntfModalMin(m) {   // 0個でもよい(この予定は直前のお知らせなし)
             const a = ntfEdit.mins;
+            if (ntfEdit.kind === "plan" && a.length === 1 && a[0] === m) return;   // 1つは残す(なしにするときは「しない」)
             ntfEdit.mins = ntfMinsOk(a.includes(m) ? a.filter(x => x !== m) : a.concat(m)); renderNtfModal();
         }
         function closeNtfModal() { const el = document.getElementById("ntfModal"); if (el) el.classList.remove("show"); ntfEdit = null; }
         function ntfEntryFromEdit(e) {
+            if (e.kind === "plan") {   // { pre: 1|0, soon: 1|0, days?, mins? }(いつもの は書かない)
+                const o = {};
+                if (e.pre !== "i") o.pre = e.pre === "on" ? 1 : 0;
+                if (e.pre === "on") o.days = e.days.slice();
+                if (e.soon !== "i") o.soon = e.soon === "on" ? 1 : 0;
+                if (e.soon === "on") o.mins = e.mins.slice();
+                return Object.keys(o).length ? o : null;
+            }
             if (e.off) return { off: true };
             // 予定で「この予定だけ」の何日前を0個: 直前のお知らせだけ。LINEのボットには off(何日前のLINEも送らない)と見せ、monly でアプリが区別する
             //   mins: この予定だけの直前の設定があれば。なければ GAS は本人のいつもの直前の設定を使う
@@ -8548,7 +8631,7 @@ await main();
         var planNtf = null;   // 入力欄の通知設定(null=いつもの)
         // Local予定の「アプリ通知」(初めはオフ)。オンにした予定だけ、通知用に共有データ(出欠データの pushm)へ写す
         var planPush = false;
-        function setPlanPush(on) { planPush = !!on; renderPlanPush(); }
+        function setPlanPush(on) { planPush = !!on; renderPlanNtf(); }
         function planPushAvail() { return !((isAdmin() || pairActive()) && planScope === "shared") && myRosterId() != null && firebaseAvailable; }
         function renderPlanPush() {
             const row = document.getElementById("opPush"), b = document.getElementById("opPushBtn"), nt = document.getElementById("opPushNote");
@@ -8565,24 +8648,30 @@ await main();
             const row = document.getElementById("opNtf"), btn = document.getElementById("opNtfBtn");
             if (!row || !btn) return;
             const local = !((isAdmin() || pairActive()) && planScope === "shared");
-            row.classList.toggle("show", isAdmin());   // 通知は今は管理者だけ
-            if (!isAdmin()) return;
-            const base = planBaseFor(notifyCfg());
-            const to = isAdmin() ? planShare.slice() : [];
-            const sm = ntfSummary(planNtf, base, { noTarget: planTargetNote(local, to, base.everyone) });
-            btn.classList.toggle("off", sm.off);
-            btn.innerHTML = `<i class="ic ${sm.off ? "ic-belloff" : "ic-bell"}"></i><span>${escapeHtml(sm.text)}</span>`;
+            const show = myRosterId() != null && firebaseAvailable;   // 予定ごとの通知(アプリ)。だれでも
+            row.classList.toggle("show", show);
+            if (!show) return;
+            const to = local ? [] : planShare.slice();
+            const sm = planNtfText(planNtf, { noTarget: planTargetNote(local, to, true), timed: planNtfTimed() });
+            const off = sm.off || (local && !planPush);
+            btn.classList.toggle("off", off);
+            btn.innerHTML = `<i class="ic ${off ? "ic-belloff" : "ic-bell"}"></i><span>${escapeHtml(local && !planPush ? "アプリ通知がオフ(届きません)" : sm.text)}</span>`;
+        }
+        // 入力中の予定に始まりの時間があるか(終日なら false)
+        function planNtfTimed() {
+            try { return !planAllDay && !!(($op("opStart") || {}).value); } catch (e) { return undefined; }
         }
         function openPlanNtf() {
-            const t = ($op("opTitle").value || "").trim() || "予定";
+            const t = (($op("opTitle") || {}).value || "").trim() || "予定";
             const local = !((isAdmin() || pairActive()) && planScope === "shared");
-            openNtfModal("plan", planNtf, `「${t}」の通知`, local ? "あなたの個人LINEに届きます(ボットとの連携が必要)。アプリの通知は、予定の「アプリ通知」をオンにしたときだけ" : "あなたへの通知だけが変わります(LINE・アプリ共通。ほかの人はそれぞれの設定)");
+            openNtfModal("plan", planNtf, `「${t}」の通知`, local ? (planPush ? "自分のアプリに届きます。" : "「アプリ通知」をオンにすると届きます。") : "あなたへの通知だけが変わります(ほかの人はそれぞれの設定)。");
+            if (ntfEdit) { ntfEdit.timed = planNtfTimed(); renderNtfModal(); }
         }
         function planNtfLine(p) {
-            if (!isAdmin()) return "";   // 通知は今は管理者だけ
-            const base = planBaseFor(notifyCfg());
-            const sm = ntfSummary(myPlanEntry(p), base, { noTarget: planTargetNote(!!p.local, p.to, base.everyone) });
-            return `<div class="pd-ntf">${IC(sm.off ? "belloff" : "bell")}<span>通知: ${escapeHtml(sm.text)}</span></div>`;
+            if (myRosterId() == null) return "";
+            const sm = planNtfText(myPlanEntry(p), { noTarget: planTargetNote(!!p.local, p.to, true), timed: !p.allDay && !!p.start });
+            const off = sm.off || (p.local && !p.push);
+            return `<div class="pd-ntf">${IC(off ? "belloff" : "bell")}<span>通知: ${escapeHtml(p.local && !p.push ? "アプリ通知がオフ" : sm.text)}</span></div>`;
         }
 
         // この端末だけの予定(Local)は共有データに無いので、通知に使う分だけを出欠データの "localntf" に写す。
@@ -10185,7 +10274,7 @@ await main();
             const toLocal = (isAdmin() || pairActive()) ? planScope === "local" : true;
             const prev = planEditId != null ? planList.find(x => x.id === planEditId) : null;
             const keepNormal = editingNormalShared();   // 普通の共有予定を直す時は、ペアの相手を足したりペア予定にしない
-            if (toLocal) { p.local = true; if (planNtf && isAdmin()) p.ntf = planNtf; if (planPush && myRosterId() != null) p.push = true; }
+            if (toLocal) { p.local = true; if (planNtf && myRosterId() != null) p.ntf = planNtf; if (planPush && myRosterId() != null) p.push = true; }
             else {
                 const pids = pairActive() ? pairIds() : [];
                 let to = isAdmin() ? planShare.slice() : planShare.filter(id => pids.includes(id));   // 閲覧者はペアの相手とだけ
@@ -10193,7 +10282,7 @@ await main();
                 if (!isAdmin() && !to.length) { alert("共有する相手を選んでください。"); return; }
                 if (to.length && me != null && !to.includes(me)) to.unshift(me);   // 作成者にも見えるように
                 if (to.length) p.to = to;
-                if (isAdmin()) {   // 共有した予定の通知設定は人ごと(自分の分だけ変える)
+                {   // 共有した予定の通知設定は人ごと(自分の分だけ変える)
                     const me = myRosterId(), ntfP = prev && prev.ntfP ? { ...prev.ntfP } : {};
                     if (me != null) { if (planNtf) ntfP[me] = planNtf; else delete ntfP[me]; }
                     if (Object.keys(ntfP).length) p.ntfP = ntfP;
@@ -18159,7 +18248,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611220200;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611222030;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20306,7 +20395,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     }
                     op.push(ib("flag", planHoliday, "休日にする", "setPlanHoliday(!planHoliday);renderProto()", P.red));
                     if (isAdmin() && planScope === "shared") op.push(ib("rsvp", planRsvp, "出欠をとる", "togglePlanRsvp();renderProto()"));
-                    if (isAdmin()) op.push(ib("bell", !!planNtf && (!planNtf.off || !!planNtf.monly), "通知", "openPlanNtf()"));
+                    if (myRosterId() != null && firebaseAvailable) op.push(ib("bell", !!planNtf, "この予定の通知", "openPlanNtf()"));
                     if (planPushAvail()) op.push(ib("push", planPush, planPush ? "アプリ通知: オン(題名・日時・メモが通知のために共有データに入ります)" : "アプリ通知: オフ(押すと自分の端末に届くようにする)", "setPlanPush(!planPush);renderProto()"));
                     if (planEditId != null) op.push(ib("trash", false, "削除", "pinDelete()"));
                 }
