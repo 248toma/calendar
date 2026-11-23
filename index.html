@@ -18324,7 +18324,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611240050;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611240100;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20630,10 +20630,12 @@ const namesBtn = isAdmin() && dates.length > 0
             const { dark, P, C: C0 } = protoPal();
             // 色を減らす(試作UIだけ): 予定は 灰色→黒、ピンク→赤。記録は 黒・赤・青・紫・オレンジ。人数が足りているバレーは黒
             const K = { blk: dark ? "#f1f2f4" : "#1f2124", red: dark ? "#d0789f" : "#9c3d68", blu: dark ? "#86aef0" : "#4677c4", pur: dark ? "#b9a4ec" : "#8b6fc9", org: dark ? "#f08a52" : "#ec6a2c" };
-            const C = C0.map(c => /^#(9aa0a8|7f848c)$/i.test(c) ? K.blk : /^#(e597b7|f4c0d5)$/i.test(c) ? K.red : c);
+            // 予定の色は3色だけ: 黒(個人)・青(共通)・赤(ペア)。灰色・紫は黒、ピンクは赤に(番号ごと。protoPal の C と同じ並び)
+            const C3 = "kbbrkrrbkkkrrbk";
+            const C = C0.map((c, i) => C3[i] === "b" ? K.blu : C3[i] === "r" ? K.red : K.blk);
             const KRMAP = [K.blu, K.blk, K.org, K.red, K.pur, K.blu, K.org, K.blk];
-            const ACC = dark ? "#f08a52" : "#ec6a2c";
-            const LVp = protoPal().LV, volCol = sk => { if (isTent(sk)) return P.ink3; const lv = getStatusLevel(countComing(sk)); return lv === "sufficient" ? K.blk : LVp[lv]; };   // バレーの色: いつもの画面と同じ(人数の段階の色)
+            const ACC = K.blu;   // 今日の日付: 青(色は 黒・青・赤 の3つに絞る)
+            const LVp = protoPal().LV, volCol = sk => { if (isTent(sk)) return P.ink3; const lv = getStatusLevel(countComing(sk)); return lv === "sufficient" ? K.blk : K.red; };   // 足りている = 黒、足りない(黄・赤) = 赤   // バレーの色: いつもの画面と同じ(人数の段階の色)
             const esc = escapeHtml, todayKey = formatDateKey(new Date());
             const en = "Inter, 'Montserrat', 'Noto Sans JP', system-ui, sans-serif", jp = "'Noto Sans JP', system-ui, sans-serif";
             const W = Math.min(root.clientWidth || innerWidth || 390, 440);
@@ -20641,12 +20643,12 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!protoYM) { const [a, b] = sel.split("-").map(Number); protoYM = [a, b]; }
             const [y, m] = protoYM;
             const dk = { floor: dark ? "#25282e" : "#dce0e7", crD: dark ? "rgba(0,0,0,.45)" : "#d9dde4", crL: dark ? "rgba(255,255,255,.06)" : "#f7f8fa", sh: dark ? "rgba(0,0,0,.6)" : "rgba(140,148,162,.75)",
-                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.2)" : "#c8ccd3", sunMute: dark ? "rgba(214,120,110,.3)" : "#e2cdca", sun: dark ? "#d98a80" : "#b0625a", sub: dark ? "#9aa0aa" : "#6b7280", txt: dark ? "#c9cdd4" : "#41464f" };
+                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.2)" : "#c8ccd3", sunMute: dark ? "rgba(208,120,159,.4)" : "rgba(156,61,104,.35)", sun: K.red, sub: dark ? "#9aa0aa" : "#6b7280", txt: dark ? "#c9cdd4" : "#41464f" };
             const volTime = (k) => { const prs = (reservations[k] || []).map(r => parseTimeRangeMin(r.time)).filter(Boolean); if (!prs.length) return null; return { s: Math.min(...prs.map(x => x.s)), e: Math.max(...prs.map(x => x.e)) }; };
             const volPlace = (k) => [...new Set((reservations[k] || []).map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
             const volDone = (k) => { const d = sessDay(k); if (d < todayKey) return true; if (d > todayKey) return false; const t = volTime(k); if (!t) return false; return nowMin >= (t.e > t.s ? t.e : t.s + 120); };
-            const FNT = dark ? "#6a707a" : "#b2b8c1";   // 赤(ペア)の予定: 黒・青(太め)とはっきり分かる薄さ
+            const FNT = dark ? "#80868f" : "#959ba5";   // 赤(ペア)の予定: 黒・青(太め)とはっきり分かる薄さ
             const itemsOf = (k) => {
                 const out = sessKeysOf(k).map(sk => ({ t: isTent(sk) ? "バレー(未)" : "バレー", vol: true, tent: isTent(sk), vc: volCol(sk), s: (volTime(sk) || {}).s ?? -1 }));
                 plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", multi: !!p.endDate && p.endDate !== p.startDate, hol: !!p.holiday, pair: (C[+p.color || 0] || C[0]) === K.red, col: C[+p.color || 0] || C[0], s: p.allDay ? -1 : (parseHM(p.start) ?? -1) }));
@@ -20745,9 +20747,9 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (sel === todayKey) {   // 今: 過ぎた時間は帯を薄くして、今の位置に時刻の札と縦線
                     const x = tx(nowMin / 60), hm = `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`;
                     s += `<i style="position:absolute;left:${X0}px;top:${SY}px;width:${Math.max(0, x - X0).toFixed(1)}px;height:14px;background:${dk.floor};opacity:.55;z-index:2;border-radius:3px 0 0 3px"></i>`;
-                    s += `<i style="position:absolute;left:${(x - 1).toFixed(1)}px;top:${SY - 5}px;width:2px;height:22px;border-radius:1px;background:${ACC};z-index:3;box-shadow:0 0 0 1.5px ${dk.floor}"></i>`;
+                    s += `<i style="position:absolute;left:${(x - 1).toFixed(1)}px;top:${SY - 5}px;width:2px;height:22px;border-radius:1px;background:${P.ink};z-index:3;box-shadow:0 0 0 1.5px ${dk.floor}"></i>`;
                     const lx = Math.min(Math.max(x - 17, X0 - 6), X1 - 28);
-                    s += `<span style="position:absolute;left:${lx.toFixed(1)}px;top:${SY + 16}px;width:34px;height:13px;border-radius:7px;background:${ACC};color:#fff;font-family:${en};font-size:8px;font-weight:600;line-height:13px;text-align:center;z-index:3;letter-spacing:.02em">${hm}</span>`;
+                    s += `<span style="position:absolute;left:${lx.toFixed(1)}px;top:${SY + 16}px;width:34px;height:13px;border-radius:7px;background:${P.ink};color:${dk.floor};font-family:${en};font-size:8px;font-weight:600;line-height:13px;text-align:center;z-index:3;letter-spacing:.02em">${hm}</span>`;
                 }
                 // 予定の線: 帯のすぐ上。時間が重なる予定は、線を細い段に分けて両方見えるように
                 const trk = []; ev.forEach(e => { let t = 0; while ((trk[t] || []).some(q => q.a < e.b && e.a < q.b)) t++; (trk[t] = trk[t] || []).push(e); e.tr = t; });
@@ -20773,7 +20775,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (nk && !isTent(nk)) {
                     const me = surveyWho(), myMem = me ? (attendanceByDate[nk] || []).find(x => x.name === me) : null, my = myMem ? myMem.status : "";
                     const AO = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"]];
-                    const LVc = protoPal().LV, AC = { "来る": LVc.sufficient, "未定": LVc.warning, "来ない": LVc.danger };
+                    const AC = { "来る": K.blu, "未定": K.blk, "来ない": K.red };   // ○ 青・△ 黒・✕ 赤
                     const folded = !!my && p3AnsOpen !== nk;   // 答えたあとは、自分の答えの1つだけ。押すと3つに開く
                     const AOs = folded ? AO.filter(([st]) => st === my) : AO;
                     ans = `<div style="position:absolute;right:${X0 - 4}px;top:${GH - 42}px;display:flex;gap:8px">${AOs.map(([st, ico, lb]) => { const on = my === st;
@@ -20825,7 +20827,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const by = new Map(); yr.forEach(r => { const c = r.cat || "その他"; by.set(c, (by.get(c) || 0) + (+r.amount || 0)); });
                 let cats = [...by.entries()].filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
                 if (cats.length > 6) { const rest = cats.slice(5).reduce((t, x) => t + x[1], 0); cats = cats.slice(0, 5).concat([["ほか", rest]]); }
-                const CC = [K.blk, K.blu, K.red, K.org, K.pur, dark ? "#7d8592" : "#a3a9b3"];
+                const CC = [K.blk, K.blu, K.red, dark ? "#9aa0a8" : "#7f868f", dark ? "#6b717a" : "#aab0b9", dark ? "#4f545c" : "#ccd1d8"];   // 黒・青・赤と灰色の濃淡
                 // ドーナツ: 内訳の割合
                 const R = 44, r0 = 30, cx = 52, cy = 52; let a0 = -Math.PI / 2, arcs = "";
                 const pt = (r, a) => `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
