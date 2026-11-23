@@ -18324,7 +18324,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611232045;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611240030;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20648,7 +20648,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const volDone = (k) => { const d = sessDay(k); if (d < todayKey) return true; if (d > todayKey) return false; const t = volTime(k); if (!t) return false; return nowMin >= (t.e > t.s ? t.e : t.s + 120); };
             const itemsOf = (k) => {
                 const out = sessKeysOf(k).map(sk => ({ t: isTent(sk) ? "バレー(未)" : "バレー", vol: true, tent: isTent(sk), vc: volCol(sk), s: (volTime(sk) || {}).s ?? -1 }));
-                plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", multi: !!p.endDate && p.endDate !== p.startDate, hol: !!p.holiday, col: C[+p.color || 0] || C[0], s: p.allDay ? -1 : (parseHM(p.start) ?? -1) }));
+                plansOn(k).forEach(({ p }) => out.push({ t: p.title || "予定", multi: !!p.endDate && p.endDate !== p.startDate, hol: !!p.holiday, pair: !!p.pp, col: C[+p.color || 0] || C[0], s: p.allDay ? -1 : (parseHM(p.start) ?? -1) }));
                 return out;
             };
             // ---------- カレンダー ----------
@@ -20689,12 +20689,14 @@ const namesBtn = isAdmin() && dates.length > 0
                     const top = ml.reduce((a, x) => Math.max(a, laneOf.get(x.p.id)), -1);
                     const lines = []; for (let ln = 0; ln <= top; ln++) { const x = ml.find(q => laneOf.get(q.p.id) === ln);
                         if (!x) { lines.push(null); continue; }
-                        const lc = C[+x.p.color || 0] || C[0], cc = lc === P.bg ? P.ink : lc, head = x.f || c === 0;
-                        lines.push(`<div style="display:flex;align-items:center;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 4 : 0}px;text-align:left">${head ? `<i style="width:4px;height:4px;border-radius:2px;flex:none;margin:0 2.5px 0 ${x.f ? 0 : 2}px;background:${cc}"></i><span style="flex:none;padding-right:3px;color:${P.ink2}">${w4(x.p.title || "予定")}</span>` : ""}<i style="flex:1;min-width:4px;height:1.5px;border-radius:1px;background:${cc}"></i></div>`); }   // タイトルの後ろから線を引く(背景で線を隠さない)
+                        const tc = x.p.pp ? P.ink3 : P.ink, head = x.f || c === 0;   // 色分けはやめて、自分・共通は濃く、ペアは薄く
+                        // 何日も続く予定: 始まりの日は「題名 →」、続きの日は「→」
+                        lines.push(`<div style="display:flex;align-items:center;justify-content:${head ? "flex-start" : "center"};height:9px;padding:0 ${head ? 3 : 0}px;color:${tc}">${head ? `<span style="flex:none;padding-right:2px">${w4(x.p.title || "予定")}</span>` : ""}<span style="flex:none;font-family:${en};font-size:8px;line-height:9px">→</span></div>`); }
                     // いつもの画面と同じ: 1日の予定は時刻順。3段からはみ出すときは、上の空いた段(連続予定の階段のすき間)に1日の予定を入れて詰める
                     let singles = it.filter(x => !x.multi).sort((a, b) => (a.hol ? 1 : 0) - (b.hol ? 1 : 0) || a.s - b.s);   // 休日にした予定は後ろ・あとは時刻順
                     if (lines.length + singles.length > 3) singles = singles.filter(x => !x.hol);   // ほかの予定が隠れる日は、休日にした予定は出さない
-                    const sgH = singles.map(x => { const dc = x.vol ? x.vc : (x.col === P.bg ? P.ink : x.col); return `<div style="display:flex;align-items:center;justify-content:center;gap:2.5px;height:9px;${x.vol ? `color:${dc};font-weight:600` : ""}"><i style="width:4px;height:4px;border-radius:2px;flex:none;background:${dc}"></i>${w4(x.t)}</div>`; });
+                    // 点はなし。バレーは人数の色、予定は自分・共通を濃く、ペアを薄く
+                    const sgH = singles.map(x => `<div style="display:flex;align-items:center;justify-content:center;height:9px;${x.vol ? `color:${x.vc};font-weight:600` : `color:${x.pair ? P.ink3 : P.ink}`}">${w4(x.t)}</div>`);
                     let slots = lines.slice(); const rest = sgH.slice();
                     if (slots.length + rest.length > 3) slots = slots.map(h => h == null && rest.length ? rest.shift() : h);
                     const allR = slots.map(h => h == null ? `<div style="height:9px"></div>` : h).concat(rest);
