@@ -18324,7 +18324,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611240740;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611242345;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20675,7 +20675,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const wl = []; for (let i = 0; i < 7; i++) wl.push(["S", "M", "T", "W", "T", "F", "S"][(i + weekStartDay) % 7]);
             const [sy0, sm0, sd0] = sel.split("-").map(Number);
             const selRow = sy0 === y && sm0 === m ? Math.floor((off + sd0 - 1) / 7) : -1;
-            const GH = 170;   // 下の受け皿の高さ(描いたあとに測って合わせる)
+            const GH = 204;   // 受け皿の高さ(B案: 12マス+予定のバー・メモ・人数)
             const crease = `<div style="height:0;flex:none;border-top:1px solid ${dk.crD};border-bottom:1px solid ${dk.crL}"></div>`;
             let cal = "";
             for (let r = 0; r < rows; r++) {
@@ -20693,9 +20693,10 @@ const namesBtn = isAdmin() && dates.length > 0
                     const lines = []; for (let ln = 0; ln <= top; ln++) { const x = ml.find(q => laneOf.get(q.p.id) === ln);
                         if (!x) { lines.push(null); continue; }
                         const fnt = (C[+x.p.color || 0] || C[0]) === K.red, tc = fnt ? FNT : P.ink, head = x.f || c === 0;   // 色分けはやめて、黒(個人)・青(共通)は濃く、赤(ペア)は薄く
-                        // 何日も続く予定: 題名から矢印の線を最後の日までのばす(最後の日の終わりに矢じり)
-                        const ah = x.l ? `<svg width="5" height="7" viewBox="0 0 5 7" style="flex:none;display:block;margin-left:-1px"><path d="M0.5 0.8L4.2 3.5L0.5 6.2" fill="none" stroke="${tc}" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>` : "";
-                        lines.push(`<div style="display:flex;align-items:center;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 3 : 0}px;color:${tc};font-weight:${fnt ? 500 : 600}">${head ? `<span style="flex:none;padding:0 2px 0 ${x.f ? 0 : 3}px">${w4(x.p.title || "予定")}</span>` : ""}<i style="flex:1;min-width:4px;height:1px;background:${tc}"></i>${ah}</div>`); }
+                        // 何日も続く予定(B案): 題名の後ろに、細く彫った線を最後の日までのばす。週をまたぐ側は端に向かって薄く消す。週の頭で続きの題名は細く
+                        const cont = !x.f && c === 0, fade = !x.l && c === 6;
+                        const eng = `flex:1;min-width:4px;height:2px;border-radius:1px;background:${dark ? "rgba(0,0,0,.55)" : "#c3c8d0"};box-shadow:inset .5px .5px 1px ${dark ? "rgba(0,0,0,.6)" : "#a9afb9"},0 1px 0 ${dk.hi}${fade ? ";-webkit-mask-image:linear-gradient(90deg,#000 55%,transparent);mask-image:linear-gradient(90deg,#000 55%,transparent)" : ""}`;
+                        lines.push(`<div style="display:flex;align-items:center;gap:3px;height:9px;margin:0 ${x.l ? 4 : 0}px 0 ${x.f ? 3 : 0}px;color:${tc};font-weight:${fnt || cont ? 500 : 600}">${head ? `<span style="flex:none;padding:0 0 0 ${x.f ? 0 : 3}px;${cont ? `color:${fnt ? FNT : dk.txt}` : ""}">${w4(x.p.title || "予定")}</span>` : ""}<i style="${eng}"></i></div>`); }
                     // いつもの画面と同じ: 1日の予定は時刻順。3段からはみ出すときは、上の空いた段(連続予定の階段のすき間)に1日の予定を入れて詰める
                     let singles = it.filter(x => !x.multi).sort((a, b) => (a.hol ? 1 : 0) - (b.hol ? 1 : 0) || a.s - b.s);   // 休日にした予定は後ろ・あとは時刻順
                     if (lines.length + singles.length > 3) singles = singles.filter(x => !x.hol);   // ほかの予定が隠れる日は、休日にした予定は出さない
@@ -20709,7 +20710,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:2px;bottom:4px;border-radius:12px;background:${dk.floor};box-shadow:inset 2.5px 3px 6px ${dk.sh},inset -2px -2px 5px ${dk.hi};z-index:3"></div>` : "";   // 選んだ日: 下の受け皿と同じ凹み
                     const wx = protoWxDay(k), wxH = wx ? `<i class="pr-wx" style="color:${P.ink3};top:1px;right:-6px">${protoWxIco(wx.kind, 9)}</i>` : "";
                     g += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="position:relative;display:flex;flex-direction:column;align-items:center;padding-top:6px;min-width:0;min-height:0;overflow:visible">${lift}${krMap ? `<span class="p3kr${isSel ? " sel" : ""}" style="position:absolute;inset:${isSel ? "3px 0 0 4px" : "0"};z-index:5;pointer-events:none">${krCellDots(krMap, k, false)}</span>` : ""}${more}
-                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has ? 500 : 300};color:${col};${shade}">${dn}${wxH}</span>
+                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has ? 500 : 300};color:${col};${shade}${isT ? `;background:${dk.floor};box-shadow:inset 2.5px 2.5px 5px ${dk.sh},inset -2px -2px 4px ${dk.hi}` : ""}">${dn}${wxH}</span>
                         <span style="position:relative;z-index:4;margin-top:4px;width:100%;line-height:1.3;text-align:center;font-family:${jp};font-size:7px;color:${dk.sub};white-space:nowrap;overflow:hidden">${nm}</span></button>`;
                 }
                 cal += `<div style="flex:1 1 0;min-height:70px;max-height:96px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;position:relative;z-index:${r === selRow ? 3 : 2}">${g}</div>`;
@@ -20731,65 +20732,77 @@ const namesBtn = isAdmin() && dates.length > 0
                     ev.push({ pid: p.id, rs: planRsvpOn(p) ? `○${planComing(p)}` : "", all, a: all ? 0 : a, b: all ? 24 : b, n: p.title || "予定", t: all ? "終日" : p.start + (p.end && !multi ? `–${p.end}` : ""), m: p.memo ? String(p.memo).split("\n")[0] : "", c: C[+p.color || 0] || C[0] });
                 });
                 ev.sort((x, y2) => (y2.all - x.all) || x.a - y2.a);
-                const WG = W - 24, X0 = Math.round(WG * .06), X1 = WG - X0, tx = h => X0 + (X1 - X0) * h / 24;
-                const LY = 12, SY = GH - 86;   // 書き込みの段 / 12マスの帯(下からの位置で決める)
+                // ===== B案: 12マス(1マス2時間・来る人の数だけ出っぱる)の上に、予定のバーを直接のせる =====
+                const WG = W - 24, X0 = 16, X1 = WG - 16, tx = h => X0 + (X1 - X0) * h / 24;
+                const TY = 12, TH = 64, BY = TY + 22, BH = 20;   // 帯の上端・高さ / 時間のある予定のバー
                 let s = "";
-                const cw = (X1 - X0) / 12;
+                const cw = (X1 - X0) / 12, gap = 3.5;
+                const upC = dark ? "#3a3e45" : "#eceef2", dnC = dark ? "#202328" : "#d9dce3";
                 for (let i = 0; i < 12; i++) {
-                    const x = X0 + i * cw + 1.2, w = cw - 2.4, d = i < deep, h = !d && i < deep + shal;
-                    const fillC = d ? (dark ? "#aab1bd" : "#7d8592") : h ? (dark ? "rgba(255,255,255,.28)" : "#c3c8d0") : "";
-                    if (d || h) { s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${SY + 2}px;width:${w.toFixed(1)}px;height:10px;border-radius:3px;background:${fillC};box-shadow:inset 0 1px 1px ${dark ? "rgba(255,255,255,.15)" : "rgba(255,255,255,.35)"}"></i>`; s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 14}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`; continue; }
-                    const sh = d ? `inset 2.4px 2.4px 3.5px ${dark ? "rgba(0,0,0,.7)" : "#9ba3b1"},inset -1.5px -1.5px 2.5px ${dark ? "rgba(255,255,255,.07)" : "#f6f8fb"}` : h ? `inset 1.1px 1.1px 1.6px ${dark ? "rgba(0,0,0,.55)" : "#aab1bd"},inset -.8px -.8px 1.4px ${dark ? "rgba(255,255,255,.06)" : "#f6f8fb"}` : `0 0 0 .6px ${dark ? "rgba(255,255,255,.1)" : "#c9ced7"}`;
-                    s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${SY + 2}px;width:${w.toFixed(1)}px;height:10px;border-radius:3px;background:${d ? (dark ? "#1d2025" : "#cbd0d9") : h ? (dark ? "#2a2d33" : "#dde1e8") : "transparent"};box-shadow:${sh}"></i>`;
-                    s += `<i style="position:absolute;left:${(x + w / 2 - .4).toFixed(1)}px;top:${SY + 14}px;width:.8px;height:2.5px;background:${dark ? "rgba(255,255,255,.2)" : "#b3b9c3"}"></i>`;
+                    const x = X0 + i * cw + gap / 2, w = cw - gap, d = i < deep, h = !d && i < deep + shal;
+                    const st = d ? `background:${upC};box-shadow:2px 2px 4px ${dk.sh},-1.5px -1.5px 3px ${dk.hi}`
+                        : h ? `background:${upC};opacity:.6;box-shadow:1px 1px 2px ${dk.sh},-1px -1px 2px ${dk.hi}`
+                        : `background:${dnC};box-shadow:inset 2px 2px 4px ${dk.sh},inset -1.5px -1.5px 3px ${dk.hi}`;
+                    s += `<i style="position:absolute;left:${x.toFixed(1)}px;top:${TY}px;width:${w.toFixed(1)}px;height:${TH}px;border-radius:7px;${st}"></i>`;
                 }
-                for (let h = 0; h <= 24; h += 6) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${SY + 17}px;font-family:${en};font-size:7.5px;color:${dk.txt}">${h}</span>`;
-                if (sel === todayKey) {   // 今: 過ぎた時間は帯を薄くして、今の位置に時刻の札と縦線
-                    const x = tx(nowMin / 60), hm = `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`;
-                    s += `<i style="position:absolute;left:${X0}px;top:${SY}px;width:${Math.max(0, x - X0).toFixed(1)}px;height:14px;background:${dk.floor};opacity:.55;z-index:2;border-radius:3px 0 0 3px"></i>`;
-                    s += `<i style="position:absolute;left:${(x - 1).toFixed(1)}px;top:${SY - 5}px;width:2px;height:22px;border-radius:1px;background:${P.ink};z-index:3;box-shadow:0 0 0 1.5px ${dk.floor}"></i>`;
-                    const lx = Math.min(Math.max(x - 17, X0 - 6), X1 - 28);
-                    s += `<span style="position:absolute;left:${lx.toFixed(1)}px;top:${SY + 16}px;width:34px;height:13px;border-radius:7px;background:${P.ink};color:${dk.floor};font-family:${en};font-size:8px;font-weight:600;line-height:13px;text-align:center;z-index:3;letter-spacing:.02em">${hm}</span>`;
+                for (let h = 0; h <= 24; h += 6) s += `<span style="position:absolute;left:${(tx(h) - 10).toFixed(1)}px;width:20px;text-align:center;top:${TY + TH + 3}px;font-family:${en};font-size:8px;color:${dk.txt}">${h}</span>`;
+                const isFnt = e => !e.v && e.c === K.red;   // 赤(ペア)の予定は薄く(カレンダーと同じ)
+                const fillOf = e => e.v ? (isTent(e.k) ? P.ink3 : e.vc) : isFnt(e) ? (dark ? "#5a6069" : "#b9bec6") : P.ink;
+                const txtOn = e => isFnt(e) ? P.ink : (dark ? "#111316" : "#ffffff");
+                // 終日の予定: 帯の上の部分に、端から端まで1本(何件あれば「・」でつなぐ)
+                const alls = ev.filter(e => e.all);
+                if (alls.length) {
+                    const e0 = alls[0], f = alls.every(isFnt);
+                    s += `<div role="button" tabindex="0" onclick="${esc(`protoRow(${JSON.stringify(e0.pid)})`)}" style="position:absolute;left:${X0 + 2}px;right:${WG - X1 + 2}px;top:${TY + 4}px;height:14px;border-radius:7px;background:${dark ? "rgba(255,255,255,.08)" : "rgba(42,46,53,.10)"};display:flex;align-items:center;gap:6px;padding:0 8px;box-sizing:border-box;overflow:hidden;white-space:nowrap;cursor:pointer;font-family:${jp};font-size:9px;line-height:14px;color:${f ? FNT : P.ink2}">`
+                        + alls.map(e => `<span style="flex:none;font-weight:${isFnt(e) ? 400 : 600}">${esc(e.n)}${e.rs ? ` <span style="font-family:${en};font-weight:500">${e.rs}</span>` : ""}</span>${e.m ? `<span style="color:${dk.txt};overflow:hidden;text-overflow:ellipsis">${esc(e.m)}</span>` : ""}`).join(`<span style="flex:none;color:${dk.txt}">・</span>`) + `</div>`;
                 }
-                // 予定の線: 帯のすぐ上。時間が重なる予定は、線を細い段に分けて両方見えるように
-                const trk = []; ev.forEach(e => { let t = 0; while ((trk[t] || []).some(q => q.a < e.b && e.a < q.b)) t++; (trk[t] = trk[t] || []).push(e); e.tr = t; });
-                // 書き込み: 1段だけ。時刻の順に左から並べ、重なるときは右へずらす(段を重ねない)
-                const est = e => Math.min(120, Math.max([...e.n].length * 11 + (e.rs ? e.rs.length * 6 + 4 : 0), e.t.length * 5.4, [...e.m].length * 9) + 6);
-                let prevR = X0 - 10;
-                const lab = ev.map(e => { const w = est(e), xa = tx(Math.max(0, e.a)); let lx = Math.max(xa, prevR + 10); if (lx + w > X1) lx = Math.max(prevR + 10, X1 - w); prevR = lx + w; return { e, w, xa, lx }; });
-                // 右からはみ出したら、全体を左へ詰める
-                const over = prevR - X1; if (over > 0) { let shift = over; for (let i = lab.length - 1; i >= 0 && shift > 0; i--) { const minX = i ? lab[i - 1].lx + lab[i - 1].w + 10 : X0; const can = Math.max(0, lab[i].lx - Math.max(minX - shift, X0)); lab[i].lx -= Math.min(can, shift); } }
-                lab.forEach(({ e, w, xa, lx }) => {
-                    const c = e.v ? e.vc : (e.c === P.bg ? P.ink : (e.c || P.ink)), xb = tx(Math.min(24, e.b)), by = SY - 6 - e.tr * 4;
-                    s += `<i style="position:absolute;left:${xa.toFixed(1)}px;width:${Math.max(xb - xa, 3).toFixed(1)}px;top:${by}px;height:${e.all ? 2 : 3}px;border-radius:2px;background:${c};opacity:${e.all ? .7 : 1};box-shadow:0 1px 1.5px rgba(80,88,100,.3)"></i>`;
-                    const px = xa + (e.all ? 6 : 0), lb = LY + 44;   // 線の上がる位置 / 書き込みの下端
-                    const vl = (x, y1, y2) => `<i style="position:absolute;left:${x.toFixed(1)}px;top:${Math.min(y1, y2).toFixed(1)}px;width:.8px;height:${Math.abs(y2 - y1).toFixed(1)}px;background:${P.ink3}"></i>`;
-                    if (px >= lx && px <= lx + w) s += vl(px, lb, by);   // 真上に書き込みがあれば、まっすぐ上へ
-                    else { const yk = lb + 8; s += vl(px, yk, by) + vl(lx, lb, yk) + `<i style="position:absolute;left:${Math.min(px, lx).toFixed(1)}px;top:${yk}px;width:${Math.abs(px - lx).toFixed(1)}px;height:.8px;background:${P.ink3}"></i>`; }
-                    const go = e.v ? `protoVol('${e.k}')` : `protoRow(${JSON.stringify(e.pid)})`;
-                    s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${lx.toFixed(1)}px;top:${LY}px;width:${w}px;line-height:1.35;white-space:nowrap;overflow:hidden;cursor:pointer;font-family:${jp};border-left:.8px solid ${P.ink3};padding-left:4px;box-sizing:border-box">
-                        <div style="font-size:11px;font-weight:500;color:${c};overflow:hidden;text-overflow:ellipsis">${esc(e.n)}${e.rs ? `<span style="font-family:${en};font-size:9px;font-weight:500;color:${dk.txt};margin-left:4px">${e.rs}</span>` : ""}</div><div style="font-family:${en};font-size:9px;font-weight:400;color:${dk.txt}">${esc(e.t)}</div>${e.m ? `<div style="font-size:9px;font-weight:400;color:${dk.txt};overflow:hidden;text-overflow:ellipsis">${esc(e.m)}</div>` : ""}</div>`;
+                // 時間のある予定: その時間の位置にバー。題名はバーの中(入らなければバーの横)、メモはその下
+                const tev = ev.filter(e => !e.all).sort((x, y2) => x.a - y2.a);
+                const est = e => [...(e.n + (e.rs ? " " + e.rs : ""))].length * 9.5 + 12;
+                let prevR = X0 - 4;
+                tev.forEach(e => {
+                    const xa = tx(Math.max(0, e.a)), xb = tx(Math.min(24, Math.max(e.b, e.a + .25))), bw = Math.max(xb - xa, 4);
+                    const go = e.v ? `protoVol('${e.k}')` : `protoRow(${JSON.stringify(e.pid)})`, fc = fillOf(e);
+                    const inside = bw >= est(e);
+                    s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${xa.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${BY}px;height:${BH}px;border-radius:5px;background:${fc};box-shadow:0 0 0 1.5px ${dk.floor};cursor:pointer;z-index:2;overflow:hidden;box-sizing:border-box;padding:0 5px;display:flex;align-items:center;white-space:nowrap">${inside ? `<span style="font-family:${jp};font-size:9.5px;font-weight:700;color:${txtOn(e)}">${esc(e.n)}${e.rs ? ` <span style="font-family:${en};font-weight:500;opacity:.8">${e.rs}</span>` : ""}</span>` : ""}</div>`;
+                    // 外に書くとき: 左に空きがあれば左(バーの手前で右寄せ)、なければ右
+                    const lw = Math.min(140, est(e) + 32);
+                    let lx, al = "left";
+                    if (inside) { lx = xa + 1; }
+                    else if (xa - 4 - lw >= prevR) { lx = xa - 4 - lw; al = "right"; }
+                    else { lx = xb + 4; }
+                    const tcol = e.v ? (isTent(e.k) ? P.ink3 : e.vc) : isFnt(e) ? FNT : P.ink;
+                    if (!inside) s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${lx.toFixed(1)}px;width:${lw}px;top:${BY}px;height:${BH}px;display:flex;align-items:center;justify-content:${al === "right" ? "flex-end" : "flex-start"};gap:4px;white-space:nowrap;overflow:hidden;cursor:pointer;z-index:2;font-family:${jp};font-size:9.5px;font-weight:${isFnt(e) ? 500 : 700};color:${tcol}">${esc(e.n)}${e.rs ? `<span style="font-family:${en};font-size:8.5px;font-weight:500;color:${dk.txt}">${e.rs}</span>` : ""}<span style="font-family:${en};font-size:8px;font-weight:500;color:${dk.txt}">${esc(e.t.split("–")[0])}</span></div>`;
+                    // その下: 時刻(中に書いたとき)・メモ
+                    const sub = (inside ? e.t : "") + (e.m ? (inside ? "  " : "") + e.m : "");
+                    if (sub) s += `<div style="position:absolute;left:${(al === "right" ? lx : inside ? xa + 1 : lx).toFixed(1)}px;width:${al === "right" ? lw : Math.max(60, X1 - (inside ? xa : lx))}px;top:${BY + BH + 2}px;font-family:${jp};font-size:8.5px;line-height:11px;color:${dk.txt};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:${al};z-index:2">${esc(sub)}</div>`;
+                    prevR = Math.max(prevR, al === "right" ? xa + bw : Math.max(xb, lx + (inside ? 0 : lw)));
                 });
-                // 下の段: 次のバレーの人数と、自分の出欠(○✖△。いつもの画面と同じ protoAns で答える)
+                if (sel === todayKey) {   // 今: 帯の上に縦線と時刻の札
+                    const x = tx(nowMin / 60), hm = `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`;
+                    s += `<i style="position:absolute;left:${(x - 1).toFixed(1)}px;top:${TY - 3}px;width:2px;height:${TH + 6}px;border-radius:1px;background:${P.ink};z-index:3;box-shadow:0 0 0 1.5px ${dk.floor}"></i>`;
+                    const lx = Math.min(Math.max(x - 17, X0 - 6), X1 - 28);
+                    s += `<span style="position:absolute;left:${lx.toFixed(1)}px;top:${TY + TH + 2}px;width:34px;height:13px;border-radius:7px;background:${P.ink};color:${dk.floor};font-family:${en};font-size:8px;font-weight:600;line-height:13px;text-align:center;z-index:3">${hm}</span>`;
+                }
+                // 下の段: 記録(間隔に届いていない項目) → 日付(英字のアクセント) → 人数と自分の出欠
                 let ans = "";
                 if (nk && !isTent(nk)) {
                     const me = surveyWho(), myMem = me ? (attendanceByDate[nk] || []).find(x => x.name === me) : null, my = myMem ? myMem.status : "";
                     const AO = [["来る", '<circle cx="12" cy="12" r="7.5"></circle>', "行く"], ["来ない", '<path d="M6 6l12 12M18 6 6 18"></path>', "不参加"], ["未定", '<path d="M12 4.5 20 19H4z"></path>', "未定"]];
-                    const AC = { "来る": K.blu, "未定": K.blk, "来ない": K.red };   // ○ 青・△ 黒・✕ 赤
-                    const folded = !!my && p3AnsOpen !== nk;   // 答えたあとは、自分の答えの1つだけ。押すと3つに開く
+                    const AC = { "来る": K.blu, "未定": K.blk, "来ない": K.red };
+                    const folded = !!my && p3AnsOpen !== nk;
                     const AOs = folded ? AO.filter(([st]) => st === my) : AO;
-                    ans = `<div style="position:absolute;right:${X0 - 4}px;top:${GH - 42}px;display:flex;gap:8px">${AOs.map(([st, ico, lb]) => { const on = my === st;
-                        return `<button type="button" aria-label="${lb}" aria-pressed="${on}" ${myMem ? (folded ? `onclick="event.stopPropagation();p3AnsOpen='${nk}';renderProto()"` : `onclick="event.stopPropagation();p3AnsOpen=null;protoAns('${nk}','${st}')"`) : "disabled"} style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${on ? AC[st] : dk.sub};${on ? `box-shadow:inset 1.6px 1.6px 3px ${dk.in2},inset -1.6px -1.6px 3px ${dk.hi}` : `background:${dk.lift};box-shadow:2px 2px 5px ${P.lo},-2px -2px 5px ${P.hi}`};${myMem ? "" : "opacity:.4"}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${on ? 3 : 2.2}" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></button>`; }).join("")}</div>`;
+                    ans = `<div style="position:absolute;right:${WG - X1}px;bottom:12px;display:flex;gap:9px">${AOs.map(([st, ico, lb]) => { const on = my === st;
+                        return `<button type="button" aria-label="${lb}" aria-pressed="${on}" ${myMem ? (folded ? `onclick="event.stopPropagation();p3AnsOpen='${nk}';renderProto()"` : `onclick="event.stopPropagation();p3AnsOpen=null;protoAns('${nk}','${st}')"`) : "disabled"} style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${on ? AC[st] : dk.sub};${on ? `box-shadow:inset 2px 2px 4px ${dk.in2},inset -2px -2px 4px ${dk.hi}` : `background:${dk.lift};box-shadow:3px 3px 7px ${P.lo},-3px -3px 7px ${P.hi}`};${myMem ? "" : "opacity:.4"}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${on ? 3 : 2.2}" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></button>`; }).join("")}</div>`;
                 }
-                const WK = ["日", "月", "火", "水", "木", "金", "土"];
+                const WKE = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
                 const nd = nk ? new Date(...sessDay(nk).split("-").map((v, i) => i === 1 ? +v - 1 : +v)) : null;
-                const cnt = nk ? `<div role="button" tabindex="0" onclick="protoVol('${nk}')" style="position:absolute;left:${X0 - 2}px;top:${GH - 44}px;display:flex;align-items:baseline;gap:10px;white-space:nowrap;cursor:pointer">
-                    <span style="font-family:${jp};font-size:9.5px;font-weight:600;color:${K.blk}">${sessDay(nk) === sel ? "" : "次 "}${nd.getMonth() + 1}/${nd.getDate()} ${WK[nd.getDay()]}${sessKeysOf(sessDay(nk)).filter(volOk).length > 1 ? ` <span style="font-weight:400;color:${dk.txt}">${sessNoOf(nk)}回目</span>` : ""}</span>
-                    <span style="font-family:${en};font-weight:700;color:${volCol(nk)}"><span style="font-size:26px">${n}</span></span>${tri ? `<span style="font-family:${en};font-size:9.5px;color:${dk.txt}">△${tri}</span>` : ""}</div>${ans}` : "";
-                // 記録: 間隔(最大何日おき)に達している項目を、日付の上に
-                let due = ""; try { const du = krDueOn(sel); if (du.length) due = `<div role="button" tabindex="0" onclick="event.stopPropagation();openKiroku()" style="position:absolute;left:${X0 - 2}px;right:${X0}px;top:${GH - 58}px;display:flex;gap:9px;overflow:hidden;white-space:nowrap;cursor:pointer;font-family:${jp};font-size:9px;line-height:12px;color:${P.ink2}">${du.map(({ it, txt }) => `<span style="display:inline-flex;align-items:center;gap:3px"><i style="width:5px;height:5px;border-radius:3px;background:${KRMAP[(+it.c || 0) % KRMAP.length]}"></i>${esc(it.n)}<b style="font-family:${en};font-weight:600;color:${K.red}">${esc(txt)}</b></span>`).join("")}</div>`; } catch (e) { /* ignore */ }
-                const WKs = ["日", "月", "火", "水", "木", "金", "土"], sdt = new Date(sy0, sm0 - 1, sd0);
-                const dateHd = `<div style="position:absolute;left:${X0 - 2}px;top:11px;font-family:${jp};font-size:10.5px;font-weight:600;color:${P.ink}">${sm0}月${sd0}日<span style="font-weight:400;color:${dk.txt};margin-left:3px">(${WKs[sdt.getDay()]})</span>${sel === todayKey ? `<span style="font-family:${en};font-size:8.5px;font-weight:600;letter-spacing:.12em;color:${ACC};margin-left:8px">TODAY</span>` : ""}</div>`;
+                const multiS = nk && sessKeysOf(sessDay(nk)).filter(volOk).length > 1;
+                const cnt = nk ? `<div role="button" tabindex="0" onclick="protoVol('${nk}')" style="position:absolute;left:${X0}px;bottom:10px;display:flex;flex-direction:column;gap:1px;white-space:nowrap;cursor:pointer">
+                    <span style="font-family:${en};font-size:8.5px;font-weight:700;letter-spacing:.2em;color:${dk.txt}">${sessDay(nk) === sel ? "" : "NEXT "}${nd.getMonth() + 1}/${nd.getDate()} ${WKE[nd.getDay()]} · VOLLEY${multiS ? ` ${sessNoOf(nk)}` : ""}</span>
+                    <span style="display:flex;align-items:baseline;gap:8px"><span style="font-family:${en};font-size:30px;font-weight:700;line-height:1.05;color:${volCol(nk)}">${n}</span>${tri ? `<span style="font-family:${en};font-size:10px;color:${dk.txt}">△${tri}</span>` : ""}</span></div>${ans}` : "";
+                // 記録: 間隔に届いていない項目(赤字はそのまま)。日付の上に文字だけで
+                let due = ""; try { const du = krDueOn(sel); if (du.length) due = `<div role="button" tabindex="0" onclick="event.stopPropagation();openKiroku()" style="position:absolute;left:${X0}px;right:${WG - X1 + 140}px;bottom:${nk ? 58 : 14}px;display:flex;gap:10px;overflow:hidden;white-space:nowrap;cursor:pointer;font-family:${jp};font-size:9.5px;line-height:13px;color:${P.ink2}">${du.map(({ it, txt }) => `<span style="display:inline-flex;align-items:center;gap:3px">${esc(it.n)}<b style="font-family:${en};font-weight:600;color:${K.red}">${esc(txt)}</b></span>`).join("")}</div>`; } catch (e) { /* ignore */ }
                 return `<div style="position:absolute;inset:0;z-index:1;overflow:hidden">${s}${due}${cnt}</div>`;   // 凹み(床と影)は外の受け皿に
             }
             // ---------- 受け皿の横のページ: 記録(続き具合) ----------
@@ -20867,7 +20880,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (p3PgSel !== sel) { p3PgSel = sel; const hk = protoHdrKey(sel); p3PgKey = hk && pages.some(x => x.k === "d:" + hk) ? "d:" + hk : pages[0].k; }
             const pgIx = Math.max(0, pages.findIndex(x => x.k === p3PgKey));
             const dots = pages.length > 1 ? `<div id="p3gwDots" style="position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center;gap:5px;z-index:3;pointer-events:none">${pages.map((x, i) => `<i data-k="${esc(x.k)}" style="width:${i === pgIx ? 10 : 4}px;height:4px;border-radius:2px;background:${P.ink3};opacity:${i === pgIx ? 1 : .4};transition:width .2s,opacity .2s"></i>`).join("")}</div>` : "";
-            const gwH = mg => `<div id="p3gw" onclick="p3GwClick(event)" ontouchstart="p3GwTS(event)" ontouchend="p3GwTE(event)" style="flex:none;height:170px;margin:${mg};border-radius:18px;overflow:hidden;position:relative;background:${dk.floor};box-shadow:inset 3px 4px 9px ${dk.sh},inset -3px -3px 8px ${dk.hi}">
+            const gwH = mg => `<div id="p3gw" onclick="p3GwClick(event)" ontouchstart="p3GwTS(event)" ontouchend="p3GwTE(event)" style="flex:none;height:${GH}px;margin:${mg};border-radius:22px;overflow:hidden;position:relative;background:${dk.floor};box-shadow:inset 3px 4px 9px ${dk.sh},inset -3px -3px 8px ${dk.hi}">
                 <div id="p3gwSc" onscroll="p3GwScroll(this)" style="position:absolute;inset:0;display:flex;overflow-x:${pages.length > 1 ? "auto" : "hidden"};overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch">${pages.map(x => `<div data-k="${esc(x.k)}" style="position:relative;flex:0 0 100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always">${x.h}</div>`).join("")}</div>${dots}</div>`;
             root.innerHTML = `<div class="p3" ontouchstart="p3TS(event)" ontouchend="p3TE(event)" style="max-width:440px;margin:0 auto;height:100%;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 14px) 0 calc(env(safe-area-inset-bottom,0px) + 30px);display:flex;flex-direction:column;background:${P.bg};color:${P.ink}">
               <button type="button" onclick="protoToday()" aria-label="今日へ" style="align-self:flex-start;margin:0 0 0 26px;flex:none;font-family:${jp};font-size:22px;font-weight:300;color:${P.ink}">${m}月<span style="font-family:${en};font-size:11px;font-weight:500;letter-spacing:.28em;color:${P.ink3};margin-left:10px">${y}</span></button>
