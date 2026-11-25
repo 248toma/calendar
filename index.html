@@ -18324,7 +18324,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611242345;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611251200;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20643,7 +20643,7 @@ const namesBtn = isAdmin() && dates.length > 0
             if (!protoYM) { const [a, b] = sel.split("-").map(Number); protoYM = [a, b]; }
             const [y, m] = protoYM;
             const dk = { floor: dark ? "#25282e" : "#dce0e7", crD: dark ? "rgba(0,0,0,.45)" : "#d9dde4", crL: dark ? "rgba(255,255,255,.06)" : "#f7f8fa", sh: dark ? "rgba(0,0,0,.6)" : "rgba(140,148,162,.75)",
-                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.2)" : "#c8ccd3", sunMute: dark ? "rgba(208,120,159,.4)" : "rgba(156,61,104,.35)", sun: K.red, sub: dark ? "#9aa0aa" : "#6b7280", txt: dark ? "#c9cdd4" : "#41464f" };
+                in1: dark ? "rgba(0,0,0,.45)" : "#c9ced7", in2: dark ? "rgba(0,0,0,.6)" : "#b9bfca", hi: dark ? "rgba(255,255,255,.06)" : "#fff", lift: dark ? "#34383f" : "#eceef3", mute: dark ? "rgba(255,255,255,.2)" : "#c8ccd3", sunMute: dark ? "rgba(195,154,166,.4)" : "rgba(168,131,141,.4)", sun: dark ? "#c39aa6" : "#a8838d", sub: dark ? "#9aa0aa" : "#6b7280", txt: dark ? "#c9cdd4" : "#41464f" };
             const volTime = (k) => { const prs = (reservations[k] || []).map(r => parseTimeRangeMin(r.time)).filter(Boolean); if (!prs.length) return null; return { s: Math.min(...prs.map(x => x.s)), e: Math.max(...prs.map(x => x.e)) }; };
             const volPlace = (k) => [...new Set((reservations[k] || []).map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ");
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
@@ -20710,7 +20710,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     const lift = isSel ? `<div style="position:absolute;left:3px;right:3px;top:2px;bottom:4px;border-radius:12px;background:${dk.floor};box-shadow:inset 2.5px 3px 6px ${dk.sh},inset -2px -2px 5px ${dk.hi};z-index:3"></div>` : "";   // 選んだ日: 下の受け皿と同じ凹み
                     const wx = protoWxDay(k), wxH = wx ? `<i class="pr-wx" style="color:${P.ink3};top:1px;right:-6px">${protoWxIco(wx.kind, 9)}</i>` : "";
                     g += `<button type="button" onclick="protoPick('${k}')" aria-label="${m}月${dn}日" style="position:relative;display:flex;flex-direction:column;align-items:center;padding-top:6px;min-width:0;min-height:0;overflow:visible">${lift}${krMap ? `<span class="p3kr${isSel ? " sel" : ""}" style="position:absolute;inset:${isSel ? "3px 0 0 4px" : "0"};z-index:5;pointer-events:none">${krCellDots(krMap, k, false)}</span>` : ""}${more}
-                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has ? 500 : 300};color:${col};${shade}${isT ? `;background:${dk.floor};box-shadow:inset 2.5px 2.5px 5px ${dk.sh},inset -2px -2px 4px ${dk.hi}` : ""}">${dn}${wxH}</span>
+                        <span style="position:relative;z-index:4;width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:${en};font-size:15px;font-weight:${isT || isSel ? 600 : has ? 500 : 300};color:${col};${shade}">${dn}${wxH}${isT ? `<i style="position:absolute;left:50%;bottom:2px;width:16px;height:2px;margin-left:-8px;border-radius:1px;background:${ACC}"></i>` : ""}</span>
                         <span style="position:relative;z-index:4;margin-top:4px;width:100%;line-height:1.3;text-align:center;font-family:${jp};font-size:7px;color:${dk.sub};white-space:nowrap;overflow:hidden">${nm}</span></button>`;
                 }
                 cal += `<div style="flex:1 1 0;min-height:70px;max-height:96px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 14px;position:relative;z-index:${r === selRow ? 3 : 2}">${g}</div>`;
@@ -20720,7 +20720,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const selV = sessKeysOf(sel).filter(volOk);
                 const nk = nkFix ? nkFix : selV.length ? (protoHdrKey(sel) && volOk(protoHdrKey(sel)) ? protoHdrKey(sel) : selV[0]) : Object.keys(events).filter(k => volOk(k) && sessDay(k) >= todayKey && !volDone(k)).sort(sessCmp)[0];
                 const n = nk ? countComing(nk) : 0, tri = nk ? (attendanceByDate[nk] || []).filter(x => x.status === "未定").length : 0, cap = thresholds.cyanMax || 14;
-                const deep = Math.min(n, 12), shal = Math.max(0, Math.min(n + tri, 12) - deep);
+                const deep = Math.min(n, 12), shal = 0;   // △の人はマスを埋めない(✕と同じ)
                 const ev = [];
                 sessKeysOf(sel).forEach(sk => { const t = volTime(sk); if (t) ev.push({ v: true, vc: volCol(sk), k: sk, a: t.s / 60, b: (t.e > t.s ? t.e : t.s + 120) / 60, n: isTent(sk) ? "バレー(未)" : "バレー", t: `${fmtMin(t.s)}–${fmtMin(t.e)}`, m: volPlace(sk) }); });
                 plansOn(sel).forEach(({ p, first: f, last: l }) => {
@@ -20758,20 +20758,25 @@ const namesBtn = isAdmin() && dates.length > 0
                 }
                 // 時間のある予定: その時間の位置にバー。題名はバーの中(入らなければバーの横)、メモはその下
                 const tev = ev.filter(e => !e.all).sort((x, y2) => x.a - y2.a);
+                // 時間が重なる予定: 同じ高さのバーを上下2本に分けて、どちらも見えるように(重なりのないバーは今までの太さ)
+                tev.forEach((e, i) => { e.ov = tev.some((q, j) => j !== i && q.a < e.b && e.a < q.b); });
+                { const ln = []; tev.forEach(e => { if (!e.ov) { e.ln = -1; return; } let t = 0; while ((ln[t] || []).some(q => q.a < e.b && e.a < q.b)) t++; (ln[t] = ln[t] || []).push(e); e.ln = Math.min(t, 1); }); }
                 const est = e => [...(e.n + (e.rs ? " " + e.rs : ""))].length * 9.5 + 12;
                 let prevR = X0 - 4;
                 tev.forEach(e => {
                     const xa = tx(Math.max(0, e.a)), xb = tx(Math.min(24, Math.max(e.b, e.a + .25))), bw = Math.max(xb - xa, 4);
                     const go = e.v ? `protoVol('${e.k}')` : `protoRow(${JSON.stringify(e.pid)})`, fc = fillOf(e);
-                    const inside = bw >= est(e);
-                    s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${xa.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${BY}px;height:${BH}px;border-radius:5px;background:${fc};box-shadow:0 0 0 1.5px ${dk.floor};cursor:pointer;z-index:2;overflow:hidden;box-sizing:border-box;padding:0 5px;display:flex;align-items:center;white-space:nowrap">${inside ? `<span style="font-family:${jp};font-size:9.5px;font-weight:700;color:${txtOn(e)}">${esc(e.n)}${e.rs ? ` <span style="font-family:${en};font-weight:500;opacity:.8">${e.rs}</span>` : ""}</span>` : ""}</div>`;
+                    const inside = !e.ov && bw >= est(e), bt = e.ov ? BY + (e.ln ? BH / 2 + 1 : 0) : BY, bh = e.ov ? BH / 2 - 1 : BH;
+                    s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${xa.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${bt}px;height:${bh}px;border-radius:${e.ov ? 3 : 5}px;background:${fc};box-shadow:0 0 0 1.5px ${dk.floor};cursor:pointer;z-index:2;overflow:hidden;box-sizing:border-box;padding:0 5px;display:flex;align-items:center;white-space:nowrap">${inside ? `<span style="font-family:${jp};font-size:9.5px;font-weight:700;color:${txtOn(e)}">${esc(e.n)}${e.rs ? ` <span style="font-family:${en};font-weight:500;opacity:.8">${e.rs}</span>` : ""}</span>` : ""}</div>`;
                     // 外に書くとき: 左に空きがあれば左(バーの手前で右寄せ)、なければ右
                     const lw = Math.min(140, est(e) + 32);
                     let lx, al = "left";
                     if (inside) { lx = xa + 1; }
-                    else if (xa - 4 - lw >= prevR) { lx = xa - 4 - lw; al = "right"; }
-                    else { lx = xb + 4; }
+                    else if (!(e.ov && e.ln) && xa - 4 - lw >= prevR) { lx = xa - 4 - lw; al = "right"; }
+                    else { const ovEnd = e.ov ? Math.max(...tev.filter(q => q.ov).map(q => tx(Math.min(24, q.b)))) : xb; lx = Math.max(xb, ovEnd) + 4; }
                     const tcol = e.v ? (isTent(e.k) ? P.ink3 : e.vc) : isFnt(e) ? FNT : P.ink;
+                    const below = e.ov && e.ln;   // 重なりの下側のバー: 題名もバーの下(右に入りきらないことが多いので)
+                    if (below) { s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${xa.toFixed(1)}px;right:${WG - X1 - 8}px;top:${BY + BH + 2}px;font-family:${jp};font-size:8.5px;line-height:11px;color:${dk.txt};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;z-index:2"><b style="font-size:9.5px;font-weight:${isFnt(e) ? 500 : 700};color:${tcol}">${esc(e.n)}</b>${e.rs ? ` <span style="font-family:${en}">${e.rs}</span>` : ""} <span style="font-family:${en}">${esc(e.t)}</span>${e.m ? " " + esc(e.m) : ""}</div>`; prevR = Math.max(prevR, xb); return; }
                     if (!inside) s += `<div role="button" tabindex="0" onclick="${esc(go)}" style="position:absolute;left:${lx.toFixed(1)}px;width:${lw}px;top:${BY}px;height:${BH}px;display:flex;align-items:center;justify-content:${al === "right" ? "flex-end" : "flex-start"};gap:4px;white-space:nowrap;overflow:hidden;cursor:pointer;z-index:2;font-family:${jp};font-size:9.5px;font-weight:${isFnt(e) ? 500 : 700};color:${tcol}">${esc(e.n)}${e.rs ? `<span style="font-family:${en};font-size:8.5px;font-weight:500;color:${dk.txt}">${e.rs}</span>` : ""}<span style="font-family:${en};font-size:8px;font-weight:500;color:${dk.txt}">${esc(e.t.split("–")[0])}</span></div>`;
                     // その下: 時刻(中に書いたとき)・メモ
                     const sub = (inside ? e.t : "") + (e.m ? (inside ? "  " : "") + e.m : "");
