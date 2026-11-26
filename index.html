@@ -18324,7 +18324,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611251200;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611261000;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -19856,6 +19856,8 @@ const namesBtn = isAdmin() && dates.length > 0
         // 下: シンプルなカレンダー(選んだ日だけ凹んだ文字盤。ほかは細い弧。バレーは人数のメモリ)
         // データは今のアプリと同じ(出欠・予定・予約)。入力や詳しい画面は、今の画面を使う
         // ======================================================================
+        var protoFoc = {};   // ヘッダーで選んでいる予定(日ごと)
+        function protoFocus(d, k) { protoFoc[d] = k; protoHaptic(); renderProto(); }
         var protoOn = false, protoYM = null, protoRowsTop = 0, protoTick = 0, protoSlide = 0, protoSx = null, protoSy = null;   // var: 先に描かれる今の画面から参照されても大丈夫なように
         protoOn = true;   // 旧UIは廃止: いつもこの画面
         function setProtoUI() {
@@ -20165,17 +20167,75 @@ const namesBtn = isAdmin() && dates.length > 0
                 if (h2 > 12) out.push(fillArcA(DSZ, INT, (Math.max(h1, 12) - 12) / 12 * 360, (h2 - 12) / 12 * 360, col, an, 360));   // 午後は、人数の2周目と同じく1周遅れで伸びる
                 return out;
             };
-            spansOf(sel).forEach(x => {
-                if (x.h1 == null || (pin && x.p.id === planEditId)) return;   // 直している予定は、もとの位置を描かない
-                const e = x.h2 != null && x.h2 > x.h1 ? x.h2 : x.h1 + 0.4;
-                fills.push(...hArcs(x.h1, e, pin ? `color-mix(in srgb, ${x.col} 35%, ${P.bot})` : x.col, arcAn));
+            // 予定の時間を見せる(試作UIの受け皿と同じ考え): 時間のある予定とバレーは溝の弧(重なったら段を分ける)、題名はリングの外周に。
+            // 終日の予定は、溝の内側の細く淡い輪と、内側に小さな題名。選んだ予定(題名を押す)だけ濃く、右にその時間とメモ
+            const RL = [], RF = [], RT = [], FI = [];   // FI: 右に出せる予定(キー・題名・時間・メモ)
+            const md2 = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
+            const RNG = (s0, e0) => s0 != null ? `${fmtMin(s0)}${e0 != null && e0 > s0 ? ` – ${fmtMin(e0)}` : ""}` : "";
+            plansOn(sel).filter(({ p }) => !p.holiday && !(pin && p.id === planEditId)).forEach(({ p, first, last }) => {
+                const col = C[+p.color || 0] || C[0], multi = !!p.endDate && p.endDate !== p.startDate;
+                const s0 = parseHM(p.start), e0 = parseHM(p.end), title = String(p.title || "予定").replace(/^x\s*/, "");
+                const key = "p" + p.id;
+                let h1 = null, h2 = null;
+                if (!p.allDay && s0 != null && (!multi || first)) { h1 = s0 / 60; h2 = multi ? 24 : e0 != null && e0 > s0 ? e0 / 60 : h1 + 0.4; }
+                else if (multi && last && !p.allDay && e0 != null) { h1 = 0; h2 = e0 / 60; }
+                const tm = multi ? `${md2(p.startDate)}${!p.allDay && s0 != null ? ` ${fmtMin(s0)}` : ""} 〜 ${md2(p.endDate)}${!p.allDay && e0 != null ? ` ${fmtMin(e0)}` : ""}` : h1 != null ? RNG(s0, e0) : "終日";
+                FI.push({ key, id: p.id, title, col, tm, memo: String(p.memo || "").trim(), sub: planRsvpOn(p) ? `○${planComing(p)}` : "", min: h1 != null ? h1 * 60 : -1, end: h2 != null ? h2 * 60 : 1440 });
+                if (h1 == null) RF.push({ key, col, t: title.slice(0, 6) });
+                else RL.push({ key, h1, h2, col: pin ? `color-mix(in srgb, ${col} 35%, ${P.bot})` : col, t: title.slice(0, 4) });
             });
-            // バレーの時間の弧: 2回ある日は全部の回(選んでいる回は濃く、ほかの回は少し淡く)。✖にしたバレーは半透明に
             const selSs = sessKeysOf(sel);
             selSs.forEach(sk => {
-                const v = sk === selS ? sv : volInfo(sk); if (!v || v.s == null) return;
+                const v = sk === selS ? sv : volInfo(sk); if (!v) return;
+                const key = "v" + sk;
+                FI.push({ key, vol: true, k: sk, title: v.tent ? "バレー(未定)" : "バレー", col: P.ink2, tm: v.s != null ? RNG(v.s, v.e) : "時間未定", memo: v.place || "", min: v.s != null ? v.s : 0, end: v.e != null ? v.e : 1440, no: v.no });
+                if (v.s == null) return;
                 const col = pin ? `color-mix(in srgb, ${P.ink2} 35%, ${P.bot})` : v.no ? `color-mix(in srgb, ${P.ink2} 32%, transparent)` : sk === selS || selSs.length < 2 ? P.ink2 : `color-mix(in srgb, ${P.ink2} 58%, transparent)`;
-                fills.push(...hArcs(hmv(v.s), hmv(v.e), col, arcAn));
+                RL.push({ key, h1: hmv(v.s), h2: v.e != null && v.e > v.s ? hmv(v.e) : hmv(v.s) + 0.4, col, t: selSs.length > 1 ? `バレー${selSs.indexOf(sk) + 1}` : "バレー" });
+            });
+            FI.sort((a, b) => a.min - b.min);
+            // 選んでいる予定: 押した予定(その日のあいだ覚える)。なければ、今日はこれからの予定・ほかの日は最初の時間のある予定
+            let focK = protoFoc[sel];
+            if (!FI.some(f => f.key === focK)) {
+                const tm = FI.filter(f => f.min >= 0), nowM = new Date().getHours() * 60 + new Date().getMinutes();
+                const f = (sel === todayKey ? tm.find(f => f.end > nowM) : null) || tm[0] || FI[0];
+                focK = f ? f.key : null;
+            }
+            const focus = pin ? null : FI.find(f => f.key === focK) || null;
+            const dim = (k, col) => !focus || k === focus.key ? col : `color-mix(in srgb, ${col} 38%, transparent)`;
+            RL.sort((a, b) => a.h1 - b.h1);
+            // 重なる予定は、溝の中で段を分ける(空いているいちばん外の段へ。最大3段)。段どうしの間はすきまを空けて、くっつかないように
+            RL.forEach((a, i) => { const used = RL.slice(0, i).filter(b => b.h1 < a.h2 && a.h1 < b.h2).map(b => b.ln); let l = 0; while (used.includes(l) && l < 2) l++; a.ln = l; });
+            RL.forEach(a => { a.n = 1 + Math.max(...RL.filter(b => b.h1 < a.h2 && a.h1 < b.h2).map(b => b.ln)); });
+            const PER = protoDial12 ? 12 : 24, ISL = DSZ / 2 - DTH;   // ISL: 溝の内側のふちの半径
+            const SVC = 69, PT = (r, d) => [SVC + r * Math.sin(d * Math.PI / 180), SVC - r * Math.cos(d * Math.PI / 180)].map(v => v.toFixed(1)).join(",");
+            const tap = (k) => pin ? "" : ` style="pointer-events:auto;cursor:pointer" onclick="event.stopPropagation();protoFocus('${sel}','${k}')"`;
+            const arcPath = (id, r, d1, d2, rev) => `<path id="${id}" d="${rev ? `M${PT(r, d2)} A${r},${r} 0 0 0 ${PT(r, d1)}` : `M${PT(r, d1)} A${r},${r} 0 0 1 ${PT(r, d2)}`}" fill="none"/>`;
+            const uid = sel.replace(/\W/g, "");
+            // 終日: 溝の内側のふちに細く淡い輪(何本かあれば少しずつ内へ)。題名は0時と(24h なら)6時のあいだに小さく
+            RF.forEach((f, i) => fills.push(fillArc((ISL - 2.5 - i * 2.6) * 2, 1.2, 0, 360, `color-mix(in srgb, ${f.col} ${focus && f.key === focus.key ? 75 : 38}%, transparent)`)));
+            RF.slice(0, 2).forEach((f, i) => {
+                const id = `rf${i}${uid}`, r = ISL - 15, d1 = i ? -86 : 4, d2 = i ? -4 : 86, on = focus && f.key === focus.key;
+                RT.push({ h: `${arcPath(id, r, d1, d2, false)}<text font-size="7" font-weight="${on ? 700 : 600}" fill="${on ? f.col : P.ink3}" letter-spacing=".3"${tap(f.key)}><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(f.t)}</textPath></text>` });
+            });
+            // 時刻: 4か所だけ(24h: 0・6・12・18 / 12h: 12・3・6・9)
+            const HN = protoDial12 ? [12, 3, 6, 9] : [0, 6, 12, 18];
+            HN.forEach((h, i) => { const [x, y] = PT(ISL - 9, i * 90).split(",").map(Number); RT.push({ h: `<text x="${x}" y="${(y + 2.4).toFixed(1)}" font-size="6.5" font-weight="600" fill="${P.ink3}" opacity=".7" text-anchor="middle" font-family="${en.replace(/"/g, "'")}">${h}</text>` }); });
+            const LB = [];
+            RL.forEach(a => {
+                const RO = DSZ / 2 - 1, SP = DTH - 2, GP = 1.8, w = a.n > 1 ? (SP - GP * (a.n - 1)) / a.n : 4.4, ro = a.n > 1 ? RO - a.ln * (w + GP) : RO - 2.5, sz = ro * 2, th = w;
+                const col = dim(a.key, a.col);
+                const seg = (h1, h2) => fills.push(fillArcA(sz, th, (h1 % PER) / PER * 360, ((h2 - 1e-6) % PER + 1e-6) / PER * 360, col, arcAn));
+                if (PER === 12 && a.h1 < 12 && a.h2 > 12) { seg(a.h1, 12); seg(12, a.h2); } else seg(a.h1, a.h2);
+                if (!a.t || pin) return;
+                // 題名はリングの外周に、弧に沿って曲げて置く(下半分は逆回りにして文字が逆さにならないように)。外の段の弧ほど題名も外の段に
+                const md = ((a.h1 + a.h2) / 2 % PER) / PER * 360, bot = md > 90 && md < 270;
+                let tr = a.n > 1 ? a.n - 1 - a.ln : 0;
+                while (LB.some(q => q.tr === tr && Math.abs(((q.md - md + 540) % 360) - 180) < 40) && tr < 3) tr++;
+                if (tr > 2) return;
+                LB.push({ md, tr });
+                const r = (bot ? 78.6 : 72.6) + tr * 8.4, id = `rl${LB.length}${uid}`, on = focus && a.key === focus.key;
+                RT.push({ h: `${arcPath(id, r, md - 60, md + 60, bot)}<text font-size="7.4" font-weight="${on ? 800 : 600}" fill="${a.col}" opacity="${!focus || on ? 1 : 0.5}" letter-spacing=".3"${tap(a.key)}><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(a.t)}</textPath></text>` });
             });
             if (pin && !pin.empty) {   // 入れようとしている予定: 選んだ色で(終日・何日も続く日は全部)
                 const s0 = parseHM(pin.st), e0 = parseHM(pin.et), pc = C[planColor] || C[0];
@@ -20203,9 +20263,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger };
             const idx = OPTS.findIndex(([st]) => st === myAns);
             const segFor = vv && nextKey && sessKeysOf(nextKey).length > 1 ? `${+nextKey.slice(5, 7)}/${+nextKey.slice(8, 10)} ${vv.s != null ? fmtMin(vv.s) + "〜" : "時間未定"} ${vv.place}` : "";   // 2回ある日: この○✖△がどの回の出欠か
-            const segHtml = vv && vv.tent ? "" : `<div onclick="event.stopPropagation()" role="group" aria-label="出欠${segFor ? `(${esc(segFor)})` : ""}"${segFor ? ` title="${esc(segFor)} の出欠"` : ""} style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;border-radius:21px;max-width:160px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
-                ${idx >= 0 ? L(`position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 3 * ${idx});width:calc((100% - 8px) / 3);border-radius:15px;${raiseS}`) : ""}
-                ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:32px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg>${myMem ? protoHapHtml() : ""}</button>`).join("")}
+            const segHtml = vv && vv.tent ? "" : `<div onclick="event.stopPropagation()" role="group" aria-label="出欠${segFor ? `(${esc(segFor)})` : ""}"${segFor ? ` title="${esc(segFor)} の出欠"` : ""} style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:15px;max-width:132px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
+                ${idx >= 0 ? L(`position:absolute;top:3px;bottom:3px;left:calc(3px + (100% - 6px) / 3 * ${idx});width:calc((100% - 6px) / 3);border-radius:12px;${raiseS}`) : ""}
+                ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:24px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg>${myMem ? protoHapHtml() : ""}</button>`).join("")}
             </div>`;
             // 予定の一覧(バレーも入れる。2件分の高さで、ほかはスクロール)
             const rows = plansOn(sel).map(({ p, first, last }) => {
@@ -20324,16 +20384,16 @@ const namesBtn = isAdmin() && dates.length > 0
             const sdueHtml = sdue.length ? `<span role="button" tabindex="0" onclick="event.stopPropagation();openSettleDue()" title="精算が終わっていない日${sdue.length > 1 ? `(ほか${sdue.length - 1}日)` : ""}" style="display:inline-flex;align-items:center;gap:2px;margin-left:7px;flex:none;color:${P.red};font-family:${en};font-size:11px;font-weight:700;cursor:pointer">${coin}${nextKey && sessDay(nextKey) !== sel && vv ? "" : `${+sdue[0].slice(5, 7)}/${+sdue[0].slice(8, 10)}`}</span>` : "";   // 「NEXT 11/7」で幅が足りないときはアイコンだけ
             const headHtml = `
               <div class="pr-head" data-sess="${hks.length}"${hks.length > 1 ? ` ontouchstart="protoHTS(event)" ontouchmove="protoHTM(event)" ontouchend="protoHTE(event)" ontouchcancel="protoHTC()" onpointerdown="protoHPD(event)" onpointerup="protoHPU(event)" aria-roledescription="スライドで回を切り替え"` : ""} style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${hks.length > 1 ? "overflow:hidden;touch-action:pan-y;" : ""}${raise}">
-                <div class="pr-headrow" style="display:flex;align-items:center;gap:20px;height:${up ? 164 : 158}px${headAnim}">
-                  <div class="pr-dial${vv && sessDay(nextKey) !== sel ? " pr-dial-next" : ""}" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
-                    ${dial.map(L).join("")}${upRing}${hand}${vv ? protoRippleHtml(hAn, vv.col) : ""}
+                <div class="pr-headrow" style="display:flex;align-items:center;gap:14px;height:${up ? 164 : 158}px${headAnim}">
+                  <div class="pr-dial${vv && sessDay(nextKey) !== sel ? " pr-dial-next" : ""}" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;margin:0 2px 0 4px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
+                    ${dial.map(L).join("")}${upRing}${hand}${RT.length ? `<svg width="138" height="138" viewBox="0 0 138 138" style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible">${RT.map(q => q.h).join("")}</svg>` : ""}${vv ? protoRippleHtml(hAn, vv.col) : ""}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
                       <span class="pr-anim" style="display:inline-block;font-family:${en};font-size:22px;font-weight:600;color:${vv ? vv.col : P.ink};${hAn ? `animation:prNumPop ${PROTO_RING_MS}ms ease both;animation-delay:${hAn.sweep ? protoSweepLen(hAn) - PROTO_RING_MS - hAn.el + "ms" : "-" + hAn.el + "ms"}` : ""}${vv && vv.tent ? ";font-family:'Noto Sans JP', system-ui, sans-serif;font-weight:700" : ""}">${vv ? (vv.tent ? "未" : vv.n) : sd}</span>
                       <span style="font-family:${en};font-size:9.5px;font-weight:700;letter-spacing:.1em;color:${P.ink3}">${vv ? (vv.tent ? "TBD" : `/ ${vv.cap}人`) : WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span>
                       ${up ? `<span style="font-family:${en};font-size:8px;font-weight:700;letter-spacing:.1em;color:${P.ink3};margin-top:2px">NEXT <b style="font-size:10px;color:${up.col}">${up.n}</b></span>` : ""}
                     </div>
                   </div>
-                  <div id="prDayInfo" class="${Date.now() < protoFlashUntil ? "pr-flash" : ""}" style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;--fl:${P.acc};${Date.now() < protoFlashUntil ? `animation-delay:-${Date.now() - (protoFlashUntil - PROTO_FLASH_MS)}ms` : ""}">
+                  <div id="prDayInfo" class="${Date.now() < protoFlashUntil ? "pr-flash" : ""}" style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1;--fl:${P.acc};${Date.now() < protoFlashUntil ? `animation-delay:-${Date.now() - (protoFlashUntil - PROTO_FLASH_MS)}ms` : ""}">
                     <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:15px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:11px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${vv && sessDay(nextKey) !== sel ? (t => t ? `<span style="font-size:10.5px;font-weight:600;color:${P.red};white-space:nowrap">${t}</span>` : "")((() => {
                         // 選んだ日の週(月曜〜日曜)にバレーが1日もなければ「今週なし」
                         const wk = d0 => { const t = new Date(d0.slice(0, 10) + "T00:00:00"); t.setDate(t.getDate() - (t.getDay() + 6) % 7); return formatDateKey(t); };
@@ -20341,19 +20401,18 @@ const namesBtn = isAdmin() && dates.length > 0
                         if (days.some(k => sessKeysOf(k).some(volOk))) return "";   // その週のほかの日にあるときは出さない(未定の回は数えない)
                         return "今週なし";
                     })()) : ""}${wxSel ? `<span aria-label="天気" style="display:inline-flex;align-items:center;gap:3px;flex:none;font-family:${en};font-size:10.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${protoWxIco(wxSel.kind, 11)}${esc(wxSel.txt)}</span>` : ""}${!vv ? sdueHtml : ""}${holP ? `<span role="button" tabindex="0" onclick="protoRow(${holP.p.id})" style="font-size:10.5px;color:${P.red};white-space:nowrap;cursor:pointer">休日</span>` : ""}${note ? `<span style="font-size:10.5px;color:${P.red};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(note)}</span>` : ""}</div>
-                    ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:6px;cursor:pointer">
+                    ${vv ? `<div role="button" tabindex="0" onclick="protoVol('${nextKey}')" style="display:flex;flex-direction:column;gap:5px;cursor:pointer">
                       <span style="display:flex;align-items:center;min-width:0;font-family:${en};font-size:11.5px;color:${P.ink3};white-space:nowrap"><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis"><b style="font-family:${en};letter-spacing:.06em;color:${P.ink};font-size:11.5px">${sessDay(nextKey) === sel ? (vv.tent ? `VOLLEY <span style="color:${P.red};font-weight:600">未定</span>` : `VOLLEY${(ok => ok.length > 1 && ok.includes(nextKey) ? ` <span style="font-family:'Noto Sans JP', system-ui, sans-serif;font-size:10px;color:${P.acc};letter-spacing:0">${ok.indexOf(nextKey) + 1}回目</span>` : "")(sessKeysOf(nextKey).filter(volOk))}`) : `<span style="color:${P.ink3};font-weight:600">NEXT ${+nextKey.slice(5, 7)}/${+nextKey.slice(8, 10)}</span> <span style="font-size:9.5px;color:${P.ink3};opacity:.8">${WEN[new Date(nextKey.slice(0, 10) + "T00:00:00").getDay()].slice(0, 3).toUpperCase()}</span>`}</b>　${sessKeysOf(nextKey).length > 1   // 2回ある日: どの回の出欠か分かるように、時間と場所を(下の一覧で選んでいる回と同じ色で)
                         ? `<span style="color:${P.acc};font-weight:600">${vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"} ${esc(vv.place)}</span>`
                         : vv.s != null ? `${fmtMin(vv.s)}〜` : "時間未定"}</span>${sdueHtml}</span>
                       ${segHtml}</div>` : ""}
                     ${up ? `<div role="button" tabindex="0" aria-label="次のバレーの日へ" onclick="protoPick('${upKey}')" style="display:flex;align-items:center;gap:6px;min-width:0;font-family:${en};font-size:11px;color:${P.ink3};cursor:pointer;white-space:nowrap;overflow:hidden">
                       <b style="letter-spacing:.06em;color:${P.ink2}">NEXT</b><span>${+upKey.slice(5, 7)}/${+upKey.slice(8, 10)}${up.s != null ? ` ${fmtMin(up.s)}〜` : ""}</span></div>` : ""}
-                    <div style="position:relative">
-                      <div id="prRows" onscroll="protoRowsScroll(this)" style="display:flex;flex-direction:column;height:${up ? 2 * PROTO_ROW_H : 3 * PROTO_ROW_H}px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;${rows.length > visN ? "-webkit-mask:linear-gradient(#000 88%, transparent);mask:linear-gradient(#000 88%, transparent)" : ""}">
-                        ${rows.length ? rows.map(r => `<div role="button" tabindex="0" onclick="${r.vol ? `protoHdrRow('${r.k || sel}')` : `protoRow(${r.id})`}" style="display:flex;align-items:center;gap:8px;min-width:0;height:${PROTO_ROW_H}px;flex:none;scroll-snap-align:start;cursor:pointer${r.no ? ";opacity:.42" : ""}${r.cur ? `;margin:0 -6px;padding:0 6px;border-radius:10px;${insetS}` : ""}"${r.cur ? ` aria-current="true"` : ""}><i style="width:5px;height:5px;border-radius:3px;flex:none;background:${r.cur ? P.acc : r.col}"></i><span style="width:36px;flex:none;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink3};white-space:nowrap">${esc(r.t)}</span><span style="flex:${r.gc ? "0 1 auto" : "1"};min-width:0;font-size:11px;font-weight:${r.cur ? 700 : 600};${r.tent ? `color:${P.red};` : r.cur ? `color:${P.acc};` : ""}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.title)}${r.sub ? `<span style="margin-left:6px;font-size:11px;font-weight:500;color:${P.ink3}">${esc(r.sub)}</span>` : ""}</span>${r.gc ? `<span class="gc-mark" title="Googleカレンダーにもあります" style="flex:none;margin-left:0">${r.gc}</span><span style="flex:1"></span>` : ""}</div>`).join("") : ""}
-                      </div>
-                      <span id="prMore" style="position:absolute;right:0;bottom:-20px;display:${moreN > 0 ? "flex" : "none"};align-items:center;gap:2px;padding:2px 7px;border-radius:9px;font-family:${en};font-size:10px;font-weight:700;color:${P.ink2};${raiseS};pointer-events:none">+<b>${moreN}</b><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-                    </div>
+                    ${focus ? `<div role="button" tabindex="0" onclick="${focus.vol ? `protoHdrRow('${focus.k}')` : `protoRow(${focus.id})`}" style="display:flex;flex-direction:column;gap:2px;min-width:0;margin-top:2px;cursor:pointer${focus.no ? ";opacity:.45" : ""}">
+                      <span style="display:flex;align-items:center;gap:6px;min-width:0"><i style="width:5px;height:5px;border-radius:3px;flex:none;background:${focus.col}"></i><b style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(focus.title)}</b>${focus.sub ? `<span style="font-size:10.5px;color:${P.ink3};flex:none">${esc(focus.sub)}</span>` : ""}</span>
+                      <span style="margin-left:11px;font-family:${en};font-size:11px;font-weight:600;color:${P.ink2};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(focus.tm)}</span>
+                      ${focus.memo ? `<span style="margin-left:11px;font-size:10px;line-height:1.4;color:${P.ink3};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(focus.memo)}</span>` : ""}
+                    </div>` : ""}
                   </div>
                 </div>
                 ${hDots}
@@ -21728,7 +21787,7 @@ const namesBtn = isAdmin() && dates.length > 0
             openPlanDetail(id);   // まず詳細(メモ・出欠)を見せる。直すときは詳細の「編集」から
         }
         function protoAdd() { planDetailId = null; protoOpenInput(null); }
-        var PROTO_ROW_H = 20;   // ヘッダーの予定1行の高さ
+        var PROTO_ROW_H = 18;   // ヘッダーの予定1行の高さ
         function protoRowsScroll(el) {
             protoRowsTop = Math.round(el.scrollTop / PROTO_ROW_H);
             const b = document.getElementById("prMore"); if (!b) return;
