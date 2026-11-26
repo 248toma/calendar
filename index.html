@@ -3201,7 +3201,7 @@ body.proto-on #protoUI .pr-wrap.note-bottom.has-bar > .pr-cal { padding-bottom: 
 #protoUI .pr-menubar button { position: relative; flex: 0 1 44px; min-width: 0; width: 44px; height: 46px; padding: 0; border: none; border-radius: 23px; background: none; color: var(--pr-ink2, #4a5262); display: flex; align-items: center; justify-content: center; }
 #protoUI .pr-menubar button svg { width: 21px; height: 21px; }
 #protoUI .pr-menubar button span { display: none; }
-#protoUI .pr-menubar button.main { color: #2f6fe0; }
+#protoUI .pr-menubar button.main { color: #2a4a8c; }
 #protoUI .pr-menubar button.g-ok { color: #8b6fc9; }
 #protoUI .pr-menubar button.g-ex::after { content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
 #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 6px rgba(160,172,194,.62), inset -3px -3px 6px rgba(255,255,255,.95); }
@@ -3210,7 +3210,7 @@ body.proto-on #protoUI .pr-wrap.note-bottom.has-bar > .pr-cal { padding-bottom: 
 /* ダークは端末の設定ではなく、アプリのテーマ(body.dark)に合わせる */
 body.dark #protoUI .pr-menubar { background: linear-gradient(145deg, color-mix(in srgb, var(--pr-bg, #2b2e34) 92%, #fff), color-mix(in srgb, var(--pr-bg, #2b2e34) 88%, #000)); box-shadow: 6px 6px 14px rgba(0,0,0,.55), -6px -6px 14px rgba(255,255,255,.06), inset 1px 1px 0 rgba(255,255,255,.08), inset -1px -1px 0 rgba(0,0,0,.45); }
 body.dark #protoUI .pr-menubar button:active { box-shadow: inset 3px 3px 6px rgba(0,0,0,.55), inset -3px -3px 6px rgba(255,255,255,.06); }
-body.dark #protoUI .pr-menubar button.main { color: #7aa2ff; }   /* ＋: ダークでは選択色と同じ明るい青 */
+body.dark #protoUI .pr-menubar button.main { color: #9db4e8; }   /* ＋: ダークでは選択色と同じ明るい青 */
 /* バーの並べ替え(アイコンを長押し): ぷるぷる揺れる・つかんだアイコンは指についてくる */
 #protoUI .pr-menubar button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 #protoUI .pr-menubar.editing button { touch-action: none; animation: prBarJig .26s ease-in-out infinite alternate; }
@@ -18330,7 +18330,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611261145;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611261220;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -19908,13 +19908,13 @@ const namesBtn = isAdmin() && dates.length > 0
         function protoPal() {
             const dark = document.body.classList.contains("dark");
             const P = dark
-                ? { bg: "#2b2e34", top: "#34383f", bot: "#24272c", ink: "#eceef2", ink2: "#c3c7cf", ink3: "#9aa0aa", hi: "rgba(255,255,255,.06)", lo: "rgba(0,0,0,.5)", rim: "rgba(255,255,255,.07)", rimLo: "rgba(0,0,0,.35)", red: "#e39a95", acc: "#7aa2ff", blue: "#8fa8e0", today: "#6fc3a3" }
-                : { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", hi: "#ffffff", lo: "#c9cfd8", rim: "rgba(255,255,255,.95)", rimLo: "rgba(80,90,110,.10)", red: "#c0504a", acc: "#2f6bf2", blue: "#3f63b0", today: "#2f9a72" };
+                ? { bg: "#2b2e34", top: "#34383f", bot: "#24272c", ink: "#eceef2", ink2: "#c3c7cf", ink3: "#9aa0aa", hi: "rgba(255,255,255,.06)", lo: "rgba(0,0,0,.5)", rim: "rgba(255,255,255,.07)", rimLo: "rgba(0,0,0,.35)", red: "#e39a95", acc: "#9db4e8", blue: "#e39a95", today: "#9db4e8" }
+                : { bg: "#e7eaf0", top: "#f4f6f9", bot: "#d9dde5", ink: "#1f2329", ink2: "#4a505a", ink3: "#737a85", hi: "#ffffff", lo: "#c9cfd8", rim: "rgba(255,255,255,.95)", rimLo: "rgba(80,90,110,.10)", red: "#c0504a", acc: "#2a4a8c", blue: "#c0504a", today: "#2a4a8c" };
             // 予定の色(アプリの色番号 0〜8): 渋い寒色〜茶系。バレーの人数の色(緑・黄土・小豆色)の系統は使わない
             const C = dark
                 ? ["#7f848c", "#86aef0", "#86aef0", "#f4c0d5", "#f1f2f4", "#d0789f", "#f4c0d5", "#86aef0", "#7f848c", "#f1f2f4", "#7f848c", "#d0789f", "#f4c0d5", "#86aef0", "#b9a4ec"]
                 : ["#9aa0a8", "#4677c4", "#4677c4", "#e597b7", "#1f2124", "#9c3d68", "#e597b7", "#4677c4", "#9aa0a8", "#1f2124", "#9aa0a8", "#9c3d68", "#e597b7", "#4677c4", "#8b6fc9"]; window.PROTO_C = C;   // 5色(黒・灰色・青・暗いピンク・ピンク)。0〜8 の古い番号も近い色に寄せる
-            const LV = dark ? { sufficient: "#7fb5a8", warning: "#cbbb8c", danger: "#d29aa3" } : { sufficient: "#5d9487", warning: "#ad9e72", danger: "#b27c85" };
+            const LV = dark ? { sufficient: "#eceef2", warning: "#d0868a", danger: "#d0868a" } : { sufficient: "#1f2329", warning: "#8e3a3f", danger: "#8e3a3f" };   // バレーの人数: 12人以上(足りている)=黒、足りない=暗い赤の2色
             return { dark, P, C, LV };
         }
         // ------- 上の板のお知らせ(来月のアンケート・通知を受け取るか) -------
@@ -20115,7 +20115,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 const s0 = prs.length ? Math.min(...prs.map(x => x.s)) : null, e0 = prs.length ? Math.max(...prs.map(x => x.e)) : null;
                 const tent = isTent(k);   // 未定の回: 人数・出欠は数えない(リングの真ん中は「未」)
                 const n = tent ? 0 : countComing(k), tri = tent ? 0 : (attendanceByDate[k] || []).filter(m => m.status === "未定").length;
-                return { tent, n, tri, no: !tent && declinedVol(k), cap: thresholds.cyanMax, col: tent ? P.ink3 : LV[getStatusLevel(n)], s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
+                return { tent, n, tri, no: !tent && declinedVol(k), cap: thresholds.cyanMax, col: tent ? P.ink3 : n >= thresholds.cyanMin ? LV.sufficient : LV.danger, s: s0, e: e0, time: prs.length ? `${fmtMin(s0)}–${fmtMin(e0)}` : "時間未定", place: [...new Set(rs.map(r => `${r.place || ""}${r.court || ""}`.trim()).filter(Boolean))].join(" / ") || "場所未定" };
             };
 
             // ---------- 選んだ日(入力中は、入れようとしている日) ----------
@@ -22581,7 +22581,7 @@ const namesBtn = isAdmin() && dates.length > 0
                 body = dates.map(d => {
                     const mem = (attendanceByDate[d] || []).find(m => m.name === name), st = mem ? mem.status : "";
                     const info = (reservations[d] || []).map(r => [r.time, (r.place || "") + (r.court || "")].filter(Boolean).join("  ")).filter(Boolean);
-                    const n = countComing(d), lvc = LV[getStatusLevel(n)];
+                    const n = countComing(d), lvc = n >= thresholds.cyanMin ? LV.sufficient : LV.danger;
                     let ppl = "";
                     if (isAdmin()) {
                         const day = attendanceByDate[d] || [];
