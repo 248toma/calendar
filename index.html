@@ -18344,7 +18344,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611271100;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611271115;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -20489,7 +20489,7 @@ const namesBtn = isAdmin() && dates.length > 0
             const headHtml = `
               <div class="pr-head" data-sess="${hps.length}"${hps.length > 1 ? ` ontouchstart="protoHTS(event)" ontouchmove="protoHTM(event)" ontouchend="protoHTE(event)" ontouchcancel="protoHTC()" onpointerdown="protoHPD(event)" onpointerup="protoHPU(event)" aria-roledescription="スライドでページを切り替え"` : ""} style="position:relative;border-radius:28px;padding:20px 22px;margin:0 -10px;${hps.length > 1 ? "overflow:hidden;touch-action:pan-y;" : ""}${raise}">
                 ${xPg ? `<div class="pr-headrow" style="height:${up ? 164 : 158}px${headAnim}">${xPg === "#kr" ? protoKrPage() : protoSvPage()}</div>` : `
-                <div class="pr-headrow" style="display:flex;align-items:center;justify-content:center;gap:16px;height:${up ? 164 : 158}px${headAnim}">
+                <div class="pr-headrow" style="display:flex;align-items:center;gap:8px;height:${up ? 164 : 158}px${headAnim}">
                   <div class="pr-dial${vv && sessDay(nextKey) !== sel ? " pr-dial-next" : ""}" ${vv ? `role="button" tabindex="0" aria-label="バレーの画面へ" onclick="protoVol('${nextKey}')"` : ""} style="position:relative;width:138px;height:138px;flex:none;margin:0 2px 0 4px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${vv ? "pointer" : "default"};${raiseS}">
                     ${dial.map(L).join("")}${upRing}${hand}${RT.length ? `<svg width="138" height="138" viewBox="0 0 138 138" style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible">${RT.map(q => q.h).join("")}</svg>` : ""}${vv ? protoRippleHtml(hAn, vv.col) : ""}
                     <div style="position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:2px">
@@ -20498,7 +20498,8 @@ const namesBtn = isAdmin() && dates.length > 0
                       ${up ? `<span style="font-family:${en};font-size:8px;font-weight:700;letter-spacing:.1em;color:${P.ink3};margin-top:2px">NEXT <b style="font-size:10px;color:${up.col}">${up.n}</b></span>` : ""}
                     </div>
                   </div>
-                  <div id="prDayInfo" class="${Date.now() < protoFlashUntil ? "pr-flash" : ""}" style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:0 1 182px;--fl:${P.acc};${Date.now() < protoFlashUntil ? `animation-delay:-${Date.now() - (protoFlashUntil - PROTO_FLASH_MS)}ms` : ""}">
+                  <div style="flex:1;min-width:0;display:flex;justify-content:center">   <!-- 右の文字は、リングの右の空きの真ん中に -->
+                  <div id="prDayInfo" class="${Date.now() < protoFlashUntil ? "pr-flash" : ""}" style="display:flex;flex-direction:column;gap:6px;min-width:0;width:max-content;max-width:100%;--fl:${P.acc};${Date.now() < protoFlashUntil ? `animation-delay:-${Date.now() - (protoFlashUntil - PROTO_FLASH_MS)}ms` : ""}">
                     ${krDueHtml}
                     <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-family:${en};font-size:13px;font-weight:700;white-space:nowrap">${sm}/${sd} <span style="font-size:9.5px;letter-spacing:.08em;color:${P.ink3}">${WEN[sdt.getDay()].slice(0, 3).toUpperCase()}</span></span>${vv && sessDay(nextKey) !== sel ? (t => t ? `<span style="font-size:10.5px;font-weight:600;color:${P.red};white-space:nowrap">${t}</span>` : "")((() => {
                         // 選んだ日の週(月曜〜日曜)にバレーが1日もなければ「今週なし」
@@ -20519,6 +20520,7 @@ const namesBtn = isAdmin() && dates.length > 0
                       <span style="margin-left:11px;font-family:${en};font-size:9.5px;font-weight:600;color:${P.ink2};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(focus.tm)}</span>
                       ${focus.memo ? `<span style="margin-left:11px;font-size:9px;line-height:1.4;color:${P.ink3};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(focus.memo)}</span>` : ""}
                     </div>` : ""}
+                  </div>
                   </div>
                 </div>`}
                 ${hDots}
