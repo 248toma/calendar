@@ -4030,6 +4030,20 @@ body.dark #settingsPanel[data-solo="ana"], body.dark #fxOv { --sn-insetXS: inset
 #protoUI .p3kr.sel .pr-kr { opacity: 1; }
 #protoUI .p3kr .pr-kr i { width: 4px; height: 4px; }
 #p3gwSc::-webkit-scrollbar{display:none}
+
+#protoUI .pr-lt-solo { justify-content: flex-start; padding-left: 6px; }
+#protoUI .pr-lt-lane > b { margin-left: 0; }
+#protoUI .pr-kr { top: 5px; left: 6px; grid-template-columns: repeat(4, 3.5px); opacity: .7; }
+#protoUI .pr-wx { top: -4px; right: -13px; opacity: .45; }
+#protoUI .pr-mhead .sv-total, #protoUI .pr-mhead .sv-vb { display: none !important; }   /* 金額はヘッダーの節約のページへ */
+#protoUI .pr-cell { align-items: stretch !important; }
+#protoUI .pr-num { align-self: flex-start !important; margin-left: 1px; }
+#protoUI .pr-cell .pr-kr { left: auto; right: 6px; top: 7px; }
+
+#protoUI .pr-lt-gv { justify-content: flex-start; }
+#protoUI .pr-lt-gv > b { margin-left: 4px; padding: 0 3px 0 0 !important; }
+#protoUI .pr-lt-gv > b::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 2.5px; vertical-align: .5px; }
+
 </style>
 </head>
 <body>
@@ -18330,7 +18344,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611261955;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611271040;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -19872,6 +19886,8 @@ const namesBtn = isAdmin() && dates.length > 0
             return day.concat(protoKrHas() ? ["#kr"] : []).concat(protoSvHas() ? ["#sv"] : []);
         }
         function protoHPIdx(d0, ps) { if (protoHPg && protoHPgDay === d0) { const i = ps.indexOf(protoHPg); if (i >= 0) return i; } const k = protoHdrKey(d0); return Math.max(0, ps.indexOf(k)); }
+        var MK = { num: 1, cut: 1, rows: 1 };   // カレンダーを整える(数字の見た目は2つの軸だけ / 題名は文字の区切りで切る / 週の行の高さは予定の数で)
+        function mkCut(t) { let w = 0, o = ""; for (const ch of String(t)) { const cw = /[\x20-\x7e]/.test(ch) ? 0.55 : 1; if (w + cw > 4.05) break; w += cw; o += ch; } return o.replace(/[\s(（→\-・:：]+$/, ""); }
         var protoFoc = {};   // ヘッダーで選んでいる予定(日ごと)
         function protoFocus(d, k) { protoFoc[d] = k; protoHaptic(); renderProto(); }
         var protoOn = false, protoYM = null, protoRowsTop = 0, protoTick = 0, protoSlide = 0, protoSx = null, protoSy = null;   // var: 先に描かれる今の画面から参照されても大丈夫なように
@@ -20287,9 +20303,9 @@ const namesBtn = isAdmin() && dates.length > 0
             const AC = { "来る": LV.sufficient, "未定": LV.warning, "来ない": LV.danger };
             const idx = OPTS.findIndex(([st]) => st === myAns);
             const segFor = vv && nextKey && sessKeysOf(nextKey).length > 1 ? `${+nextKey.slice(5, 7)}/${+nextKey.slice(8, 10)} ${vv.s != null ? fmtMin(vv.s) + "〜" : "時間未定"} ${vv.place}` : "";   // 2回ある日: この○✖△がどの回の出欠か
-            const segHtml = vv && vv.tent ? "" : `<div onclick="event.stopPropagation()" role="group" aria-label="出欠${segFor ? `(${esc(segFor)})` : ""}"${segFor ? ` title="${esc(segFor)} の出欠"` : ""} style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:15px;max-width:132px;box-sizing:border-box;${insetS};${myMem ? "" : "opacity:.45"}">
-                ${idx >= 0 ? L(`position:absolute;top:3px;bottom:3px;left:calc(3px + (100% - 6px) / 3 * ${idx});width:calc((100% - 6px) / 3);border-radius:12px;${raiseS}`) : ""}
-                ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:24px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st || idx < 0 ? 1 : 0.55}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg>${myMem ? protoHapHtml() : ""}</button>`).join("")}
+            const segHtml = vv && vv.tent ? "" : `<div onclick="event.stopPropagation()" role="group" aria-label="出欠${segFor ? `(${esc(segFor)})` : ""}"${segFor ? ` title="${esc(segFor)} の出欠"` : ""} style="position:relative;display:grid;grid-template-columns:repeat(3,28px);gap:12px;${myMem ? "" : "opacity:.45"}">
+                ${idx >= 0 ? L(`position:absolute;top:0;left:${idx * 40}px;width:28px;height:28px;border-radius:14px;${raiseS}`) : ""}
+                ${OPTS.map(([st, svg, lb]) => `<button type="button" aria-label="${lb}" ${myMem ? `onclick="protoAns('${nextKey}','${st}')"` : "disabled"} style="position:relative;height:28px;display:flex;align-items:center;justify-content:center;color:${myAns === st ? AC[st] : P.ink3};opacity:${myAns === st ? 1 : idx < 0 ? 0.85 : 0.45}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg>${myMem ? protoHapHtml() : ""}</button>`).join("")}
             </div>`;
             // 予定の一覧(バレーも入れる。2件分の高さで、ほかはスクロール)
             const rows = plansOn(sel).map(({ p, first, last }) => {
@@ -20306,7 +20322,7 @@ const namesBtn = isAdmin() && dates.length > 0
 
             // ---------- カレンダー ----------
             const first = new Date(y, m - 1, 1), off = (first.getDay() - weekStartDay + 7) % 7;
-            let cellsHtml = "";
+            let cellsHtml = ""; window.__wk = [];
             // 連続予定の段(線の高さ)を、表示している6週ぶん通して決めておく(先に始まった予定が上。途中で別の予定が終わっても段がずれない)
             const laneOf = new Map(), MAXL = 2;
             {
@@ -20346,7 +20362,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     if (pin && p.id === planEditId) return;
                     const col = C[+p.color || 0] || C[0];
                     const multi = !!p.endDate && p.endDate !== p.startDate;
-                    items.push({ pid: p.id, t: p.title || "予定", s: p.allDay ? null : parseHM(p.start), hol: !!p.holiday, col, multi, lane: multi ? laneOf.get(p.id) : null, head: first || col7 === 0, l: first || col7 === 0, r: last || col7 === 6, span: multi ? Math.min(6 - col7, Math.round((new Date(p.endDate.slice(0, 10) + "T00:00:00") - new Date(k.slice(0, 10) + "T00:00:00")) / 864e5)) + 1 : 1 });
+                    items.push({ pid: p.id, t: p.title || "予定", s: p.allDay ? null : parseHM(p.start), hol: !!p.holiday, col, multi, lane: multi ? laneOf.get(p.id) : null, head: first || col7 === 0, f: first, la: last, l: first || col7 === 0, r: last || col7 === 6, span: multi ? Math.min(6 - col7, Math.round((new Date(p.endDate.slice(0, 10) + "T00:00:00") - new Date(k.slice(0, 10) + "T00:00:00")) / 864e5)) + 1 : 1 });
                 });
                 if (pin && !pin.empty && k >= pin.sd && k <= (pin.ed || pin.sd)) {
                     const pc = C[planColor] || C[0];
@@ -20365,30 +20381,33 @@ const namesBtn = isAdmin() && dates.length > 0
                     : `<i${pidA(x)} style="width:${x.pin ? 7 : 5}px;height:${x.pin ? 7 : 5}px;border-radius:50%;flex:none;background:${x.col}"></i>`).join("") + (dots.length > MAXD ? `<i style="width:5px;height:5px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid ${P.ink3}"></i>` : "");
                 let volMark = "";
                 const wx = protoWxDay(k);
-                if (wx) volMark = `<i class="pr-wx" style="color:${P.ink3}">${protoWxIco(wx.kind, 9)}</i>`;   // 天気: 日付の右上に、小さな線の絵だけ(色はつけない)
+                if (wx && (!MK.wx || vs.length || !/sun|clear|cloud|晴|曇/i.test(String(wx.kind)))) volMark = `<i class="pr-wx" style="color:${P.ink3}">${protoWxIco(wx.kind, 9)}</i>`;   // 天気: 日付の右上に、小さな線の絵だけ(色はつけない)
                 let tags = lineHtml + (dotHtml ? `<span style="display:flex;justify-content:center;align-items:center;gap:3px;height:7px">${dotHtml}</span>` : "");
                 if (protoCalPlans && !pin) {   // 入力中は行が低くなるので、題名は出さず点だけ
                     // 「点」の細い線の上に、題名を重ねる(線は文字のところだけ切れる)。連続予定は日をつなぐ線で、題名は始まりの日と週のはじめだけ
                     // 1日の予定は短い線。"en" は英語に置きかえ(辞書にない言葉はそのまま)
                     const word = t => protoPlanStyle === "en" ? planEnglish(t) : t;
                     const row = (col, l, r, label, span, pid) => `<span class="pr-lt"${pid != null ? ` data-pid="${esc(String(pid))}"` : ""}><i style="left:${l ? 5 : -1}px;right:${r ? 5 : -1}px;background:${col}"></i>${label ? `<b style="color:${col}${span > 1 ? `;max-width:calc(${span * 100}% - 8px)` : ""}">${esc(word(label))}</b>` : ""}</span>`;
-                    const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : row(x.col, x.l, x.r, x.head ? x.t : "", x.span || 1, x.pid).replace('class="pr-lt"', 'class="pr-lt pr-lt-lane"'));
+                    // 何日も続く予定: 題名の前に色の点(1日の予定と同じ)、続く日は試作UIと同じ凹んだ細い線。週をまたいで続く端は線を薄く消す
+                    const laneRow = x => { const fr = col7 === 6 && !x.la, fl = col7 === 0 && !x.f, mk = fr || fl ? `-webkit-mask-image:linear-gradient(${fr ? 90 : 270}deg,#000 55%,transparent);mask-image:linear-gradient(${fr ? 90 : 270}deg,#000 55%,transparent);` : "";
+                        return `<span class="pr-lt pr-lt-lane pr-lt-gv"${x.pid != null ? ` data-pid="${esc(String(x.pid))}"` : ""}><i style="left:${x.f ? 12 : -1}px;right:${x.la ? 5 : -1}px;height:3px;margin-top:-1.5px;border-radius:1.5px;background:color-mix(in srgb, ${P.lo} 45%, ${P.bg});box-shadow:inset 1px 1px 1.5px ${P.lo}, inset -1px -1px 1px ${P.hi};${mk}"></i>${x.head ? `<b style="background:${P.bg};--c:${x.col}${(x.span || 1) > 1 ? `;max-width:calc(${(x.span || 1) * 100}% - 8px)` : ""}">${esc(word(x.t))}</b>` : ""}</span>`; };
+                    const laneRows = lines.map(x => x.col === "transparent" ? `<span class="pr-lt"></span>` : laneRow(x));
                     // 1日の予定(バレーも)は線なしで題名だけ / 3行まで(残りは右上に +N) / 過ぎた日は薄く
                     let dotsT = dots.slice().sort((a, b) => (a.hol ? 1 : 0) - (b.hol ? 1 : 0) || (a.s == null ? -1 : a.s) - (b.s == null ? -1 : b.s));
                     if (lines.length + dotsT.length > 3) dotsT = dotsT.filter(x => !x.hol);   // ほかの予定が隠れる日は、休日にした予定は出さない   // 1日の予定は時刻順(終日 → 朝 → 夜)
-                    const sg = dotsT.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"${pidA(x)}><b style="color:${x.tent ? P.red : x.col};--c:${x.tent ? P.red : x.col}${x.no ? ";opacity:.38" : ""}">${esc(x.tent ? "バレー(未)" : word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
+                    const sg = dotsT.map(x => x.pin ? row(x.col, true, true, "") : `<span class="pr-lt pr-lt-solo"${pidA(x)}><b style="color:${x.tent ? P.red : x.col};--c:${x.tent ? P.red : x.col}${x.no ? ";opacity:.38" : ""}">${esc(MK.cut ? mkCut(x.tent ? "バレー(未)" : word(x.vol ? "バレー" : x.t || "")) : x.tent ? "バレー(未)" : word(x.vol ? "バレー" : x.t || ""))}</b></span>`);   // バレーもほかの1日の予定と同じ(線なし・題名だけ)
                     const room = 3;
                     // 連続予定が階段状になると、上の段が空いた日は透明の線が1行ぶん場所をとって、3つしか予定がないのに下の1つがはみ出す。
                     // はみ出すときは、その空いた段に1日の予定を入れて詰める(線の高さは隣の日とそろったまま)
                     let slots = laneRows.slice(); const rest = sg.slice(); const VAC = `<span class="pr-lt"></span>`;
                     if (slots.length + rest.length > room) slots = slots.map(h => h === VAC && rest.length ? rest.shift() : h);
-                    const all = slots.concat(rest);
+                    const all = slots.concat(rest); if (inM || true) { const w = Math.floor(i / 7); (window.__wk = window.__wk || [])[w] = Math.max(window.__wk[w] || 0, Math.min(3, all.length)); }
                     tags = `<span class="pr-lts${protoPlanStyle === "en" ? " en" : ""}">${all.slice(0, room).join("")}</span>${all.length > room && sg.length ? `<span class="pr-fit-more">+${all.length - room}</span>` : ""}`;
                 }
                 const face = isSel ? `${ringBox(26)}${insetS}` : "";
                 const numCol = isToday ? P.today : isSel ? P.acc : red ? P.red : blue ? P.blue : P.ink;
                 cellsHtml += `<button type="button" class="pr-cell" data-k="${k}" onclick="protoPick('${k}')" aria-label="${d.getMonth() + 1}月${d.getDate()}日">${krMap ? krCellDots(krMap, k, !inM) : ""}
-                    <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${inM ? (items.length || isSel || isToday ? 1 : 0.26) : (items.length ? 0.3 : 0.14)};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${isSel || isToday ? 700 : inM && items.length ? 600 : 400};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${volMark}${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
+                    <span class="pr-num" style="position:relative;width:28px;height:28px;flex:none;opacity:${MK.num ? (inM ? (items.length || isSel || isToday ? 1 : 0.42) : 0.2) : inM ? (items.length || isSel || isToday ? 1 : 0.26) : (items.length ? 0.3 : 0.14)};display:flex;align-items:center;justify-content:center;font-family:${en};font-size:13.5px;font-weight:${MK.num ? 600 : isSel || isToday ? 700 : inM && items.length ? 600 : 400};color:${numCol};${popAn != null && k === protoPressK ? `animation:prPopBack .48s cubic-bezier(.22,1,.36,1) both;animation-delay:-${popAn}ms` : ""}"><i class="pr-press" style="${ringBox(26)}${insetS}"></i>${face ? `<i class="pr-face" style="${face}"></i>` : ""}<span style="position:relative">${d.getDate()}</span>${volMark}${isToday && !isSel ? L(`position:absolute;left:50%;bottom:1px;width:12px;height:2px;margin-left:-6px;border-radius:1px;background:${P.today}`) : ""}</span>
                     <span class="pr-tags" style="display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;padding-top:3px;${inM ? "" : "opacity:.38;"}${markAn != null ? `animation:prMarkIn .3s ease-out both;animation-delay:${(protoMarkDir > 0 ? col7 : 6 - col7) * 28 + Math.floor(i / 7) * 4 - markAn}ms` : ""}">${tags}</span>${protoHapHtml()}</button>`;
             }
             const wl = weekStartDay === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
@@ -20460,6 +20479,7 @@ const namesBtn = isAdmin() && dates.length > 0
                     </div>
                     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
                       <div style="display:flex;align-items:baseline;gap:8px;font-family:${jpF};white-space:nowrap"><b style="font-size:14px;color:${P.ink}">節約</b><span style="font-size:10px;color:${P.ink3}">今月 <b style="font-family:${en};font-weight:600;color:${P.ink2}">${svYen(mo)}</b></span></div>
+                      ${(() => { try { const vb = volleyBalance(); return vb.days ? `<div style="font-family:${jpF};font-size:10px;color:${P.ink3};white-space:nowrap">バレーの収支 <b style="font-family:${en};font-weight:600;color:${vb.v < 0 ? REDc : P.ink2}">${vb.v > 0 ? "+" : vb.v < 0 ? "−" : "±"}${Math.abs(vb.v).toLocaleString()}</b></div>` : ""; } catch (e) { return ""; } })()}
                       <div style="max-height:110px;overflow-y:auto;scrollbar-width:none">${leg || `<span style="font-size:10px;color:${P.ink3}">今年の記録はまだありません</span>`}</div>
                     </div></div>`;
             }
@@ -20550,8 +20570,8 @@ const namesBtn = isAdmin() && dates.length > 0
                   <div role="button" aria-label="予定を探す" onclick="protoFindTap()" style="display:flex;align-items:center;gap:12px;cursor:pointer"><span style="font-family:${en};font-size:16px;font-weight:700">${m}<span style="font-size:12px;margin-left:1px">月</span></span><span style="width:1.5px;height:20px;background:${P.ink3};opacity:.4"></span><span style="font-family:${en};font-size:13px;font-weight:600;color:${P.ink3}">${y}</span>${typeof savingTotalHtml === "function" ? savingTotalHtml(y) : ""}<span class="pr-svdot" id="prSvDot" role="button" onclick="event.stopPropagation();openSurvey()" aria-label="アンケートの知らせ"><i class="sv-r"></i><i class="sv-o"></i><i class="sv-g"></i></span>${protoUpdPending ? `<button type="button" class="pr-upd" onclick="event.stopPropagation();refreshApp()" aria-label="更新があります(タップで反映)"></button>` : ""}</div>
 
                 </div>
-                <div class="pr-mhead" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => { const dow = (i + weekStartDay) % 7, tap = dow === 0 || dow === 1; return `<span ${tap ? `role="button" aria-label="${dow === 0 ? "日曜" : "月曜"}始まりにする" onclick="protoWeekStart(${dow})" ` : ""}style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;${tap ? "cursor:pointer;padding:4px 0;margin:-4px 0;" : ""}color:${i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${t}</span>`; }).join("")}</div>
-                <div class="pr-grid${compact ? " compact" : ""}" style="position:relative;${compact ? "flex:none;height:" + (rowHi - rowLo + 1) * 52 + "px" : "flex:1;min-height:0"};display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${rowHi - rowLo + 1},minmax(0,1fr))">${cellsHtml}</div>
+                <div class="pr-mhead" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:4px 0 2px">${wl.map((t, i) => { const dow = (i + weekStartDay) % 7, tap = dow === 0 || dow === 1; return `<span ${tap ? `role="button" aria-label="${dow === 0 ? "日曜" : "月曜"}始まりにする" onclick="protoWeekStart(${dow})" ` : ""}style="text-align:center;font-family:${en};font-size:10.5px;font-weight:600;${tap ? "cursor:pointer;padding:4px 0;margin:-4px 0;" : ""}color:${MK.dow ? P.ink3 : i === sunIdx ? P.red : i === (weekStartDay === 1 ? 5 : 6) ? P.blue : P.ink3}">${MK.dow ? t : t}</span>`; }).join("")}</div>
+                <div class="pr-grid${compact ? " compact" : ""}" style="position:relative;${compact ? "flex:none;height:" + (rowHi - rowLo + 1) * 52 + "px" : "flex:1;min-height:0"};display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:${MK.rows && window.__wk ? Array.from({ length: rowHi - rowLo + 1 }, (_, r) => `minmax(0,${(1.25 + (window.__wk[r + rowLo] || 0) * 0.5).toFixed(2)}fr)`).join(" ") : `repeat(${rowHi - rowLo + 1},minmax(0,1fr))`}">${cellsHtml}</div>
               </div>`;
             const dockHtml = pin ? "" : prMenuMode() === "bar" ? prMenuBarHtml() : `
               <div class="pr-dock">
