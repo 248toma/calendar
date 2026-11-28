@@ -17857,12 +17857,28 @@ const namesBtn = isAdmin() && dates.length > 0
                 return keys.length + ":" + h.toString(36);
             } catch (e) { return ""; }
         }
+        // 調べる用: 赤い点が出たとき、手元とどこが違うかを控える(反映した直後にまた出たときだけ、押したときに見せる)
+        var updDiffText = "";
+        function updDiffNote(rv) {
+            if (!rv) { updDiffText = ""; return; }
+            const loc = getShareableLocalValues(), out = [];
+            Object.keys(rv).filter(isSharedKey).forEach(k => {
+                if (k === APPVER_KEY) return;
+                const covered = k === CHANGELOG_KEY ? clRemoteCovered(rv[k], loc[k]) : /nextid/i.test(k) && isFinite(+loc[k]) && isFinite(+rv[k]) && loc[k] != null && rv[k] != null ? +loc[k] >= +rv[k] : sameShared(k, loc[k], rv[k]);
+                if (covered) return;
+                const a = String(sharedCanon(k, loc[k]) ?? "(なし)"), b = String(sharedCanon(k, rv[k]) ?? "(なし)");
+                let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++;
+                out.push(`■ ${k.replace(/^attendance_/, "")}  手元${a.length}字 / 共有${b.length}字\n手元: …${a.slice(Math.max(0, i - 40), i + 60)}…\n共有: …${b.slice(Math.max(0, i - 40), i + 60)}…`);
+            });
+            updDiffText = out.join("\n\n");
+        }
         function markRemoteUpdate(quiet) {
             try {   // 反映したのと同じ中身なら、赤い点は出さない(開いたときの書き直しで差が残っても、更新し続けないように)
                 const fp = firestorePendingValues ? remoteFp(firestorePendingValues) : "";
                 if (fp && fp === localStorage.getItem(APPLIED_FP_KEY)) { firestoreBase = firestorePendingValues; firestorePendingValues = null; if (protoUpdPending) { protoUpdPending = false; try { renderProto(); } catch (e) { /* ignore */ } } return; }
             } catch (e) { /* ignore */ }
             protoUpdPending = true;   // 年の横の赤い点(タップで反映)
+            try { updDiffNote(firestorePendingValues); } catch (e) { /* ignore */ }
             try { if (!quiet && protoAwayNow()) protoUpdToast(); } catch (e) { /* ignore */ }   // カレンダー以外の画面のときだけ、上に小さく知らせる
             try { renderProto(); } catch (e) { /* ignore */ }
             try { refreshSurveyBtn(); } catch (e) { /* ignore */ }   // 届いたひとことを緑の数字に出す
@@ -18383,7 +18399,7 @@ const namesBtn = isAdmin() && dates.length > 0
         // ------- アプリの版 -------
         // 保存のしかたを変えた版を出したら数字を上げる。共有データに書かれた版より古いアプリは保存しない(古い内容で上書きしない)
         const APP_VERSION = 5;
-        var APP_BUILD_ID = 202611282200;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
+        var APP_BUILD_ID = 202611282220;   // 版の番号(年月日時分)。版を出すたびに更新するのはこの数字だけ。画面の表示(APP_BUILD)はここから作る
         function buildLabel(b) { const t = String(b); return t.slice(4, 6) + "/" + t.slice(6, 8) + " " + t.slice(8, 10) + ":" + t.slice(10, 12); }
         var APP_BUILD = buildLabel(APP_BUILD_ID);   // 画面の版(分析ページの一番下に出す。どの版が動いているかの確認用)
         try { const sb = document.getElementById("setBuild"); if (sb) sb.textContent = APP_BUILD; } catch (e) { /* ignore */ }
@@ -18660,6 +18676,11 @@ const namesBtn = isAdmin() && dates.length > 0
         }
         setInterval(() => { if (!document.hidden) protoBackSync(); }, 800);   // 画面の出し入れを0.8秒ごとに見る(開いた・閉じたを取りこぼさない)
         function refreshApp() {
+            try {   // 反映して2分以内に、また赤い点が出たとき: どこが違うのかを見せる(不具合の調べ用)
+                const at = +localStorage.getItem("vb_upd_applied_at") || 0;
+                if (protoUpdPending && updDiffText && Date.now() - at < 120000) alert("同じ更新が残っています。この画面のスクショを送ってください。\n\n" + updDiffText.slice(0, 1500));
+                localStorage.setItem("vb_upd_applied_at", String(Date.now()));
+            } catch (e) { /* ignore */ }
             protoUpdPending = false;
             const b = document.getElementById("refreshBtn");
             if (b) b.classList.add("spin");
